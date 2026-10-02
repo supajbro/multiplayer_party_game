@@ -85,6 +85,10 @@ namespace CouchGuys.Editor
                 SetObjectReference(playerController, "m_input", inputReader);
                 SetObjectReference(playerController, "m_cameraTransform", cameraObject.transform);
 
+                PlayerCouchCarrier couchCarrier = player.AddComponent<PlayerCouchCarrier>();
+                SetObjectReference(couchCarrier, "m_input", inputReader);
+                SetObjectReference(couchCarrier, "m_playerController", playerController);
+
                 EnsureNetworkConfiguration(player);
 
                 GameObject prefab = PrefabUtility.SaveAsPrefabAsset(player, PrefabPath, out bool savedSuccessfully);
@@ -149,6 +153,15 @@ namespace CouchGuys.Editor
             SetObjectReference(ownership, "m_audioListener", player.GetComponentInChildren<AudioListener>(true));
             SetObjectReference(ownership, "m_playerRenderer", player.GetComponentInChildren<Renderer>(true));
 
+            PlayerCouchCarrier couchCarrier = player.GetComponent<PlayerCouchCarrier>();
+            if (couchCarrier == null)
+            {
+                couchCarrier = player.AddComponent<PlayerCouchCarrier>();
+            }
+
+            SetObjectReference(couchCarrier, "m_input", player.GetComponent<PlayerInputReader>());
+            SetObjectReference(couchCarrier, "m_playerController", player.GetComponent<ThirdPersonPlayerController>());
+
             SerializedObject serialisedNetworkObject = new SerializedObject(networkObject);
             SerializedProperty behaviours = serialisedNetworkObject.FindProperty("NetworkBehaviours");
             if (behaviours == null)
@@ -156,16 +169,19 @@ namespace CouchGuys.Editor
                 throw new UnityException("FishNet NetworkObject behaviour list was not found.");
             }
 
-            behaviours.arraySize = 2;
+            behaviours.arraySize = 3;
             behaviours.GetArrayElementAtIndex(0).objectReferenceValue = networkTransform;
             behaviours.GetArrayElementAtIndex(1).objectReferenceValue = ownership;
+            behaviours.GetArrayElementAtIndex(2).objectReferenceValue = couchCarrier;
             serialisedNetworkObject.ApplyModifiedPropertiesWithoutUndo();
 
             SetNetworkBehaviourReferences(networkTransform, networkObject, 0);
             SetNetworkBehaviourReferences(ownership, networkObject, 1);
+            SetNetworkBehaviourReferences(couchCarrier, networkObject, 2);
             EditorUtility.SetDirty(networkObject);
             EditorUtility.SetDirty(networkTransform);
             EditorUtility.SetDirty(ownership);
+            EditorUtility.SetDirty(couchCarrier);
         }
 
         private static void SetNetworkBehaviourReferences(NetworkBehaviour behaviour, NetworkObject networkObject, int componentIndex)
@@ -226,7 +242,8 @@ namespace CouchGuys.Editor
                 prefab.GetComponentInChildren<ThirdPersonCameraController>(true) == null ||
                 prefab.GetComponent<NetworkObject>() == null ||
                 prefab.GetComponent<NetworkTransform>() == null ||
-                prefab.GetComponent<NetworkPlayerOwnership>() == null)
+                prefab.GetComponent<NetworkPlayerOwnership>() == null ||
+                prefab.GetComponent<PlayerCouchCarrier>() == null)
             {
                 throw new UnityException("Player prefab verification failed: required hierarchy or configuration is invalid.");
             }

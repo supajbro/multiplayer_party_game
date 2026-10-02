@@ -32,8 +32,17 @@ namespace CouchGuys.Player
         private float m_currentSpeed;
         private float m_verticalVelocity;
         private float m_rotationVelocity;
+        private float m_externalSpeedMultiplier = 1f;
 
         public bool IsGrounded => m_characterController != null && m_characterController.isGrounded;
+
+        /// <summary>
+        /// Applies a gameplay speed modifier without coupling movement to the carrying system.
+        /// </summary>
+        public void SetExternalSpeedMultiplier(float multiplier)
+        {
+            m_externalSpeedMultiplier = Mathf.Clamp01(multiplier);
+        }
 
         private void Awake()
         {
@@ -74,7 +83,7 @@ namespace CouchGuys.Player
             Vector2 moveInput = Vector2.ClampMagnitude(m_input.Move, 1f);
             float inputMagnitude = moveInput.magnitude;
             float topSpeed = m_input.SprintHeld ? m_runSpeed : m_walkSpeed;
-            float targetSpeed = topSpeed * inputMagnitude;
+            float targetSpeed = topSpeed * inputMagnitude * m_externalSpeedMultiplier;
             m_currentSpeed = Mathf.MoveTowards(m_currentSpeed, targetSpeed, m_speedChangeRate * Time.deltaTime);
 
             Vector3 moveDirection = CalculateCameraRelativeDirection(moveInput);

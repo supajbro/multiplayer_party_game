@@ -20,12 +20,14 @@ namespace CouchGuys.Input
         private InputAction m_lookAction;
         private InputAction m_jumpAction;
         private InputAction m_sprintAction;
+        private InputAction m_interactAction;
         private InputActionAsset m_runtimeInputActions;
 
         public Vector2 Move => m_moveAction?.ReadValue<Vector2>() ?? Vector2.zero;
         public Vector2 Look => m_lookAction?.ReadValue<Vector2>() ?? Vector2.zero;
         public bool JumpPressedThisFrame => m_jumpAction?.WasPressedThisFrame() ?? false;
         public bool SprintHeld => m_sprintAction?.IsPressed() ?? false;
+        public bool InteractPressedThisFrame => m_interactAction?.WasPressedThisFrame() ?? false;
 
         private void Awake()
         {
@@ -71,6 +73,7 @@ namespace CouchGuys.Input
             m_lookAction = m_playerMap.FindAction("Look", true);
             m_jumpAction = m_playerMap.FindAction("Jump", true);
             m_sprintAction = m_playerMap.FindAction("Sprint", true);
+            m_interactAction = m_playerMap.FindAction("Interact", true);
         }
 
 #if UNITY_EDITOR

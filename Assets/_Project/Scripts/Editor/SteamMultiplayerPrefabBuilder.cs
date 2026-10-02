@@ -16,6 +16,7 @@ namespace CouchGuys.Editor
     public static class SteamMultiplayerPrefabBuilder
     {
         private const string PlayerPrefabPath = "Assets/_Project/Prefabs/Player.prefab";
+        private const string CouchPrefabPath = "Assets/_Project/Prefabs/Couch.prefab";
         private const string SpawnablePrefabsPath = "Assets/_Project/Settings/NetworkSpawnablePrefabs.asset";
         private const string BootstrapPrefabPath = "Assets/_Project/Resources/SteamMultiplayerBootstrap.prefab";
 
@@ -41,7 +42,9 @@ namespace CouchGuys.Editor
 
             GameObject playerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
             NetworkObject playerNetworkObject = playerPrefab.GetComponent<NetworkObject>();
-            SinglePrefabObjects spawnablePrefabs = BuildSpawnablePrefabs(playerNetworkObject);
+            GameObject couchPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(CouchPrefabPath);
+            NetworkObject couchNetworkObject = couchPrefab != null ? couchPrefab.GetComponent<NetworkObject>() : null;
+            SinglePrefabObjects spawnablePrefabs = BuildSpawnablePrefabs(playerNetworkObject, couchNetworkObject);
             BuildBootstrapPrefab(playerNetworkObject, spawnablePrefabs);
 
             AssetDatabase.SaveAssets();
@@ -71,7 +74,7 @@ namespace CouchGuys.Editor
             }
         }
 
-        private static SinglePrefabObjects BuildSpawnablePrefabs(NetworkObject playerNetworkObject)
+        private static SinglePrefabObjects BuildSpawnablePrefabs(NetworkObject playerNetworkObject, NetworkObject couchNetworkObject)
         {
             SinglePrefabObjects spawnablePrefabs = AssetDatabase.LoadAssetAtPath<SinglePrefabObjects>(SpawnablePrefabsPath);
             if (spawnablePrefabs == null)
@@ -82,6 +85,10 @@ namespace CouchGuys.Editor
 
             spawnablePrefabs.Clear();
             spawnablePrefabs.AddObject(playerNetworkObject, false, false);
+            if (couchNetworkObject != null)
+            {
+                spawnablePrefabs.AddObject(couchNetworkObject, false, false);
+            }
             EditorUtility.SetDirty(spawnablePrefabs);
             return spawnablePrefabs;
         }
@@ -175,6 +182,8 @@ namespace CouchGuys.Editor
             GameObject player = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
             GameObject bootstrap = AssetDatabase.LoadAssetAtPath<GameObject>(BootstrapPrefabPath);
             SinglePrefabObjects spawnables = AssetDatabase.LoadAssetAtPath<SinglePrefabObjects>(SpawnablePrefabsPath);
+            GameObject couch = AssetDatabase.LoadAssetAtPath<GameObject>(CouchPrefabPath);
+            int expectedSpawnableCount = couch == null ? 1 : 2;
 
             if (player == null ||
                 player.GetComponent<NetworkObject>() == null ||
@@ -184,7 +193,7 @@ namespace CouchGuys.Editor
                 bootstrap.GetComponent<SteamLobbyController>() == null ||
                 bootstrap.GetComponent<PlayerSpawner>()?.Spawns.Length != 4 ||
                 spawnables == null ||
-                spawnables.GetObjectCount() != 1)
+                spawnables.GetObjectCount() != expectedSpawnableCount)
             {
                 throw new UnityException("Steam multiplayer asset verification failed.");
             }
