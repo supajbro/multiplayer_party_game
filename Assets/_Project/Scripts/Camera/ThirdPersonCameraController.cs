@@ -25,8 +25,8 @@ namespace CouchGuys.CameraSystem
         [SerializeField] private float m_initialVerticalAngle = 12f;
 
         [Header("Smoothing")]
-        [SerializeField, Min(0f)] private float m_followSmoothing = 16f;
-        [SerializeField, Min(0f)] private float m_rotationSmoothing = 20f;
+        [SerializeField, Min(0f)] private float m_followSmoothing = 45f;
+        [SerializeField, Min(0f)] private float m_rotationSmoothing = 45f;
 
         [Header("Camera Collision")]
         [SerializeField] private LayerMask m_collisionLayers = ~0;
@@ -39,6 +39,8 @@ namespace CouchGuys.CameraSystem
         private float m_yaw;
         private float m_pitch;
         private Transform m_playerRoot;
+        private Vector3 m_previousPivotPosition;
+        private bool m_hasPreviousPivotPosition;
         private readonly RaycastHit[] m_collisionHits = new RaycastHit[16];
 
         private void Awake()
@@ -48,12 +50,16 @@ namespace CouchGuys.CameraSystem
             m_pitch = Mathf.Clamp(m_initialVerticalAngle, m_minimumVerticalAngle, m_maximumVerticalAngle);
 
             Vector3 pivot = GetPivotPosition();
+            m_previousPivotPosition = pivot;
+            m_hasPreviousPivotPosition = true;
             Quaternion orbitRotation = Quaternion.Euler(m_pitch, m_yaw, 0f);
             transform.SetPositionAndRotation(CalculateCollisionPosition(pivot, orbitRotation), orbitRotation);
         }
 
         private void OnEnable()
         {
+            m_previousPivotPosition = GetPivotPosition();
+            m_hasPreviousPivotPosition = true;
             ApplyCursorState();
         }
 
@@ -73,6 +79,9 @@ namespace CouchGuys.CameraSystem
                 return;
             }
 
+            Vector3 pivot = GetPivotPosition();
+            CompensateForTargetMovement(pivot);
+
             Vector2 lookInput = m_input.Look;
             m_yaw += lookInput.x * m_mouseSensitivity;
             m_pitch = Mathf.Clamp(
@@ -81,13 +90,33 @@ namespace CouchGuys.CameraSystem
                 m_maximumVerticalAngle);
 
             Quaternion desiredRotation = Quaternion.Euler(m_pitch, m_yaw, 0f);
-            Vector3 pivot = GetPivotPosition();
             Vector3 desiredPosition = CalculateCollisionPosition(pivot, desiredRotation);
 
             float positionBlend = 1f - Mathf.Exp(-m_followSmoothing * Time.deltaTime);
             float rotationBlend = 1f - Mathf.Exp(-m_rotationSmoothing * Time.deltaTime);
             transform.position = Vector3.Lerp(transform.position, desiredPosition, positionBlend);
             transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, rotationBlend);
+        }
+
+        private void CompensateForTargetMovement(Vector3 pivot)
+        {
+            if (!m_hasPreviousPivotPosition)
+            {
+                m_previousPivotPosition = pivot;
+                m_hasPreviousPivotPosition = true;
+                return;
+            }
+
+            // A locally owned camera rig is detached from the rotating network Player.
+            // Carry it by the target's exact translation before applying orbit smoothing,
+            // otherwise normal movement appears to lag or rubber-band behind the Player.
+            bool inheritsPlayerTransform = m_playerRoot != null && transform.IsChildOf(m_playerRoot);
+            if (!inheritsPlayerTransform)
+            {
+                transform.position += pivot - m_previousPivotPosition;
+            }
+
+            m_previousPivotPosition = pivot;
         }
 
         private Vector3 GetPivotPosition()

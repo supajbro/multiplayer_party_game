@@ -27,6 +27,12 @@ namespace CouchGuys.Networking
         private static readonly int BaseColourProperty = Shader.PropertyToID("_BaseColor");
         private static readonly int ColourProperty = Shader.PropertyToID("_Color");
         private MaterialPropertyBlock m_propertyBlock;
+        private Transform m_cameraRig;
+        private Transform m_cameraRigOriginalParent;
+        private Vector3 m_cameraRigOriginalLocalPosition;
+        private Quaternion m_cameraRigOriginalLocalRotation;
+        private Vector3 m_cameraRigOriginalLocalScale;
+        private bool m_cameraRigDetached;
 
         [System.Serializable]
         private sealed class ColourPalette
@@ -50,12 +56,14 @@ namespace CouchGuys.Networking
         private void Awake()
         {
             ResolveReferences();
+            CacheCameraRigHierarchy();
             SetLocalControl(false);
         }
 
         public override void OnStartClient()
         {
             base.OnStartClient();
+            SetCameraRigDetached(IsOwner);
             SetLocalControl(IsOwner);
             ApplyPlayerColour(OwnerId);
         }
@@ -63,6 +71,7 @@ namespace CouchGuys.Networking
         public override void OnOwnershipClient(NetworkConnection previousOwner)
         {
             base.OnOwnershipClient(previousOwner);
+            SetCameraRigDetached(IsOwner);
             SetLocalControl(IsOwner);
             ApplyPlayerColour(OwnerId);
         }
@@ -70,7 +79,18 @@ namespace CouchGuys.Networking
         public override void OnStopClient()
         {
             SetLocalControl(false);
+            SetCameraRigDetached(false);
             base.OnStopClient();
+        }
+
+        private void OnDestroy()
+        {
+            // A detached camera is no longer a child of the network Player, so it must be
+            // explicitly cleaned up if the Player is destroyed without OnStopClient.
+            if (m_cameraRigDetached && m_cameraRig != null)
+            {
+                Destroy(m_cameraRig.gameObject);
+            }
         }
 
         private void ResolveReferences()
@@ -81,6 +101,44 @@ namespace CouchGuys.Networking
             m_playerCamera ??= GetComponentInChildren<Camera>(true);
             m_audioListener ??= GetComponentInChildren<AudioListener>(true);
             m_playerRenderer ??= GetComponentInChildren<Renderer>(true);
+        }
+
+        private void CacheCameraRigHierarchy()
+        {
+            if (m_cameraController == null)
+            {
+                return;
+            }
+
+            m_cameraRig = m_cameraController.transform;
+            m_cameraRigOriginalParent = m_cameraRig.parent;
+            m_cameraRigOriginalLocalPosition = m_cameraRig.localPosition;
+            m_cameraRigOriginalLocalRotation = m_cameraRig.localRotation;
+            m_cameraRigOriginalLocalScale = m_cameraRig.localScale;
+        }
+
+        private void SetCameraRigDetached(bool shouldDetach)
+        {
+            if (m_cameraRig == null || shouldDetach == m_cameraRigDetached)
+            {
+                return;
+            }
+
+            if (shouldDetach)
+            {
+                // The player root rotates to face movement. Keeping the camera underneath
+                // that root makes it inherit the rotation before its LateUpdate can run,
+                // which produces a visible correction on every turn.
+                m_cameraRig.SetParent(null, true);
+                m_cameraRigDetached = true;
+                return;
+            }
+
+            m_cameraRig.SetParent(m_cameraRigOriginalParent, false);
+            m_cameraRig.localPosition = m_cameraRigOriginalLocalPosition;
+            m_cameraRig.localRotation = m_cameraRigOriginalLocalRotation;
+            m_cameraRig.localScale = m_cameraRigOriginalLocalScale;
+            m_cameraRigDetached = false;
         }
 
         private void SetLocalControl(bool isLocalOwner)

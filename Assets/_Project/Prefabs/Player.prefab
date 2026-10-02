@@ -439,8 +439,8 @@ MonoBehaviour:
   m_minimumVerticalAngle: -35
   m_maximumVerticalAngle: 65
   m_initialVerticalAngle: 12
-  m_followSmoothing: 16
-  m_rotationSmoothing: 20
+  m_followSmoothing: 45
+  m_rotationSmoothing: 45
   m_collisionLayers:
     serializedVersion: 2
     m_Bits: 4294967295
