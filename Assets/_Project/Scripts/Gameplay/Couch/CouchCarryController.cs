@@ -131,18 +131,10 @@ namespace CouchGuys.Gameplay.Couch
                     continue;
                 }
 
-                float separation = Vector3.Distance(carrier.transform.position, carryPoint.transform.position);
-                if (separation > carrier.MaximumCarrySeparation)
-                {
-                    ReleasePointServer(index, carrier);
-                    continue;
-                }
-
                 Vector3 pointPosition = carryPoint.transform.position;
                 Vector3 targetPosition = carrier.CalculateDesiredCarryPosition(m_rigidbody.worldCenterOfMass);
                 Vector3 pointVelocity = m_rigidbody.GetPointVelocity(pointPosition);
                 Vector3 movementIntent = carrier.GetServerMovementIntent();
-                float separationInfluence = carrier.CalculateSeparationInfluence(separation);
 
                 Vector3 horizontalError = Vector3.ProjectOnPlane(targetPosition - pointPosition, Vector3.up);
                 Vector3 horizontalVelocity = Vector3.ProjectOnPlane(pointVelocity, Vector3.up);
@@ -152,14 +144,14 @@ namespace CouchGuys.Gameplay.Couch
                     cooperationEfficiency);
                 Vector3 horizontalForce =
                     (horizontalError * m_carryForce - horizontalVelocity * m_damping + movementIntent * m_movementForce) *
-                    perCarrierEfficiency * cooperationForceScale * separationInfluence;
+                    perCarrierEfficiency * cooperationForceScale;
                 horizontalForce = Vector3.ClampMagnitude(horizontalForce, m_maximumHorizontalForce);
 
                 float heightError = targetPosition.y - pointPosition.y;
                 float liftForce = supportPerCarrier + Mathf.Max(0f, heightError) * m_liftForce -
                     pointVelocity.y * m_liftDamping;
                 liftForce = Mathf.Clamp(
-                    liftForce * separationInfluence,
+                    liftForce,
                     0f,
                     m_maximumLiftForce);
                 Vector3 verticalForce = Vector3.up * liftForce;

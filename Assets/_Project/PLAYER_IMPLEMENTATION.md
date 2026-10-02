@@ -34,7 +34,7 @@ Player
 
 Important components:
 
-- `Player`: `CharacterController`, `PlayerInputReader`, `ThirdPersonPlayerController`, `PlayerCouchCarrier`, disabled `DebugCouchBotController`, `NetworkObject`, `NetworkTransform`, and `NetworkPlayerOwnership`. Root scale is `(1, 1, 1)`. The bot controller is enabled only on an unowned server-spawned debug Player when the host Player's **Debug Bot > Spawn Bot** option is selected.
+- `Player`: `CharacterController`, `PlayerInputReader`, `ThirdPersonPlayerController`, `PlayerCouchCarrier`, disabled `DebugCouchBotController`, `NetworkObject`, `NetworkTransform`, and `NetworkPlayerOwnership`. Root scale is `(1, 1, 1)`. The bot controller is enabled only on unowned server-spawned debug Players when the host Player's **Debug Bot Count** is above zero.
 - `Visual/Capsule`: temporary mesh only. Local position `(0, 0.9, 0)`, local scale `(0.6, 0.9, 0.6)`, giving an approximately 0.6 m wide by 1.8 m tall visual. Its primitive collider is removed so it cannot conflict with the character controller.
 - `CameraTarget`: transform at local position `(0, 1.5, 0)` near the upper torso/head.
 - `CameraRig`: `ThirdPersonCameraController`.
@@ -59,6 +59,7 @@ Important components:
 - Jump velocity is calculated from the configured jump height and gravity.
 - Gravity accumulates every frame and is limited by terminal velocity. A small downward grounded force keeps the controller settled on ordinary slopes.
 - Ground detection uses `CharacterController.isGrounded`, which is updated by collision during controller movement.
+- While carrying, the controller removes only the outward component of movement as CarryPoint separation approaches its configured maximum. Movement back towards the couch and sideways around it remains available; separation does not detach the Player.
 
 ## Camera
 

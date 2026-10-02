@@ -83,7 +83,7 @@ On Interact, an owner who is not carrying searches active `CouchCarryPoint` comp
 - the requesting Player is within `1.8 m + 0.35 m` server tolerance;
 - the Player is not already carrying a couch or occupying another point on that couch.
 
-If carrying, Interact sends a release request instead. The server also releases on Player despawn or if Player-to-point separation exceeds `3 m`.
+If carrying, Interact sends a release request instead. Distance never releases an active carrier. The server clears the grab only after an explicit Interact release or when that Player despawns/disconnects.
 
 ## Physics
 
@@ -101,7 +101,7 @@ horizontal force = horizontal grip error × Carry Force
                  + player world movement intent × Movement Force
 ```
 
-The force is scaled by player-count efficiency, cooperation, and separation influence before being clamped. Each Player retains a distinct direction; the system never averages their directions into one generic couch direction.
+The force is scaled by player-count efficiency and cooperation before being clamped. Each Player retains a distinct direction; the system never averages their directions into one generic couch direction.
 
 The local Player sends movement intent at most every `0.1 s`, with a `0.5 s` heartbeat. The server discards intent older than `0.4 s`. This gives the authoritative simulation responsive intent without adding reliable per-frame traffic.
 
@@ -147,7 +147,7 @@ Horizontal forces use `Rigidbody.AddForceAtPosition` at a point blended towards 
 
 Player speed changes continuously with couch weight, diminishing player-count assistance, and cooperation. The configured Single Carrier Speed Multiplier is the slow baseline, while Maximum Cooperative Speed Multiplier is approached only when additional carriers cooperate. Effective weight per unit of carrier efficiency adds a further penalty.
 
-Separation begins weakening both couch influence and Player speed at Soft Carry Separation. Influence fades to zero at Maximum Carry Separation, where the server releases that individual point. This avoids a hard movement lock while preventing a Player from sprinting away and dragging the couch through an extreme spring.
+The existing weight/count/cooperation speed multiplier remains active. Separation resistance is directional: below Comfortable Carry Distance it makes no further change; between Comfortable and Maximum Carry Distance a smooth curve progressively removes only the component of desired movement pointing away from the occupied CarryPoint; at Maximum Carry Distance that outward component is removed completely. Movement towards the CarryPoint and movement tangent to it remain available. The same allocation-free distance/dot-product calculation is used by debug bots. Separation never causes release and does not fade the carrier's couch force.
 
 ### Stability
 
@@ -176,7 +176,7 @@ Horizontal and vertical forces have separate limits. Lift damping removes upward
 | Player Carrying | Carry Height | 0.45 m |
 | Player Carrying | Single Carrier Speed Multiplier | 0.52 |
 | Player Carrying | Maximum Cooperative Speed Multiplier | 0.82 |
-| Player Carrying | Soft Carry Separation | 1.6 m |
+| Player Carrying | Comfortable Carry Distance | 1.6 m |
 | Player Carrying | Maximum Carry Separation | 3 m |
 | Networked Intent | Send Interval | 0.1 s |
 | Networked Intent | Heartbeat Interval | 0.5 s |
@@ -212,7 +212,7 @@ The couch never transfers ownership to a carrier. This is important: several Pla
 
 ### Release Flow
 
-The owning client sends `RequestReleaseServerRpc`. The server clears only the matching point and that Player's carried state. Other point occupants remain unchanged. Server-side automatic release uses the same path for separation or disconnect cleanup.
+The owning client sends `RequestReleaseServerRpc`. The server clears only the matching point and that Player's carried state. Other point occupants remain unchanged. There is no distance-based release; server cleanup releases the point only when the Player despawns or disconnects.
 
 ### Couch Transform Synchronisation
 
@@ -230,7 +230,7 @@ The server loops over all four occupied points each physics tick and adds separa
 
 ## Networked Debug Bot
 
-The Player prefab exposes **Debug Bot > Spawn Bot**. When this option is enabled, only the host-owned Player creates one bot during `OnStartServer`. The bot is another registered Player prefab instance spawned through FishNet with no owning connection. This makes FishNet's existing Player `NetworkTransform` server-controlled for that instance, so every client observes the same bot movement while no client can send input for it.
+The Player prefab exposes a **Debug Bot Count** slider from `0` to `4`. Only the host-owned Player creates the configured bots during `OnStartServer`. Each bot is another registered Player prefab instance spawned through FishNet with no owning connection. This makes FishNet's existing Player `NetworkTransform` server-controlled for those instances, so every client observes the same bot movement while no client can send input for them. A small two-by-two formation around Spawn Offset prevents their CharacterControllers starting on top of each other.
 
 `DebugCouchBotController` is disabled on the prefab. The host initialises and enables only the server instance before its network spawn; client copies remain disabled. The bot searches for a target at the configured interval rather than every frame. It prioritises a couch that already has a carrier, then distance and its preferred point. It walks directly towards the outside of the selected CarryPoint using the Player's `CharacterController`, and its grab is accepted only if the normal server distance, spawn, availability, and current-carry checks pass.
 
@@ -248,13 +248,13 @@ The available singular behaviours are:
 | Wander | Chooses a random horizontal direction at the configured interval. |
 | Move In Configured Direction | Uses the configured world-space direction. |
 
-The bot still receives the normal couch weight, player-count, cooperation, separation, force, and automatic-release rules. Despawning the host Player also despawns its bot, and the bot's normal server shutdown releases only its own CarryPoint.
+Every bot receives a stable index which biases it towards a different CarryPoint, then reselects if another bot or Player claims that target. All bots reuse one throttled CarryPoint cache instead of allocating and searching the scene independently. Server occupancy validation remains the final authority, so two bots cannot occupy the same CarryPoint. Bots receive the normal couch weight, player-count, cooperation, force, and directional resistance rules. Despawning the host Player despawns all of its bots, and each bot's normal server shutdown releases only its own CarryPoint.
 
 Debug Bot Inspector settings:
 
 | Setting | Default | Purpose |
 | --- | ---: | --- |
-| Spawn Bot | Off | Enables one host-spawned network bot. |
+| Debug Bot Count | Current prefab: 1; range: 0–4 | Number of host-spawned network bots. Set to 0 to disable. |
 | Behaviour | Cooperate With Player | Selects the bot's one movement state. |
 | Preferred Carry Point | Any | Biases selection towards one of the four point indices. |
 | Spawn Offset | `(2, 0, 2)` | Bot spawn offset in host Player-local space. |
@@ -269,14 +269,15 @@ Debug Bot Inspector settings:
 
 ### Debug Bot Test
 
-1. Select `Assets/_Project/Prefabs/Player.prefab` and enable **Player Couch Carrier > Debug Bot > Spawn Bot**.
+1. Select `Assets/_Project/Prefabs/Player.prefab` and set **Player Couch Carrier > Debug Bot > Debug Bot Count** from `1` to `4`.
 2. Choose **Cooperate With Player** or **Pull Against Player**.
 3. Ensure a Couch prefab instance is in the scene, then start **Host Game**.
-4. Confirm exactly one extra Player spawns, walks to an available CarryPoint, and grabs it.
+4. Confirm the configured number of extra Players spawn, walk to different available CarryPoints, and grab them.
 5. Grab a different point with E and move. Cooperate should match the Player's direction; Pull Against should reverse it.
 6. Change Behaviour at runtime on the spawned host Player to exercise Hold, turning, wander, or configured-direction states.
 7. Confirm couch physics and both Player transforms are visible to a connected client when one is available.
-8. Disable **Spawn Bot** on the Player prefab after testing when ordinary multiplayer behaviour is desired.
+8. Test counts `2` through `4` and confirm every bot occupies a different available point without spawning on top of another bot.
+9. Set **Debug Bot Count** to `0` after testing when ordinary multiplayer behaviour is desired.
 
 ## Input
 
@@ -324,8 +325,8 @@ Before either test, add `Assets/_Project/Prefabs/Couch.prefab` to a networked te
 2. Grab one corner and remain still briefly.
 3. Confirm the grabbed side lifts while the opposite side remains lower and the Rigidbody naturally tilts.
 4. Move and confirm the couch is heavy, slow, awkward, but still movable.
-5. Move beyond 1.6 m separation and confirm influence and Player speed progressively weaken.
-6. Move beyond 3 m and confirm automatic release, then grab again.
+5. Move beyond 1.6 m separation and confirm only movement away from the CarryPoint progressively weakens.
+6. At 3 m, confirm outward movement is blocked while sideways and inward movement remain available and the Player stays attached.
 7. Press E and confirm the couch releases and continues as an ordinary Rigidbody.
 
 ### Two Cooperating Carriers
@@ -374,7 +375,9 @@ Code and asset inspection completed:
 - [x] Cooperation uses pairwise movement-intent dot products.
 - [x] Opposing intent remains as separate off-centre force contributions.
 - [x] Movement intent is owner-submitted, throttled, unreliable, and server-timeout protected.
-- [x] Carry influence and Player speed weaken before automatic separation release.
+- [x] Outward Player movement progressively weakens between comfortable and maximum separation.
+- [x] Outward movement is blocked at maximum separation while inward and sideways movement remain available.
+- [x] Carry separation never automatically releases a Player or fades their couch force.
 - [x] Force, lift, linear-velocity, and angular-velocity stability limits are configured.
 - [x] Optional Gizmos expose CarryPoints, horizontal force, lift, and movement intent.
 - [x] Couch is never parented to a Player.
@@ -382,12 +385,13 @@ Code and asset inspection completed:
 - [x] No coroutines or `IEnumerator` implementations were introduced.
 - [x] Existing Player ownership and owner-authoritative transform settings remain in place.
 - [x] Existing third-person movement remains the movement implementation.
-- [x] The optional debug bot is a server-driven, unowned instance of the registered Player prefab.
+- [x] Zero to four optional debug bots are server-driven, unowned instances of the registered Player prefab.
+- [x] Multiple bots spawn in a spaced formation and independently claim server-validated CarryPoints.
 - [x] Bot grabbing uses the existing server validation and independent occupancy state.
 - [x] Bot intent enters the existing per-carrier couch-force calculation without an extra physics path.
 - [x] Client bot copies do not run AI or local input.
 - [x] Bot point discovery is throttled and no per-frame bot network RPC is sent.
-- [x] The runtime and editor C# assemblies compile with zero warnings and zero errors after the debug-bot source changes.
+- [x] The runtime and editor C# assemblies compile with zero warnings and zero errors after the carrying-resistance and multi-bot changes.
 
 Runtime checks still requiring Play Mode/hardware:
 
@@ -398,7 +402,7 @@ Runtime checks still requiring Play Mode/hardware:
 - [ ] Coordinated differential movement rotates the couch physically.
 - [ ] Two distinct Steam users completed the full influence and independent-release test.
 - [ ] Existing Steam lobby behaviour re-verified in a two-user build.
-- [ ] The host-spawned debug bot completed its approach, grab, cooperate, oppose, and independent-release Play Mode checks.
+- [ ] Host-spawned debug bots completed their approach, unique-point grab, cooperate, oppose, and independent-release Play Mode checks.
 - [ ] A remote Steam client observed the same bot transform, occupancy, and couch response.
 
 ## Known Limitations
@@ -406,7 +410,7 @@ Runtime checks still requiring Play Mode/hardware:
 - Two-account Steam testing and final feel tuning have not been performed in this implementation session; the runtime items above are deliberately not claimed as verified.
 - The debug bot walks directly towards its target with a CharacterController and does not use NavMesh pathfinding, so level geometry can block it.
 - Cooperate and Pull Against follow the first human carrier found on that couch. They intentionally remain idle until a human on the same couch supplies movement intent.
-- One debug bot is supported per host session; runtime spawning of teams or mixed bot behaviours is outside this focused test tool.
+- All bots currently share the host Player's selected behaviour and tuning. Per-bot mixed behaviours are outside this focused test tool.
 - There is no client-side couch prediction. Non-host carriers may perceive transform latency at higher network latency, although only one server simulation exists.
 - The prototype uses one simple box collider rather than compound cushions/arms, so collision shape is intentionally coarse.
 - A rejected request has no UI feedback. The Player can immediately press E again after moving closer or selecting another point.

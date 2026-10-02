@@ -4,6 +4,7 @@ using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using FishNet.Transporting;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CouchGuys.Player
 {
@@ -29,7 +30,8 @@ namespace CouchGuys.Player
         [SerializeField, Min(0f)] private float m_carryHeight = 0.45f;
         [SerializeField, Range(0.1f, 1f)] private float m_singleCarrierSpeedMultiplier = 0.52f;
         [SerializeField, Range(0.1f, 1f)] private float m_maximumCooperativeSpeedMultiplier = 0.82f;
-        [SerializeField, Min(0.1f)] private float m_softCarrySeparation = 1.6f;
+        [FormerlySerializedAs("m_softCarrySeparation")]
+        [SerializeField, Min(0.1f)] private float m_comfortableCarryDistance = 1.6f;
         [SerializeField, Min(0.5f)] private float m_maximumCarrySeparation = 3f;
 
         [Header("Networked Movement Intent")]
@@ -48,10 +50,15 @@ namespace CouchGuys.Player
         private float m_lastIntentChangeTime = float.NegativeInfinity;
         private float m_lastServerIntentTime = float.NegativeInfinity;
         private float m_appliedSpeedMultiplier = 1f;
-        private NetworkObject m_spawnedDebugBot;
+        private NetworkObject m_cachedMovementCouchObject;
+        private CouchCarryController m_cachedMovementCouch;
+        private Transform m_cachedMovementAnchor;
+        private int m_cachedMovementPointIndex = int.MinValue;
+        private readonly NetworkObject[] m_spawnedDebugBots = new NetworkObject[4];
 
-        public float SoftCarrySeparation => Mathf.Min(m_softCarrySeparation, m_maximumCarrySeparation);
+        public float ComfortableCarryDistance => Mathf.Min(m_comfortableCarryDistance, m_maximumCarrySeparation);
         public float MaximumCarrySeparation => m_maximumCarrySeparation;
+        internal int CarriedPointIndex => m_carriedPointIndex.Value;
         public bool IsCarrying => m_carriedCouch.Value != null;
 
         private void Awake()
@@ -85,21 +92,25 @@ namespace CouchGuys.Player
         public override void OnStartServer()
         {
             base.OnStartServer();
-            if (Owner.IsLocalClient && m_debugBot != null && m_debugBot.SpawnBot)
+            if (Owner.IsLocalClient && m_debugBot != null && m_debugBot.DebugBotCount > 0)
             {
-                SpawnDebugBotServer();
+                SpawnDebugBotsServer();
             }
         }
 
         public override void OnStopServer()
         {
             ReleaseCurrentCouchServer();
-            if (m_spawnedDebugBot != null && m_spawnedDebugBot.IsSpawned)
+            for (int index = 0; index < m_spawnedDebugBots.Length; index++)
             {
-                Despawn(m_spawnedDebugBot);
-            }
+                NetworkObject bot = m_spawnedDebugBots[index];
+                if (bot != null && bot.IsSpawned)
+                {
+                    Despawn(bot);
+                }
 
-            m_spawnedDebugBot = null;
+                m_spawnedDebugBots[index] = null;
+            }
             base.OnStopServer();
         }
 
@@ -160,11 +171,6 @@ namespace CouchGuys.Player
                 Vector3.ProjectOnPlane(movementIntent, Vector3.up),
                 1f);
             m_lastServerIntentTime = Time.unscaledTime;
-        }
-
-        internal float CalculateSeparationInfluence(float separation)
-        {
-            return 1f - Mathf.InverseLerp(SoftCarrySeparation, m_maximumCarrySeparation, separation);
         }
 
         internal float CalculateCarryingSpeedMultiplier(CouchCarryController couch)
@@ -317,21 +323,22 @@ namespace CouchGuys.Player
             }
 
             float targetMultiplier = 1f;
+            m_playerController.ClearExternalMovementResistance();
             NetworkObject couchObject = m_carriedCouch.Value;
             int pointIndex = m_carriedPointIndex.Value;
-            if (couchObject != null && couchObject.TryGetComponent(out CouchCarryController couch))
+            RefreshMovementCache(couchObject, pointIndex);
+            if (m_cachedMovementCouch != null)
             {
-                targetMultiplier = CalculateCarryingSpeedMultiplier(couch);
+                targetMultiplier = CalculateCarryingSpeedMultiplier(m_cachedMovementCouch);
 
-                CouchCarryPoint point = couch.GetPoint(pointIndex);
-                if (point != null)
+                if (m_cachedMovementAnchor != null)
                 {
-                    float separation = Vector3.Distance(transform.position, point.transform.position);
-                    float separationInfluence = CalculateSeparationInfluence(separation);
-                    targetMultiplier *= Mathf.Lerp(0.25f, 1f, separationInfluence);
+                    m_playerController.SetExternalMovementResistance(
+                        m_cachedMovementAnchor,
+                        ComfortableCarryDistance,
+                        MaximumCarrySeparation);
                 }
             }
-
             if (Mathf.Abs(targetMultiplier - m_appliedSpeedMultiplier) < 0.01f)
             {
                 return;
@@ -346,12 +353,33 @@ namespace CouchGuys.Player
             if (m_playerController != null)
             {
                 m_playerController.SetExternalSpeedMultiplier(1f);
+                m_playerController.ClearExternalMovementResistance();
             }
 
             m_appliedSpeedMultiplier = 1f;
         }
 
-        private void SpawnDebugBotServer()
+        private void RefreshMovementCache(NetworkObject couchObject, int pointIndex)
+        {
+            if (couchObject == m_cachedMovementCouchObject && pointIndex == m_cachedMovementPointIndex)
+            {
+                return;
+            }
+
+            m_cachedMovementCouchObject = couchObject;
+            m_cachedMovementPointIndex = pointIndex;
+            m_cachedMovementCouch = null;
+            m_cachedMovementAnchor = null;
+            if (couchObject == null || !couchObject.TryGetComponent(out m_cachedMovementCouch))
+            {
+                return;
+            }
+
+            CouchCarryPoint point = m_cachedMovementCouch.GetPoint(pointIndex);
+            m_cachedMovementAnchor = point != null ? point.transform : null;
+        }
+
+        private void SpawnDebugBotsServer()
         {
             NetworkObject playerPrefab = NetworkManager.GetPrefab(NetworkObject.PrefabId, true);
             if (playerPrefab == null)
@@ -360,18 +388,36 @@ namespace CouchGuys.Player
                 return;
             }
 
-            Vector3 spawnPosition = transform.position + transform.TransformDirection(m_debugBot.SpawnOffset);
-            NetworkObject bot = Instantiate(playerPrefab, spawnPosition, transform.rotation);
-            if (!bot.TryGetComponent(out DebugCouchBotController botController))
+            int botCount = m_debugBot.DebugBotCount;
+            for (int index = 0; index < botCount; index++)
             {
-                Debug.LogError("The Player prefab is missing DebugCouchBotController.", bot);
-                Destroy(bot.gameObject);
-                return;
+                Vector3 localOffset = m_debugBot.SpawnOffset + CalculateDebugBotFormationOffset(index, botCount);
+                Vector3 spawnPosition = transform.position + transform.TransformDirection(localOffset);
+                NetworkObject bot = Instantiate(playerPrefab, spawnPosition, transform.rotation);
+                if (!bot.TryGetComponent(out DebugCouchBotController botController))
+                {
+                    Debug.LogError("The Player prefab is missing DebugCouchBotController.", bot);
+                    Destroy(bot.gameObject);
+                    return;
+                }
+
+                botController.Initialise(m_debugBot, index);
+                Spawn(bot);
+                m_spawnedDebugBots[index] = bot;
+            }
+        }
+
+        private static Vector3 CalculateDebugBotFormationOffset(int index, int botCount)
+        {
+            const float spacing = 1.25f;
+            if (botCount <= 1)
+            {
+                return Vector3.zero;
             }
 
-            botController.Initialise(m_debugBot);
-            Spawn(bot);
-            m_spawnedDebugBot = bot;
+            float column = index % 2 == 0 ? -0.5f : 0.5f;
+            float row = index < 2 ? -0.5f : 0.5f;
+            return new Vector3(column * spacing, 0f, row * spacing);
         }
 
 #if UNITY_EDITOR
@@ -379,7 +425,10 @@ namespace CouchGuys.Player
         {
             base.OnValidate();
             m_maximumCarrySeparation = Mathf.Max(0.5f, m_maximumCarrySeparation);
-            m_softCarrySeparation = Mathf.Clamp(m_softCarrySeparation, 0.1f, m_maximumCarrySeparation);
+            m_comfortableCarryDistance = Mathf.Clamp(
+                m_comfortableCarryDistance,
+                0.1f,
+                m_maximumCarrySeparation);
             m_maximumCooperativeSpeedMultiplier = Mathf.Max(
                 m_singleCarrierSpeedMultiplier,
                 m_maximumCooperativeSpeedMultiplier);

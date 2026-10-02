@@ -258,14 +258,14 @@ MonoBehaviour:
   m_carryHeight: 0.45
   m_singleCarrierSpeedMultiplier: 0.52
   m_maximumCooperativeSpeedMultiplier: 0.82
-  m_softCarrySeparation: 1.6
+  m_comfortableCarryDistance: 1.6
   m_maximumCarrySeparation: 3
   m_intentSendInterval: 0.1
   m_intentHeartbeatInterval: 0.5
   m_intentTimeout: 0.4
   m_debugBot:
-    m_spawnBot: 1
-    m_behaviour: 1
+    m_debugBotCount: 1
+    m_behaviour: 2
     m_preferredCarryPoint: -1
     m_spawnOffset: {x: 2, y: 0, z: 2}
     m_approachSpeed: 3.5

@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CouchGuys.Player
 {
@@ -29,7 +30,8 @@ namespace CouchGuys.Player
             RearRight = 3
         }
 
-        [SerializeField] private bool m_spawnBot;
+        [FormerlySerializedAs("m_spawnBot")]
+        [SerializeField, Range(0, 4)] private int m_debugBotCount;
         [SerializeField] private BehaviourState m_behaviour = BehaviourState.CooperateWithPlayer;
         [SerializeField] private CarryPointPreference m_preferredCarryPoint = CarryPointPreference.Any;
         [SerializeField] private Vector3 m_spawnOffset = new(2f, 0f, 2f);
@@ -46,7 +48,7 @@ namespace CouchGuys.Player
         [SerializeField, Min(0.1f)] private float m_retryDelay = 0.75f;
         [SerializeField, Min(0.1f)] private float m_wanderDirectionInterval = 2f;
 
-        public bool SpawnBot => m_spawnBot;
+        public int DebugBotCount => Mathf.Clamp(m_debugBotCount, 0, 4);
         public BehaviourState Behaviour => m_behaviour;
         public CarryPointPreference PreferredCarryPoint => m_preferredCarryPoint;
         public Vector3 SpawnOffset => m_spawnOffset;

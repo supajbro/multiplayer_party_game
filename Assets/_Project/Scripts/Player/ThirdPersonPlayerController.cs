@@ -33,6 +33,9 @@ namespace CouchGuys.Player
         private float m_verticalVelocity;
         private float m_rotationVelocity;
         private float m_externalSpeedMultiplier = 1f;
+        private Transform m_resistanceAnchor;
+        private float m_comfortableResistanceDistance;
+        private float m_maximumResistanceDistance;
 
         public bool IsGrounded => m_characterController != null && m_characterController.isGrounded;
         public Vector3 MovementIntent { get; private set; }
@@ -43,6 +46,26 @@ namespace CouchGuys.Player
         public void SetExternalSpeedMultiplier(float multiplier)
         {
             m_externalSpeedMultiplier = Mathf.Clamp01(multiplier);
+        }
+
+        /// <summary>
+        /// Restricts only movement which increases horizontal distance from an external anchor.
+        /// </summary>
+        public void SetExternalMovementResistance(
+            Transform anchor,
+            float comfortableDistance,
+            float maximumDistance)
+        {
+            m_resistanceAnchor = anchor;
+            m_comfortableResistanceDistance = Mathf.Max(0f, comfortableDistance);
+            m_maximumResistanceDistance = Mathf.Max(
+                m_comfortableResistanceDistance + 0.01f,
+                maximumDistance);
+        }
+
+        public void ClearExternalMovementResistance()
+        {
+            m_resistanceAnchor = null;
         }
 
         private void Awake()
@@ -88,6 +111,16 @@ namespace CouchGuys.Player
             m_currentSpeed = Mathf.MoveTowards(m_currentSpeed, targetSpeed, m_speedChangeRate * Time.deltaTime);
 
             Vector3 moveDirection = CalculateCameraRelativeDirection(moveInput);
+            if (m_resistanceAnchor != null)
+            {
+                moveDirection = ApplyDirectionalResistance(
+                    moveDirection,
+                    transform.position,
+                    m_resistanceAnchor.position,
+                    m_comfortableResistanceDistance,
+                    m_maximumResistanceDistance);
+            }
+
             MovementIntent = moveDirection * inputMagnitude;
             if (moveDirection.sqrMagnitude > 0.001f)
             {
@@ -104,6 +137,34 @@ namespace CouchGuys.Player
             Vector3 velocity = moveDirection * m_currentSpeed;
             velocity.y = m_verticalVelocity;
             m_characterController.Move(velocity * Time.deltaTime);
+        }
+
+        internal static Vector3 ApplyDirectionalResistance(
+            Vector3 movement,
+            Vector3 playerPosition,
+            Vector3 anchorPosition,
+            float comfortableDistance,
+            float maximumDistance)
+        {
+            Vector3 awayFromAnchor = Vector3.ProjectOnPlane(playerPosition - anchorPosition, Vector3.up);
+            float separation = awayFromAnchor.magnitude;
+            if (separation <= comfortableDistance || awayFromAnchor.sqrMagnitude < 0.0001f)
+            {
+                return movement;
+            }
+
+            Vector3 awayDirection = awayFromAnchor / separation;
+            float outwardAmount = Vector3.Dot(movement, awayDirection);
+            if (outwardAmount <= 0f)
+            {
+                return movement;
+            }
+
+            float resistance = Mathf.SmoothStep(
+                0f,
+                1f,
+                Mathf.InverseLerp(comfortableDistance, maximumDistance, separation));
+            return movement - awayDirection * outwardAmount * resistance;
         }
 
         private Vector3 CalculateCameraRelativeDirection(Vector2 moveInput)

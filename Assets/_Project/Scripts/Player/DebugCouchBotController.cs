@@ -14,6 +14,9 @@ namespace CouchGuys.Player
     [DisallowMultipleComponent]
     public sealed class DebugCouchBotController : MonoBehaviour
     {
+        private static CouchCarryPoint[] s_cachedCarryPoints;
+        private static float s_nextCarryPointCacheRefreshTime;
+
         private CharacterController m_characterController;
         private PlayerCouchCarrier m_carrier;
         private NetworkObject m_networkObject;
@@ -24,6 +27,7 @@ namespace CouchGuys.Player
         private float m_nextTargetSearchTime;
         private float m_nextGrabAttemptTime;
         private float m_nextWanderDirectionTime;
+        private int m_botIndex;
         private bool m_isInitialised;
 
         private void Awake()
@@ -31,7 +35,14 @@ namespace CouchGuys.Player
             ResolveReferences();
         }
 
-        internal void Initialise(DebugCouchBotSettings settings)
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetSharedCache()
+        {
+            s_cachedCarryPoints = null;
+            s_nextCarryPointCacheRefreshTime = 0f;
+        }
+
+        internal void Initialise(DebugCouchBotSettings settings, int botIndex)
         {
             if (settings == null)
             {
@@ -40,6 +51,7 @@ namespace CouchGuys.Player
 
             ResolveReferences();
             m_settings = settings;
+            m_botIndex = Mathf.Clamp(botIndex, 0, 3);
             m_isInitialised = true;
             enabled = true;
         }
@@ -115,6 +127,17 @@ namespace CouchGuys.Player
             }
 
             Vector3 movementIntent = CalculateMovementIntent(couch);
+            CouchCarryPoint carryPoint = couch.GetPoint(m_carrier.CarriedPointIndex);
+            if (carryPoint != null)
+            {
+                movementIntent = ThirdPersonPlayerController.ApplyDirectionalResistance(
+                    movementIntent,
+                    transform.position,
+                    carryPoint.transform.position,
+                    m_carrier.ComfortableCarryDistance,
+                    m_carrier.MaximumCarrySeparation);
+            }
+
             m_carrier.SetDebugBotMovementIntentServer(movementIntent);
             float speedMultiplier = m_carrier.CalculateCarryingSpeedMultiplier(couch);
             Move(movementIntent, m_settings.CarryingSpeed * speedMultiplier);
@@ -170,13 +193,15 @@ namespace CouchGuys.Player
 
         private CouchCarryPoint FindBestTargetPoint()
         {
-            CouchCarryPoint[] points = FindObjectsByType<CouchCarryPoint>(
-                FindObjectsInactive.Exclude,
-                FindObjectsSortMode.None);
+            CouchCarryPoint[] points = GetCachedCarryPoints();
             CouchCarryPoint bestPoint = null;
             float bestScore = float.PositiveInfinity;
             bool bestCouchHasCarrier = false;
-            int preferredIndex = (int)m_settings.PreferredCarryPoint;
+            bool bestMatchesPreference = false;
+            int configuredPreference = (int)m_settings.PreferredCarryPoint;
+            int preferredIndex = configuredPreference >= 0
+                ? (configuredPreference + m_botIndex) % CouchCarryController.MaximumCarryPoints
+                : m_botIndex;
 
             foreach (CouchCarryPoint point in points)
             {
@@ -186,22 +211,34 @@ namespace CouchGuys.Player
                 }
 
                 float score = (point.transform.position - transform.position).sqrMagnitude;
-                if (preferredIndex >= 0 && point.PointIndex != preferredIndex)
-                {
-                    score += 4f;
-                }
-
                 bool couchHasCarrier = point.Couch.ActiveCarrierCount > 0;
+                bool matchesPreference = point.PointIndex == preferredIndex;
                 if ((couchHasCarrier && !bestCouchHasCarrier) ||
-                    (couchHasCarrier == bestCouchHasCarrier && score < bestScore))
+                    (couchHasCarrier == bestCouchHasCarrier && matchesPreference && !bestMatchesPreference) ||
+                    (couchHasCarrier == bestCouchHasCarrier && matchesPreference == bestMatchesPreference &&
+                        score < bestScore))
                 {
                     bestScore = score;
                     bestPoint = point;
                     bestCouchHasCarrier = couchHasCarrier;
+                    bestMatchesPreference = matchesPreference;
                 }
             }
 
             return bestPoint;
+        }
+
+        private CouchCarryPoint[] GetCachedCarryPoints()
+        {
+            if (s_cachedCarryPoints == null || Time.unscaledTime >= s_nextCarryPointCacheRefreshTime)
+            {
+                s_cachedCarryPoints = FindObjectsByType<CouchCarryPoint>(
+                    FindObjectsInactive.Exclude,
+                    FindObjectsSortMode.None);
+                s_nextCarryPointCacheRefreshTime = Time.unscaledTime + m_settings.TargetSearchInterval;
+            }
+
+            return s_cachedCarryPoints;
         }
 
         private bool IsTargetValid()
