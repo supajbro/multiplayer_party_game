@@ -212,10 +212,23 @@ MonoBehaviour:
   - {fileID: 3202}
   - {fileID: 3302}
   - {fileID: 3402}
+  m_weight: 35
   m_carryForce: 500
+  m_movementForce: 320
   m_damping: 65
-  m_maximumForce: 900
+  m_maximumHorizontalForce: 700
   m_rotationInfluence: 0.85
+  m_liftForce: 450
+  m_liftDamping: 55
+  m_maximumLiftForce: 350
+  m_singleCarrierEfficiency: 0.45
+  m_additionalCarrierEfficiency: 0.35
+  m_maximumCarrierEfficiency: 1.25
+  m_minimumConflictEfficiency: 0.45
+  m_maximumLinearVelocity: 7
+  m_maximumAngularVelocity: 7
+  m_showForceGizmos: 0
+  m_debugForceScale: 0.002
 --- !u!1 &2000
 GameObject:
   m_ObjectHideFlags: 0

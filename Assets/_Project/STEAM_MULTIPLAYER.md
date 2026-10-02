@@ -103,4 +103,4 @@ Development logging covers Steam initialisation, persona name, Steam ID, lobby s
 - Host migration is not implemented; host departure ends the session.
 - Lobby UI is intentionally a developer/test interface.
 - The movement transform is client-authoritative for this prototype. Competitive validation and anti-cheat are outside this cooperative milestone.
-- Couch gameplay, couch physics, matchmaking polish, save data, and relay fallback are not included.
+- Couch carrying extends this authority model without changing the Steam session flow; see `COUCH_CARRYING_IMPLEMENTATION.md`. Matchmaking polish, save data, and relay fallback are not included.

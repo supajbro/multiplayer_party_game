@@ -53,7 +53,7 @@ namespace CouchGuys.Editor
                 rigidbody.angularDamping = 1.5f;
                 rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
                 rigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-                rigidbody.maxAngularVelocity = 10f;
+                rigidbody.maxAngularVelocity = 7f;
 
                 BoxCollider collider = couch.AddComponent<BoxCollider>();
                 collider.center = new Vector3(0f, 0.45f, 0f);

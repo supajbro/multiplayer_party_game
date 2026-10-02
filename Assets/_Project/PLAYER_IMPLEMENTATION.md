@@ -34,7 +34,7 @@ Player
 
 Important components:
 
-- `Player`: `CharacterController`, `PlayerInputReader`, `ThirdPersonPlayerController`, `NetworkObject`, `NetworkTransform`, and `NetworkPlayerOwnership`. Root scale is `(1, 1, 1)`.
+- `Player`: `CharacterController`, `PlayerInputReader`, `ThirdPersonPlayerController`, `PlayerCouchCarrier`, disabled `DebugCouchBotController`, `NetworkObject`, `NetworkTransform`, and `NetworkPlayerOwnership`. Root scale is `(1, 1, 1)`. The bot controller is enabled only on an unowned server-spawned debug Player when the host Player's **Debug Bot > Spawn Bot** option is selected.
 - `Visual/Capsule`: temporary mesh only. Local position `(0, 0.9, 0)`, local scale `(0.6, 0.9, 0.6)`, giving an approximately 0.6 m wide by 1.8 m tall visual. Its primitive collider is removed so it cannot conflict with the character controller.
 - `CameraTarget`: transform at local position `(0, 1.5, 0)` near the upper torso/head.
 - `CameraRig`: `ThirdPersonCameraController`.
@@ -76,6 +76,7 @@ The `Player` action map contains:
 | Look | Pass Through / Vector2 | Mouse delta |
 | Jump | Button | Space |
 | Sprint | Button | Left Shift |
+| Interact | Button | E |
 
 Actions are isolated behind `PlayerInputReader`; gamepad bindings can be added to the action asset without changing the movement or camera classes. Every spawned Player clones its action asset at runtime, so disabling a remote reader cannot disable the local owner's action map. `NetworkPlayerOwnership` disables the reader, movement controller, camera controller, camera, and AudioListener on every remote player.
 
@@ -153,7 +154,7 @@ Items requiring physical input and collision with the user's future ground remai
 - Gamepad bindings are not yet present, although the input boundary supports adding them without controller rewrites.
 - Animation and an Animator are not included.
 - The capsule is a temporary visual; no final character model is included.
-- Couch interaction and couch physics are not included.
+- Couch interaction and shared physics are documented in `COUCH_CARRYING_IMPLEMENTATION.md`.
 - Camera obstruction is handled with a simple sphere cast; advanced occlusion/fading is deferred.
 - Host migration is not included; the session ends when the host leaves.
 

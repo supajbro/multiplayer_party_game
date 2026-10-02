@@ -89,6 +89,9 @@ namespace CouchGuys.Editor
                 SetObjectReference(couchCarrier, "m_input", inputReader);
                 SetObjectReference(couchCarrier, "m_playerController", playerController);
 
+                DebugCouchBotController debugBotController = player.AddComponent<DebugCouchBotController>();
+                debugBotController.enabled = false;
+
                 EnsureNetworkConfiguration(player);
 
                 GameObject prefab = PrefabUtility.SaveAsPrefabAsset(player, PrefabPath, out bool savedSuccessfully);
@@ -161,6 +164,14 @@ namespace CouchGuys.Editor
 
             SetObjectReference(couchCarrier, "m_input", player.GetComponent<PlayerInputReader>());
             SetObjectReference(couchCarrier, "m_playerController", player.GetComponent<ThirdPersonPlayerController>());
+
+            DebugCouchBotController debugBotController = player.GetComponent<DebugCouchBotController>();
+            if (debugBotController == null)
+            {
+                debugBotController = player.AddComponent<DebugCouchBotController>();
+            }
+
+            debugBotController.enabled = false;
 
             SerializedObject serialisedNetworkObject = new SerializedObject(networkObject);
             SerializedProperty behaviours = serialisedNetworkObject.FindProperty("NetworkBehaviours");
@@ -243,7 +254,9 @@ namespace CouchGuys.Editor
                 prefab.GetComponent<NetworkObject>() == null ||
                 prefab.GetComponent<NetworkTransform>() == null ||
                 prefab.GetComponent<NetworkPlayerOwnership>() == null ||
-                prefab.GetComponent<PlayerCouchCarrier>() == null)
+                prefab.GetComponent<PlayerCouchCarrier>() == null ||
+                prefab.GetComponent<DebugCouchBotController>() == null ||
+                prefab.GetComponent<DebugCouchBotController>().enabled)
             {
                 throw new UnityException("Player prefab verification failed: required hierarchy or configuration is invalid.");
             }

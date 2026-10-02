@@ -1,0 +1,262 @@
+using CouchGuys.Gameplay.Couch;
+using FishNet.Object;
+using UnityEngine;
+
+namespace CouchGuys.Player
+{
+    /// <summary>
+    /// Drives an unowned network Player on the server for repeatable couch tests.
+    /// Human input, special couch forces, and client-side bot simulation are deliberately avoided.
+    /// </summary>
+    [RequireComponent(typeof(CharacterController))]
+    [RequireComponent(typeof(PlayerCouchCarrier))]
+    [RequireComponent(typeof(NetworkObject))]
+    [DisallowMultipleComponent]
+    public sealed class DebugCouchBotController : MonoBehaviour
+    {
+        private CharacterController m_characterController;
+        private PlayerCouchCarrier m_carrier;
+        private NetworkObject m_networkObject;
+        private DebugCouchBotSettings m_settings;
+        private CouchCarryPoint m_targetPoint;
+        private Vector3 m_wanderDirection;
+        private float m_verticalVelocity;
+        private float m_nextTargetSearchTime;
+        private float m_nextGrabAttemptTime;
+        private float m_nextWanderDirectionTime;
+        private bool m_isInitialised;
+
+        private void Awake()
+        {
+            ResolveReferences();
+        }
+
+        internal void Initialise(DebugCouchBotSettings settings)
+        {
+            if (settings == null)
+            {
+                return;
+            }
+
+            ResolveReferences();
+            m_settings = settings;
+            m_isInitialised = true;
+            enabled = true;
+        }
+
+        private void FixedUpdate()
+        {
+            if (!m_isInitialised || m_settings == null || m_networkObject == null ||
+                !m_networkObject.IsServerInitialized || m_networkObject.Owner.IsValid)
+            {
+                return;
+            }
+
+            if (m_carrier.IsCarrying)
+            {
+                TickCarrying();
+            }
+            else
+            {
+                TickSeeking();
+            }
+        }
+
+        private void TickSeeking()
+        {
+            if (!IsTargetValid())
+            {
+                m_targetPoint = null;
+                if (Time.unscaledTime < m_nextTargetSearchTime)
+                {
+                    Move(Vector3.zero, m_settings.ApproachSpeed);
+                    return;
+                }
+
+                m_nextTargetSearchTime = Time.unscaledTime + m_settings.TargetSearchInterval;
+                m_targetPoint = FindBestTargetPoint();
+            }
+
+            if (m_targetPoint == null)
+            {
+                Move(Vector3.zero, m_settings.ApproachSpeed);
+                return;
+            }
+
+            Vector3 standPosition = CalculateStandPosition(m_targetPoint);
+            Vector3 offset = Vector3.ProjectOnPlane(standPosition - transform.position, Vector3.up);
+            float stopDistance = Mathf.Max(0.08f, m_characterController.radius * 0.5f);
+            Vector3 movement = offset.sqrMagnitude > stopDistance * stopDistance
+                ? offset.normalized
+                : Vector3.zero;
+            Move(movement, m_settings.ApproachSpeed);
+
+            if (offset.sqrMagnitude <= stopDistance * stopDistance &&
+                Time.unscaledTime >= m_nextGrabAttemptTime)
+            {
+                bool grabbed = m_carrier.TryGrabPointForDebugBotServer(
+                    m_targetPoint.Couch,
+                    m_targetPoint.PointIndex);
+                m_nextGrabAttemptTime = Time.unscaledTime + m_settings.RetryDelay;
+                if (!grabbed)
+                {
+                    m_targetPoint = null;
+                }
+            }
+        }
+
+        private void TickCarrying()
+        {
+            CouchCarryController couch = m_carrier.GetCarriedCouchServer();
+            if (couch == null)
+            {
+                m_carrier.SetDebugBotMovementIntentServer(Vector3.zero);
+                return;
+            }
+
+            Vector3 movementIntent = CalculateMovementIntent(couch);
+            m_carrier.SetDebugBotMovementIntentServer(movementIntent);
+            float speedMultiplier = m_carrier.CalculateCarryingSpeedMultiplier(couch);
+            Move(movementIntent, m_settings.CarryingSpeed * speedMultiplier);
+        }
+
+        private Vector3 CalculateMovementIntent(CouchCarryController couch)
+        {
+            PlayerCouchCarrier humanCarrier = couch.GetFirstHumanCarrierServer(m_carrier);
+            Vector3 humanIntent = humanCarrier != null
+                ? humanCarrier.GetServerMovementIntent()
+                : Vector3.zero;
+
+            Vector3 result = m_settings.Behaviour switch
+            {
+                DebugCouchBotSettings.BehaviourState.CooperateWithPlayer => humanIntent,
+                DebugCouchBotSettings.BehaviourState.PullAgainstPlayer => -humanIntent,
+                DebugCouchBotSettings.BehaviourState.HoldPosition => Vector3.zero,
+                DebugCouchBotSettings.BehaviourState.RotateClockwise => CalculateTangentialDirection(couch, true),
+                DebugCouchBotSettings.BehaviourState.RotateAnticlockwise => CalculateTangentialDirection(couch, false),
+                DebugCouchBotSettings.BehaviourState.Wander => GetWanderDirection(),
+                DebugCouchBotSettings.BehaviourState.MoveInConfiguredDirection => m_settings.ConfiguredDirection,
+                _ => Vector3.zero
+            };
+
+            return Vector3.ClampMagnitude(Vector3.ProjectOnPlane(result, Vector3.up), 1f);
+        }
+
+        private Vector3 CalculateTangentialDirection(CouchCarryController couch, bool clockwise)
+        {
+            Vector3 radial = Vector3.ProjectOnPlane(
+                transform.position - couch.CouchRigidbody.worldCenterOfMass,
+                Vector3.up);
+            if (radial.sqrMagnitude < 0.001f)
+            {
+                radial = transform.forward;
+            }
+
+            Vector3 tangent = Vector3.Cross(Vector3.up, radial.normalized);
+            return clockwise ? tangent : -tangent;
+        }
+
+        private Vector3 GetWanderDirection()
+        {
+            if (Time.unscaledTime >= m_nextWanderDirectionTime || m_wanderDirection.sqrMagnitude < 0.01f)
+            {
+                Vector2 randomDirection = Random.insideUnitCircle.normalized;
+                m_wanderDirection = new Vector3(randomDirection.x, 0f, randomDirection.y);
+                m_nextWanderDirectionTime = Time.unscaledTime + m_settings.WanderDirectionInterval;
+            }
+
+            return m_wanderDirection;
+        }
+
+        private CouchCarryPoint FindBestTargetPoint()
+        {
+            CouchCarryPoint[] points = FindObjectsByType<CouchCarryPoint>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None);
+            CouchCarryPoint bestPoint = null;
+            float bestScore = float.PositiveInfinity;
+            bool bestCouchHasCarrier = false;
+            int preferredIndex = (int)m_settings.PreferredCarryPoint;
+
+            foreach (CouchCarryPoint point in points)
+            {
+                if (point == null || !point.IsAvailable || point.Couch == null || !point.Couch.IsSpawned)
+                {
+                    continue;
+                }
+
+                float score = (point.transform.position - transform.position).sqrMagnitude;
+                if (preferredIndex >= 0 && point.PointIndex != preferredIndex)
+                {
+                    score += 4f;
+                }
+
+                bool couchHasCarrier = point.Couch.ActiveCarrierCount > 0;
+                if ((couchHasCarrier && !bestCouchHasCarrier) ||
+                    (couchHasCarrier == bestCouchHasCarrier && score < bestScore))
+                {
+                    bestScore = score;
+                    bestPoint = point;
+                    bestCouchHasCarrier = couchHasCarrier;
+                }
+            }
+
+            return bestPoint;
+        }
+
+        private bool IsTargetValid()
+        {
+            return m_targetPoint != null && m_targetPoint.IsAvailable &&
+                m_targetPoint.Couch != null && m_targetPoint.Couch.IsSpawned;
+        }
+
+        private Vector3 CalculateStandPosition(CouchCarryPoint point)
+        {
+            Vector3 awayFromCouch = Vector3.ProjectOnPlane(
+                point.transform.position - point.Couch.CouchRigidbody.worldCenterOfMass,
+                Vector3.up);
+            if (awayFromCouch.sqrMagnitude < 0.001f)
+            {
+                awayFromCouch = -point.Couch.transform.forward;
+            }
+
+            Vector3 standPosition = point.transform.position + awayFromCouch.normalized * m_settings.PointStandOff;
+            standPosition.y = transform.position.y;
+            return standPosition;
+        }
+
+        private void Move(Vector3 horizontalDirection, float speed)
+        {
+            Vector3 direction = Vector3.ClampMagnitude(
+                Vector3.ProjectOnPlane(horizontalDirection, Vector3.up),
+                1f);
+            if (direction.sqrMagnitude > 0.001f)
+            {
+                Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
+                transform.rotation = Quaternion.RotateTowards(
+                    transform.rotation,
+                    targetRotation,
+                    m_settings.TurnSpeed * Time.fixedDeltaTime);
+            }
+
+            if (m_characterController.isGrounded && m_verticalVelocity < 0f)
+            {
+                m_verticalVelocity = -2f;
+            }
+            else
+            {
+                m_verticalVelocity = Mathf.Max(-50f, m_verticalVelocity + Physics.gravity.y * Time.fixedDeltaTime);
+            }
+
+            Vector3 velocity = direction * Mathf.Max(0f, speed) + Vector3.up * m_verticalVelocity;
+            m_characterController.Move(velocity * Time.fixedDeltaTime);
+        }
+
+        private void ResolveReferences()
+        {
+            m_characterController ??= GetComponent<CharacterController>();
+            m_carrier ??= GetComponent<PlayerCouchCarrier>();
+            m_networkObject ??= GetComponent<NetworkObject>();
+        }
+    }
+}

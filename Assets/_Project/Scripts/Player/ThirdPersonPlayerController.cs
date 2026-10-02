@@ -35,6 +35,7 @@ namespace CouchGuys.Player
         private float m_externalSpeedMultiplier = 1f;
 
         public bool IsGrounded => m_characterController != null && m_characterController.isGrounded;
+        public Vector3 MovementIntent { get; private set; }
 
         /// <summary>
         /// Applies a gameplay speed modifier without coupling movement to the carrying system.
@@ -87,6 +88,7 @@ namespace CouchGuys.Player
             m_currentSpeed = Mathf.MoveTowards(m_currentSpeed, targetSpeed, m_speedChangeRate * Time.deltaTime);
 
             Vector3 moveDirection = CalculateCameraRelativeDirection(moveInput);
+            MovementIntent = moveDirection * inputMagnitude;
             if (moveDirection.sqrMagnitude > 0.001f)
             {
                 float targetAngle = Mathf.Atan2(moveDirection.x, moveDirection.z) * Mathf.Rad2Deg;
