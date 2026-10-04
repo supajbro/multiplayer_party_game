@@ -1,4 +1,5 @@
 using CouchGuys.Networking;
+using CouchGuys.Gameplay.Delivery;
 using FishNet.Managing;
 using FishNet.Managing.Object;
 using FishNet.Managing.Transporting;
@@ -27,6 +28,7 @@ namespace CouchGuys.Editor
             if (playerPrefab == null ||
                 playerPrefab.GetComponent<NetworkObject>() == null ||
                 playerPrefab.GetComponent<NetworkObject>().NetworkBehaviours.Count == 0 ||
+                playerPrefab.GetComponent<NeighbourhoodMap>() == null ||
                 bootstrapPrefab == null ||
                 bootstrapPrefab.GetComponent<NeighbourhoodPlayerSpawner>() == null)
             {

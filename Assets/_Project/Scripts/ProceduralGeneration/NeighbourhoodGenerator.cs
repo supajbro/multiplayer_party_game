@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CouchGuys.Gameplay.Delivery;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -43,6 +44,7 @@ namespace CouchGuys.ProceduralGeneration
 
         [Header("Starting Area")]
         [SerializeField] private GameObject m_startingAreaPrefab;
+        [SerializeField] private GameObject m_deliveryNpcPrefab;
         [SerializeField] private Vector2Int m_placeholderStartingAreaFootprint = new Vector2Int(3, 3);
 
         [Header("Debug")]
@@ -92,9 +94,11 @@ namespace CouchGuys.ProceduralGeneration
         public StartingArea GeneratedStartingArea { get; private set; }
         public IReadOnlyList<GeneratedRoad> GeneratedRoads => m_generatedRoads;
         public IReadOnlyList<GeneratedProperty> GeneratedProperties => m_generatedProperties;
+        public GameObject DeliveryNpcPrefab => m_deliveryNpcPrefab;
         public int CurrentSeed { get; private set; }
         public float TileSize => m_roadTileSize;
         public bool HasGeneratedNeighbourhood => GeneratedStartingArea != null && m_generatedRoads.Count > 0;
+        public Bounds GeneratedWorldBounds { get; private set; }
 
         private void Start()
         {
@@ -139,6 +143,8 @@ namespace CouchGuys.ProceduralGeneration
             // logical road/property decisions made for a given seed.
             CreateRoadVisuals(new System.Random(DeriveSeed(seed, 0x2D31A7B5)));
             GenerateProperties(new System.Random(DeriveSeed(seed, 0x61C88647)));
+            CreateDeliveryNpc();
+            CalculateWorldBounds();
             ValidateLayout();
         }
 
@@ -147,6 +153,11 @@ namespace CouchGuys.ProceduralGeneration
             return m_useRandomSeed
                 ? unchecked(Environment.TickCount ^ Guid.NewGuid().GetHashCode())
                 : m_seed;
+        }
+
+        public void SetDeliveryNpcPrefab(GameObject deliveryNpcPrefab)
+        {
+            m_deliveryNpcPrefab = deliveryNpcPrefab;
         }
 
         [ContextMenu("Clear Generated Neighbourhood")]
@@ -178,6 +189,7 @@ namespace CouchGuys.ProceduralGeneration
             m_logicalRoads.Clear();
             m_roadHeights.Clear();
             m_blockElevations = null;
+            GeneratedWorldBounds = new Bounds(transform.position, Vector3.zero);
             m_warnedAboutRoadPlaceholders = false;
             m_warnedAboutHousePlaceholders = false;
         }
@@ -283,14 +295,14 @@ namespace CouchGuys.ProceduralGeneration
             root.transform.SetPositionAndRotation(transform.position, transform.rotation);
             root.transform.SetParent(m_generatedRoot, true);
 
-            GameObject placeholder = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject placeholder = GameObject.CreatePrimitive(PrimitiveType.Plane);
             placeholder.name = "Placeholder_StartingArea";
             placeholder.transform.SetParent(root.transform, false);
-            placeholder.transform.localPosition = new Vector3(0f, -0.25f, 0f);
+            placeholder.transform.localPosition = Vector3.zero;
             placeholder.transform.localScale = new Vector3(
-                m_placeholderStartingAreaFootprint.x * m_roadTileSize,
-                0.5f,
-                m_placeholderStartingAreaFootprint.y * m_roadTileSize);
+                m_placeholderStartingAreaFootprint.x * m_roadTileSize / 10f,
+                1f,
+                m_placeholderStartingAreaFootprint.y * m_roadTileSize / 10f);
 
             Transform roadConnection = new GameObject("RoadConnection").transform;
             roadConnection.SetParent(root.transform, false);
@@ -316,9 +328,98 @@ namespace CouchGuys.ProceduralGeneration
                 spawnPoints[index] = point;
             }
 
+            Transform npcSpawnPoint = new GameObject("DeliveryNpcSpawnPoint").transform;
+            npcSpawnPoint.SetParent(root.transform, false);
+            npcSpawnPoint.localPosition = new Vector3(0f, 0f, 1f);
+            npcSpawnPoint.localRotation = Quaternion.LookRotation(Vector3.back, Vector3.up);
+
             StartingArea startingArea = root.AddComponent<StartingArea>();
-            startingArea.Initialise(roadConnection, spawnPoints, m_placeholderStartingAreaFootprint);
+            startingArea.Initialise(
+                roadConnection,
+                spawnPoints,
+                npcSpawnPoint,
+                m_placeholderStartingAreaFootprint);
             return startingArea;
+        }
+
+        private void CreateDeliveryNpc()
+        {
+            if (GeneratedStartingArea == null)
+            {
+                return;
+            }
+
+            Transform spawnPoint = GeneratedStartingArea.DeliveryNpcSpawnPoint;
+            if (spawnPoint == null)
+            {
+                spawnPoint = new GameObject("DeliveryNpcSpawnPoint").transform;
+                spawnPoint.SetParent(GeneratedStartingArea.transform, false);
+                spawnPoint.localPosition = new Vector3(0f, 0f, 1f);
+                spawnPoint.localRotation = Quaternion.LookRotation(Vector3.back, Vector3.up);
+                GeneratedStartingArea.SetDeliveryNpcSpawnPoint(spawnPoint);
+            }
+
+            GameObject npc;
+            if (m_deliveryNpcPrefab != null)
+            {
+                npc = Instantiate(m_deliveryNpcPrefab, spawnPoint.position, spawnPoint.rotation, spawnPoint);
+            }
+            else
+            {
+                npc = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+                npc.transform.SetPositionAndRotation(spawnPoint.position + Vector3.up, spawnPoint.rotation);
+                npc.transform.SetParent(spawnPoint, true);
+            }
+
+            npc.name = m_deliveryNpcPrefab != null ? "DeliveryNPC" : "Placeholder_DeliveryNPC";
+            DeliveryNPC deliveryNpc = npc.GetComponent<DeliveryNPC>();
+            if (deliveryNpc == null)
+            {
+                deliveryNpc = npc.AddComponent<DeliveryNPC>();
+            }
+
+            deliveryNpc.SetDeliveryManager(GetComponent<DeliveryManager>());
+        }
+
+        private void CalculateWorldBounds()
+        {
+            bool hasPoint = false;
+            Bounds bounds = new Bounds(transform.position, Vector3.zero);
+            for (int index = 0; index < m_generatedRoads.Count; index++)
+            {
+                EncapsulatePoint(ref bounds, ref hasPoint, m_generatedRoads[index].transform.position);
+            }
+
+            for (int index = 0; index < m_generatedProperties.Count; index++)
+            {
+                GeneratedProperty property = m_generatedProperties[index];
+                EncapsulatePoint(ref bounds, ref hasPoint, property.transform.position);
+                if (property.DeliveryPoint != null)
+                {
+                    EncapsulatePoint(ref bounds, ref hasPoint, property.DeliveryPoint.position);
+                }
+            }
+
+            if (GeneratedStartingArea != null)
+            {
+                EncapsulatePoint(ref bounds, ref hasPoint, GeneratedStartingArea.transform.position);
+            }
+
+            bounds.Expand(new Vector3(m_roadTileSize, 0f, m_roadTileSize));
+            GeneratedWorldBounds = bounds;
+        }
+
+        private static void EncapsulatePoint(ref Bounds bounds, ref bool hasPoint, Vector3 point)
+        {
+            if (!hasPoint)
+            {
+                bounds = new Bounds(point, Vector3.zero);
+                hasPoint = true;
+            }
+            else
+            {
+                bounds.Encapsulate(point);
+            }
         }
 
         private void ReserveStartingArea(StartingArea startingArea)

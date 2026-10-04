@@ -1,4 +1,5 @@
 using CouchGuys.Gameplay.Couch;
+using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Input;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
@@ -84,7 +85,7 @@ namespace CouchGuys.Player
                 }
                 else
                 {
-                    TryRequestNearestPoint();
+                    TryRequestNearestInteraction();
                 }
             }
         }
@@ -211,7 +212,7 @@ namespace CouchGuys.Player
             m_lastServerIntentTime = float.NegativeInfinity;
         }
 
-        private void TryRequestNearestPoint()
+        private void TryRequestNearestInteraction()
         {
             CouchCarryPoint[] points = FindObjectsByType<CouchCarryPoint>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
             CouchCarryPoint closestPoint = null;
@@ -232,10 +233,47 @@ namespace CouchGuys.Player
                 }
             }
 
+            DeliveryNPC closestNpc = null;
+            DeliveryNPC[] npcs = FindObjectsByType<DeliveryNPC>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            foreach (DeliveryNPC npc in npcs)
+            {
+                float distanceSquared = (npc.transform.position - transform.position).sqrMagnitude;
+                if (distanceSquared <= closestDistanceSquared)
+                {
+                    closestDistanceSquared = distanceSquared;
+                    closestPoint = null;
+                    closestNpc = npc;
+                }
+            }
+
             if (closestPoint != null)
             {
                 RequestGrabServerRpc(closestPoint.Couch.NetworkObject, closestPoint.PointIndex);
             }
+            else if (closestNpc != null)
+            {
+                RequestDeliveryServerRpc();
+            }
+        }
+
+        [ServerRpc]
+        private void RequestDeliveryServerRpc()
+        {
+            DeliveryNPC[] npcs = FindObjectsByType<DeliveryNPC>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            DeliveryNPC closestNpc = null;
+            float allowedRange = m_interactionRange + m_serverRangeTolerance;
+            float closestDistanceSquared = allowedRange * allowedRange;
+            foreach (DeliveryNPC npc in npcs)
+            {
+                float distanceSquared = (npc.transform.position - transform.position).sqrMagnitude;
+                if (distanceSquared <= closestDistanceSquared)
+                {
+                    closestDistanceSquared = distanceSquared;
+                    closestNpc = npc;
+                }
+            }
+
+            closestNpc?.InteractServer(this);
         }
 
         [ServerRpc]

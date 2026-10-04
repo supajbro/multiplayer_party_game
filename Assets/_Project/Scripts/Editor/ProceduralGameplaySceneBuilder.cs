@@ -1,4 +1,5 @@
 using CouchGuys.ProceduralGeneration;
+using CouchGuys.Gameplay.Delivery;
 using FishNet.Object;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -45,6 +46,8 @@ namespace CouchGuys.Editor
                 SteamMultiplayerPrefabBuilder.BuildSteamMultiplayerAssets();
             }
 
+            GameObject defaultDeliveryNpcPrefab = DeliveryNPCPrefabBuilder.EnsureDeliveryNpcPrefab();
+
             Scene scene = SceneManager.GetSceneByPath(GameplayScenePath);
             bool openedTemporarily = !scene.IsValid() || !scene.isLoaded;
             if (openedTemporarily)
@@ -70,6 +73,11 @@ namespace CouchGuys.Editor
                 generator = root.AddComponent<NeighbourhoodGenerator>();
             }
 
+            if (generator.DeliveryNpcPrefab == null)
+            {
+                generator.SetDeliveryNpcPrefab(defaultDeliveryNpcPrefab);
+            }
+
             NeighbourhoodSeedSynchroniser synchroniser =
                 generator.GetComponent<NeighbourhoodSeedSynchroniser>();
             if (synchroniser == null)
@@ -83,10 +91,22 @@ namespace CouchGuys.Editor
                 networkObject = generator.gameObject.AddComponent<NetworkObject>();
             }
 
-            ConfigureNetworkBehaviour(networkObject, synchroniser);
+            DeliveryManager deliveryManager = generator.GetComponent<DeliveryManager>();
+            if (deliveryManager == null)
+            {
+                deliveryManager = generator.gameObject.AddComponent<DeliveryManager>();
+            }
+
+            GameObject couchPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/_Project/Prefabs/Couch.prefab");
+            deliveryManager.SetCouchPrefab(
+                couchPrefab != null ? couchPrefab.GetComponent<NetworkObject>() : null);
+
+            ConfigureNetworkBehaviours(networkObject, synchroniser, deliveryManager);
             networkObject.SetSceneId(NeighbourhoodSceneId);
             EditorUtility.SetDirty(networkObject);
             EditorUtility.SetDirty(synchroniser);
+            EditorUtility.SetDirty(deliveryManager);
             EditorUtility.SetDirty(generator);
 
             // Store a visible seed-12345 greybox in the scene. At runtime the server's
@@ -131,9 +151,10 @@ namespace CouchGuys.Editor
             return result;
         }
 
-        private static void ConfigureNetworkBehaviour(
+        private static void ConfigureNetworkBehaviours(
             NetworkObject networkObject,
-            NeighbourhoodSeedSynchroniser synchroniser)
+            NeighbourhoodSeedSynchroniser synchroniser,
+            DeliveryManager deliveryManager)
         {
             SerializedObject serialisedNetworkObject = new SerializedObject(networkObject);
             SerializedProperty behaviours = serialisedNetworkObject.FindProperty("NetworkBehaviours");
@@ -142,8 +163,9 @@ namespace CouchGuys.Editor
                 throw new UnityException("FishNet NetworkObject behaviour list was not found.");
             }
 
-            behaviours.arraySize = 1;
+            behaviours.arraySize = 2;
             behaviours.GetArrayElementAtIndex(0).objectReferenceValue = synchroniser;
+            behaviours.GetArrayElementAtIndex(1).objectReferenceValue = deliveryManager;
             serialisedNetworkObject.ApplyModifiedPropertiesWithoutUndo();
 
             SerializedObject serialisedSynchroniser = new SerializedObject(synchroniser);
@@ -153,6 +175,14 @@ namespace CouchGuys.Editor
             serialisedSynchroniser.FindProperty("_addedNetworkObject").objectReferenceValue = networkObject;
             serialisedSynchroniser.FindProperty("_networkObjectCache").objectReferenceValue = networkObject;
             serialisedSynchroniser.ApplyModifiedPropertiesWithoutUndo();
+
+            SerializedObject serialisedDeliveryManager = new SerializedObject(deliveryManager);
+            serialisedDeliveryManager.FindProperty("m_generator").objectReferenceValue =
+                deliveryManager.GetComponent<NeighbourhoodGenerator>();
+            serialisedDeliveryManager.FindProperty("_componentIndexCache").intValue = 1;
+            serialisedDeliveryManager.FindProperty("_addedNetworkObject").objectReferenceValue = networkObject;
+            serialisedDeliveryManager.FindProperty("_networkObjectCache").objectReferenceValue = networkObject;
+            serialisedDeliveryManager.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void VerifyScene(Scene scene)
@@ -160,10 +190,13 @@ namespace CouchGuys.Editor
             NeighbourhoodGenerator generator = FindGenerator(scene);
             NeighbourhoodSeedSynchroniser synchroniser =
                 generator != null ? generator.GetComponent<NeighbourhoodSeedSynchroniser>() : null;
+            DeliveryManager deliveryManager =
+                generator != null ? generator.GetComponent<DeliveryManager>() : null;
             NetworkObject networkObject = generator != null ? generator.GetComponent<NetworkObject>() : null;
-            if (generator == null || synchroniser == null || networkObject == null ||
-                networkObject.NetworkBehaviours.Count != 1 ||
+            if (generator == null || synchroniser == null || deliveryManager == null || networkObject == null ||
+                networkObject.NetworkBehaviours.Count != 2 ||
                 networkObject.NetworkBehaviours[0] != synchroniser ||
+                networkObject.NetworkBehaviours[1] != deliveryManager ||
                 !generator.HasGeneratedNeighbourhood ||
                 generator.GeneratedStartingArea.PlayerSpawnPoints.Length < 4)
             {
@@ -182,9 +215,12 @@ namespace CouchGuys.Editor
             NetworkObject networkObject = generator.GetComponent<NetworkObject>();
             NeighbourhoodSeedSynchroniser synchroniser =
                 generator.GetComponent<NeighbourhoodSeedSynchroniser>();
-            return networkObject != null && synchroniser != null &&
-                   networkObject.NetworkBehaviours.Count == 1 &&
+            DeliveryManager deliveryManager = generator.GetComponent<DeliveryManager>();
+            return networkObject != null && synchroniser != null && deliveryManager != null &&
+                   generator.DeliveryNpcPrefab != null &&
+                   networkObject.NetworkBehaviours.Count == 2 &&
                    networkObject.NetworkBehaviours[0] == synchroniser &&
+                   networkObject.NetworkBehaviours[1] == deliveryManager &&
                    generator.HasGeneratedNeighbourhood;
         }
     }

@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 8315246159304729164}
   - component: {fileID: 2770509040782231261}
   - component: {fileID: 5385180417060675768}
+  - component: {fileID: 7619104973454978121}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -149,9 +150,9 @@ MonoBehaviour:
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
   NetworkBehaviours:
-  - {fileID: 6842772898105403012}
   - {fileID: 2770509040782231261}
   - {fileID: 5385180417060675768}
+  - {fileID: 6842772898105403012}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -175,7 +176,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27e6fb1c1393463d811426219e682af9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.PlayerCouchCarrier
-  _componentIndexCache: 0
+  _componentIndexCache: 2
   _addedNetworkObject: {fileID: 4753475039817145927}
   _networkObjectCache: {fileID: 4753475039817145927}
   m_input: {fileID: 100003}
@@ -186,13 +187,13 @@ MonoBehaviour:
   m_carryHeight: 0.45
   m_singleCarrierSpeedMultiplier: 0.52
   m_maximumCooperativeSpeedMultiplier: 0.82
-  m_comfortableCarryDistance: 0.5
-  m_maximumCarrySeparation: 0.5
+  m_comfortableCarryDistance: 1.6
+  m_maximumCarrySeparation: 3
   m_intentSendInterval: 0.1
   m_intentHeartbeatInterval: 0.5
-  m_intentTimeout: 0.4
+  m_intentTimeout: 0.6
   m_debugBot:
-    m_debugBotCount: 3
+    m_debugBotCount: 0
     m_behaviour: 1
     m_preferredCarryPoint: -1
     m_spawnOffset: {x: 2, y: 0, z: 2}
@@ -246,7 +247,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: FishNet.Runtime::FishNet.Component.Transforming.NetworkTransform
-  _componentIndexCache: 1
+  _componentIndexCache: 0
   _addedNetworkObject: {fileID: 4753475039817145927}
   _networkObjectCache: {fileID: 4753475039817145927}
   _componentConfiguration: 1
@@ -292,7 +293,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03031e9f7a755f441a700e11056a4d9d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Networking.NetworkPlayerOwnership
-  _componentIndexCache: 2
+  _componentIndexCache: 1
   _addedNetworkObject: {fileID: 4753475039817145927}
   _networkObjectCache: {fileID: 4753475039817145927}
   m_input: {fileID: 100003}
@@ -307,6 +308,18 @@ MonoBehaviour:
     - {r: 1, g: 0.25, b: 0.2, a: 1}
     - {r: 0.2, g: 0.85, b: 0.35, a: 1}
     - {r: 1, g: 0.72, b: 0.12, a: 1}
+--- !u!114 &7619104973454978121
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49b1e3edba294a9b92b972e39fdbcb7b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Delivery.NeighbourhoodMap
 --- !u!1 &200000
 GameObject:
   m_ObjectHideFlags: 0

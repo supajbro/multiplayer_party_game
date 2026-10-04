@@ -1,4 +1,5 @@
 using CouchGuys.CameraSystem;
+using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Input;
 using CouchGuys.Networking;
 using CouchGuys.Player;
@@ -163,6 +164,12 @@ namespace CouchGuys.Editor
 
             SetObjectReference(couchCarrier, "m_input", player.GetComponent<PlayerInputReader>());
             SetObjectReference(couchCarrier, "m_playerController", player.GetComponent<ThirdPersonPlayerController>());
+            RepairLegacyCarryDistances(couchCarrier);
+
+            if (player.GetComponent<NeighbourhoodMap>() == null)
+            {
+                player.AddComponent<NeighbourhoodMap>();
+            }
 
             CouchGuyAnimationDriver animationDriver = player.GetComponent<CouchGuyAnimationDriver>();
             if (animationDriver == null)
@@ -202,6 +209,21 @@ namespace CouchGuys.Editor
             EditorUtility.SetDirty(networkTransform);
             EditorUtility.SetDirty(ownership);
             EditorUtility.SetDirty(couchCarrier);
+        }
+
+        private static void RepairLegacyCarryDistances(PlayerCouchCarrier couchCarrier)
+        {
+            SerializedObject serialisedCarrier = new SerializedObject(couchCarrier);
+            SerializedProperty comfortableDistance =
+                serialisedCarrier.FindProperty("m_comfortableCarryDistance");
+            SerializedProperty maximumDistance =
+                serialisedCarrier.FindProperty("m_maximumCarrySeparation");
+            if (comfortableDistance.floatValue <= 0.5f && maximumDistance.floatValue <= 0.5f)
+            {
+                comfortableDistance.floatValue = 1.6f;
+                maximumDistance.floatValue = 3f;
+                serialisedCarrier.ApplyModifiedPropertiesWithoutUndo();
+            }
         }
 
         private static void SetNetworkBehaviourReferences(NetworkBehaviour behaviour, NetworkObject networkObject, int componentIndex)
@@ -351,6 +373,7 @@ namespace CouchGuys.Editor
                 prefab.GetComponent<NetworkTransform>() == null ||
                 prefab.GetComponent<NetworkPlayerOwnership>() == null ||
                 prefab.GetComponent<PlayerCouchCarrier>() == null ||
+                prefab.GetComponent<NeighbourhoodMap>() == null ||
                 prefab.GetComponent<CouchGuyAnimationDriver>() == null ||
                 prefab.GetComponent<DebugCouchBotController>() == null ||
                 prefab.GetComponent<DebugCouchBotController>().enabled)
