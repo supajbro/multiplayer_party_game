@@ -6,6 +6,9 @@ Run from Blender's Scripting workspace, or from the command line with:
 The character faces Blender -Y. With Blender's usual FBX export settings
 (-Z Forward, Y Up), it imports facing Unity +Z. All glow meshes share the
 PlayerGlow material so player colour can be replaced as one Unity material.
+
+The generated armature also contains Unity-ready actions. Export as FBX with
+"Bake Animation" and "All Actions" enabled to include every clip.
 """
 
 import math
@@ -25,6 +28,10 @@ def clear_scene():
         bpy.ops.object.mode_set(mode="OBJECT")
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
+
+    # Actions may have fake users for FBX export, so remove them explicitly.
+    for action in list(bpy.data.actions):
+        bpy.data.actions.remove(action)
 
     for data_group in (bpy.data.meshes, bpy.data.curves, bpy.data.armatures,
                        bpy.data.materials):
@@ -421,6 +428,228 @@ def rig_character(rig, geometry):
 
 
 # -----------------------------------------------------------------------------
+# Animation library
+# -----------------------------------------------------------------------------
+
+
+ANIMATED_BONES = (
+    "Torso", "Head",
+    "UpperArm_L", "LowerArm_L", "Hand_L",
+    "UpperArm_R", "LowerArm_R", "Hand_R",
+)
+
+
+def key_pose(rig, frame, transforms):
+    """Key one complete pose so clips remain independent and predictable."""
+    for bone_name in ANIMATED_BONES:
+        pose_bone = rig.pose.bones[bone_name]
+        pose_bone.rotation_mode = "XYZ"
+        pose_bone.location = (0.0, 0.0, 0.0)
+        pose_bone.rotation_euler = (0.0, 0.0, 0.0)
+
+        transform = transforms.get(bone_name, {})
+        if "location" in transform:
+            pose_bone.location = transform["location"]
+        if "rotation" in transform:
+            pose_bone.rotation_euler = tuple(
+                math.radians(angle) for angle in transform["rotation"]
+            )
+
+        pose_bone.keyframe_insert("location", frame=frame, group=bone_name)
+        pose_bone.keyframe_insert("rotation_euler", frame=frame, group=bone_name)
+
+
+def create_action(rig, name, frame_end, poses, loop=False):
+    """Create one named Action from a list of (frame, pose dictionary) pairs."""
+    action = bpy.data.actions.new(name)
+    action.use_fake_user = True
+    action.use_frame_range = True
+    action.frame_start = 1
+    action.frame_end = frame_end
+    action.use_cyclic = loop
+    action["unity_loop"] = loop
+    action["unity_clip_name"] = name
+    rig.animation_data.action = action
+
+    for frame, pose in poses:
+        key_pose(rig, frame, pose)
+
+    return action
+
+
+def create_animation_library(rig):
+    """Build a compact set of in-place gameplay animations at 30 FPS."""
+    rig.animation_data_create()
+    bpy.context.scene.render.fps = 30
+
+    neutral = {}
+    idle_high = {
+        "Torso": {"location": (0.0, 0.0, 0.035), "rotation": (1.5, 0.0, 0.0)},
+        "Head": {"rotation": (-1.5, 0.0, 2.0)},
+        "UpperArm_L": {"rotation": (0.0, -2.5, 1.5)},
+        "UpperArm_R": {"rotation": (0.0, 2.5, -1.5)},
+        "Hand_L": {"rotation": (0.0, 0.0, -3.0)},
+        "Hand_R": {"rotation": (0.0, 0.0, 3.0)},
+    }
+    idle_low = {
+        "Torso": {"location": (0.0, 0.0, -0.02), "rotation": (-1.0, 0.0, 0.0)},
+        "Head": {"rotation": (1.0, 0.0, -2.0)},
+        "UpperArm_L": {"rotation": (0.0, 2.0, -1.0)},
+        "UpperArm_R": {"rotation": (0.0, -2.0, 1.0)},
+    }
+    create_action(rig, "Idle", 48, [
+        (1, neutral), (13, idle_high), (25, neutral), (37, idle_low),
+        (48, neutral),
+    ], loop=True)
+
+    move_a = {
+        "Torso": {"location": (0.0, -0.015, 0.025), "rotation": (-7.0, 0.0, 2.5)},
+        "Head": {"rotation": (4.0, 0.0, -2.5)},
+        "UpperArm_L": {"rotation": (8.0, -3.0, 5.0)},
+        "LowerArm_L": {"rotation": (-5.0, 0.0, 0.0)},
+        "UpperArm_R": {"rotation": (-6.0, 3.0, -5.0)},
+    }
+    move_b = {
+        "Torso": {"location": (0.0, 0.015, -0.015), "rotation": (-5.0, 0.0, -2.5)},
+        "Head": {"rotation": (3.0, 0.0, 2.5)},
+        "UpperArm_L": {"rotation": (-6.0, -3.0, 5.0)},
+        "UpperArm_R": {"rotation": (8.0, 3.0, -5.0)},
+        "LowerArm_R": {"rotation": (-5.0, 0.0, 0.0)},
+    }
+    create_action(rig, "HoverMove", 24, [
+        (1, move_a), (7, neutral), (13, move_b), (19, neutral), (24, move_a),
+    ], loop=True)
+
+    backward_a = {
+        "Torso": {"location": (0.0, 0.0, 0.02), "rotation": (7.0, 0.0, 2.0)},
+        "Head": {"rotation": (-4.0, 0.0, -2.0)},
+        "UpperArm_L": {"rotation": (-5.0, 0.0, -4.0)},
+        "UpperArm_R": {"rotation": (5.0, 0.0, 4.0)},
+    }
+    backward_b = {
+        "Torso": {"location": (0.0, 0.0, -0.015), "rotation": (6.0, 0.0, -2.0)},
+        "Head": {"rotation": (-3.0, 0.0, 2.0)},
+        "UpperArm_L": {"rotation": (5.0, 0.0, -4.0)},
+        "UpperArm_R": {"rotation": (-5.0, 0.0, 4.0)},
+    }
+    create_action(rig, "HoverMove_Backward", 24, [
+        (1, backward_a), (7, neutral), (13, backward_b), (19, neutral),
+        (24, backward_a),
+    ], loop=True)
+
+    strafe_l = {
+        "Torso": {"location": (0.0, 0.0, 0.015), "rotation": (0.0, -9.0, 4.0)},
+        "Head": {"rotation": (0.0, 5.0, -3.0)},
+        "UpperArm_L": {"rotation": (3.0, -5.0, 7.0)},
+        "UpperArm_R": {"rotation": (-3.0, 5.0, -2.0)},
+    }
+    strafe_r = {
+        "Torso": {"location": (0.0, 0.0, 0.015), "rotation": (0.0, 9.0, -4.0)},
+        "Head": {"rotation": (0.0, -5.0, 3.0)},
+        "UpperArm_L": {"rotation": (-3.0, -5.0, 2.0)},
+        "UpperArm_R": {"rotation": (3.0, 5.0, -7.0)},
+    }
+    create_action(rig, "Strafe_L", 24, [
+        (1, strafe_l), (7, neutral), (13, strafe_l), (19, neutral),
+        (24, strafe_l),
+    ], loop=True)
+    create_action(rig, "Strafe_R", 24, [
+        (1, strafe_r), (7, neutral), (13, strafe_r), (19, neutral),
+        (24, strafe_r),
+    ], loop=True)
+
+    reach = {
+        "Torso": {"rotation": (-7.0, 0.0, 0.0)},
+        "Head": {"rotation": (8.0, 0.0, 0.0)},
+        "UpperArm_L": {"rotation": (-24.0, -8.0, 9.0)},
+        "LowerArm_L": {"rotation": (-25.0, 0.0, 0.0)},
+        "Hand_L": {"rotation": (10.0, 0.0, -5.0)},
+        "UpperArm_R": {"rotation": (-24.0, 8.0, -9.0)},
+        "LowerArm_R": {"rotation": (-25.0, 0.0, 0.0)},
+        "Hand_R": {"rotation": (10.0, 0.0, 5.0)},
+    }
+    carry = {
+        "Torso": {"rotation": (-3.0, 0.0, 0.0)},
+        "Head": {"rotation": (3.0, 0.0, 0.0)},
+        "UpperArm_L": {"rotation": (-18.0, -6.0, 8.0)},
+        "LowerArm_L": {"rotation": (-18.0, 0.0, 0.0)},
+        "Hand_L": {"rotation": (6.0, 0.0, -3.0)},
+        "UpperArm_R": {"rotation": (-18.0, 6.0, -8.0)},
+        "LowerArm_R": {"rotation": (-18.0, 0.0, 0.0)},
+        "Hand_R": {"rotation": (6.0, 0.0, 3.0)},
+    }
+    create_action(rig, "Pickup", 36, [
+        (1, neutral), (10, {"Torso": {"rotation": (5.0, 0.0, 0.0)}}),
+        (24, reach), (36, carry),
+    ])
+
+    carry_high = dict(carry)
+    carry_high["Torso"] = {"location": (0.0, 0.0, 0.025), "rotation": (-3.0, 0.0, 1.0)}
+    carry_low = dict(carry)
+    carry_low["Torso"] = {"location": (0.0, 0.0, -0.015), "rotation": (-3.0, 0.0, -1.0)}
+    create_action(rig, "Carry_Idle", 48, [
+        (1, carry), (13, carry_high), (25, carry), (37, carry_low),
+        (48, carry),
+    ], loop=True)
+
+    carry_move_a = dict(carry)
+    carry_move_a["Torso"] = {"location": (0.0, 0.0, 0.02), "rotation": (-7.0, 0.0, 2.0)}
+    carry_move_b = dict(carry)
+    carry_move_b["Torso"] = {"location": (0.0, 0.0, -0.015), "rotation": (-6.0, 0.0, -2.0)}
+    create_action(rig, "Carry_Move", 24, [
+        (1, carry_move_a), (7, carry), (13, carry_move_b), (19, carry),
+        (24, carry_move_a),
+    ], loop=True)
+
+    create_action(rig, "Drop", 24, [
+        (1, carry), (10, reach), (18, {"Torso": {"rotation": (3.0, 0.0, 0.0)}}),
+        (24, neutral),
+    ])
+    create_action(rig, "Hold_Item", 36, [
+        (1, carry), (18, carry_high), (36, carry),
+    ], loop=True)
+
+    point = {
+        "Torso": {"rotation": (0.0, -5.0, -4.0)},
+        "Head": {"rotation": (0.0, 10.0, 5.0)},
+        "UpperArm_R": {"rotation": (-38.0, 2.0, -28.0)},
+        "LowerArm_R": {"rotation": (8.0, 0.0, 0.0)},
+        "Hand_R": {"rotation": (-6.0, 0.0, 0.0)},
+    }
+    create_action(rig, "Point", 36, [
+        (1, neutral), (10, point), (27, point), (36, neutral),
+    ])
+
+    hit = {
+        "Torso": {"location": (0.0, 0.04, -0.02), "rotation": (15.0, 0.0, 12.0)},
+        "Head": {"rotation": (-12.0, 0.0, -18.0)},
+        "UpperArm_L": {"rotation": (18.0, -8.0, -15.0)},
+        "UpperArm_R": {"rotation": (-12.0, 8.0, 18.0)},
+    }
+    create_action(rig, "Hit_Reaction", 24, [
+        (1, neutral), (5, hit), (13, {"Torso": {"rotation": (-5.0, 0.0, -4.0)}}),
+        (24, neutral),
+    ])
+
+    jump_peak = {
+        "Torso": {"location": (0.0, 0.0, 0.06), "rotation": (-5.0, 0.0, 0.0)},
+        "Head": {"rotation": (5.0, 0.0, 0.0)},
+        "UpperArm_L": {"rotation": (8.0, -5.0, 10.0)},
+        "UpperArm_R": {"rotation": (8.0, 5.0, -10.0)},
+    }
+    create_action(rig, "Jump", 30, [
+        (1, neutral), (8, {"Torso": {"location": (0.0, 0.0, -0.04)}}),
+        (16, jump_peak), (30, neutral),
+    ])
+
+    # Leave Idle active so pressing Play in Blender immediately previews safely.
+    rig.animation_data.action = bpy.data.actions["Idle"]
+    bpy.context.scene.frame_start = 1
+    bpy.context.scene.frame_end = 48
+    bpy.context.scene.frame_set(1)
+
+
+# -----------------------------------------------------------------------------
 # Assembly
 # -----------------------------------------------------------------------------
 
@@ -442,6 +671,7 @@ def setup_character():
     rig = create_armature(left_arm, right_arm, root)
     geometry = {obj.name: obj for obj in bpy.context.scene.objects}
     rig_character(rig, geometry)
+    create_animation_library(rig)
 
     # Clean selection and a useful default viewport presentation.
     bpy.ops.object.select_all(action="DESELECT")

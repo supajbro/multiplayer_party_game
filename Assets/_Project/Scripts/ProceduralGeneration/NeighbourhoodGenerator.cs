@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CouchGuys.ProceduralGeneration
 {
@@ -15,27 +16,30 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private bool m_generateOnStart = true;
         [SerializeField] private bool m_useRandomSeed;
         [SerializeField] private int m_seed = 12345;
-        [SerializeField, Min(1)] private int m_maximumRoadTiles = 30;
-        [SerializeField, Min(0.1f)] private float m_tileSize = 10f;
+
+        [Header("Grid")]
+        [SerializeField, Min(1)] private int m_gridWidth = 4;
+        [SerializeField, Min(1)] private int m_gridHeight = 4;
+        [SerializeField, Min(1)] private int m_blockWidth = 4;
+        [SerializeField, Min(1)] private int m_blockHeight = 4;
+        [FormerlySerializedAs("m_tileSize")]
+        [SerializeField, Min(0.1f)] private float m_roadTileSize = 10f;
 
         [Header("Roads")]
         [SerializeField] private GameObject[] m_roadPrefabs = Array.Empty<GameObject>();
-        [SerializeField, Min(1)] private int m_minimumRoadLength = 8;
-        [SerializeField, Min(1)] private int m_maximumRoadLength = 15;
-        [SerializeField, Min(1)] private int m_minimumSegmentLength = 3;
-        [SerializeField, Min(1)] private int m_maximumSegmentLength = 6;
-        [SerializeField, Range(0f, 1f)] private float m_turnChance = 0.45f;
-        [SerializeField, Range(0f, 1f)] private float m_branchChance = 0.2f;
-        [SerializeField, Min(0)] private int m_maximumBranches = 3;
-        [SerializeField, Min(1)] private int m_minimumBranchLength = 2;
-        [SerializeField, Min(1)] private int m_maximumBranchLength = 5;
 
         [Header("Houses")]
         [SerializeField] private GameObject[] m_housePrefabs = Array.Empty<GameObject>();
-        [SerializeField, Range(0f, 1f)] private float m_houseSpawnChance = 0.42f;
+        [SerializeField, Min(0)] private int m_housesPerBlock = 6;
         [SerializeField, Min(0)] private int m_minimumHouseSpacing = 1;
         [SerializeField] private Vector2Int m_standardPropertyFootprint = Vector2Int.one;
         [SerializeField] private Vector3 m_placeholderHouseSize = new Vector3(10f, 6f, 10f);
+
+        [Header("Elevation")]
+        [SerializeField] private bool m_elevationEnabled = true;
+        [SerializeField, Min(0.1f)] private float m_elevationStep = 3f;
+        [SerializeField, Min(0f)] private float m_maximumElevation = 9f;
+        [SerializeField, Range(1f, 45f)] private float m_maximumRoadSlope = 12f;
 
         [Header("Starting Area")]
         [SerializeField] private GameObject m_startingAreaPrefab;
@@ -54,6 +58,11 @@ namespace CouchGuys.ProceduralGeneration
         private readonly List<GridCoordinate> m_roadOrder = new List<GridCoordinate>();
         private readonly Dictionary<GridCoordinate, RoadConnections> m_logicalRoads =
             new Dictionary<GridCoordinate, RoadConnections>();
+        private readonly Dictionary<GridCoordinate, float> m_roadHeights =
+            new Dictionary<GridCoordinate, float>();
+
+        private float[,] m_blockElevations;
+        private int m_minimumLocalX;
 
         private Transform m_generatedRoot;
         private Transform m_roadsRoot;
@@ -63,11 +72,28 @@ namespace CouchGuys.ProceduralGeneration
         private bool m_warnedAboutRoadPlaceholders;
         private bool m_warnedAboutHousePlaceholders;
 
+        private readonly struct PropertyCandidate
+        {
+            public readonly GridCoordinate Anchor;
+            public readonly GridCoordinate Road;
+            public readonly CardinalDirection PropertyToRoad;
+
+            public PropertyCandidate(
+                GridCoordinate anchor,
+                GridCoordinate road,
+                CardinalDirection propertyToRoad)
+            {
+                Anchor = anchor;
+                Road = road;
+                PropertyToRoad = propertyToRoad;
+            }
+        }
+
         public StartingArea GeneratedStartingArea { get; private set; }
         public IReadOnlyList<GeneratedRoad> GeneratedRoads => m_generatedRoads;
         public IReadOnlyList<GeneratedProperty> GeneratedProperties => m_generatedProperties;
         public int CurrentSeed { get; private set; }
-        public float TileSize => m_tileSize;
+        public float TileSize => m_roadTileSize;
         public bool HasGeneratedNeighbourhood => GeneratedStartingArea != null && m_generatedRoads.Count > 0;
 
         private void Start()
@@ -106,7 +132,8 @@ namespace CouchGuys.ProceduralGeneration
             m_gridOrigin = GeneratedStartingArea.RoadConnection.position;
             m_startDirection = ClosestDirection(GeneratedStartingArea.RoadConnection.forward);
             ReserveStartingArea(GeneratedStartingArea);
-            GenerateRoadLayout(layoutRandom);
+            AssignBlockElevations(layoutRandom);
+            GenerateRoadLayout();
             CalculateRoadConnections();
             // Visual selection has its own stream so adding art cannot perturb the
             // logical road/property decisions made for a given seed.
@@ -149,36 +176,64 @@ namespace CouchGuys.ProceduralGeneration
             m_startingAreaCells.Clear();
             m_roadOrder.Clear();
             m_logicalRoads.Clear();
+            m_roadHeights.Clear();
+            m_blockElevations = null;
             m_warnedAboutRoadPlaceholders = false;
             m_warnedAboutHousePlaceholders = false;
         }
 
         public Vector3 GridToWorld(GridCoordinate coordinate)
         {
-            return m_gridOrigin + new Vector3(coordinate.X * m_tileSize, 0f, coordinate.Y * m_tileSize);
+            float height = GetCellHeight(coordinate);
+            return m_gridOrigin + new Vector3(
+                coordinate.X * m_roadTileSize,
+                height,
+                coordinate.Y * m_roadTileSize);
+        }
+
+        private float GetCellHeight(GridCoordinate coordinate)
+        {
+            if (m_roadHeights.TryGetValue(coordinate, out float roadHeight))
+            {
+                return roadHeight;
+            }
+
+            if (m_blockElevations == null)
+            {
+                return 0f;
+            }
+
+            Vector2Int local = GridToLocal(coordinate);
+            int horizontalSpan = m_blockWidth + 1;
+            int verticalSpan = m_blockHeight + 1;
+            int relativeX = local.x - m_minimumLocalX;
+            int blockX = Mathf.FloorToInt(relativeX / (float)horizontalSpan);
+            int blockY = Mathf.FloorToInt(local.y / (float)verticalSpan);
+            return blockX >= 0 && blockX < m_gridWidth && blockY >= 0 && blockY < m_gridHeight
+                ? m_blockElevations[blockX, blockY]
+                : 0f;
         }
 
         public GridCoordinate WorldToGrid(Vector3 worldPosition)
         {
             Vector3 offset = worldPosition - m_gridOrigin;
             return new GridCoordinate(
-                Mathf.RoundToInt(offset.x / m_tileSize),
-                Mathf.RoundToInt(offset.z / m_tileSize));
+                Mathf.RoundToInt(offset.x / m_roadTileSize),
+                Mathf.RoundToInt(offset.z / m_roadTileSize));
         }
 
         private bool ValidateConfiguration()
         {
-            if (m_tileSize <= 0f || m_maximumRoadTiles <= 0)
+            if (m_roadTileSize <= 0f || m_gridWidth <= 0 || m_gridHeight <= 0 ||
+                m_blockWidth <= 0 || m_blockHeight <= 0)
             {
-                Debug.LogError("Neighbourhood Generator requires Tile Size and Maximum Road Tiles greater than zero.", this);
+                Debug.LogError("Neighbourhood Generator grid sizes and Road Tile Size must be greater than zero.", this);
                 return false;
             }
 
-            if (m_minimumRoadLength <= 0 || m_maximumRoadLength < m_minimumRoadLength ||
-                m_minimumSegmentLength <= 0 || m_maximumSegmentLength < m_minimumSegmentLength ||
-                m_minimumBranchLength <= 0 || m_maximumBranchLength < m_minimumBranchLength)
+            if (m_elevationStep <= 0f || m_maximumElevation < 0f || m_maximumRoadSlope <= 0f)
             {
-                Debug.LogError("Neighbourhood Generator road length ranges are invalid.", this);
+                Debug.LogError("Neighbourhood Generator elevation settings are invalid.", this);
                 return false;
             }
 
@@ -233,16 +288,16 @@ namespace CouchGuys.ProceduralGeneration
             placeholder.transform.SetParent(root.transform, false);
             placeholder.transform.localPosition = new Vector3(0f, -0.25f, 0f);
             placeholder.transform.localScale = new Vector3(
-                m_placeholderStartingAreaFootprint.x * m_tileSize,
+                m_placeholderStartingAreaFootprint.x * m_roadTileSize,
                 0.5f,
-                m_placeholderStartingAreaFootprint.y * m_tileSize);
+                m_placeholderStartingAreaFootprint.y * m_roadTileSize);
 
             Transform roadConnection = new GameObject("RoadConnection").transform;
             roadConnection.SetParent(root.transform, false);
             roadConnection.localPosition = new Vector3(
                 0f,
                 0f,
-                (m_placeholderStartingAreaFootprint.y * 0.5f + 0.5f) * m_tileSize);
+                (m_placeholderStartingAreaFootprint.y * 0.5f + 0.5f) * m_roadTileSize);
             roadConnection.localRotation = Quaternion.identity;
 
             Transform[] spawnPoints = new Transform[4];
@@ -276,9 +331,9 @@ namespace CouchGuys.ProceduralGeneration
                 for (int y = 0; y < footprint.y; y++)
                 {
                     Vector3 worldPosition = startingArea.transform.TransformPoint(new Vector3(
-                        (minimumX + x) * m_tileSize,
+                        (minimumX + x) * m_roadTileSize,
                         0f,
-                        (minimumY + y) * m_tileSize));
+                        (minimumY + y) * m_roadTileSize));
                     m_startingAreaCells.Add(WorldToGrid(worldPosition));
                 }
             }
@@ -287,126 +342,111 @@ namespace CouchGuys.ProceduralGeneration
             m_startingAreaCells.Remove(GridCoordinate.Zero);
         }
 
-        private void GenerateRoadLayout(System.Random random)
+        private void AssignBlockElevations(System.Random random)
         {
-            AddRoad(GridCoordinate.Zero);
-            int requestedMainLength = NextInclusive(random, m_minimumRoadLength, m_maximumRoadLength);
-            int mainLength = Mathf.Min(requestedMainLength, m_maximumRoadTiles);
-            CardinalDirection direction = m_startDirection;
-            GridCoordinate current = GridCoordinate.Zero;
-            int segmentRemaining = NextInclusive(random, m_minimumSegmentLength, m_maximumSegmentLength);
-
-            while (m_roadCells.Count < mainLength)
+            m_blockElevations = new float[m_gridWidth, m_gridHeight];
+            if (!m_elevationEnabled || m_gridHeight < 2)
             {
-                if (segmentRemaining <= 0)
-                {
-                    if (random.NextDouble() < m_turnChance)
-                    {
-                        direction = random.Next(0, 2) == 0 ? TurnLeft(direction) : TurnRight(direction);
-                    }
-
-                    segmentRemaining = NextInclusive(random, m_minimumSegmentLength, m_maximumSegmentLength);
-                }
-
-                if (!TryAdvanceRoad(current, direction, out GridCoordinate next))
-                {
-                    CardinalDirection firstAlternative = random.Next(0, 2) == 0 ? TurnLeft(direction) : TurnRight(direction);
-                    CardinalDirection secondAlternative = firstAlternative == TurnLeft(direction)
-                        ? TurnRight(direction)
-                        : TurnLeft(direction);
-                    if (TryAdvanceRoad(current, firstAlternative, out next))
-                    {
-                        direction = firstAlternative;
-                    }
-                    else if (TryAdvanceRoad(current, secondAlternative, out next))
-                    {
-                        direction = secondAlternative;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                current = next;
-                segmentRemaining--;
+                return;
             }
 
-            int mainRoadCount = m_roadOrder.Count;
-            int branches = 0;
-            for (int roadIndex = 0;
-                 roadIndex < mainRoadCount && branches < m_maximumBranches && m_roadCells.Count < m_maximumRoadTiles;
-                 roadIndex++)
+            int maximumLevel = Mathf.FloorToInt(m_maximumElevation / m_elevationStep);
+            float transitionLength = (m_blockHeight + 1) * m_roadTileSize;
+            float maximumRise = Mathf.Tan(m_maximumRoadSlope * Mathf.Deg2Rad) * transitionLength;
+            if (maximumLevel <= 0 || m_elevationStep > maximumRise + 0.001f)
             {
-                if (random.NextDouble() >= m_branchChance)
+                Debug.LogWarning(
+                    "Elevation is enabled, but the configured Elevation Step cannot fit below Maximum Road Slope. " +
+                    "The generated grid will remain flat.", this);
+                return;
+            }
+
+            int sectionSize = m_gridHeight >= 4 ? 2 : 1;
+            int sectionCount = Mathf.CeilToInt(m_gridHeight / (float)sectionSize);
+            int[] sectionLevels = new int[sectionCount];
+            bool hasElevation = false;
+            for (int section = 1; section < sectionCount; section++)
+            {
+                int change = random.Next(0, 5) == 0 ? -1 : random.Next(0, 3) == 0 ? 1 : 0;
+                sectionLevels[section] = Mathf.Clamp(sectionLevels[section - 1] + change, 0, maximumLevel);
+                hasElevation |= sectionLevels[section] > 0;
+            }
+
+            if (!hasElevation && sectionCount > 1)
+            {
+                sectionLevels[sectionCount - 1] = 1;
+            }
+
+            for (int row = 0; row < m_gridHeight; row++)
+            {
+                float elevation = sectionLevels[row / sectionSize] * m_elevationStep;
+                for (int column = 0; column < m_gridWidth; column++)
                 {
-                    continue;
-                }
-
-                GridCoordinate branchOrigin = m_roadOrder[roadIndex];
-                CardinalDirection branchDirection = (CardinalDirection)random.Next(0, 4);
-                if (!CanPlaceRoad(branchOrigin + DirectionOffset(branchDirection)))
-                {
-                    branchDirection = TurnRight(branchDirection);
-                }
-
-                int branchLength = NextInclusive(random, m_minimumBranchLength, m_maximumBranchLength);
-                GridCoordinate branchCurrent = branchOrigin;
-                bool placedAny = false;
-                for (int branchIndex = 0;
-                     branchIndex < branchLength && m_roadCells.Count < m_maximumRoadTiles;
-                     branchIndex++)
-                {
-                    if (!TryAdvanceRoad(branchCurrent, branchDirection, out GridCoordinate next))
-                    {
-                        CardinalDirection turned = random.Next(0, 2) == 0
-                            ? TurnLeft(branchDirection)
-                            : TurnRight(branchDirection);
-                        if (!TryAdvanceRoad(branchCurrent, turned, out next))
-                        {
-                            break;
-                        }
-
-                        branchDirection = turned;
-                    }
-
-                    branchCurrent = next;
-                    placedAny = true;
-                }
-
-                if (placedAny)
-                {
-                    branches++;
+                    m_blockElevations[column, row] = elevation;
                 }
             }
         }
 
-        private bool TryAdvanceRoad(
-            GridCoordinate current,
-            CardinalDirection direction,
-            out GridCoordinate next)
+        private void GenerateRoadLayout()
         {
-            next = current + DirectionOffset(direction);
-            if (!CanPlaceRoad(next))
+            // Keep one boundary aligned with the Starting Area connection, then build
+            // the complete rectangular road lattice forward from it.
+            m_minimumLocalX = -(m_gridWidth / 2) * (m_blockWidth + 1);
+            int maximumLocalX = m_minimumLocalX + m_gridWidth * (m_blockWidth + 1);
+            int maximumLocalY = m_gridHeight * (m_blockHeight + 1);
+
+            for (int boundary = 0; boundary <= m_gridWidth; boundary++)
             {
-                return false;
+                int localX = m_minimumLocalX + boundary * (m_blockWidth + 1);
+                for (int localY = 0; localY <= maximumLocalY; localY++)
+                {
+                    AddRoad(LocalToGrid(localX, localY), RoadHeightAtLocal(localY));
+                }
             }
 
-            AddRoad(next);
-            return true;
+            for (int boundary = 0; boundary <= m_gridHeight; boundary++)
+            {
+                int localY = boundary * (m_blockHeight + 1);
+                for (int localX = m_minimumLocalX; localX <= maximumLocalX; localX++)
+                {
+                    AddRoad(LocalToGrid(localX, localY), RoadHeightAtLocal(localY));
+                }
+            }
         }
 
-        private bool CanPlaceRoad(GridCoordinate coordinate)
+        private float RoadHeightAtLocal(int localY)
         {
-            return m_roadCells.Count < m_maximumRoadTiles &&
-                   !m_roadCells.Contains(coordinate) &&
-                   !m_startingAreaCells.Contains(coordinate);
+            if (m_blockElevations == null || m_gridHeight == 0)
+            {
+                return 0f;
+            }
+
+            int span = m_blockHeight + 1;
+            int row = Mathf.Min(localY / span, m_gridHeight - 1);
+            int nextRow = Mathf.Min(row + 1, m_gridHeight - 1);
+            float progress = (localY % span) / (float)span;
+            return Mathf.Lerp(m_blockElevations[0, row], m_blockElevations[0, nextRow], progress);
         }
 
-        private void AddRoad(GridCoordinate coordinate)
+        private GridCoordinate LocalToGrid(int localX, int localY)
         {
-            m_roadCells.Add(coordinate);
-            m_roadOrder.Add(coordinate);
+            GridCoordinate right = DirectionOffset(TurnRight(m_startDirection));
+            GridCoordinate forward = DirectionOffset(m_startDirection);
+            return Multiply(right, localX) + Multiply(forward, localY);
+        }
+
+        private void AddRoad(GridCoordinate coordinate, float height)
+        {
+            if (m_startingAreaCells.Contains(coordinate) && coordinate != GridCoordinate.Zero)
+            {
+                return;
+            }
+
+            if (m_roadCells.Add(coordinate))
+            {
+                m_roadOrder.Add(coordinate);
+                m_roadHeights.Add(coordinate, height);
+            }
         }
 
         private void CalculateRoadConnections()
@@ -439,12 +479,15 @@ namespace CouchGuys.ProceduralGeneration
             {
                 GridCoordinate coordinate = m_roadOrder[index];
                 RoadConnections connections = m_logicalRoads[coordinate];
-                GameObject road = TryCreateRoadPrefab(connections, GridToWorld(coordinate), random);
+                Quaternion surfaceRotation = CalculateRoadSurfaceRotation(coordinate);
+                GameObject road = TryCreateRoadPrefab(
+                    connections, GridToWorld(coordinate), surfaceRotation, random);
                 if (road == null)
                 {
                     road = GameObject.CreatePrimitive(PrimitiveType.Plane);
-                    road.transform.SetPositionAndRotation(GridToWorld(coordinate), Quaternion.identity);
-                    road.transform.localScale = new Vector3(m_tileSize / 10f, 1f, m_tileSize / 10f);
+                    road.transform.SetPositionAndRotation(GridToWorld(coordinate), surfaceRotation);
+                    road.transform.localScale = new Vector3(
+                        m_roadTileSize / 10f, 1f, m_roadTileSize / 10f);
                     if (!m_warnedAboutRoadPlaceholders)
                     {
                         Debug.LogWarning("One or more matching Road prefabs are unavailable; Plane placeholders are being used.", this);
@@ -465,6 +508,7 @@ namespace CouchGuys.ProceduralGeneration
         private GameObject TryCreateRoadPrefab(
             RoadConnections requiredConnections,
             Vector3 position,
+            Quaternion surfaceRotation,
             System.Random random)
         {
             if (m_roadPrefabs == null || m_roadPrefabs.Length == 0)
@@ -488,7 +532,7 @@ namespace CouchGuys.ProceduralGeneration
                         return Instantiate(
                             prefab,
                             position,
-                            Quaternion.Euler(0f, quarterTurns * 90f, 0f),
+                            surfaceRotation * Quaternion.Euler(0f, quarterTurns * 90f, 0f),
                             m_roadsRoot);
                     }
                 }
@@ -497,70 +541,137 @@ namespace CouchGuys.ProceduralGeneration
             return null;
         }
 
+        private Quaternion CalculateRoadSurfaceRotation(GridCoordinate coordinate)
+        {
+            float centre = m_roadHeights[coordinate];
+            GridCoordinate eastCoordinate = coordinate + DirectionOffset(CardinalDirection.East);
+            GridCoordinate westCoordinate = coordinate + DirectionOffset(CardinalDirection.West);
+            GridCoordinate northCoordinate = coordinate + DirectionOffset(CardinalDirection.North);
+            GridCoordinate southCoordinate = coordinate + DirectionOffset(CardinalDirection.South);
+
+            float east = m_roadHeights.TryGetValue(eastCoordinate, out float eastHeight) ? eastHeight : centre;
+            float west = m_roadHeights.TryGetValue(westCoordinate, out float westHeight) ? westHeight : centre;
+            float north = m_roadHeights.TryGetValue(northCoordinate, out float northHeight) ? northHeight : centre;
+            float south = m_roadHeights.TryGetValue(southCoordinate, out float southHeight) ? southHeight : centre;
+            float xSlope = SteepestAxisSlope(east - centre, centre - west);
+            float zSlope = SteepestAxisSlope(north - centre, centre - south);
+            Vector3 normal = new Vector3(
+                -xSlope / m_roadTileSize,
+                1f,
+                -zSlope / m_roadTileSize).normalized;
+            return Quaternion.FromToRotation(Vector3.up, normal);
+        }
+
+        private static float SteepestAxisSlope(float positiveDelta, float negativeDelta)
+        {
+            return Mathf.Abs(positiveDelta) >= Mathf.Abs(negativeDelta)
+                ? positiveDelta
+                : negativeDelta;
+        }
+
         private void GenerateProperties(System.Random random)
         {
-            HashSet<GridCoordinate> consideredAnchors = new HashSet<GridCoordinate>();
             int houseIndex = 0;
-            for (int roadIndex = 0; roadIndex < m_roadOrder.Count; roadIndex++)
+            int horizontalSpan = m_blockWidth + 1;
+            int verticalSpan = m_blockHeight + 1;
+            for (int blockY = 0; blockY < m_gridHeight; blockY++)
             {
-                GridCoordinate roadCoordinate = m_roadOrder[roadIndex];
-                RoadConnections roadConnections = m_logicalRoads[roadCoordinate];
-                for (int directionIndex = 0; directionIndex < 4; directionIndex++)
+                int minimumY = blockY * verticalSpan + 1;
+                int maximumY = minimumY + m_blockHeight - 1;
+                for (int blockX = 0; blockX < m_gridWidth; blockX++)
                 {
-                    CardinalDirection propertyToRoadDirection = Opposite((CardinalDirection)directionIndex);
-                    CardinalDirection roadToPropertyDirection = (CardinalDirection)directionIndex;
-                    if ((roadConnections & DirectionConnection(roadToPropertyDirection)) != 0)
+                    int minimumX = m_minimumLocalX + blockX * horizontalSpan + 1;
+                    int maximumX = minimumX + m_blockWidth - 1;
+                    List<PropertyCandidate> candidates = CreatePropertyCandidates(
+                        minimumX, maximumX, minimumY, maximumY);
+                    Shuffle(candidates, random);
+
+                    int housesInBlock = 0;
+                    for (int candidateIndex = 0;
+                         candidateIndex < candidates.Count && housesInBlock < m_housesPerBlock;
+                         candidateIndex++)
                     {
-                        continue;
+                        PropertyCandidate candidate = candidates[candidateIndex];
+                        GameObject prefab = SelectHousePrefab(random);
+                        Vector2Int footprint = GetPropertyFootprint(prefab);
+                        List<GridCoordinate> cells = GetPropertyCells(
+                            candidate.Anchor, candidate.PropertyToRoad, footprint);
+                        if (!CanPlaceProperty(cells, minimumX, maximumX, minimumY, maximumY))
+                        {
+                            continue;
+                        }
+
+                        for (int cellIndex = 0; cellIndex < cells.Count; cellIndex++)
+                        {
+                            m_propertyCells.Add(cells[cellIndex]);
+                        }
+
+                        Vector3 centre = CalculateCellCentre(cells);
+                        GameObject property = prefab != null
+                            ? Instantiate(prefab, centre, Quaternion.identity, m_housesRoot)
+                            : CreatePlaceholderHouse(centre, footprint);
+                        FacePropertyTowardsRoad(property.transform, candidate.Road);
+                        property.name = prefab != null
+                            ? $"House_{houseIndex:000}"
+                            : $"Placeholder_House_{houseIndex:000}";
+
+                        GeneratedProperty generatedProperty = property.GetComponent<GeneratedProperty>();
+                        if (generatedProperty == null)
+                        {
+                            generatedProperty = property.AddComponent<GeneratedProperty>();
+                        }
+
+                        Transform deliveryPoint = generatedProperty.DeliveryPoint;
+                        Transform roadConnection = generatedProperty.RoadConnection;
+                        if (prefab == null)
+                        {
+                            roadConnection = property.transform.Find("RoadConnection");
+                            deliveryPoint = property.transform.Find("DeliveryPoint");
+                        }
+
+                        generatedProperty.Initialise(candidate.Anchor, footprint, roadConnection, deliveryPoint);
+                        m_generatedProperties.Add(generatedProperty);
+                        housesInBlock++;
+                        houseIndex++;
                     }
-
-                    GridCoordinate anchor = roadCoordinate + DirectionOffset(roadToPropertyDirection);
-                    if (!consideredAnchors.Add(anchor) || random.NextDouble() >= m_houseSpawnChance)
-                    {
-                        continue;
-                    }
-
-                    GameObject prefab = SelectHousePrefab(random);
-                    Vector2Int footprint = GetPropertyFootprint(prefab);
-                    List<GridCoordinate> cells = GetPropertyCells(anchor, propertyToRoadDirection, footprint);
-                    if (!CanPlaceProperty(cells))
-                    {
-                        continue;
-                    }
-
-                    for (int cellIndex = 0; cellIndex < cells.Count; cellIndex++)
-                    {
-                        m_propertyCells.Add(cells[cellIndex]);
-                    }
-
-                    Vector3 centre = CalculateCellCentre(cells);
-                    GameObject property = prefab != null
-                        ? Instantiate(prefab, centre, Quaternion.identity, m_housesRoot)
-                        : CreatePlaceholderHouse(centre, footprint);
-                    FacePropertyTowardsRoad(property.transform, roadCoordinate);
-                    property.name = prefab != null
-                        ? $"House_{houseIndex:000}"
-                        : $"Placeholder_House_{houseIndex:000}";
-
-                    GeneratedProperty generatedProperty = property.GetComponent<GeneratedProperty>();
-                    if (generatedProperty == null)
-                    {
-                        generatedProperty = property.AddComponent<GeneratedProperty>();
-                    }
-
-                    Transform deliveryPoint = generatedProperty.DeliveryPoint;
-                    Transform roadConnection = generatedProperty.RoadConnection;
-                    if (prefab == null)
-                    {
-                        roadConnection = property.transform.Find("RoadConnection");
-                        deliveryPoint = property.transform.Find("DeliveryPoint");
-                    }
-
-                    generatedProperty.Initialise(anchor, footprint, roadConnection, deliveryPoint);
-                    m_generatedProperties.Add(generatedProperty);
-                    houseIndex++;
                 }
             }
+        }
+
+        private List<PropertyCandidate> CreatePropertyCandidates(
+            int minimumX,
+            int maximumX,
+            int minimumY,
+            int maximumY)
+        {
+            List<PropertyCandidate> candidates = new List<PropertyCandidate>(
+                (m_blockWidth + m_blockHeight) * 2);
+            for (int localX = minimumX; localX <= maximumX; localX++)
+            {
+                candidates.Add(new PropertyCandidate(
+                    LocalToGrid(localX, minimumY),
+                    LocalToGrid(localX, minimumY - 1),
+                    Opposite(m_startDirection)));
+                candidates.Add(new PropertyCandidate(
+                    LocalToGrid(localX, maximumY),
+                    LocalToGrid(localX, maximumY + 1),
+                    m_startDirection));
+            }
+
+            CardinalDirection right = TurnRight(m_startDirection);
+            for (int localY = minimumY; localY <= maximumY; localY++)
+            {
+                candidates.Add(new PropertyCandidate(
+                    LocalToGrid(minimumX, localY),
+                    LocalToGrid(minimumX - 1, localY),
+                    Opposite(right)));
+                candidates.Add(new PropertyCandidate(
+                    LocalToGrid(maximumX, localY),
+                    LocalToGrid(maximumX + 1, localY),
+                    right));
+            }
+
+            return candidates;
         }
 
         private GameObject SelectHousePrefab(System.Random random)
@@ -617,11 +728,23 @@ namespace CouchGuys.ProceduralGeneration
             return cells;
         }
 
-        private bool CanPlaceProperty(List<GridCoordinate> cells)
+        private bool CanPlaceProperty(
+            List<GridCoordinate> cells,
+            int minimumLocalX,
+            int maximumLocalX,
+            int minimumLocalY,
+            int maximumLocalY)
         {
             for (int index = 0; index < cells.Count; index++)
             {
                 GridCoordinate cell = cells[index];
+                Vector2Int local = GridToLocal(cell);
+                if (local.x < minimumLocalX || local.x > maximumLocalX ||
+                    local.y < minimumLocalY || local.y > maximumLocalY)
+                {
+                    return false;
+                }
+
                 if (m_roadCells.Contains(cell) || m_startingAreaCells.Contains(cell) || m_propertyCells.Contains(cell))
                 {
                     return false;
@@ -647,6 +770,24 @@ namespace CouchGuys.ProceduralGeneration
             return true;
         }
 
+        private Vector2Int GridToLocal(GridCoordinate coordinate)
+        {
+            GridCoordinate right = DirectionOffset(TurnRight(m_startDirection));
+            GridCoordinate forward = DirectionOffset(m_startDirection);
+            return new Vector2Int(
+                coordinate.X * right.X + coordinate.Y * right.Y,
+                coordinate.X * forward.X + coordinate.Y * forward.Y);
+        }
+
+        private static void Shuffle<T>(List<T> values, System.Random random)
+        {
+            for (int index = values.Count - 1; index > 0; index--)
+            {
+                int swapIndex = random.Next(index + 1);
+                (values[index], values[swapIndex]) = (values[swapIndex], values[index]);
+            }
+        }
+
         private GameObject CreatePlaceholderHouse(Vector3 centre, Vector2Int footprint)
         {
             if (!m_warnedAboutHousePlaceholders)
@@ -664,16 +805,16 @@ namespace CouchGuys.ProceduralGeneration
             cube.transform.SetParent(root.transform, false);
             cube.transform.localPosition = Vector3.up * (m_placeholderHouseSize.y * 0.5f);
             cube.transform.localScale = new Vector3(
-                Mathf.Min(m_placeholderHouseSize.x, footprint.x * m_tileSize),
+                Mathf.Min(m_placeholderHouseSize.x, footprint.x * m_roadTileSize),
                 m_placeholderHouseSize.y,
-                Mathf.Min(m_placeholderHouseSize.z, footprint.y * m_tileSize));
+                Mathf.Min(m_placeholderHouseSize.z, footprint.y * m_roadTileSize));
 
             Transform roadConnection = new GameObject("RoadConnection").transform;
             roadConnection.SetParent(root.transform, false);
-            roadConnection.localPosition = Vector3.forward * (footprint.y * m_tileSize * 0.5f);
+            roadConnection.localPosition = Vector3.forward * (footprint.y * m_roadTileSize * 0.5f);
             Transform deliveryPoint = new GameObject("DeliveryPoint").transform;
             deliveryPoint.SetParent(root.transform, false);
-            deliveryPoint.localPosition = Vector3.forward * (footprint.y * m_tileSize * 0.5f + 1f);
+            deliveryPoint.localPosition = Vector3.forward * (footprint.y * m_roadTileSize * 0.5f + 1f);
 
             GeneratedProperty property = root.AddComponent<GeneratedProperty>();
             property.Initialise(GridCoordinate.Zero, footprint, roadConnection, deliveryPoint);
@@ -718,7 +859,7 @@ namespace CouchGuys.ProceduralGeneration
 
         private void ValidateLayout()
         {
-            if (m_roadCells.Count > m_maximumRoadTiles || m_roadCells.Count != m_logicalRoads.Count)
+            if (m_roadCells.Count != m_logicalRoads.Count || m_roadCells.Count != m_roadHeights.Count)
             {
                 Debug.LogError("Generated neighbourhood road data is inconsistent.", this);
                 return;
@@ -732,11 +873,34 @@ namespace CouchGuys.ProceduralGeneration
                     return;
                 }
             }
-        }
 
-        private static int NextInclusive(System.Random random, int minimum, int maximum)
-        {
-            return random.Next(minimum, maximum + 1);
+            foreach (KeyValuePair<GridCoordinate, RoadConnections> road in m_logicalRoads)
+            {
+                for (int directionIndex = 0; directionIndex < 2; directionIndex++)
+                {
+                    CardinalDirection direction = (CardinalDirection)directionIndex;
+                    if ((road.Value & DirectionConnection(direction)) == 0)
+                    {
+                        continue;
+                    }
+
+                    GridCoordinate neighbour = road.Key + DirectionOffset(direction);
+                    if (!m_roadHeights.TryGetValue(neighbour, out float neighbourHeight))
+                    {
+                        continue;
+                    }
+
+                    float rise = Mathf.Abs(neighbourHeight - m_roadHeights[road.Key]);
+                    float slope = Mathf.Atan2(rise, m_roadTileSize) * Mathf.Rad2Deg;
+                    if (slope > m_maximumRoadSlope + 0.01f)
+                    {
+                        Debug.LogError(
+                            $"Generated road slope of {slope:F1} degrees exceeds the configured maximum.",
+                            this);
+                        return;
+                    }
+                }
+            }
         }
 
         private static int DeriveSeed(int seed, int salt)
@@ -812,7 +976,9 @@ namespace CouchGuys.ProceduralGeneration
                 Gizmos.color = new Color(1f, 1f, 1f, 0.18f);
                 foreach (GridCoordinate coordinate in m_roadCells)
                 {
-                    Gizmos.DrawWireCube(GridToWorld(coordinate), new Vector3(m_tileSize, 0.05f, m_tileSize));
+                    Gizmos.DrawWireCube(
+                        GridToWorld(coordinate),
+                        new Vector3(m_roadTileSize, 0.05f, m_roadTileSize));
                 }
             }
 
@@ -830,7 +996,7 @@ namespace CouchGuys.ProceduralGeneration
                             GridCoordinate offset = DirectionOffset(direction);
                             Gizmos.DrawLine(
                                 centre,
-                                centre + new Vector3(offset.X, 0f, offset.Y) * (m_tileSize * 0.45f));
+                                centre + new Vector3(offset.X, 0f, offset.Y) * (m_roadTileSize * 0.45f));
                         }
                     }
                 }
@@ -842,19 +1008,24 @@ namespace CouchGuys.ProceduralGeneration
             Gizmos.color = colour;
             foreach (GridCoordinate coordinate in cells)
             {
-                Gizmos.DrawCube(GridToWorld(coordinate), new Vector3(m_tileSize * 0.95f, 0.08f, m_tileSize * 0.95f));
+                Gizmos.DrawCube(
+                    GridToWorld(coordinate),
+                    new Vector3(m_roadTileSize * 0.95f, 0.08f, m_roadTileSize * 0.95f));
             }
         }
 
         private void OnValidate()
         {
-            m_maximumRoadTiles = Mathf.Max(1, m_maximumRoadTiles);
-            m_minimumRoadLength = Mathf.Max(1, m_minimumRoadLength);
-            m_maximumRoadLength = Mathf.Max(m_minimumRoadLength, m_maximumRoadLength);
-            m_minimumSegmentLength = Mathf.Max(1, m_minimumSegmentLength);
-            m_maximumSegmentLength = Mathf.Max(m_minimumSegmentLength, m_maximumSegmentLength);
-            m_minimumBranchLength = Mathf.Max(1, m_minimumBranchLength);
-            m_maximumBranchLength = Mathf.Max(m_minimumBranchLength, m_maximumBranchLength);
+            m_gridWidth = Mathf.Max(1, m_gridWidth);
+            m_gridHeight = Mathf.Max(1, m_gridHeight);
+            m_blockWidth = Mathf.Max(1, m_blockWidth);
+            m_blockHeight = Mathf.Max(1, m_blockHeight);
+            m_roadTileSize = Mathf.Max(0.1f, m_roadTileSize);
+            m_housesPerBlock = Mathf.Max(0, m_housesPerBlock);
+            m_minimumHouseSpacing = Mathf.Max(0, m_minimumHouseSpacing);
+            m_elevationStep = Mathf.Max(0.1f, m_elevationStep);
+            m_maximumElevation = Mathf.Max(0f, m_maximumElevation);
+            m_maximumRoadSlope = Mathf.Clamp(m_maximumRoadSlope, 1f, 45f);
             m_standardPropertyFootprint.x = Mathf.Max(1, m_standardPropertyFootprint.x);
             m_standardPropertyFootprint.y = Mathf.Max(1, m_standardPropertyFootprint.y);
             m_placeholderStartingAreaFootprint.x = Mathf.Max(1, m_placeholderStartingAreaFootprint.x);

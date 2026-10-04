@@ -26,7 +26,9 @@ namespace CouchGuys.Networking
 
         private static readonly int BaseColourProperty = Shader.PropertyToID("_BaseColor");
         private static readonly int ColourProperty = Shader.PropertyToID("_Color");
+        private static readonly int EmissionColourProperty = Shader.PropertyToID("_EmissionColor");
         private MaterialPropertyBlock m_propertyBlock;
+        private Renderer[] m_playerRenderers;
         private Transform m_cameraRig;
         private Transform m_cameraRigOriginalParent;
         private Vector3 m_cameraRigOriginalLocalPosition;
@@ -101,6 +103,7 @@ namespace CouchGuys.Networking
             m_playerCamera ??= GetComponentInChildren<Camera>(true);
             m_audioListener ??= GetComponentInChildren<AudioListener>(true);
             m_playerRenderer ??= GetComponentInChildren<Renderer>(true);
+            m_playerRenderers = GetComponentsInChildren<Renderer>(true);
         }
 
         private void CacheCameraRigHierarchy()
@@ -175,17 +178,52 @@ namespace CouchGuys.Networking
 
         private void ApplyPlayerColour(int playerIndex)
         {
-            if (m_playerRenderer == null)
+            if (m_playerRenderer == null && (m_playerRenderers == null || m_playerRenderers.Length == 0))
             {
                 return;
             }
 
             m_propertyBlock ??= new MaterialPropertyBlock();
-            m_playerRenderer.GetPropertyBlock(m_propertyBlock);
             Color colour = m_colourPalette.GetColour(playerIndex);
-            m_propertyBlock.SetColor(BaseColourProperty, colour);
-            m_propertyBlock.SetColor(ColourProperty, colour);
-            m_playerRenderer.SetPropertyBlock(m_propertyBlock);
+            Color emissionColour = colour * 4f;
+            emissionColour.a = 1f;
+            bool appliedGlowColour = false;
+
+            foreach (Renderer playerRenderer in m_playerRenderers)
+            {
+                if (playerRenderer == null)
+                {
+                    continue;
+                }
+
+                Material[] materials = playerRenderer.sharedMaterials;
+                for (int materialIndex = 0; materialIndex < materials.Length; materialIndex++)
+                {
+                    Material material = materials[materialIndex];
+                    if (material == null || !material.name.StartsWith("PlayerGlow", System.StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    playerRenderer.GetPropertyBlock(m_propertyBlock, materialIndex);
+                    m_propertyBlock.SetColor(BaseColourProperty, colour);
+                    m_propertyBlock.SetColor(ColourProperty, colour);
+                    m_propertyBlock.SetColor(EmissionColourProperty, emissionColour);
+                    playerRenderer.SetPropertyBlock(m_propertyBlock, materialIndex);
+                    m_propertyBlock.Clear();
+                    appliedGlowColour = true;
+                }
+            }
+
+            // Preserve the temporary capsule's whole-body colour until the robot FBX exists.
+            if (!appliedGlowColour && m_playerRenderer != null)
+            {
+                m_playerRenderer.GetPropertyBlock(m_propertyBlock);
+                m_propertyBlock.SetColor(BaseColourProperty, colour);
+                m_propertyBlock.SetColor(ColourProperty, colour);
+                m_playerRenderer.SetPropertyBlock(m_propertyBlock);
+                m_propertyBlock.Clear();
+            }
         }
     }
 }

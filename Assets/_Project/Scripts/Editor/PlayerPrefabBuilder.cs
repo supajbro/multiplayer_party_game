@@ -58,13 +58,7 @@ namespace CouchGuys.Editor
                 SetObjectReference(inputReader, "m_inputActions", inputActions);
 
                 GameObject visual = CreateChild(player.transform, "Visual", Vector3.zero);
-                GameObject capsule = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-                capsule.name = "Capsule";
-                capsule.transform.SetParent(visual.transform, false);
-                capsule.transform.localPosition = new Vector3(0f, 0.9f, 0f);
-                capsule.transform.localRotation = Quaternion.identity;
-                capsule.transform.localScale = new Vector3(0.6f, 0.9f, 0.6f);
-                Object.DestroyImmediate(capsule.GetComponent<Collider>());
+                Animator animator = CreatePlayerVisual(visual.transform, characterController.height);
 
                 GameObject cameraTarget = CreateChild(player.transform, "CameraTarget", new Vector3(0f, 1.5f, 0f));
                 GameObject cameraRig = CreateChild(player.transform, "CameraRig", Vector3.zero);
@@ -88,6 +82,11 @@ namespace CouchGuys.Editor
                 PlayerCouchCarrier couchCarrier = player.AddComponent<PlayerCouchCarrier>();
                 SetObjectReference(couchCarrier, "m_input", inputReader);
                 SetObjectReference(couchCarrier, "m_playerController", playerController);
+
+                CouchGuyAnimationDriver animationDriver = player.AddComponent<CouchGuyAnimationDriver>();
+                SetObjectReference(animationDriver, "m_animator", animator);
+                SetObjectReference(animationDriver, "m_playerController", playerController);
+                SetObjectReference(animationDriver, "m_couchCarrier", couchCarrier);
 
                 DebugCouchBotController debugBotController = player.AddComponent<DebugCouchBotController>();
                 debugBotController.enabled = false;
@@ -165,6 +164,16 @@ namespace CouchGuys.Editor
             SetObjectReference(couchCarrier, "m_input", player.GetComponent<PlayerInputReader>());
             SetObjectReference(couchCarrier, "m_playerController", player.GetComponent<ThirdPersonPlayerController>());
 
+            CouchGuyAnimationDriver animationDriver = player.GetComponent<CouchGuyAnimationDriver>();
+            if (animationDriver == null)
+            {
+                animationDriver = player.AddComponent<CouchGuyAnimationDriver>();
+            }
+
+            SetObjectReference(animationDriver, "m_animator", player.GetComponentInChildren<Animator>(true));
+            SetObjectReference(animationDriver, "m_playerController", player.GetComponent<ThirdPersonPlayerController>());
+            SetObjectReference(animationDriver, "m_couchCarrier", couchCarrier);
+
             DebugCouchBotController debugBotController = player.GetComponent<DebugCouchBotController>();
             if (debugBotController == null)
             {
@@ -214,6 +223,88 @@ namespace CouchGuys.Editor
             return child;
         }
 
+        private static Animator CreatePlayerVisual(Transform visualRoot, float targetVisualHeight)
+        {
+            GameObject capsule = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            capsule.name = "Capsule";
+            capsule.transform.SetParent(visualRoot, false);
+            capsule.transform.localPosition = new Vector3(0f, 0.9f, 0f);
+            capsule.transform.localRotation = Quaternion.identity;
+            capsule.transform.localScale = new Vector3(0.6f, 0.9f, 0.6f);
+            Object.DestroyImmediate(capsule.GetComponent<Collider>());
+
+            GameObject modelAsset = AssetDatabase.LoadAssetAtPath<GameObject>(
+                CouchGuyAnimatorControllerBuilder.ModelPath);
+            if (modelAsset == null)
+            {
+                return null;
+            }
+
+            capsule.SetActive(false);
+
+            GameObject model = PrefabUtility.InstantiatePrefab(modelAsset, visualRoot) as GameObject;
+            if (model == null)
+            {
+                throw new UnityException("Failed to instantiate the imported Couch Guy model.");
+            }
+
+            model.name = "CouchGuy";
+            model.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+            model.transform.localScale = Vector3.one;
+            FitVisualToController(model, targetVisualHeight);
+
+            Animator animator = model.GetComponentInChildren<Animator>(true);
+            if (animator == null)
+            {
+                animator = model.AddComponent<Animator>();
+            }
+
+            animator.applyRootMotion = false;
+            animator.runtimeAnimatorController = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(
+                CouchGuyAnimatorControllerBuilder.ControllerPath);
+            if (animator.runtimeAnimatorController == null)
+            {
+                Debug.LogWarning(
+                    "Couch Guy model found, but its Animator Controller is missing. Run " +
+                    "Couch Guys > Animation > Build Couch Guy Animator Controller, then rebuild the Player prefab.");
+            }
+
+            return animator;
+        }
+
+        private static void FitVisualToController(GameObject model, float targetVisualHeight)
+        {
+            Renderer[] renderers = model.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0)
+            {
+                throw new UnityException("The imported Couch Guy model contains no renderers.");
+            }
+
+            Bounds bounds = renderers[0].bounds;
+            for (int index = 1; index < renderers.Length; index++)
+            {
+                bounds.Encapsulate(renderers[index].bounds);
+            }
+
+            if (bounds.size.y <= 0.001f)
+            {
+                throw new UnityException("The imported Couch Guy model has invalid vertical bounds.");
+            }
+
+            float uniformScale = targetVisualHeight / bounds.size.y;
+            model.transform.localScale = Vector3.one * uniformScale;
+
+            // Recalculate after scaling, then place the hover ring just above ground level.
+            bounds = renderers[0].bounds;
+            for (int index = 1; index < renderers.Length; index++)
+            {
+                bounds.Encapsulate(renderers[index].bounds);
+            }
+
+            const float groundClearance = 0.02f;
+            model.transform.localPosition += Vector3.up * (groundClearance - bounds.min.y);
+        }
+
         private static void SetObjectReference(Object target, string propertyName, Object value)
         {
             SerializedObject serialisedObject = new SerializedObject(target);
@@ -236,16 +327,21 @@ namespace CouchGuys.Editor
             }
 
             CharacterController characterController = prefab.GetComponent<CharacterController>();
+            Transform visual = prefab.transform.Find("Visual");
             Transform capsule = prefab.transform.Find("Visual/Capsule");
+            Transform couchGuy = prefab.transform.Find("Visual/CouchGuy");
             Transform cameraTarget = prefab.transform.Find("CameraTarget");
             Transform playerCamera = prefab.transform.Find("CameraRig/PlayerCamera");
+            bool hasValidVisual = visual != null &&
+                capsule != null && capsule.GetComponent<Collider>() == null &&
+                ((couchGuy != null && !capsule.gameObject.activeSelf) ||
+                 (couchGuy == null && capsule.gameObject.activeSelf));
 
             if (prefab.transform.localScale != Vector3.one ||
                 characterController == null ||
                 !Mathf.Approximately(characterController.height, 1.8f) ||
                 !Mathf.Approximately(characterController.radius, 0.3f) ||
-                capsule == null ||
-                capsule.GetComponent<Collider>() != null ||
+                !hasValidVisual ||
                 cameraTarget == null ||
                 playerCamera == null ||
                 prefab.GetComponent<PlayerInputReader>() == null ||
@@ -255,6 +351,7 @@ namespace CouchGuys.Editor
                 prefab.GetComponent<NetworkTransform>() == null ||
                 prefab.GetComponent<NetworkPlayerOwnership>() == null ||
                 prefab.GetComponent<PlayerCouchCarrier>() == null ||
+                prefab.GetComponent<CouchGuyAnimationDriver>() == null ||
                 prefab.GetComponent<DebugCouchBotController>() == null ||
                 prefab.GetComponent<DebugCouchBotController>().enabled)
             {
