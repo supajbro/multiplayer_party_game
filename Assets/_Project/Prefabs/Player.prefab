@@ -162,7 +162,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584105148919598308
+  _initializedTimestamp: -8584104854513743894
 --- !u!114 &6842772898105403012
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -186,8 +186,8 @@ MonoBehaviour:
   m_carryHeight: 0.45
   m_singleCarrierSpeedMultiplier: 0.52
   m_maximumCooperativeSpeedMultiplier: 0.82
-  m_comfortableCarryDistance: 1.6
-  m_maximumCarrySeparation: 3
+  m_comfortableCarryDistance: 0.5
+  m_maximumCarrySeparation: 0.5
   m_intentSendInterval: 0.1
   m_intentHeartbeatInterval: 0.5
   m_intentTimeout: 0.4

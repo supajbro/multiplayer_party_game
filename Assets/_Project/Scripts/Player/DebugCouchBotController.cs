@@ -127,10 +127,11 @@ namespace CouchGuys.Player
             }
 
             Vector3 movementIntent = CalculateMovementIntent(couch);
+            Vector3 constrainedMovement = movementIntent;
             CouchCarryPoint carryPoint = couch.GetPoint(m_carrier.CarriedPointIndex);
             if (carryPoint != null)
             {
-                movementIntent = ThirdPersonPlayerController.ApplyDirectionalResistance(
+                constrainedMovement = ThirdPersonPlayerController.ApplyDirectionalResistance(
                     movementIntent,
                     transform.position,
                     carryPoint.transform.position,
@@ -140,7 +141,20 @@ namespace CouchGuys.Player
 
             m_carrier.SetDebugBotMovementIntentServer(movementIntent);
             float speedMultiplier = m_carrier.CalculateCarryingSpeedMultiplier(couch);
-            Move(movementIntent, m_settings.CarryingSpeed * speedMultiplier);
+            Vector3 facingDirection = carryPoint != null
+                ? Vector3.ProjectOnPlane(carryPoint.transform.position - transform.position, Vector3.up)
+                : Vector3.zero;
+            Vector3 attachmentCorrection = carryPoint != null
+                ? ThirdPersonPlayerController.CalculateAttachmentCorrection(
+                    transform.position,
+                    carryPoint.transform.position,
+                    m_carrier.MaximumCarrySeparation)
+                : Vector3.zero;
+            Move(
+                constrainedMovement,
+                m_settings.CarryingSpeed * speedMultiplier,
+                facingDirection,
+                attachmentCorrection);
         }
 
         private Vector3 CalculateMovementIntent(CouchCarryController couch)
@@ -257,19 +271,27 @@ namespace CouchGuys.Player
                 awayFromCouch = -point.Couch.transform.forward;
             }
 
-            Vector3 standPosition = point.transform.position + awayFromCouch.normalized * m_settings.PointStandOff;
+            float standOff = Mathf.Min(m_settings.PointStandOff, m_carrier.MaximumCarrySeparation);
+            Vector3 standPosition = point.transform.position + awayFromCouch.normalized * standOff;
             standPosition.y = transform.position.y;
             return standPosition;
         }
 
-        private void Move(Vector3 horizontalDirection, float speed)
+        private void Move(
+            Vector3 horizontalDirection,
+            float speed,
+            Vector3 facingDirection = default,
+            Vector3 attachmentCorrection = default)
         {
             Vector3 direction = Vector3.ClampMagnitude(
                 Vector3.ProjectOnPlane(horizontalDirection, Vector3.up),
                 1f);
-            if (direction.sqrMagnitude > 0.001f)
+            Vector3 lookDirection = facingDirection.sqrMagnitude > 0.001f
+                ? facingDirection.normalized
+                : direction;
+            if (lookDirection.sqrMagnitude > 0.001f)
             {
-                Quaternion targetRotation = Quaternion.LookRotation(direction, Vector3.up);
+                Quaternion targetRotation = Quaternion.LookRotation(lookDirection, Vector3.up);
                 transform.rotation = Quaternion.RotateTowards(
                     transform.rotation,
                     targetRotation,
@@ -286,7 +308,7 @@ namespace CouchGuys.Player
             }
 
             Vector3 velocity = direction * Mathf.Max(0f, speed) + Vector3.up * m_verticalVelocity;
-            m_characterController.Move(velocity * Time.fixedDeltaTime);
+            m_characterController.Move(velocity * Time.fixedDeltaTime + attachmentCorrection);
         }
 
         private void ResolveReferences()

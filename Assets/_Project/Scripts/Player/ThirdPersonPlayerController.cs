@@ -34,6 +34,7 @@ namespace CouchGuys.Player
         private float m_rotationVelocity;
         private float m_externalSpeedMultiplier = 1f;
         private Transform m_resistanceAnchor;
+        private Transform m_facingTarget;
         private float m_comfortableResistanceDistance;
         private float m_maximumResistanceDistance;
 
@@ -57,15 +58,26 @@ namespace CouchGuys.Player
             float maximumDistance)
         {
             m_resistanceAnchor = anchor;
-            m_comfortableResistanceDistance = Mathf.Max(0f, comfortableDistance);
-            m_maximumResistanceDistance = Mathf.Max(
-                m_comfortableResistanceDistance + 0.01f,
-                maximumDistance);
+            m_maximumResistanceDistance = Mathf.Max(0f, maximumDistance);
+            m_comfortableResistanceDistance = Mathf.Clamp(
+                comfortableDistance,
+                0f,
+                m_maximumResistanceDistance);
         }
 
         public void ClearExternalMovementResistance()
         {
             m_resistanceAnchor = null;
+        }
+
+        public void SetExternalFacingTarget(Transform target)
+        {
+            m_facingTarget = target;
+        }
+
+        public void ClearExternalFacingTarget()
+        {
+            m_facingTarget = null;
         }
 
         private void Awake()
@@ -110,7 +122,8 @@ namespace CouchGuys.Player
             float targetSpeed = topSpeed * inputMagnitude * m_externalSpeedMultiplier;
             m_currentSpeed = Mathf.MoveTowards(m_currentSpeed, targetSpeed, m_speedChangeRate * Time.deltaTime);
 
-            Vector3 moveDirection = CalculateCameraRelativeDirection(moveInput);
+            Vector3 intendedMoveDirection = CalculateCameraRelativeDirection(moveInput);
+            Vector3 moveDirection = intendedMoveDirection;
             if (m_resistanceAnchor != null)
             {
                 moveDirection = ApplyDirectionalResistance(
@@ -121,10 +134,13 @@ namespace CouchGuys.Player
                     m_maximumResistanceDistance);
             }
 
-            MovementIntent = moveDirection * inputMagnitude;
-            if (moveDirection.sqrMagnitude > 0.001f)
+            MovementIntent = intendedMoveDirection * inputMagnitude;
+            Vector3 facingDirection = m_facingTarget != null
+                ? Vector3.ProjectOnPlane(m_facingTarget.position - transform.position, Vector3.up)
+                : moveDirection;
+            if (facingDirection.sqrMagnitude > 0.001f)
             {
-                float targetAngle = Mathf.Atan2(moveDirection.x, moveDirection.z) * Mathf.Rad2Deg;
+                float targetAngle = Mathf.Atan2(facingDirection.x, facingDirection.z) * Mathf.Rad2Deg;
                 float smoothedAngle = Mathf.SmoothDampAngle(
                     transform.eulerAngles.y,
                     targetAngle,
@@ -136,7 +152,13 @@ namespace CouchGuys.Player
 
             Vector3 velocity = moveDirection * m_currentSpeed;
             velocity.y = m_verticalVelocity;
-            m_characterController.Move(velocity * Time.deltaTime);
+            Vector3 attachmentCorrection = m_resistanceAnchor != null
+                ? CalculateAttachmentCorrection(
+                    transform.position,
+                    m_resistanceAnchor.position,
+                    m_maximumResistanceDistance)
+                : Vector3.zero;
+            m_characterController.Move(velocity * Time.deltaTime + attachmentCorrection);
         }
 
         internal static Vector3 ApplyDirectionalResistance(
@@ -160,11 +182,30 @@ namespace CouchGuys.Player
                 return movement;
             }
 
-            float resistance = Mathf.SmoothStep(
-                0f,
-                1f,
-                Mathf.InverseLerp(comfortableDistance, maximumDistance, separation));
+            float resistance = maximumDistance > comfortableDistance + 0.0001f
+                ? Mathf.SmoothStep(
+                    0f,
+                    1f,
+                    Mathf.InverseLerp(comfortableDistance, maximumDistance, separation))
+                : 1f;
             return movement - awayDirection * outwardAmount * resistance;
+        }
+
+        internal static Vector3 CalculateAttachmentCorrection(
+            Vector3 playerPosition,
+            Vector3 anchorPosition,
+            float maximumDistance)
+        {
+            Vector3 awayFromAnchor = Vector3.ProjectOnPlane(playerPosition - anchorPosition, Vector3.up);
+            float maximumDistanceSquared = maximumDistance * maximumDistance;
+            float separationSquared = awayFromAnchor.sqrMagnitude;
+            if (separationSquared <= maximumDistanceSquared || separationSquared < 0.0001f)
+            {
+                return Vector3.zero;
+            }
+
+            float separation = Mathf.Sqrt(separationSquared);
+            return -awayFromAnchor * ((separation - maximumDistance) / separation);
         }
 
         private Vector3 CalculateCameraRelativeDirection(Vector2 moveInput)

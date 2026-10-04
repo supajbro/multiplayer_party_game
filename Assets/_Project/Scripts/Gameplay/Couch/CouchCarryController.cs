@@ -98,10 +98,18 @@ namespace CouchGuys.Gameplay.Couch
             }
 
             int carrierCount = CountServerCarriers();
-            float cooperationEfficiency = CalculateCooperationEfficiency(carrierCount);
+            Vector3 combinedMovementIntent = CalculateCombinedMovementIntent(out float totalIntentMagnitude);
+            float cooperationEfficiency = CalculateCooperationEfficiency(
+                carrierCount,
+                combinedMovementIntent,
+                totalIntentMagnitude);
             m_cooperationEfficiency.Value = cooperationEfficiency;
             float totalCarrierEfficiency = CalculateTotalCarrierEfficiency(carrierCount);
             float perCarrierEfficiency = carrierCount > 0 ? totalCarrierEfficiency / carrierCount : 0f;
+            float cooperationForceScale = Mathf.Lerp(
+                m_minimumConflictEfficiency,
+                1f,
+                cooperationEfficiency);
             float weightForce = m_weight * Mathf.Abs(Physics.gravity.y);
             // Static support remains below gravity so the couch cannot float without
             // a positive grip-height error contributing spring lift.
@@ -138,12 +146,8 @@ namespace CouchGuys.Gameplay.Couch
 
                 Vector3 horizontalError = Vector3.ProjectOnPlane(targetPosition - pointPosition, Vector3.up);
                 Vector3 horizontalVelocity = Vector3.ProjectOnPlane(pointVelocity, Vector3.up);
-                float cooperationForceScale = Mathf.Lerp(
-                    m_minimumConflictEfficiency,
-                    1f,
-                    cooperationEfficiency);
                 Vector3 horizontalForce =
-                    (horizontalError * m_carryForce - horizontalVelocity * m_damping + movementIntent * m_movementForce) *
+                    (horizontalError * m_carryForce - horizontalVelocity * m_damping) *
                     perCarrierEfficiency * cooperationForceScale;
                 horizontalForce = Vector3.ClampMagnitude(horizontalForce, m_maximumHorizontalForce);
 
@@ -167,6 +171,10 @@ namespace CouchGuys.Gameplay.Couch
                 m_debugLiftForces[index] = verticalForce;
                 m_debugMovementIntents[index] = movementIntent;
             }
+
+            Vector3 movementForce = combinedMovementIntent *
+                (m_movementForce * perCarrierEfficiency * cooperationForceScale);
+            m_rigidbody.AddForce(movementForce, ForceMode.Force);
 
             LimitVelocity();
         }
@@ -354,42 +362,34 @@ namespace CouchGuys.Gameplay.Couch
                 m_singleCarrierEfficiency + m_additionalCarrierEfficiency * additionalCarriers);
         }
 
-        private float CalculateCooperationEfficiency(int carrierCount)
+        private Vector3 CalculateCombinedMovementIntent(out float totalIntentMagnitude)
         {
-            if (carrierCount <= 1)
+            Vector3 combinedIntent = Vector3.zero;
+            totalIntentMagnitude = 0f;
+            for (int index = 0; index < MaximumCarryPoints; index++)
             {
-                return 1f;
-            }
-
-            float agreementTotal = 0f;
-            int comparisonCount = 0;
-            for (int firstIndex = 0; firstIndex < MaximumCarryPoints; firstIndex++)
-            {
-                PlayerCouchCarrier firstCarrier = m_serverOccupants[firstIndex];
-                if (firstCarrier == null)
+                PlayerCouchCarrier carrier = m_serverOccupants[index];
+                if (carrier == null)
                 {
                     continue;
                 }
 
-                Vector3 firstIntent = firstCarrier.GetServerMovementIntent();
-                for (int secondIndex = firstIndex + 1; secondIndex < MaximumCarryPoints; secondIndex++)
-                {
-                    PlayerCouchCarrier secondCarrier = m_serverOccupants[secondIndex];
-                    if (secondCarrier == null)
-                    {
-                        continue;
-                    }
-
-                    Vector3 secondIntent = secondCarrier.GetServerMovementIntent();
-                    float agreement = firstIntent.sqrMagnitude > 0.01f && secondIntent.sqrMagnitude > 0.01f
-                        ? Vector3.Dot(firstIntent.normalized, secondIntent.normalized)
-                        : 0f;
-                    agreementTotal += Mathf.InverseLerp(-1f, 1f, agreement);
-                    comparisonCount++;
-                }
+                Vector3 intent = carrier.GetServerMovementIntent();
+                combinedIntent += intent;
+                totalIntentMagnitude += intent.magnitude;
             }
 
-            return comparisonCount > 0 ? agreementTotal / comparisonCount : 1f;
+            return combinedIntent;
+        }
+
+        private static float CalculateCooperationEfficiency(
+            int carrierCount,
+            Vector3 combinedMovementIntent,
+            float totalIntentMagnitude)
+        {
+            return carrierCount <= 1 || totalIntentMagnitude <= 0.001f
+                ? 1f
+                : Mathf.Clamp01(combinedMovementIntent.magnitude / totalIntentMagnitude);
         }
 
         private void ApplyWeightAndStability()

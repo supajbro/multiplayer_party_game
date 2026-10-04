@@ -133,7 +133,10 @@ namespace CouchGuys.Player
 
         internal Vector3 GetServerMovementIntent()
         {
-            return Time.unscaledTime - m_lastServerIntentTime <= m_intentTimeout
+            float effectiveTimeout = Mathf.Max(
+                m_intentTimeout,
+                m_intentHeartbeatInterval + m_intentSendInterval);
+            return Time.unscaledTime - m_lastServerIntentTime <= effectiveTimeout
                 ? m_serverMovementIntent
                 : Vector3.zero;
         }
@@ -324,6 +327,7 @@ namespace CouchGuys.Player
 
             float targetMultiplier = 1f;
             m_playerController.ClearExternalMovementResistance();
+            m_playerController.ClearExternalFacingTarget();
             NetworkObject couchObject = m_carriedCouch.Value;
             int pointIndex = m_carriedPointIndex.Value;
             RefreshMovementCache(couchObject, pointIndex);
@@ -333,6 +337,7 @@ namespace CouchGuys.Player
 
                 if (m_cachedMovementAnchor != null)
                 {
+                    m_playerController.SetExternalFacingTarget(m_cachedMovementAnchor);
                     m_playerController.SetExternalMovementResistance(
                         m_cachedMovementAnchor,
                         ComfortableCarryDistance,
@@ -354,6 +359,7 @@ namespace CouchGuys.Player
             {
                 m_playerController.SetExternalSpeedMultiplier(1f);
                 m_playerController.ClearExternalMovementResistance();
+                m_playerController.ClearExternalFacingTarget();
             }
 
             m_appliedSpeedMultiplier = 1f;
@@ -433,6 +439,9 @@ namespace CouchGuys.Player
                 m_singleCarrierSpeedMultiplier,
                 m_maximumCooperativeSpeedMultiplier);
             m_intentHeartbeatInterval = Mathf.Max(m_intentSendInterval, m_intentHeartbeatInterval);
+            m_intentTimeout = Mathf.Max(
+                m_intentTimeout,
+                m_intentHeartbeatInterval + m_intentSendInterval);
         }
 #endif
     }
