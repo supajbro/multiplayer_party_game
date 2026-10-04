@@ -1,5 +1,4 @@
 using CouchGuys.Networking;
-using FishNet.Component.Spawning;
 using FishNet.Managing;
 using FishNet.Managing.Object;
 using FishNet.Managing.Transporting;
@@ -28,7 +27,8 @@ namespace CouchGuys.Editor
             if (playerPrefab == null ||
                 playerPrefab.GetComponent<NetworkObject>() == null ||
                 playerPrefab.GetComponent<NetworkObject>().NetworkBehaviours.Count == 0 ||
-                bootstrapPrefab == null)
+                bootstrapPrefab == null ||
+                bootstrapPrefab.GetComponent<NeighbourhoodPlayerSpawner>() == null)
             {
                 EditorApplication.delayCall += BuildSteamMultiplayerAssets;
             }
@@ -101,7 +101,7 @@ namespace CouchGuys.Editor
                 NetworkManager networkManager = root.AddComponent<NetworkManager>();
                 TransportManager transportManager = root.AddComponent<TransportManager>();
                 FishySteamworks.FishySteamworks transport = root.AddComponent<FishySteamworks.FishySteamworks>();
-                PlayerSpawner playerSpawner = root.AddComponent<PlayerSpawner>();
+                NeighbourhoodPlayerSpawner playerSpawner = root.AddComponent<NeighbourhoodPlayerSpawner>();
                 SteamClientBootstrap steamBootstrap = root.AddComponent<SteamClientBootstrap>();
                 SteamLobbyController lobbyController = root.AddComponent<SteamLobbyController>();
                 SteamLobbyDebugInterface debugInterface = root.AddComponent<SteamLobbyDebugInterface>();
@@ -114,15 +114,6 @@ namespace CouchGuys.Editor
                 serialisedTransport.FindProperty("_peerToPeer").boolValue = true;
                 serialisedTransport.FindProperty("_maximumClients").intValue = 4;
                 serialisedTransport.ApplyModifiedPropertiesWithoutUndo();
-
-                Transform spawnRoot = CreateChild(root.transform, "SpawnPoints", Vector3.zero);
-                playerSpawner.Spawns = new[]
-                {
-                    CreateChild(spawnRoot, "Spawn 1", new Vector3(-2f, 0f, -2f)),
-                    CreateChild(spawnRoot, "Spawn 2", new Vector3(2f, 0f, -2f)),
-                    CreateChild(spawnRoot, "Spawn 3", new Vector3(-2f, 0f, 2f)),
-                    CreateChild(spawnRoot, "Spawn 4", new Vector3(2f, 0f, 2f))
-                };
 
                 SetObjectReference(lobbyController, "m_networkManager", networkManager);
                 SetObjectReference(lobbyController, "m_transport", transport);
@@ -139,14 +130,6 @@ namespace CouchGuys.Editor
             {
                 Object.DestroyImmediate(root);
             }
-        }
-
-        private static Transform CreateChild(Transform parent, string name, Vector3 localPosition)
-        {
-            GameObject child = new GameObject(name);
-            child.transform.SetParent(parent, false);
-            child.transform.localPosition = localPosition;
-            return child.transform;
         }
 
         private static void SetObjectReference(Object target, string propertyName, Object value)
@@ -191,7 +174,7 @@ namespace CouchGuys.Editor
                 bootstrap == null ||
                 bootstrap.GetComponent<NetworkManager>() == null ||
                 bootstrap.GetComponent<SteamLobbyController>() == null ||
-                bootstrap.GetComponent<PlayerSpawner>()?.Spawns.Length != 4 ||
+                bootstrap.GetComponent<NeighbourhoodPlayerSpawner>()?.PlayerPrefab == null ||
                 spawnables == null ||
                 spawnables.GetObjectCount() != expectedSpawnableCount)
             {

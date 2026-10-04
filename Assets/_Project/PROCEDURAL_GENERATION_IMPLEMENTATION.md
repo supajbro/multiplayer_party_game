@@ -19,6 +19,8 @@ This creates a placeholder Starting Area, Plane road tiles and Cube houses. The 
 
 For a networked scene, also add `NeighbourhoodSeedSynchroniser` to the same GameObject. Its required FishNet `NetworkObject` is added automatically. Save the object in the scene so FishNet registers it as a scene network object.
 
+`Assets/Scenes/SampleScene.unity` is configured by **Couch Guys > Build Procedural Gameplay Scene**. The builder also runs once after script import when that scene is already open, clean and not yet configured. It adds the networked generator, assigns a stable FishNet scene ID, stores a visible seed-12345 placeholder preview and rebuilds the multiplayer bootstrap.
+
 ## Architecture
 
 - `NeighbourhoodGenerator` validates configuration, selects or accepts a seed, clears its previous result, creates the Starting Area, generates roads, calculates connections, places properties, creates visuals and validates occupancy.
@@ -29,7 +31,9 @@ For a networked scene, also add `NeighbourhoodSeedSynchroniser` to the same Game
 - `GeneratedProperty` is both the House prefab definition and the generated property data exposed to future delivery systems. It contains a `RoadConnection`, `DeliveryPoint`, grid footprint and generated anchor.
 - `GeneratedNeighbourhoodRoot` marks the one hierarchy that the generator is allowed to clear.
 - `NeighbourhoodSeedSynchroniser` is the optional FishNet authority layer. It synchronises one host-selected seed rather than networking static environment objects.
+- `NeighbourhoodPlayerSpawner` replaces FishNet's fixed bootstrap spawn list. On the server it requires authoritative generation to finish, then spawns each Player at one of the generated Starting Area markers.
 - `NeighbourhoodGeneratorEditor` adds Generate, Regenerate and Clear buttons.
+- `ProceduralGameplaySceneBuilder` performs and verifies the gameplay scene and bootstrap wiring.
 
 Future code can read `GeneratedStartingArea`, `GeneratedRoads`, `GeneratedProperties` and `CurrentSeed` directly from the generator. The collections are exposed read-only.
 
@@ -111,6 +115,7 @@ When Use Random Seed is disabled, Seed is used exactly. When enabled, the author
 2. A FishNet `SyncVar<int>` distributes it through the existing connection.
 3. Host and clients call `Generate(seed)` locally.
 4. Roads, Houses and Starting Area remain ordinary static objects and are not individually network spawned.
+5. Only after generation succeeds does `NeighbourhoodPlayerSpawner` instantiate the Player prefab at a generated `PlayerSpawnPoint`.
 
 Do not enable separate generator-only random execution in a multiplayer scene. Adding the synchroniser automatically suppresses `NeighbourhoodGenerator`'s standalone Generate On Start path. The network scene object must use identical generator configuration and prefab metadata in the same build on every peer. Host migration remains outside the existing multiplayer implementation.
 
@@ -150,10 +155,12 @@ NeighbourhoodGenerator
 - `Assets/_Project/Scripts/ProceduralGeneration/GeneratedNeighbourhoodRoot.cs`
 - `Assets/_Project/Scripts/ProceduralGeneration/NeighbourhoodGenerator.cs`
 - `Assets/_Project/Scripts/ProceduralGeneration/NeighbourhoodSeedSynchroniser.cs`
+- `Assets/_Project/Scripts/Networking/NeighbourhoodPlayerSpawner.cs`
 - `Assets/_Project/Scripts/Editor/NeighbourhoodGeneratorEditor.cs`
+- `Assets/_Project/Scripts/Editor/ProceduralGameplaySceneBuilder.cs`
 - `Assets/_Project/PROCEDURAL_GENERATION_IMPLEMENTATION.md`
 
-No existing Player, couch, camera, scene or Steam multiplayer files were modified.
+The existing Player, couch, camera and Steam lobby controller code remains unchanged. `SampleScene.unity`, the generated Steam multiplayer bootstrap prefab and its editor builder were updated to establish generation-before-spawn ordering.
 
 ## Known Limitations
 
@@ -162,4 +169,4 @@ No existing Player, couch, camera, scene or Steam multiplayer files were modifie
 - Property footprints are rectangular grid regions. Arbitrary polygonal bounds are not yet supported.
 - An even-width property has one deterministic centre bias because no single grid cell can be its exact centre.
 - Prefab metadata and generator settings must match across multiplayer peers; configuration is not serialised over the network.
-- Runtime multiplayer verification still requires a host/client Steam session in the Unity project. The implementation does not alter the existing Steam lobby, Player spawn or couch authority code.
+- Runtime multiplayer verification still requires a host/client Steam session in the Unity project. The Steam lobby and couch authority code are unchanged; Player creation now goes through `NeighbourhoodPlayerSpawner`.

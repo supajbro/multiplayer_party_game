@@ -17,6 +17,7 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private NeighbourhoodGenerator m_generator;
 
         private int? m_appliedSeed;
+        private bool m_authoritativeSeedSelected;
 
         public int AuthoritativeSeed => m_authoritativeSeed.Value;
 
@@ -34,9 +35,7 @@ namespace CouchGuys.ProceduralGeneration
         public override void OnStartServer()
         {
             base.OnStartServer();
-            int seed = m_generator.SelectSeed();
-            m_authoritativeSeed.Value = seed;
-            ApplySeed(seed);
+            EnsureAuthoritativeGeneration();
         }
 
         public override void OnStartClient()
@@ -48,6 +47,27 @@ namespace CouchGuys.ProceduralGeneration
         private void OnSeedChanged(int previous, int next, bool asServer)
         {
             ApplySeed(next);
+        }
+
+        /// <summary>
+        /// Ensures server-side terrain exists before a Player is instantiated. The first
+        /// call selects the only authoritative seed; subsequent calls reuse it.
+        /// </summary>
+        public bool EnsureAuthoritativeGeneration()
+        {
+            if (!IsServerInitialized || m_generator == null)
+            {
+                return false;
+            }
+
+            if (!m_authoritativeSeedSelected)
+            {
+                m_authoritativeSeed.Value = m_generator.SelectSeed();
+                m_authoritativeSeedSelected = true;
+            }
+
+            ApplySeed(m_authoritativeSeed.Value);
+            return m_generator.HasGeneratedNeighbourhood;
         }
 
         private void ApplySeed(int seed)

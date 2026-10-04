@@ -68,6 +68,7 @@ namespace CouchGuys.ProceduralGeneration
         public IReadOnlyList<GeneratedProperty> GeneratedProperties => m_generatedProperties;
         public int CurrentSeed { get; private set; }
         public float TileSize => m_tileSize;
+        public bool HasGeneratedNeighbourhood => GeneratedStartingArea != null && m_generatedRoads.Count > 0;
 
         private void Start()
         {
