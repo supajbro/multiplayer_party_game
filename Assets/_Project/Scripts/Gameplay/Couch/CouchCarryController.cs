@@ -26,10 +26,21 @@ namespace CouchGuys.Gameplay.Couch
 
         [Header("Horizontal Carrying")]
         [SerializeField, Min(0f)] private float m_carryForce = 500f;
+        [Tooltip("Force supplied by each carrier moving in the group's resulting direction.")]
         [SerializeField, Min(0f)] private float m_movementForce = 320f;
         [SerializeField, Min(0f)] private float m_damping = 65f;
         [SerializeField, Min(0f)] private float m_maximumHorizontalForce = 700f;
         [SerializeField, Range(0f, 1f)] private float m_rotationInfluence = 0.85f;
+
+        [Header("Slope Physics")]
+        [Tooltip("Inclines below this angle receive no additional slope force.")]
+        [SerializeField, Range(0f, 89f)] private float m_minimumSlopeAngle = 3f;
+        [Tooltip("Inclines at or above this angle receive full additional slope force.")]
+        [SerializeField, Range(0f, 89f)] private float m_maximumSlopeAngle = 45f;
+        [Tooltip("Additional gravity directed down the contacted slope. Normal Rigidbody gravity always remains active.")]
+        [SerializeField, Min(0f)] private float m_slopeGravityInfluence = 0.75f;
+        [Tooltip("Ground resistance applied opposite the couch's movement along a slope.")]
+        [SerializeField, Range(0f, 1f)] private float m_slopeRollingResistance = 0.04f;
 
         [Header("Vertical Support")]
         [SerializeField, Min(0f)] private float m_liftForce = 450f;
@@ -64,6 +75,8 @@ namespace CouchGuys.Gameplay.Couch
         private readonly Vector3[] m_debugHorizontalForces = new Vector3[MaximumCarryPoints];
         private readonly Vector3[] m_debugLiftForces = new Vector3[MaximumCarryPoints];
         private readonly Vector3[] m_debugMovementIntents = new Vector3[MaximumCarryPoints];
+        private Vector3 m_groundNormal = Vector3.up;
+        private float m_lastGroundContactTime = float.NegativeInfinity;
 
         public Rigidbody CouchRigidbody => m_rigidbody;
         public float Weight => m_weight;
@@ -118,9 +131,6 @@ namespace CouchGuys.Gameplay.Couch
             float totalCarrierEfficiency = CalculateTotalCarrierEfficiency(carrierCount);
             float perCarrierEfficiency = carrierCount > 0 ? totalCarrierEfficiency / carrierCount : 0f;
             float movementEfficiency = CalculateTotalCarrierEfficiency(movingCarrierCount);
-            float movementEfficiencyPerMover = movingCarrierCount > 0
-                ? movementEfficiency / movingCarrierCount
-                : 0f;
             float movementSpeedMultiplier = CalculateMovementSpeedMultiplier(
                 movingCarrierCount,
                 cooperationEfficiency);
@@ -191,9 +201,11 @@ namespace CouchGuys.Gameplay.Couch
             }
 
             Vector3 movementForce = combinedMovementIntent *
-                (m_movementForce * movementEfficiencyPerMover * cooperationForceScale *
+                (m_movementForce * movementEfficiency * cooperationForceScale *
                  movementSpeedMultiplier);
             m_rigidbody.AddForce(movementForce, ForceMode.Force);
+
+            ApplySlopeForces();
 
             LimitVelocity(movementSpeedMultiplier);
         }
@@ -460,6 +472,70 @@ namespace CouchGuys.Gameplay.Couch
             return Mathf.Min(m_maximumMovementSpeedMultiplier, 1f + cooperativeBonus);
         }
 
+        private void ApplySlopeForces()
+        {
+            // OnCollisionStay is populated by the preceding physics step. This keeps
+            // the authoritative simulation contact-driven without ground raycasts.
+            if (Time.fixedTime - m_lastGroundContactTime > Time.fixedDeltaTime * 1.5f)
+            {
+                return;
+            }
+
+            float slopeAngle = Vector3.Angle(m_groundNormal, Vector3.up);
+            float slopeProgress = Mathf.InverseLerp(
+                m_minimumSlopeAngle,
+                m_maximumSlopeAngle,
+                slopeAngle);
+            if (slopeProgress <= 0f)
+            {
+                return;
+            }
+
+            Vector3 gravityAlongSlope = Vector3.ProjectOnPlane(Physics.gravity, m_groundNormal);
+            if (gravityAlongSlope.sqrMagnitude < 0.0001f)
+            {
+                return;
+            }
+
+            // Unity's normal gravity already supplies one downhill component. This
+            // configurable additional component preserves real sliding while making
+            // the couch's weight meaningful against the carrying force.
+            m_rigidbody.AddForce(
+                gravityAlongSlope * (m_rigidbody.mass * m_slopeGravityInfluence * slopeProgress),
+                ForceMode.Force);
+
+            Vector3 slopeVelocity = Vector3.ProjectOnPlane(m_rigidbody.linearVelocity, m_groundNormal);
+            if (slopeVelocity.sqrMagnitude > 0.0001f && m_slopeRollingResistance > 0f)
+            {
+                float normalForce = m_rigidbody.mass * Mathf.Abs(Physics.gravity.y) *
+                                    Mathf.Clamp01(m_groundNormal.y);
+                m_rigidbody.AddForce(
+                    -slopeVelocity.normalized * normalForce * m_slopeRollingResistance,
+                    ForceMode.Force);
+            }
+        }
+
+        private void OnCollisionStay(Collision collision)
+        {
+            Vector3 bestGroundNormal = m_groundNormal;
+            bool foundGround = false;
+            for (int index = 0; index < collision.contactCount; index++)
+            {
+                Vector3 normal = collision.GetContact(index).normal;
+                if (normal.y > 0.05f && (!foundGround || normal.y > bestGroundNormal.y))
+                {
+                    bestGroundNormal = normal;
+                    foundGround = true;
+                }
+            }
+
+            if (foundGround)
+            {
+                m_groundNormal = bestGroundNormal;
+                m_lastGroundContactTime = Time.fixedTime;
+            }
+        }
+
         private void ApplyWeightAndStability()
         {
             if (m_rigidbody == null)
@@ -530,6 +606,7 @@ namespace CouchGuys.Gameplay.Couch
             m_maximumCarrierEfficiency = Mathf.Max(m_singleCarrierEfficiency, m_maximumCarrierEfficiency);
             m_carrierCountCurveExponent = Mathf.Max(0.1f, m_carrierCountCurveExponent);
             m_maximumMovementSpeedMultiplier = Mathf.Max(1f, m_maximumMovementSpeedMultiplier);
+            m_maximumSlopeAngle = Mathf.Max(m_minimumSlopeAngle + 0.01f, m_maximumSlopeAngle);
             ApplyWeightAndStability();
         }
 #endif

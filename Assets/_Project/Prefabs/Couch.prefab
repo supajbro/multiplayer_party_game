@@ -218,6 +218,10 @@ MonoBehaviour:
   m_damping: 65
   m_maximumHorizontalForce: 700
   m_rotationInfluence: 0.85
+  m_minimumSlopeAngle: 3
+  m_maximumSlopeAngle: 45
+  m_slopeGravityInfluence: 0.75
+  m_slopeRollingResistance: 0.04
   m_liftForce: 450
   m_liftDamping: 55
   m_maximumLiftForce: 350

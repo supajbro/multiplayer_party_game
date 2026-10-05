@@ -22,6 +22,14 @@ namespace CouchGuys.Player
         [SerializeField, Min(0f)] private float m_speedChangeRate = 12f;
         [SerializeField, Min(0.01f)] private float m_rotationSmoothTime = 0.1f;
 
+        [Header("Uphill Movement")]
+        [Tooltip("Inclines at or below this angle do not slow the player.")]
+        [SerializeField, Range(0f, 89f)] private float m_minimumUphillSlopeAngle = 4f;
+        [Tooltip("Inclines at or above this angle receive the full uphill slowdown.")]
+        [SerializeField, Range(0f, 89f)] private float m_maximumUphillSlopeAngle = 40f;
+        [Tooltip("The maximum portion of speed removed while moving directly uphill.")]
+        [SerializeField, Range(0f, 0.95f)] private float m_uphillSlowdownStrength = 0.45f;
+
         [Header("Jumping And Gravity")]
         [SerializeField, Min(0f)] private float m_jumpHeight = 1.2f;
         [SerializeField] private float m_gravity = -25f;
@@ -37,6 +45,9 @@ namespace CouchGuys.Player
         private Transform m_facingTarget;
         private float m_comfortableResistanceDistance;
         private float m_maximumResistanceDistance;
+        // CharacterController supplies this through its normal collision callback;
+        // retaining it avoids an additional ground raycast every frame.
+        private Vector3 m_groundNormal = Vector3.up;
 
         public bool IsGrounded => m_characterController != null && m_characterController.isGrounded;
         public Vector3 MovementIntent { get; private set; }
@@ -138,10 +149,11 @@ namespace CouchGuys.Player
             Vector2 moveInput = Vector2.ClampMagnitude(m_input.Move, 1f);
             float inputMagnitude = moveInput.magnitude;
             float topSpeed = m_input.SprintHeld ? m_runSpeed : m_walkSpeed;
-            float targetSpeed = topSpeed * inputMagnitude * m_externalSpeedMultiplier;
+            Vector3 intendedMoveDirection = CalculateCameraRelativeDirection(moveInput);
+            float uphillMultiplier = CalculateUphillSpeedMultiplier(intendedMoveDirection);
+            float targetSpeed = topSpeed * inputMagnitude * m_externalSpeedMultiplier * uphillMultiplier;
             m_currentSpeed = Mathf.MoveTowards(m_currentSpeed, targetSpeed, m_speedChangeRate * Time.deltaTime);
 
-            Vector3 intendedMoveDirection = CalculateCameraRelativeDirection(moveInput);
             Vector3 moveDirection = intendedMoveDirection;
             if (m_resistanceAnchor != null)
             {
@@ -177,7 +189,49 @@ namespace CouchGuys.Player
                     m_resistanceAnchor.position,
                     m_maximumResistanceDistance)
                 : Vector3.zero;
+            // Start collecting the normal for next frame before Move invokes
+            // OnControllerColliderHit for this movement.
+            m_groundNormal = Vector3.zero;
             m_characterController.Move(velocity * Time.deltaTime + attachmentCorrection);
+        }
+
+        private float CalculateUphillSpeedMultiplier(Vector3 movementDirection)
+        {
+            if (!IsGrounded || movementDirection.sqrMagnitude < 0.0001f)
+            {
+                return 1f;
+            }
+
+            float slopeAngle = Vector3.Angle(m_groundNormal, Vector3.up);
+            float slopeProgress = Mathf.InverseLerp(
+                m_minimumUphillSlopeAngle,
+                m_maximumUphillSlopeAngle,
+                slopeAngle);
+            if (slopeProgress <= 0f)
+            {
+                return 1f;
+            }
+
+            Vector3 uphill = Vector3.ProjectOnPlane(Vector3.up, m_groundNormal);
+            Vector3 horizontalUphill = Vector3.ProjectOnPlane(uphill, Vector3.up);
+            if (horizontalUphill.sqrMagnitude < 0.0001f)
+            {
+                return 1f;
+            }
+
+            float uphillAmount = Mathf.Max(0f, Vector3.Dot(
+                movementDirection.normalized,
+                horizontalUphill.normalized));
+            float slowdown = m_uphillSlowdownStrength * slopeProgress * uphillAmount;
+            return 1f - slowdown;
+        }
+
+        private void OnControllerColliderHit(ControllerColliderHit hit)
+        {
+            if (hit.normal.y > m_groundNormal.y)
+            {
+                m_groundNormal = hit.normal;
+            }
         }
 
         internal static Vector3 ApplyDirectionalResistance(
@@ -247,6 +301,9 @@ namespace CouchGuys.Player
             m_runSpeed = Mathf.Max(m_walkSpeed, m_runSpeed);
             m_gravity = Mathf.Min(-0.01f, m_gravity);
             m_terminalVelocity = Mathf.Max(0f, m_terminalVelocity);
+            m_maximumUphillSlopeAngle = Mathf.Max(
+                m_minimumUphillSlopeAngle + 0.01f,
+                m_maximumUphillSlopeAngle);
         }
 #endif
     }
