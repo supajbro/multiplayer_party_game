@@ -37,10 +37,14 @@ namespace CouchGuys.Gameplay.Couch
         [SerializeField, Min(0f)] private float m_maximumLiftForce = 350f;
 
         [Header("Carrier Scaling")]
-        [SerializeField, Range(0.05f, 1f)] private float m_singleCarrierEfficiency = 0.45f;
-        [SerializeField, Range(0f, 1f)] private float m_additionalCarrierEfficiency = 0.35f;
-        [SerializeField, Min(0.1f)] private float m_maximumCarrierEfficiency = 1.25f;
+        [SerializeField, Range(0.05f, 1f)] private float m_singleCarrierEfficiency = 0.35f;
+        [SerializeField, Min(0.1f)] private float m_maximumCarrierEfficiency = 1f;
+        [Tooltip("Values above 1 keep two-player carrying heavy while shifting more benefit to the third and fourth movers.")]
+        [SerializeField, Min(0.1f)] private float m_carrierCountCurveExponent = 1.8f;
         [SerializeField, Range(0f, 1f)] private float m_minimumConflictEfficiency = 0.45f;
+        [Tooltip("Movement-speed increase supplied by each additional player moving in the same direction.")]
+        [SerializeField, Min(0f)] private float m_speedIncreasePerAdditionalMover;
+        [SerializeField, Min(1f)] private float m_maximumMovementSpeedMultiplier = 1f;
 
         [Header("Stability")]
         [SerializeField, Min(0.1f)] private float m_maximumLinearVelocity = 7f;
@@ -54,6 +58,7 @@ namespace CouchGuys.Gameplay.Couch
         private readonly SyncVar<int> m_frontRightOccupant = new(-1);
         private readonly SyncVar<int> m_rearLeftOccupant = new(-1);
         private readonly SyncVar<int> m_rearRightOccupant = new(-1);
+        private readonly SyncVar<int> m_movingCarrierCount = new();
         private readonly SyncVar<float> m_cooperationEfficiency = new(1f);
         private readonly PlayerCouchCarrier[] m_serverOccupants = new PlayerCouchCarrier[MaximumCarryPoints];
         private readonly Vector3[] m_debugHorizontalForces = new Vector3[MaximumCarryPoints];
@@ -63,6 +68,7 @@ namespace CouchGuys.Gameplay.Couch
         public Rigidbody CouchRigidbody => m_rigidbody;
         public float Weight => m_weight;
         public int ActiveCarrierCount => CountActiveCarriers();
+        public int MovingCarrierCount => m_movingCarrierCount.Value;
         public float CurrentCooperationEfficiency => m_cooperationEfficiency.Value;
         public Vector3 CurrentVelocity => m_rigidbody != null ? m_rigidbody.linearVelocity : Vector3.zero;
         internal int ServerCarrierCount => IsServerInitialized ? CountServerCarriers() : 0;
@@ -100,14 +106,24 @@ namespace CouchGuys.Gameplay.Couch
             }
 
             int carrierCount = CountServerCarriers();
-            Vector3 combinedMovementIntent = CalculateCombinedMovementIntent(out float totalIntentMagnitude);
+            Vector3 combinedMovementIntent = CalculateCombinedMovementIntent(
+                out float totalIntentMagnitude,
+                out int movingCarrierCount);
+            m_movingCarrierCount.Value = movingCarrierCount;
             float cooperationEfficiency = CalculateCooperationEfficiency(
-                carrierCount,
+                movingCarrierCount,
                 combinedMovementIntent,
                 totalIntentMagnitude);
             m_cooperationEfficiency.Value = cooperationEfficiency;
             float totalCarrierEfficiency = CalculateTotalCarrierEfficiency(carrierCount);
             float perCarrierEfficiency = carrierCount > 0 ? totalCarrierEfficiency / carrierCount : 0f;
+            float movementEfficiency = CalculateTotalCarrierEfficiency(movingCarrierCount);
+            float movementEfficiencyPerMover = movingCarrierCount > 0
+                ? movementEfficiency / movingCarrierCount
+                : 0f;
+            float movementSpeedMultiplier = CalculateMovementSpeedMultiplier(
+                movingCarrierCount,
+                cooperationEfficiency);
             float cooperationForceScale = Mathf.Lerp(
                 m_minimumConflictEfficiency,
                 1f,
@@ -175,15 +191,16 @@ namespace CouchGuys.Gameplay.Couch
             }
 
             Vector3 movementForce = combinedMovementIntent *
-                (m_movementForce * perCarrierEfficiency * cooperationForceScale);
+                (m_movementForce * movementEfficiencyPerMover * cooperationForceScale *
+                 movementSpeedMultiplier);
             m_rigidbody.AddForce(movementForce, ForceMode.Force);
 
-            LimitVelocity();
+            LimitVelocity(movementSpeedMultiplier);
         }
 
         public float CalculateCarrierSpeedMultiplier(float singleCarrierMultiplier, float maximumCooperativeMultiplier)
         {
-            int carrierCount = Mathf.Max(1, ActiveCarrierCount);
+            int carrierCount = Mathf.Max(1, MovingCarrierCount);
             float totalEfficiency = CalculateTotalCarrierEfficiency(carrierCount);
             float countProgress = Mathf.InverseLerp(
                 m_singleCarrierEfficiency,
@@ -380,16 +397,24 @@ namespace CouchGuys.Gameplay.Couch
                 return 0f;
             }
 
-            float additionalCarriers = Mathf.Pow(carrierCount - 1, 0.75f);
-            return Mathf.Min(
+            float carrierProgress = Mathf.InverseLerp(
+                1f,
+                MaximumCarryPoints,
+                Mathf.Clamp(carrierCount, 1, MaximumCarryPoints));
+            float curvedProgress = Mathf.Pow(carrierProgress, m_carrierCountCurveExponent);
+            return Mathf.Lerp(
+                m_singleCarrierEfficiency,
                 m_maximumCarrierEfficiency,
-                m_singleCarrierEfficiency + m_additionalCarrierEfficiency * additionalCarriers);
+                curvedProgress);
         }
 
-        private Vector3 CalculateCombinedMovementIntent(out float totalIntentMagnitude)
+        private Vector3 CalculateCombinedMovementIntent(
+            out float totalIntentMagnitude,
+            out int movingCarrierCount)
         {
             Vector3 combinedIntent = Vector3.zero;
             totalIntentMagnitude = 0f;
+            movingCarrierCount = 0;
             for (int index = 0; index < MaximumCarryPoints; index++)
             {
                 PlayerCouchCarrier carrier = m_serverOccupants[index];
@@ -401,19 +426,38 @@ namespace CouchGuys.Gameplay.Couch
                 Vector3 intent = carrier.GetServerMovementIntent();
                 combinedIntent += intent;
                 totalIntentMagnitude += intent.magnitude;
+                if (intent.sqrMagnitude > 0.01f)
+                {
+                    movingCarrierCount++;
+                }
             }
 
             return combinedIntent;
         }
 
         private static float CalculateCooperationEfficiency(
-            int carrierCount,
+            int movingCarrierCount,
             Vector3 combinedMovementIntent,
             float totalIntentMagnitude)
         {
-            return carrierCount <= 1 || totalIntentMagnitude <= 0.001f
+            return movingCarrierCount <= 1 || totalIntentMagnitude <= 0.001f
                 ? 1f
                 : Mathf.Clamp01(combinedMovementIntent.magnitude / totalIntentMagnitude);
+        }
+
+        private float CalculateMovementSpeedMultiplier(
+            int movingCarrierCount,
+            float cooperationEfficiency)
+        {
+            if (movingCarrierCount <= 1)
+            {
+                return 1f;
+            }
+
+            float cooperativeBonus = (movingCarrierCount - 1) *
+                                     m_speedIncreasePerAdditionalMover *
+                                     cooperationEfficiency;
+            return Mathf.Min(m_maximumMovementSpeedMultiplier, 1f + cooperativeBonus);
         }
 
         private void ApplyWeightAndStability()
@@ -427,13 +471,14 @@ namespace CouchGuys.Gameplay.Couch
             m_rigidbody.maxAngularVelocity = Mathf.Max(0.1f, m_maximumAngularVelocity);
         }
 
-        private void LimitVelocity()
+        private void LimitVelocity(float movementSpeedMultiplier)
         {
-            if (m_rigidbody.linearVelocity.sqrMagnitude > m_maximumLinearVelocity * m_maximumLinearVelocity)
+            float maximumVelocity = m_maximumLinearVelocity * movementSpeedMultiplier;
+            if (m_rigidbody.linearVelocity.sqrMagnitude > maximumVelocity * maximumVelocity)
             {
                 m_rigidbody.linearVelocity = Vector3.ClampMagnitude(
                     m_rigidbody.linearVelocity,
-                    m_maximumLinearVelocity);
+                    maximumVelocity);
             }
         }
 
@@ -483,6 +528,8 @@ namespace CouchGuys.Gameplay.Couch
             base.OnValidate();
             m_weight = Mathf.Max(1f, m_weight);
             m_maximumCarrierEfficiency = Mathf.Max(m_singleCarrierEfficiency, m_maximumCarrierEfficiency);
+            m_carrierCountCurveExponent = Mathf.Max(0.1f, m_carrierCountCurveExponent);
+            m_maximumMovementSpeedMultiplier = Mathf.Max(1f, m_maximumMovementSpeedMultiplier);
             ApplyWeightAndStability();
         }
 #endif

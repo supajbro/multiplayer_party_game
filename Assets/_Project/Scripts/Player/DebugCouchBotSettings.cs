@@ -31,14 +31,15 @@ namespace CouchGuys.Player
         }
 
         [FormerlySerializedAs("m_spawnBot")]
-        [SerializeField, Range(0, 4)] private int m_debugBotCount;
+        [Tooltip("Set above zero on the Player prefab to spawn cooperative carriers for a solo host test.")]
+        [SerializeField, Range(0, 3)] private int m_debugBotCount;
         [SerializeField] private BehaviourState m_behaviour = BehaviourState.CooperateWithPlayer;
         [SerializeField] private CarryPointPreference m_preferredCarryPoint = CarryPointPreference.Any;
         [SerializeField] private Vector3 m_spawnOffset = new(2f, 0f, 2f);
 
         [Header("Movement")]
         [SerializeField, Min(0.1f)] private float m_approachSpeed = 3.5f;
-        [SerializeField, Min(0.1f)] private float m_carryingSpeed = 3f;
+        [SerializeField, Min(0.1f)] private float m_carryingSpeed = 7.5f;
         [SerializeField, Min(0f)] private float m_pointStandOff = 0.55f;
         [SerializeField, Min(1f)] private float m_turnSpeed = 540f;
         [SerializeField] private Vector3 m_configuredDirection = Vector3.forward;
@@ -48,7 +49,7 @@ namespace CouchGuys.Player
         [SerializeField, Min(0.1f)] private float m_retryDelay = 0.75f;
         [SerializeField, Min(0.1f)] private float m_wanderDirectionInterval = 2f;
 
-        public int DebugBotCount => Mathf.Clamp(m_debugBotCount, 0, 4);
+        public int DebugBotCount => Mathf.Clamp(m_debugBotCount, 0, 3);
         public BehaviourState Behaviour => m_behaviour;
         public CarryPointPreference PreferredCarryPoint => m_preferredCarryPoint;
         public Vector3 SpawnOffset => m_spawnOffset;

@@ -46,7 +46,9 @@ namespace CouchGuys.ProceduralGeneration
 
         [Header("Elevation")]
         [SerializeField] private bool m_elevationEnabled = true;
-        [Tooltip("Height difference between elevated neighbourhood sections.")]
+        [Tooltip("Minimum seeded height difference between elevated neighbourhood sections.")]
+        [SerializeField, Min(0.1f)] private float m_minimumElevationStep = 2f;
+        [Tooltip("Maximum seeded height difference between elevated neighbourhood sections.")]
         [SerializeField, Min(0.1f)] private float m_elevationStep = 8f;
         [SerializeField, Min(0f)] private float m_maximumElevation = 24f;
         [SerializeField, Range(1f, 60f)] private float m_maximumRoadSlope = 45f;
@@ -272,7 +274,9 @@ namespace CouchGuys.ProceduralGeneration
                 return false;
             }
 
-            if (m_elevationStep <= 0f || m_maximumElevation < 0f || m_maximumRoadSlope <= 0f)
+            if (m_minimumElevationStep <= 0f || m_elevationStep <= 0f ||
+                m_minimumElevationStep > m_elevationStep ||
+                m_maximumElevation < 0f || m_maximumRoadSlope <= 0f)
             {
                 Debug.LogError("Neighbourhood Generator elevation settings are invalid.", this);
                 return false;
@@ -483,7 +487,11 @@ namespace CouchGuys.ProceduralGeneration
             }
 
             float maximumRise = Mathf.Tan(m_maximumRoadSlope * Mathf.Deg2Rad) * m_roadTileSize;
-            float elevationStep = Mathf.Min(m_elevationStep, maximumRise);
+            float maximumStep = Mathf.Min(m_elevationStep, maximumRise, m_maximumElevation);
+            float minimumStep = Mathf.Min(m_minimumElevationStep, maximumStep);
+            float elevationStep = Mathf.Round(
+                Mathf.Lerp(minimumStep, maximumStep, (float)random.NextDouble()) * 2f) * 0.5f;
+            elevationStep = Mathf.Max(0.1f, elevationStep);
             int maximumLevel = Mathf.FloorToInt(m_maximumElevation / elevationStep);
             if (maximumLevel <= 0)
             {
@@ -493,25 +501,44 @@ namespace CouchGuys.ProceduralGeneration
                 return;
             }
 
-            int sectionSize = m_gridHeight >= 4 ? 2 : 1;
-            int sectionCount = Mathf.CeilToInt(m_gridHeight / (float)sectionSize);
-            int[] sectionLevels = new int[sectionCount];
+            int maximumLevelChange = Mathf.Max(1, Mathf.FloorToInt(maximumRise / elevationStep));
+            int[] rowLevels = new int[m_gridHeight];
             bool hasElevation = false;
-            for (int section = 1; section < sectionCount; section++)
+            for (int row = 1; row < m_gridHeight; row++)
             {
-                int change = random.Next(0, 5) == 0 ? -1 : random.Next(0, 3) == 0 ? 1 : 0;
-                sectionLevels[section] = Mathf.Clamp(sectionLevels[section - 1] + change, 0, maximumLevel);
-                hasElevation |= sectionLevels[section] > 0;
+                int previousLevel = rowLevels[row - 1];
+                int nextLevel = previousLevel;
+                if (random.Next(100) < 75)
+                {
+                    bool moveUp = previousLevel <= 0 ||
+                                  (previousLevel < maximumLevel && random.Next(100) < 60);
+                    int availableLevels = moveUp
+                        ? maximumLevel - previousLevel
+                        : previousLevel;
+                    int changeLimit = Mathf.Min(maximumLevelChange, availableLevels);
+                    if (changeLimit > 0)
+                    {
+                        int change = random.Next(1, changeLimit + 1);
+                        nextLevel += moveUp ? change : -change;
+                    }
+                }
+
+                rowLevels[row] = nextLevel;
+                hasElevation |= nextLevel > 0;
             }
 
-            if (!hasElevation && sectionCount > 1)
+            if (!hasElevation)
             {
-                sectionLevels[sectionCount - 1] = 1;
+                int raisedRow = random.Next(1, m_gridHeight);
+                for (int row = raisedRow; row < m_gridHeight; row++)
+                {
+                    rowLevels[row] = 1;
+                }
             }
 
             for (int row = 0; row < m_gridHeight; row++)
             {
-                float elevation = sectionLevels[row / sectionSize] * elevationStep;
+                float elevation = rowLevels[row] * elevationStep;
                 for (int column = 0; column < m_gridWidth; column++)
                 {
                     m_blockElevations[column, row] = elevation;
@@ -1399,6 +1426,10 @@ namespace CouchGuys.ProceduralGeneration
             m_housesPerBlock = Mathf.Max(0, m_housesPerBlock);
             m_minimumHouseSpacing = Mathf.Max(0, m_minimumHouseSpacing);
             m_elevationStep = Mathf.Max(0.1f, m_elevationStep);
+            m_minimumElevationStep = Mathf.Clamp(
+                m_minimumElevationStep,
+                0.1f,
+                m_elevationStep);
             m_maximumElevation = Mathf.Max(0f, m_maximumElevation);
             m_maximumRoadSlope = Mathf.Clamp(m_maximumRoadSlope, 1f, 60f);
             m_residentialGroundVerticalOffset = Mathf.Max(0f, m_residentialGroundVerticalOffset);

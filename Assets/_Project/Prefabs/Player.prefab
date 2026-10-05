@@ -185,20 +185,20 @@ MonoBehaviour:
   m_serverRangeTolerance: 0.35
   m_carryDistance: 0.45
   m_carryHeight: 0.45
-  m_singleCarrierSpeedMultiplier: 0.52
-  m_maximumCooperativeSpeedMultiplier: 0.82
+  m_singleCarrierSpeedMultiplier: 0.2
+  m_maximumCooperativeSpeedMultiplier: 0.52
   m_comfortableCarryDistance: 1.6
   m_maximumCarrySeparation: 3
   m_intentSendInterval: 0.1
   m_intentHeartbeatInterval: 0.5
   m_intentTimeout: 0.6
   m_debugBot:
-    m_debugBotCount: 0
-    m_behaviour: 1
+    m_debugBotCount: 2
+    m_behaviour: 0
     m_preferredCarryPoint: -1
     m_spawnOffset: {x: 2, y: 0, z: 2}
     m_approachSpeed: 3.5
-    m_carryingSpeed: 3
+    m_carryingSpeed: 7.5
     m_pointStandOff: 0.55
     m_turnSpeed: 540
     m_configuredDirection: {x: 0, y: 0, z: 1}
@@ -638,15 +638,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
       propertyPath: m_LocalScale.x
-      value: 75
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
       propertyPath: m_LocalScale.y
-      value: 75
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
       propertyPath: m_LocalScale.z
-      value: 75
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
       propertyPath: m_LocalPosition.x

@@ -221,10 +221,12 @@ MonoBehaviour:
   m_liftForce: 450
   m_liftDamping: 55
   m_maximumLiftForce: 350
-  m_singleCarrierEfficiency: 0.45
-  m_additionalCarrierEfficiency: 0.35
-  m_maximumCarrierEfficiency: 1.25
+  m_singleCarrierEfficiency: 0.35
+  m_maximumCarrierEfficiency: 1
+  m_carrierCountCurveExponent: 1.8
   m_minimumConflictEfficiency: 0.45
+  m_speedIncreasePerAdditionalMover: 0
+  m_maximumMovementSpeedMultiplier: 1
   m_maximumLinearVelocity: 7
   m_maximumAngularVelocity: 7
   m_showForceGizmos: 0

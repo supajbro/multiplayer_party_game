@@ -220,8 +220,8 @@ namespace CouchGuys.Editor
                 serialisedCarrier.FindProperty("m_maximumCarrySeparation");
             if (comfortableDistance.floatValue <= 0.5f && maximumDistance.floatValue <= 0.5f)
             {
-                comfortableDistance.floatValue = 1.6f;
-                maximumDistance.floatValue = 3f;
+                comfortableDistance.floatValue = 0.65f;
+                maximumDistance.floatValue = 1f;
                 serialisedCarrier.ApplyModifiedPropertiesWithoutUndo();
             }
         }

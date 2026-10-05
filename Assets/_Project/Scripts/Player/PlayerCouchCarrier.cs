@@ -30,11 +30,11 @@ namespace CouchGuys.Player
         [Header("Carrying")]
         [SerializeField, Min(0f)] private float m_carryDistance = 0.45f;
         [SerializeField, Min(0f)] private float m_carryHeight = 0.45f;
-        [SerializeField, Range(0.1f, 1f)] private float m_singleCarrierSpeedMultiplier = 0.52f;
-        [SerializeField, Range(0.1f, 1f)] private float m_maximumCooperativeSpeedMultiplier = 0.82f;
+        [SerializeField, Range(0.1f, 1f)] private float m_singleCarrierSpeedMultiplier = 0.35f;
+        [SerializeField, Range(0.1f, 1f)] private float m_maximumCooperativeSpeedMultiplier = 1f;
         [FormerlySerializedAs("m_softCarrySeparation")]
-        [SerializeField, Min(0.1f)] private float m_comfortableCarryDistance = 1.6f;
-        [SerializeField, Min(0.5f)] private float m_maximumCarrySeparation = 3f;
+        [SerializeField, Min(0.1f)] private float m_comfortableCarryDistance = 0.65f;
+        [SerializeField, Min(0.5f)] private float m_maximumCarrySeparation = 1f;
 
         [Header("Networked Movement Intent")]
         [SerializeField, Min(0.02f)] private float m_intentSendInterval = 0.1f;
