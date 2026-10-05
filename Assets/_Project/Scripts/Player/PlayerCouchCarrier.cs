@@ -4,6 +4,7 @@ using CouchGuys.Input;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using FishNet.Transporting;
+using FishNet.Component.Transforming;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -77,6 +78,11 @@ namespace CouchGuys.Player
 
             UpdateMovementSpeed();
             UpdateMovementIntent();
+            if (m_input != null && m_input.TeleportToDeliveryPressedThisFrame && IsCarrying)
+            {
+                RequestTeleportToDeliveryServerRpc();
+            }
+
             if (m_input != null && m_input.InteractPressedThisFrame)
             {
                 if (IsCarrying)
@@ -299,6 +305,41 @@ namespace CouchGuys.Player
         private void RequestReleaseServerRpc()
         {
             ReleaseCurrentCouchServer();
+        }
+
+        /// <summary>Temporary test-only shortcut; the DeliveryManager performs all validation.</summary>
+        [ServerRpc]
+        private void RequestTeleportToDeliveryServerRpc()
+        {
+            DeliveryManager deliveryManager = FindFirstObjectByType<DeliveryManager>();
+            deliveryManager?.TryTeleportActiveDeliveryServer(this);
+        }
+
+        internal void TeleportWithCouchServer(Vector3 position, Quaternion rotation)
+        {
+            if (!IsServerInitialized)
+            {
+                return;
+            }
+
+            ApplyTeleport(position, rotation);
+            ApplyTeleportObserversRpc(position, rotation);
+        }
+
+        [ObserversRpc(ExcludeServer = true)]
+        private void ApplyTeleportObserversRpc(Vector3 position, Quaternion rotation)
+        {
+            if (IsOwner)
+            {
+                ApplyTeleport(position, rotation);
+            }
+        }
+
+        private void ApplyTeleport(Vector3 position, Quaternion rotation)
+        {
+            m_playerController?.Teleport(position, rotation);
+            NetworkTransform networkTransform = GetComponent<NetworkTransform>();
+            networkTransform?.Teleport();
         }
 
         private void ReleaseCurrentCouchServer()

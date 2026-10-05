@@ -47,6 +47,7 @@ namespace CouchGuys.Editor
             }
 
             GameObject defaultDeliveryNpcPrefab = DeliveryNPCPrefabBuilder.EnsureDeliveryNpcPrefab();
+            GameObject[] defaultHousePrefabs = HousePrefabBuilder.LoadHousePrefabs();
 
             Scene scene = SceneManager.GetSceneByPath(GameplayScenePath);
             bool openedTemporarily = !scene.IsValid() || !scene.isLoaded;
@@ -55,22 +56,33 @@ namespace CouchGuys.Editor
                 scene = EditorSceneManager.OpenScene(GameplayScenePath, OpenSceneMode.Additive);
             }
 
-            if (IsConfigured(scene))
-            {
-                if (openedTemporarily)
-                {
-                    EditorSceneManager.CloseScene(scene, true);
-                }
-
-                return;
-            }
-
             NeighbourhoodGenerator generator = FindGenerator(scene);
             if (generator == null)
             {
                 GameObject root = new GameObject("NeighbourhoodGenerator");
                 SceneManager.MoveGameObjectToScene(root, scene);
                 generator = root.AddComponent<NeighbourhoodGenerator>();
+            }
+
+            bool assignedDefaultHouses = generator.TrySetDefaultHousePrefabs(defaultHousePrefabs);
+
+            if (IsConfigured(scene))
+            {
+                if (assignedDefaultHouses)
+                {
+                    generator.Generate(12345);
+                    EditorUtility.SetDirty(generator);
+                    EditorSceneManager.MarkSceneDirty(scene);
+                    EditorSceneManager.SaveScene(scene);
+                    AssetDatabase.SaveAssets();
+                }
+
+                if (openedTemporarily)
+                {
+                    EditorSceneManager.CloseScene(scene, true);
+                }
+
+                return;
             }
 
             if (generator.DeliveryNpcPrefab == null)

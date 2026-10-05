@@ -22,6 +22,7 @@ namespace CouchGuys.Input
         private InputAction m_sprintAction;
         private InputAction m_interactAction;
         private InputAction m_mapAction;
+        private InputAction m_teleportToDeliveryAction;
         private InputActionAsset m_runtimeInputActions;
 
         public Vector2 Move => m_moveAction?.ReadValue<Vector2>() ?? Vector2.zero;
@@ -30,6 +31,8 @@ namespace CouchGuys.Input
         public bool SprintHeld => m_sprintAction?.IsPressed() ?? false;
         public bool InteractPressedThisFrame => m_interactAction?.WasPressedThisFrame() ?? false;
         public bool MapPressedThisFrame => m_mapAction?.WasPressedThisFrame() ?? false;
+        public bool TeleportToDeliveryPressedThisFrame =>
+            m_teleportToDeliveryAction?.WasPressedThisFrame() ?? false;
 
         private void Awake()
         {
@@ -77,6 +80,7 @@ namespace CouchGuys.Input
             m_sprintAction = m_playerMap.FindAction("Sprint", true);
             m_interactAction = m_playerMap.FindAction("Interact", true);
             m_mapAction = m_playerMap.FindAction("Map", true);
+            m_teleportToDeliveryAction = m_playerMap.FindAction("Teleport To Delivery", true);
         }
 
 #if UNITY_EDITOR

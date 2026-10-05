@@ -80,6 +80,25 @@ namespace CouchGuys.Player
             m_facingTarget = null;
         }
 
+        public void Teleport(Vector3 position, Quaternion rotation)
+        {
+            bool wasEnabled = m_characterController != null && m_characterController.enabled;
+            if (wasEnabled)
+            {
+                m_characterController.enabled = false;
+            }
+
+            transform.SetPositionAndRotation(position, rotation);
+            m_verticalVelocity = 0f;
+            m_currentSpeed = 0f;
+            MovementIntent = Vector3.zero;
+
+            if (wasEnabled)
+            {
+                m_characterController.enabled = true;
+            }
+        }
+
         private void Awake()
         {
             m_characterController = GetComponent<CharacterController>();

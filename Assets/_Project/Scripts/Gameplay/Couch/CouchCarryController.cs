@@ -1,6 +1,7 @@
 using CouchGuys.Player;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
+using FishNet.Component.Transforming;
 using UnityEngine;
 
 namespace CouchGuys.Gameplay.Couch
@@ -64,6 +65,7 @@ namespace CouchGuys.Gameplay.Couch
         public int ActiveCarrierCount => CountActiveCarriers();
         public float CurrentCooperationEfficiency => m_cooperationEfficiency.Value;
         public Vector3 CurrentVelocity => m_rigidbody != null ? m_rigidbody.linearVelocity : Vector3.zero;
+        internal int ServerCarrierCount => IsServerInitialized ? CountServerCarriers() : 0;
 
         private void Awake()
         {
@@ -78,7 +80,7 @@ namespace CouchGuys.Gameplay.Couch
         {
             base.OnStartServer();
             m_rigidbody.isKinematic = false;
-            ClearAllOccupantsServer();
+            ReleaseAllOccupantsServer();
         }
 
         public override void OnStartClient()
@@ -283,7 +285,7 @@ namespace CouchGuys.Gameplay.Couch
             occupant.ClearCarriedCouchServer(this, pointIndex);
         }
 
-        private void ClearAllOccupantsServer()
+        internal void ReleaseAllOccupantsServer()
         {
             for (int index = 0; index < MaximumCarryPoints; index++)
             {
@@ -295,6 +297,28 @@ namespace CouchGuys.Gameplay.Couch
                     occupant.ClearCarriedCouchServer(this, index);
                 }
             }
+        }
+
+        internal void TeleportServer(Vector3 position, Quaternion rotation)
+        {
+            if (!IsServerInitialized || m_rigidbody == null)
+            {
+                return;
+            }
+
+            m_rigidbody.position = position;
+            m_rigidbody.rotation = rotation;
+            m_rigidbody.linearVelocity = Vector3.zero;
+            m_rigidbody.angularVelocity = Vector3.zero;
+            transform.SetPositionAndRotation(position, rotation);
+            GetComponent<NetworkTransform>()?.Teleport();
+        }
+
+        internal PlayerCouchCarrier GetServerCarrier(int pointIndex)
+        {
+            return IsServerInitialized && IsValidPointIndex(pointIndex)
+                ? m_serverOccupants[pointIndex]
+                : null;
         }
 
         private void SetOccupantObjectId(int pointIndex, int objectId)

@@ -35,6 +35,8 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField, Min(0)] private int m_minimumHouseSpacing = 1;
         [SerializeField] private Vector2Int m_standardPropertyFootprint = Vector2Int.one;
         [SerializeField] private Vector3 m_placeholderHouseSize = new Vector3(10f, 6f, 10f);
+        [Tooltip("Uniform house visual size relative to its generated property footprint. Values above 1 allow a small, intentional overhang beyond the grid cell.")]
+        [SerializeField, Range(0.1f, 1.5f)] private float m_houseFootprintFill = 1.15f;
 
         [Header("Elevation")]
         [SerializeField] private bool m_elevationEnabled = true;
@@ -158,6 +160,23 @@ namespace CouchGuys.ProceduralGeneration
         public void SetDeliveryNpcPrefab(GameObject deliveryNpcPrefab)
         {
             m_deliveryNpcPrefab = deliveryNpcPrefab;
+        }
+
+        public bool TrySetDefaultHousePrefabs(GameObject[] housePrefabs)
+        {
+            if (m_housePrefabs != null)
+            {
+                for (int index = 0; index < m_housePrefabs.Length; index++)
+                {
+                    if (m_housePrefabs[index] != null)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            m_housePrefabs = housePrefabs ?? Array.Empty<GameObject>();
+            return m_housePrefabs.Length > 0;
         }
 
         [ContextMenu("Clear Generated Neighbourhood")]
@@ -711,7 +730,6 @@ namespace CouchGuys.ProceduralGeneration
                         GameObject property = prefab != null
                             ? Instantiate(prefab, centre, Quaternion.identity, m_housesRoot)
                             : CreatePlaceholderHouse(centre, footprint);
-                        FacePropertyTowardsRoad(property.transform, candidate.Road);
                         property.name = prefab != null
                             ? $"House_{houseIndex:000}"
                             : $"Placeholder_House_{houseIndex:000}";
@@ -731,6 +749,8 @@ namespace CouchGuys.ProceduralGeneration
                         }
 
                         generatedProperty.Initialise(candidate.Anchor, footprint, roadConnection, deliveryPoint);
+                        FacePropertyTowardsRoad(property.transform, candidate.Road);
+                        FitPropertyVisualToFootprint(generatedProperty, footprint);
                         m_generatedProperties.Add(generatedProperty);
                         housesInBlock++;
                         houseIndex++;
@@ -932,19 +952,127 @@ namespace CouchGuys.ProceduralGeneration
             }
 
             GeneratedProperty metadata = property.GetComponent<GeneratedProperty>();
+            if (metadata != null && metadata.FitVisualToFootprint && metadata.VisualRoot != null)
+            {
+                // The Blender houses are authored Z-up with their facade along -Y.
+                // Correct Z-up to Unity Y-up with -90 X, then turn around the model's
+                // original Z axis so the facade points at this property's road.
+                Vector3 localDirectionToRoad = Vector3.ProjectOnPlane(
+                    property.InverseTransformDirection(directionToRoad.normalized),
+                    Vector3.up).normalized;
+                float localZAngle = Vector3.SignedAngle(
+                    Vector3.forward,
+                    localDirectionToRoad,
+                    Vector3.up);
+                metadata.VisualRoot.localRotation = Quaternion.Euler(-90f, 0f, localZAngle);
+                SetPropertyPointDirection(metadata.RoadConnection, localDirectionToRoad);
+                SetPropertyPointDirection(metadata.DeliveryPoint, localDirectionToRoad);
+                return;
+            }
+
             property.rotation = Quaternion.LookRotation(directionToRoad.normalized, Vector3.up);
-            if (metadata == null || metadata.RoadConnection == null)
+        }
+
+        private static void SetPropertyPointDirection(Transform point, Vector3 localDirection)
+        {
+            if (point == null || localDirection.sqrMagnitude < 0.001f)
             {
                 return;
             }
 
-            Vector3 connectionForward = Vector3.ProjectOnPlane(metadata.RoadConnection.forward, Vector3.up);
-            if (connectionForward.sqrMagnitude > 0.001f)
+            float distance = Vector3.ProjectOnPlane(point.localPosition, Vector3.up).magnitude;
+            point.localPosition = localDirection.normalized * distance;
+            point.localRotation = Quaternion.LookRotation(localDirection.normalized, Vector3.up);
+        }
+
+        private void FitPropertyVisualToFootprint(GeneratedProperty property, Vector2Int footprint)
+        {
+            if (property == null || !property.FitVisualToFootprint || property.VisualRoot == null)
             {
-                property.rotation = Quaternion.AngleAxis(
-                    Vector3.SignedAngle(connectionForward, directionToRoad, Vector3.up),
-                    Vector3.up) * property.rotation;
+                return;
             }
+
+            Renderer[] renderers = property.VisualRoot.GetComponentsInChildren<Renderer>(true);
+            if (!TryCalculateRendererBounds(renderers, out Bounds bounds) ||
+                bounds.size.x <= 0.001f || bounds.size.z <= 0.001f)
+            {
+                return;
+            }
+
+            float availableWidth = footprint.x * m_roadTileSize * m_houseFootprintFill;
+            float availableDepth = footprint.y * m_roadTileSize * m_houseFootprintFill;
+            float uniformScale = Mathf.Min(
+                availableWidth / bounds.size.x,
+                availableDepth / bounds.size.z);
+            property.VisualRoot.localScale *= uniformScale;
+
+            renderers = property.VisualRoot.GetComponentsInChildren<Renderer>(true);
+            if (!TryCalculateRendererBounds(renderers, out bounds))
+            {
+                return;
+            }
+
+            property.VisualRoot.position += new Vector3(
+                property.transform.position.x - bounds.center.x,
+                property.transform.position.y - bounds.min.y,
+                property.transform.position.z - bounds.center.z);
+            TryCalculateRendererBounds(renderers, out bounds);
+            if (!property.TryGetComponent(out BoxCollider houseCollider))
+            {
+                houseCollider = property.gameObject.AddComponent<BoxCollider>();
+            }
+
+            houseCollider.center = property.transform.InverseTransformPoint(bounds.center);
+            Vector3 localMinimum = property.transform.InverseTransformPoint(bounds.min);
+            Vector3 localMaximum = property.transform.InverseTransformPoint(bounds.max);
+            houseCollider.size = new Vector3(
+                Mathf.Abs(localMaximum.x - localMinimum.x),
+                Mathf.Abs(localMaximum.y - localMinimum.y),
+                Mathf.Abs(localMaximum.z - localMinimum.z));
+
+            Vector3 frontDirection = property.RoadConnection != null
+                ? Vector3.ProjectOnPlane(property.RoadConnection.localPosition, Vector3.up)
+                : Vector3.forward;
+            frontDirection = frontDirection.sqrMagnitude > 0.001f
+                ? frontDirection.normalized
+                : Vector3.forward;
+            float propertyFront = footprint.y * m_roadTileSize * 0.5f;
+            if (property.RoadConnection != null)
+            {
+                property.RoadConnection.localPosition = frontDirection * propertyFront;
+            }
+
+            if (property.DeliveryPoint != null)
+            {
+                property.DeliveryPoint.localPosition = frontDirection *
+                    (propertyFront + m_roadTileSize * 0.05f);
+            }
+        }
+
+        private static bool TryCalculateRendererBounds(Renderer[] renderers, out Bounds bounds)
+        {
+            bounds = default;
+            bool found = false;
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                Renderer renderer = renderers[index];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                if (!found)
+                {
+                    bounds = renderer.bounds;
+                    found = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+            }
+
+            return found;
         }
 
         private Vector3 CalculateCellCentre(List<GridCoordinate> cells)
