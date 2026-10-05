@@ -29,6 +29,12 @@ namespace CouchGuys.ProceduralGeneration
         [Header("Roads")]
         [SerializeField] private GameObject[] m_roadPrefabs = Array.Empty<GameObject>();
 
+        [Header("Residential Ground")]
+        [Tooltip("One instance is fitted to the complete non-road area inside each residential block.")]
+        [SerializeField] private GameObject m_residentialGroundPrefab;
+        [Tooltip("Lowers residential ground slightly below the generated block elevation to avoid z-fighting.")]
+        [SerializeField, Min(0f)] private float m_residentialGroundVerticalOffset = 0.02f;
+
         [Header("Houses")]
         [SerializeField] private GameObject[] m_housePrefabs = Array.Empty<GameObject>();
         [SerializeField, Min(0)] private int m_housesPerBlock = 6;
@@ -40,9 +46,10 @@ namespace CouchGuys.ProceduralGeneration
 
         [Header("Elevation")]
         [SerializeField] private bool m_elevationEnabled = true;
-        [SerializeField, Min(0.1f)] private float m_elevationStep = 3f;
-        [SerializeField, Min(0f)] private float m_maximumElevation = 9f;
-        [SerializeField, Range(1f, 45f)] private float m_maximumRoadSlope = 12f;
+        [Tooltip("Height difference between elevated neighbourhood sections.")]
+        [SerializeField, Min(0.1f)] private float m_elevationStep = 8f;
+        [SerializeField, Min(0f)] private float m_maximumElevation = 24f;
+        [SerializeField, Range(1f, 60f)] private float m_maximumRoadSlope = 45f;
 
         [Header("Starting Area")]
         [SerializeField] private GameObject m_startingAreaPrefab;
@@ -70,6 +77,7 @@ namespace CouchGuys.ProceduralGeneration
 
         private Transform m_generatedRoot;
         private Transform m_roadsRoot;
+        private Transform m_residentialGroundRoot;
         private Transform m_housesRoot;
         private Vector3 m_gridOrigin;
         private CardinalDirection m_startDirection;
@@ -144,6 +152,7 @@ namespace CouchGuys.ProceduralGeneration
             // Visual selection has its own stream so adding art cannot perturb the
             // logical road/property decisions made for a given seed.
             CreateRoadVisuals(new System.Random(DeriveSeed(seed, 0x2D31A7B5)));
+            CreateResidentialGround();
             GenerateProperties(new System.Random(DeriveSeed(seed, 0x61C88647)));
             CreateDeliveryNpc();
             CalculateWorldBounds();
@@ -197,6 +206,7 @@ namespace CouchGuys.ProceduralGeneration
 
             m_generatedRoot = null;
             m_roadsRoot = null;
+            m_residentialGroundRoot = null;
             m_housesRoot = null;
             GeneratedStartingArea = null;
             m_generatedRoads.Clear();
@@ -287,6 +297,8 @@ namespace CouchGuys.ProceduralGeneration
 
             m_roadsRoot = new GameObject("Roads").transform;
             m_roadsRoot.SetParent(m_generatedRoot, false);
+            m_residentialGroundRoot = new GameObject("ResidentialGround").transform;
+            m_residentialGroundRoot.SetParent(m_generatedRoot, false);
             m_housesRoot = new GameObject("Houses").transform;
             m_housesRoot.SetParent(m_generatedRoot, false);
         }
@@ -470,13 +482,13 @@ namespace CouchGuys.ProceduralGeneration
                 return;
             }
 
-            int maximumLevel = Mathf.FloorToInt(m_maximumElevation / m_elevationStep);
-            float transitionLength = (m_blockHeight + 1) * m_roadTileSize;
-            float maximumRise = Mathf.Tan(m_maximumRoadSlope * Mathf.Deg2Rad) * transitionLength;
-            if (maximumLevel <= 0 || m_elevationStep > maximumRise + 0.001f)
+            float maximumRise = Mathf.Tan(m_maximumRoadSlope * Mathf.Deg2Rad) * m_roadTileSize;
+            float elevationStep = Mathf.Min(m_elevationStep, maximumRise);
+            int maximumLevel = Mathf.FloorToInt(m_maximumElevation / elevationStep);
+            if (maximumLevel <= 0)
             {
                 Debug.LogWarning(
-                    "Elevation is enabled, but the configured Elevation Step cannot fit below Maximum Road Slope. " +
+                    "Elevation is enabled, but Maximum Elevation does not allow one elevation step. " +
                     "The generated grid will remain flat.", this);
                 return;
             }
@@ -499,7 +511,7 @@ namespace CouchGuys.ProceduralGeneration
 
             for (int row = 0; row < m_gridHeight; row++)
             {
-                float elevation = sectionLevels[row / sectionSize] * m_elevationStep;
+                float elevation = sectionLevels[row / sectionSize] * elevationStep;
                 for (int column = 0; column < m_gridWidth; column++)
                 {
                     m_blockElevations[column, row] = elevation;
@@ -542,10 +554,15 @@ namespace CouchGuys.ProceduralGeneration
             }
 
             int span = m_blockHeight + 1;
-            int row = Mathf.Min(localY / span, m_gridHeight - 1);
-            int nextRow = Mathf.Min(row + 1, m_gridHeight - 1);
-            float progress = (localY % span) / (float)span;
-            return Mathf.Lerp(m_blockElevations[0, row], m_blockElevations[0, nextRow], progress);
+            int boundary = localY / span;
+            if (localY % span == 0 && boundary > 0 && boundary < m_gridHeight)
+            {
+                return (m_blockElevations[0, boundary - 1] +
+                        m_blockElevations[0, boundary]) * 0.5f;
+            }
+
+            int row = Mathf.Clamp(boundary, 0, m_gridHeight - 1);
+            return m_blockElevations[0, row];
         }
 
         private GridCoordinate LocalToGrid(int localX, int localY)
@@ -619,10 +636,37 @@ namespace CouchGuys.ProceduralGeneration
                     ? $"Placeholder_Road_{index:000}"
                     : $"Road_{index:000}";
                 road.transform.SetParent(m_roadsRoot, true);
+                FitRoadVisualToTile(road.transform);
                 GeneratedRoad generatedRoad = road.AddComponent<GeneratedRoad>();
                 generatedRoad.Initialise(coordinate, connections);
                 m_generatedRoads.Add(generatedRoad);
             }
+        }
+
+        private void FitRoadVisualToTile(Transform road)
+        {
+            Renderer[] renderers = road.GetComponentsInChildren<Renderer>(true);
+            if (!TryCalculateRendererBounds(renderers, out Bounds bounds))
+            {
+                return;
+            }
+
+            Vector3 localXDirection = Vector3.ProjectOnPlane(road.right, Vector3.up).normalized;
+            Vector3 localZDirection = Vector3.ProjectOnPlane(road.forward, Vector3.up).normalized;
+            float renderedX = ProjectBoundsSizeOntoAxis(bounds.size, localXDirection);
+            float renderedZ = ProjectBoundsSizeOntoAxis(bounds.size, localZDirection);
+            if (renderedX <= 0.001f || renderedZ <= 0.001f)
+            {
+                return;
+            }
+
+            // Stretch the inclined axis by the slope's secant so every road still has
+            // a full tile-sized horizontal footprint. Adjacent tiles then meet at their
+            // edges instead of shrinking into gaps or intersecting at the grade.
+            Vector3 scale = road.localScale;
+            scale.x *= m_roadTileSize / renderedX;
+            scale.z *= m_roadTileSize / renderedZ;
+            road.localScale = scale;
         }
 
         private GameObject TryCreateRoadPrefab(
@@ -663,30 +707,132 @@ namespace CouchGuys.ProceduralGeneration
 
         private Quaternion CalculateRoadSurfaceRotation(GridCoordinate coordinate)
         {
-            float centre = m_roadHeights[coordinate];
-            GridCoordinate eastCoordinate = coordinate + DirectionOffset(CardinalDirection.East);
-            GridCoordinate westCoordinate = coordinate + DirectionOffset(CardinalDirection.West);
-            GridCoordinate northCoordinate = coordinate + DirectionOffset(CardinalDirection.North);
-            GridCoordinate southCoordinate = coordinate + DirectionOffset(CardinalDirection.South);
+            int localY = GridToLocal(coordinate).y;
+            int span = m_blockHeight + 1;
+            if (localY % span != 0)
+            {
+                return Quaternion.identity;
+            }
 
-            float east = m_roadHeights.TryGetValue(eastCoordinate, out float eastHeight) ? eastHeight : centre;
-            float west = m_roadHeights.TryGetValue(westCoordinate, out float westHeight) ? westHeight : centre;
-            float north = m_roadHeights.TryGetValue(northCoordinate, out float northHeight) ? northHeight : centre;
-            float south = m_roadHeights.TryGetValue(southCoordinate, out float southHeight) ? southHeight : centre;
-            float xSlope = SteepestAxisSlope(east - centre, centre - west);
-            float zSlope = SteepestAxisSlope(north - centre, centre - south);
-            Vector3 normal = new Vector3(
-                -xSlope / m_roadTileSize,
-                1f,
-                -zSlope / m_roadTileSize).normalized;
+            int boundary = localY / span;
+            if (boundary <= 0 || boundary >= m_gridHeight)
+            {
+                return Quaternion.identity;
+            }
+
+            float rise = m_blockElevations[0, boundary] -
+                         m_blockElevations[0, boundary - 1];
+            return CalculateSlopeRotation(rise, m_roadTileSize);
+        }
+
+        private Quaternion CalculateSlopeRotation(float rise, float run)
+        {
+            if (Mathf.Abs(rise) <= 0.001f || run <= 0.001f)
+            {
+                return Quaternion.identity;
+            }
+
+            GridCoordinate forwardOffset = DirectionOffset(m_startDirection);
+            Vector3 forward = new Vector3(forwardOffset.X, 0f, forwardOffset.Y);
+            Vector3 normal = (Vector3.up - forward * (rise / run)).normalized;
             return Quaternion.FromToRotation(Vector3.up, normal);
         }
 
-        private static float SteepestAxisSlope(float positiveDelta, float negativeDelta)
+        private void CreateResidentialGround()
         {
-            return Mathf.Abs(positiveDelta) >= Mathf.Abs(negativeDelta)
-                ? positiveDelta
-                : negativeDelta;
+            int groundIndex = 0;
+            int horizontalSpan = m_blockWidth + 1;
+            int verticalSpan = m_blockHeight + 1;
+            GridCoordinate rightOffset = DirectionOffset(TurnRight(m_startDirection));
+            GridCoordinate forwardOffset = DirectionOffset(m_startDirection);
+            Vector3 right = new Vector3(rightOffset.X, 0f, rightOffset.Y);
+            Vector3 forward = new Vector3(forwardOffset.X, 0f, forwardOffset.Y);
+            Quaternion directionRotation = Quaternion.LookRotation(forward, Vector3.up);
+
+            for (int blockY = 0; blockY < m_gridHeight; blockY++)
+            {
+                float localCentreY = blockY * verticalSpan + verticalSpan * 0.5f;
+                for (int blockX = 0; blockX < m_gridWidth; blockX++)
+                {
+                    float localCentreX =
+                        m_minimumLocalX + blockX * horizontalSpan + horizontalSpan * 0.5f;
+                    Vector3 centre = m_gridOrigin +
+                                     right * (localCentreX * m_roadTileSize) +
+                                     forward * (localCentreY * m_roadTileSize);
+                    centre.y += m_blockElevations[blockX, blockY] -
+                                m_residentialGroundVerticalOffset;
+                    Quaternion rotation = directionRotation;
+
+                    bool isPlaceholder = m_residentialGroundPrefab == null;
+                    GameObject ground = isPlaceholder
+                        ? GameObject.CreatePrimitive(PrimitiveType.Plane)
+                        : Instantiate(
+                            m_residentialGroundPrefab,
+                            centre,
+                            rotation,
+                            m_residentialGroundRoot);
+                    ground.name = isPlaceholder
+                        ? $"Placeholder_ResidentialGround_{groundIndex:000}"
+                        : $"ResidentialGround_{groundIndex:000}";
+                    ground.transform.SetPositionAndRotation(centre, rotation);
+                    ground.transform.SetParent(m_residentialGroundRoot, true);
+
+                    FitResidentialGroundToBlock(
+                        ground.transform,
+                        centre,
+                        m_blockWidth * m_roadTileSize,
+                        m_blockHeight * m_roadTileSize,
+                        right,
+                        forward);
+                    groundIndex++;
+                }
+            }
+        }
+
+        private static void FitResidentialGroundToBlock(
+            Transform ground,
+            Vector3 blockCentre,
+            float blockWidth,
+            float blockDepth,
+            Vector3 blockRight,
+            Vector3 blockForward)
+        {
+            Renderer[] renderers = ground.GetComponentsInChildren<Renderer>(true);
+            if (!TryCalculateRendererBounds(renderers, out Bounds bounds))
+            {
+                return;
+            }
+
+            float renderedWidth = ProjectBoundsSizeOntoAxis(bounds.size, blockRight);
+            float renderedDepth = ProjectBoundsSizeOntoAxis(bounds.size, blockForward);
+            if (renderedWidth <= 0.001f || renderedDepth <= 0.001f)
+            {
+                return;
+            }
+
+            Vector3 scale = ground.localScale;
+            scale.x *= blockWidth / renderedWidth;
+            scale.z *= blockDepth / renderedDepth;
+            ground.localScale = scale;
+
+            if (!TryCalculateRendererBounds(renderers, out bounds))
+            {
+                return;
+            }
+
+            // Bounds-based centring supports prefabs whose visual is offset from its pivot.
+            // Y scale is deliberately untouched; the visual centre sits just below the
+            // generated elevation while all child colliders inherit the same X/Z fit.
+            ground.position += blockCentre - bounds.center;
+        }
+
+        private static float ProjectBoundsSizeOntoAxis(Vector3 boundsSize, Vector3 axis)
+        {
+            Vector3 absoluteAxis = new Vector3(
+                Mathf.Abs(axis.x),
+                Mathf.Abs(axis.y),
+                Mathf.Abs(axis.z));
+            return Vector3.Dot(boundsSize, absoluteAxis);
         }
 
         private void GenerateProperties(System.Random random)
@@ -1254,7 +1400,8 @@ namespace CouchGuys.ProceduralGeneration
             m_minimumHouseSpacing = Mathf.Max(0, m_minimumHouseSpacing);
             m_elevationStep = Mathf.Max(0.1f, m_elevationStep);
             m_maximumElevation = Mathf.Max(0f, m_maximumElevation);
-            m_maximumRoadSlope = Mathf.Clamp(m_maximumRoadSlope, 1f, 45f);
+            m_maximumRoadSlope = Mathf.Clamp(m_maximumRoadSlope, 1f, 60f);
+            m_residentialGroundVerticalOffset = Mathf.Max(0f, m_residentialGroundVerticalOffset);
             m_standardPropertyFootprint.x = Mathf.Max(1, m_standardPropertyFootprint.x);
             m_standardPropertyFootprint.y = Mathf.Max(1, m_standardPropertyFootprint.y);
             m_placeholderStartingAreaFootprint.x = Mathf.Max(1, m_placeholderStartingAreaFootprint.x);
