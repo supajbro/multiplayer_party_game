@@ -30,6 +30,7 @@ namespace CouchGuys.Gameplay.Enemies
         private readonly List<Vector3> m_tracerEnds = new(12);
         private PlayerHealth m_target;
         private Material m_tracerMaterial;
+        private ThiefAnimationDriver m_animationDriver;
         private float m_nextFireTime;
 
         public EnemyWeaponType WeaponType => m_weaponType;
@@ -37,6 +38,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         private void Awake()
         {
+            m_animationDriver = GetComponentInChildren<ThiefAnimationDriver>(true);
             Shader shader = Shader.Find("Sprites/Default");
             if (shader != null)
             {
@@ -140,6 +142,7 @@ namespace CouchGuys.Gameplay.Enemies
         [ObserversRpc(RunLocally = true)]
         private void ShowShotObserversRpc(Vector3 origin, Vector3[] ends)
         {
+            m_animationDriver?.TriggerShoot();
             if (ends == null)
             {
                 return;
