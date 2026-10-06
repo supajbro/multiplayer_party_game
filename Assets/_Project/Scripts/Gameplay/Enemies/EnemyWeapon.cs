@@ -21,8 +21,9 @@ namespace CouchGuys.Gameplay.Enemies
         [SerializeField, Min(0f)] private float m_preferredRange = 12f;
         [SerializeField] private LayerMask m_hitMask = ~0;
 
-        [Header("Placeholder Effects")]
-        [SerializeField, Min(0.01f)] private float m_tracerDuration = 0.08f;
+        [Header("Bullet Visuals")]
+        [Tooltip("Travel time of the visual cube. Damage remains instant and server-authoritative.")]
+        [SerializeField, Min(0.01f)] private float m_tracerDuration = 0.16f;
         [SerializeField, Min(0.005f)] private float m_tracerWidth = 0.025f;
         [SerializeField] private Color m_tracerColour = new Color(1f, 0.72f, 0.12f, 1f);
 
@@ -150,17 +151,20 @@ namespace CouchGuys.Gameplay.Enemies
 
             for (int index = 0; index < ends.Length; index++)
             {
-                GameObject tracer = new GameObject($"{m_weaponType}Tracer");
-                LineRenderer line = tracer.AddComponent<LineRenderer>();
-                line.positionCount = 2;
-                line.SetPosition(0, origin);
-                line.SetPosition(1, ends[index]);
-                line.startWidth = m_tracerWidth;
-                line.endWidth = m_tracerWidth * 0.35f;
-                line.startColor = m_tracerColour;
-                line.endColor = new Color(m_tracerColour.r, m_tracerColour.g, m_tracerColour.b, 0f);
-                line.sharedMaterial = m_tracerMaterial;
-                Destroy(tracer, m_tracerDuration);
+                GameObject bullet = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                bullet.name = $"{m_weaponType}BulletVisual";
+                if (bullet.TryGetComponent(out Collider bulletCollider))
+                {
+                    Destroy(bulletCollider);
+                }
+
+                bullet.AddComponent<EnemyBulletVisual>().Initialise(
+                    origin,
+                    ends[index],
+                    m_tracerDuration,
+                    m_tracerWidth,
+                    m_tracerMaterial,
+                    m_tracerColour);
             }
         }
 

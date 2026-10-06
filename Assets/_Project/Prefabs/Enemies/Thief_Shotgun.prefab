@@ -236,8 +236,8 @@ MonoBehaviour:
   m_hitMask:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_tracerDuration: 0.08
-  m_tracerWidth: 0.025
+  m_tracerDuration: 0.16
+  m_tracerWidth: 0.035
   m_tracerColour: {r: 1, g: 0.72, b: 0.12, a: 1}
 --- !u!114 &4131775180735103772
 MonoBehaviour:

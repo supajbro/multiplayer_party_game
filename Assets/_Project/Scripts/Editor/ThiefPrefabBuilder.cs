@@ -256,6 +256,8 @@ namespace CouchGuys.Editor
             serialised.FindProperty("m_damagePerPellet").floatValue = spec.Damage;
             serialised.FindProperty("m_knockbackForce").floatValue = spec.Knockback;
             serialised.FindProperty("m_preferredRange").floatValue = spec.PreferredRange;
+            serialised.FindProperty("m_tracerDuration").floatValue = 0.16f;
+            serialised.FindProperty("m_tracerWidth").floatValue = 0.035f;
             serialised.ApplyModifiedPropertiesWithoutUndo();
         }
 
