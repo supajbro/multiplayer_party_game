@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8aecb5a9f5a0fa4093c4ce2bc49d678, type: 3}
+  m_Name: Region_SnowResort
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.ProceduralGeneration.RegionDefinition
+  m_regionId: snow_resort
+  m_displayName: Snow Resort
+  m_description: 
+  m_unlockCost: 50000
+  m_difficulty: 8
+  m_roadStrategy: {fileID: 0}
+  m_grid:
+    GridWidth: 4
+    GridHeight: 7
+    BlockWidth: 6
+    BlockHeight: 7
+    RoadTileSize: 12
+    LotsPerBlock: 3
+    MinimumLotSpacing: 2
+  m_elevation:
+    Enabled: 1
+    MinimumStep: 7
+    MaximumStep: 20
+    MaximumElevation: 110
+    MaximumRoadSlope: 45
+  m_roadPrefabs: []
+  m_groundPrefab: {fileID: 0}
+  m_startingAreaPrefab: {fileID: 0}
+  m_deliveryNpcPrefab: {fileID: 0}
+  m_lots: []
+  m_lotDensity: 1
+  m_minimumLandmarks: 0
+  m_maximumLandmarks: 0
+  m_props: []
+  m_hazards: []
+  m_buildNavMesh: 1

@@ -7,6 +7,7 @@ using FishNet.Object;
 using FishySteamworks;
 using UnityEditor;
 using UnityEngine;
+using System.Collections.Generic;
 
 namespace CouchGuys.Editor
 {
@@ -85,12 +86,23 @@ namespace CouchGuys.Editor
                 AssetDatabase.CreateAsset(spawnablePrefabs, SpawnablePrefabsPath);
             }
 
+            List<NetworkObject> preservedPrefabs = new List<NetworkObject>();
+            for (int index = 0; index < spawnablePrefabs.Prefabs.Count; index++)
+            {
+                NetworkObject existing = spawnablePrefabs.Prefabs[index];
+                if (existing != null && existing != playerNetworkObject && existing != couchNetworkObject)
+                {
+                    preservedPrefabs.Add(existing);
+                }
+            }
+
             spawnablePrefabs.Clear();
             spawnablePrefabs.AddObject(playerNetworkObject, false, false);
             if (couchNetworkObject != null)
             {
                 spawnablePrefabs.AddObject(couchNetworkObject, false, false);
             }
+            spawnablePrefabs.AddObjects(preservedPrefabs, true, false);
             EditorUtility.SetDirty(spawnablePrefabs);
             return spawnablePrefabs;
         }
@@ -168,7 +180,7 @@ namespace CouchGuys.Editor
             GameObject bootstrap = AssetDatabase.LoadAssetAtPath<GameObject>(BootstrapPrefabPath);
             SinglePrefabObjects spawnables = AssetDatabase.LoadAssetAtPath<SinglePrefabObjects>(SpawnablePrefabsPath);
             GameObject couch = AssetDatabase.LoadAssetAtPath<GameObject>(CouchPrefabPath);
-            int expectedSpawnableCount = couch == null ? 1 : 2;
+            int minimumSpawnableCount = couch == null ? 1 : 2;
 
             if (player == null ||
                 player.GetComponent<NetworkObject>() == null ||
@@ -178,7 +190,7 @@ namespace CouchGuys.Editor
                 bootstrap.GetComponent<SteamLobbyController>() == null ||
                 bootstrap.GetComponent<NeighbourhoodPlayerSpawner>()?.PlayerPrefab == null ||
                 spawnables == null ||
-                spawnables.GetObjectCount() != expectedSpawnableCount)
+                spawnables.GetObjectCount() < minimumSpawnableCount)
             {
                 throw new UnityException("Steam multiplayer asset verification failed.");
             }

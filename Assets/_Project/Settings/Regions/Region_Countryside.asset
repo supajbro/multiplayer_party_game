@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8aecb5a9f5a0fa4093c4ce2bc49d678, type: 3}
+  m_Name: Region_Countryside
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.ProceduralGeneration.RegionDefinition
+  m_regionId: countryside
+  m_displayName: Countryside
+  m_description: Long, sparse delivery routes across rolling placeholder countryside. Designed to make vehicles increasingly valuable.
+  m_unlockCost: 5000
+  m_difficulty: 3
+  m_roadStrategy: {fileID: 11400000, guid: cb84342ef1346f34b956c9cc09755cdc, type: 2}
+  m_grid:
+    GridWidth: 5
+    GridHeight: 6
+    BlockWidth: 7
+    BlockHeight: 8
+    RoadTileSize: 12
+    LotsPerBlock: 2
+    MinimumLotSpacing: 2
+  m_elevation:
+    Enabled: 1
+    MinimumStep: 2
+    MaximumStep: 10
+    MaximumElevation: 32
+    MaximumRoadSlope: 35
+  m_roadPrefabs: []
+  m_groundPrefab: {fileID: 0}
+  m_startingAreaPrefab: {fileID: 0}
+  m_deliveryNpcPrefab: {fileID: 100000, guid: 745a18178b59482a906e0b428dbcb8ce, type: 3}
+  m_lots:
+  - Definition: {fileID: 11400000, guid: e15d9c95b42f4a0aa13c9b70b8a2c101, type: 2}
+    Weight: 3
+  - Definition: {fileID: 11400000, guid: e15d9c95b42f4a0aa13c9b70b8a2c102, type: 2}
+    Weight: 2
+  m_lotDensity: 0.65
+  m_minimumLandmarks: 0
+  m_maximumLandmarks: 0
+  m_props: []
+  m_hazards: []
+  m_buildNavMesh: 1

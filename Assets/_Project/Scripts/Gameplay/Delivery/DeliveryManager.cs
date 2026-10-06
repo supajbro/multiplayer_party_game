@@ -45,14 +45,14 @@ namespace CouchGuys.Gameplay.Delivery
         public int CurrentCurrency => m_currency.Value;
         public bool HasActiveDelivery => m_destinationIndex.Value >= 0 && m_activeCouch.Value != null;
 
-        public GeneratedProperty ActiveDestination
+        public DeliveryDestination ActiveDestination
         {
             get
             {
                 m_generator ??= GetComponent<NeighbourhoodGenerator>();
-                IReadOnlyList<GeneratedProperty> properties = m_generator.GeneratedProperties;
+                IReadOnlyList<DeliveryDestination> destinations = m_generator.DeliveryDestinations;
                 int index = m_destinationIndex.Value;
-                return index >= 0 && index < properties.Count ? properties[index] : null;
+                return index >= 0 && index < destinations.Count ? destinations[index] : null;
             }
         }
 
@@ -90,13 +90,13 @@ namespace CouchGuys.Gameplay.Delivery
                 return;
             }
 
-            GeneratedProperty destination = ActiveDestination;
-            if (destination == null || destination.DeliveryPoint == null)
+            DeliveryDestination destination = ActiveDestination;
+            if (destination == null || !destination.CanReceiveDelivery)
             {
                 return;
             }
 
-            Vector3 offset = couch.transform.position - destination.DeliveryPoint.position;
+            Vector3 offset = couch.transform.position - destination.DropPosition.position;
             offset.y = 0f;
             if (offset.sqrMagnitude <= m_collectionRadius * m_collectionRadius)
             {
@@ -151,27 +151,27 @@ namespace CouchGuys.Gameplay.Delivery
                 return false;
             }
 
-            GeneratedProperty destination = ActiveDestination;
-            if (destination == null || destination.DeliveryPoint == null)
+            DeliveryDestination destination = ActiveDestination;
+            if (destination == null || !destination.CanReceiveDelivery)
             {
                 return false;
             }
 
             Vector3 awayFromHouse = Vector3.ProjectOnPlane(
-                destination.DeliveryPoint.position - destination.transform.position,
+                destination.DropPosition.position - destination.transform.position,
                 Vector3.up);
             if (awayFromHouse.sqrMagnitude < 0.01f)
             {
-                awayFromHouse = Vector3.ProjectOnPlane(destination.DeliveryPoint.forward, Vector3.up);
+                awayFromHouse = Vector3.ProjectOnPlane(destination.DropPosition.forward, Vector3.up);
             }
 
             awayFromHouse = awayFromHouse.sqrMagnitude > 0.01f
                 ? awayFromHouse.normalized
                 : Vector3.forward;
-            Vector3 couchPosition = destination.DeliveryPoint.position +
+            Vector3 couchPosition = destination.DropPosition.position +
                 awayFromHouse * (m_collectionRadius + m_testTeleportOutsideRadius);
             float pivotToBottom = CalculatePivotToBottom(couch);
-            couchPosition.y = FindGroundHeight(couchPosition, destination.DeliveryPoint.position.y) + pivotToBottom;
+            couchPosition.y = FindGroundHeight(couchPosition, destination.DropPosition.position.y) + pivotToBottom;
             Quaternion couchRotation = Quaternion.LookRotation(-awayFromHouse, Vector3.up);
 
             couch.TeleportServer(couchPosition, couchRotation);
@@ -189,7 +189,7 @@ namespace CouchGuys.Gameplay.Delivery
                 Vector3 playerPosition = point.transform.position + outward * 0.75f;
                 playerPosition.y = FindGroundHeight(
                     playerPosition,
-                    destination.DeliveryPoint.position.y,
+                    destination.DropPosition.position.y,
                     couch.transform);
                 Vector3 facing = Vector3.ProjectOnPlane(couchPosition - playerPosition, Vector3.up);
                 Quaternion playerRotation = facing.sqrMagnitude > 0.01f
@@ -211,10 +211,14 @@ namespace CouchGuys.Gameplay.Delivery
 
             m_isCompletingDelivery = true;
             NetworkObject deliveredCouch = m_activeCouch.Value;
+            DeliveryDestination destination = ActiveDestination;
             m_activeCouch.Value = null;
             m_destinationIndex.Value = -1;
             couch.ReleaseAllOccupantsServer();
-            m_currency.Value += m_rewardPerDelivery;
+            int reward = destination != null
+                ? Mathf.RoundToInt(m_rewardPerDelivery * destination.RewardModifier)
+                : m_rewardPerDelivery;
+            m_currency.Value += reward;
             Debug.Log($"Delivery complete. Team currency: {m_currency.Value}", this);
             if (deliveredCouch != null && deliveredCouch.IsSpawned)
             {
@@ -231,11 +235,11 @@ namespace CouchGuys.Gameplay.Delivery
                 return -1;
             }
 
-            IReadOnlyList<GeneratedProperty> properties = m_generator.GeneratedProperties;
+            IReadOnlyList<DeliveryDestination> destinations = m_generator.DeliveryDestinations;
             int validCount = 0;
-            for (int index = 0; index < properties.Count; index++)
+            for (int index = 0; index < destinations.Count; index++)
             {
-                if (properties[index] != null && properties[index].DeliveryPoint != null)
+                if (destinations[index] != null && destinations[index].CanReceiveDelivery)
                 {
                     validCount++;
                 }
@@ -247,9 +251,9 @@ namespace CouchGuys.Gameplay.Delivery
             }
 
             int selectedValidIndex = UnityEngine.Random.Range(0, validCount);
-            for (int index = 0; index < properties.Count; index++)
+            for (int index = 0; index < destinations.Count; index++)
             {
-                if (properties[index] == null || properties[index].DeliveryPoint == null)
+                if (destinations[index] == null || !destinations[index].CanReceiveDelivery)
                 {
                     continue;
                 }
@@ -276,13 +280,13 @@ namespace CouchGuys.Gameplay.Delivery
         private void RefreshCollectionMarker()
         {
             DestroyCollectionMarker();
-            GeneratedProperty destination = ActiveDestination;
-            if (destination == null || destination.DeliveryPoint == null || m_destinationIndex.Value < 0)
+            DeliveryDestination destination = ActiveDestination;
+            if (destination == null || !destination.CanReceiveDelivery || m_destinationIndex.Value < 0)
             {
                 return;
             }
 
-            Vector3 markerPosition = destination.DeliveryPoint.position + Vector3.up * m_markerGroundOffset;
+            Vector3 markerPosition = destination.DropPosition.position + Vector3.up * m_markerGroundOffset;
             if (m_collectionMarkerPrefab != null)
             {
                 m_collectionMarker = Instantiate(

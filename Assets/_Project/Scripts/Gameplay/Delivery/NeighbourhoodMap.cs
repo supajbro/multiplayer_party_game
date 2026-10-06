@@ -200,14 +200,14 @@ namespace CouchGuys.Gameplay.Delivery
                 }
             }
 
-            GeneratedProperty destination = m_deliveryManager != null
+            DeliveryDestination destination = m_deliveryManager != null
                 ? m_deliveryManager.ActiveDestination
                 : null;
-            bool showWaypoint = destination != null && destination.DeliveryPoint != null;
+            bool showWaypoint = destination != null && destination.CanReceiveDelivery;
             m_waypointMarker.gameObject.SetActive(showWaypoint);
             if (showWaypoint)
             {
-                m_waypointMarker.anchoredPosition = WorldToMap(destination.DeliveryPoint.position);
+                m_waypointMarker.anchoredPosition = WorldToMap(destination.DropPosition.position);
             }
         }
 

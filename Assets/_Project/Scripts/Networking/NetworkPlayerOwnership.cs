@@ -1,3 +1,4 @@
+using System;
 using CouchGuys.CameraSystem;
 using CouchGuys.Input;
 using CouchGuys.Player;
@@ -13,6 +14,9 @@ namespace CouchGuys.Networking
     [DisallowMultipleComponent]
     public sealed class NetworkPlayerOwnership : NetworkBehaviour
     {
+        public static event Action<NetworkPlayerOwnership> ServerPlayerStarted;
+        public static event Action<NetworkPlayerOwnership> ServerPlayerStopped;
+
         [Header("Local-only Components")]
         [SerializeField] private PlayerInputReader m_input;
         [SerializeField] private ThirdPersonPlayerController m_playerController;
@@ -68,6 +72,18 @@ namespace CouchGuys.Networking
             SetCameraRigDetached(IsOwner);
             SetLocalControl(IsOwner);
             ApplyPlayerColour(OwnerId);
+        }
+
+        public override void OnStartServer()
+        {
+            base.OnStartServer();
+            ServerPlayerStarted?.Invoke(this);
+        }
+
+        public override void OnStopServer()
+        {
+            ServerPlayerStopped?.Invoke(this);
+            base.OnStopServer();
         }
 
         public override void OnOwnershipClient(NetworkConnection previousOwner)

@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8aecb5a9f5a0fa4093c4ce2bc49d678, type: 3}
+  m_Name: Region_Suburbs
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.ProceduralGeneration.RegionDefinition
+  m_regionId: suburbs
+  m_displayName: Suburbs
+  m_description: 
+  m_unlockCost: 0
+  m_difficulty: 1
+  m_roadStrategy: {fileID: 11400000, guid: cb84342ef1346f34b956c9cc09755cdc, type: 2}
+  m_grid:
+    GridWidth: 6
+    GridHeight: 6
+    BlockWidth: 4
+    BlockHeight: 4
+    RoadTileSize: 8
+    LotsPerBlock: 5
+    MinimumLotSpacing: 1
+  m_elevation:
+    Enabled: 1
+    MinimumStep: 2
+    MaximumStep: 4
+    MaximumElevation: 24
+    MaximumRoadSlope: 45
+  m_roadPrefabs: []
+  m_groundPrefab: {fileID: 0}
+  m_startingAreaPrefab: {fileID: 0}
+  m_deliveryNpcPrefab: {fileID: 100000, guid: 745a18178b59482a906e0b428dbcb8ce, type: 3}
+  m_lots:
+  - Definition: {fileID: 11400000, guid: 15aab6b7cac24f2499d3f3ef9c445f8b, type: 2}
+    Weight: 1
+  - Definition: {fileID: 11400000, guid: da535d9f3e6065e4cbeefe6818c04af9, type: 2}
+    Weight: 1
+  m_lotDensity: 1
+  m_minimumLandmarks: 0
+  m_maximumLandmarks: 0
+  m_props: []
+  m_hazards: []
+  m_buildNavMesh: 1

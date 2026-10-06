@@ -1,6 +1,8 @@
 using CouchGuys.ProceduralGeneration;
 using CouchGuys.Gameplay.Delivery;
+using CouchGuys.Gameplay.Enemies;
 using FishNet.Object;
+using Unity.AI.Navigation;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -48,6 +50,7 @@ namespace CouchGuys.Editor
 
             GameObject defaultDeliveryNpcPrefab = DeliveryNPCPrefabBuilder.EnsureDeliveryNpcPrefab();
             GameObject[] defaultHousePrefabs = HousePrefabBuilder.LoadHousePrefabs();
+            GameObject thiefPrefab = ThiefPrefabBuilder.EnsureThiefPrefab();
 
             Scene scene = SceneManager.GetSceneByPath(GameplayScenePath);
             bool openedTemporarily = !scene.IsValid() || !scene.isLoaded;
@@ -64,11 +67,28 @@ namespace CouchGuys.Editor
                 generator = root.AddComponent<NeighbourhoodGenerator>();
             }
 
+            if (generator.DeliveryNpcPrefab == null)
+            {
+                generator.SetDeliveryNpcPrefab(defaultDeliveryNpcPrefab);
+            }
+
             bool assignedDefaultHouses = generator.TrySetDefaultHousePrefabs(defaultHousePrefabs);
+            RegionAssetBuilder.EnsureDefaultRegions(generator, defaultHousePrefabs);
+
+            EnemySpawnManager enemySpawnManager = generator.GetComponent<EnemySpawnManager>();
+            bool addedEnemySpawnManager = enemySpawnManager == null;
+            if (addedEnemySpawnManager)
+            {
+                enemySpawnManager = generator.gameObject.AddComponent<EnemySpawnManager>();
+            }
+
+            enemySpawnManager.SetGenerator(generator);
+            enemySpawnManager.SetThiefPrefab(
+                thiefPrefab != null ? thiefPrefab.GetComponent<NetworkObject>() : null);
 
             if (IsConfigured(scene))
             {
-                if (assignedDefaultHouses)
+                if (assignedDefaultHouses || addedEnemySpawnManager)
                 {
                     generator.Generate(12345);
                     EditorUtility.SetDirty(generator);
@@ -83,11 +103,6 @@ namespace CouchGuys.Editor
                 }
 
                 return;
-            }
-
-            if (generator.DeliveryNpcPrefab == null)
-            {
-                generator.SetDeliveryNpcPrefab(defaultDeliveryNpcPrefab);
             }
 
             NeighbourhoodSeedSynchroniser synchroniser =
@@ -108,6 +123,16 @@ namespace CouchGuys.Editor
             {
                 deliveryManager = generator.gameObject.AddComponent<DeliveryManager>();
             }
+
+            NavMeshSurface navMeshSurface = generator.GetComponent<NavMeshSurface>();
+            if (navMeshSurface == null)
+            {
+                navMeshSurface = generator.gameObject.AddComponent<NavMeshSurface>();
+            }
+
+            SerializedObject serialisedGenerator = new SerializedObject(generator);
+            serialisedGenerator.FindProperty("m_navMeshSurface").objectReferenceValue = navMeshSurface;
+            serialisedGenerator.ApplyModifiedPropertiesWithoutUndo();
 
             GameObject couchPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
                 "Assets/_Project/Prefabs/Couch.prefab");
@@ -204,8 +229,14 @@ namespace CouchGuys.Editor
                 generator != null ? generator.GetComponent<NeighbourhoodSeedSynchroniser>() : null;
             DeliveryManager deliveryManager =
                 generator != null ? generator.GetComponent<DeliveryManager>() : null;
+            EnemySpawnManager enemySpawnManager =
+                generator != null ? generator.GetComponent<EnemySpawnManager>() : null;
+            NavMeshSurface navMeshSurface =
+                generator != null ? generator.GetComponent<NavMeshSurface>() : null;
             NetworkObject networkObject = generator != null ? generator.GetComponent<NetworkObject>() : null;
-            if (generator == null || synchroniser == null || deliveryManager == null || networkObject == null ||
+            if (generator == null || synchroniser == null || deliveryManager == null || enemySpawnManager == null ||
+                navMeshSurface == null ||
+                networkObject == null ||
                 networkObject.NetworkBehaviours.Count != 2 ||
                 networkObject.NetworkBehaviours[0] != synchroniser ||
                 networkObject.NetworkBehaviours[1] != deliveryManager ||
@@ -228,7 +259,11 @@ namespace CouchGuys.Editor
             NeighbourhoodSeedSynchroniser synchroniser =
                 generator.GetComponent<NeighbourhoodSeedSynchroniser>();
             DeliveryManager deliveryManager = generator.GetComponent<DeliveryManager>();
+            EnemySpawnManager enemySpawnManager = generator.GetComponent<EnemySpawnManager>();
+            NavMeshSurface navMeshSurface = generator.GetComponent<NavMeshSurface>();
             return networkObject != null && synchroniser != null && deliveryManager != null &&
+                   enemySpawnManager != null &&
+                   navMeshSurface != null &&
                    generator.DeliveryNpcPrefab != null &&
                    networkObject.NetworkBehaviours.Count == 2 &&
                    networkObject.NetworkBehaviours[0] == synchroniser &&

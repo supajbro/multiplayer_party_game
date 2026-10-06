@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using CouchGuys.Gameplay.Delivery;
+using Unity.AI.Navigation;
+using UnityEngine.AI;
 using UnityEngine;
 using UnityEngine.Serialization;
+using Debug = UnityEngine.Debug;
 
 namespace CouchGuys.ProceduralGeneration
 {
@@ -13,10 +17,19 @@ namespace CouchGuys.ProceduralGeneration
     [DisallowMultipleComponent]
     public sealed class NeighbourhoodGenerator : MonoBehaviour
     {
+        public event Action<NeighbourhoodGenerator> RegionGenerated;
+        public event Action<NeighbourhoodGenerator> RegionClearing;
+
         [Header("Generation")]
         [SerializeField] private bool m_generateOnStart = true;
         [SerializeField] private bool m_useRandomSeed;
         [SerializeField] private int m_seed = 12345;
+
+        [Header("Region")]
+        [Tooltip("The selected region. Leave empty to use the legacy Suburbs fields below.")]
+        [SerializeField] private RegionDefinition m_selectedRegion;
+        [Tooltip("Stable order used when synchronising region selection in multiplayer.")]
+        [SerializeField] private RegionDefinition[] m_availableRegions = Array.Empty<RegionDefinition>();
 
         [Header("Grid")]
         [SerializeField, Min(1)] private int m_gridWidth = 4;
@@ -58,6 +71,10 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private GameObject m_deliveryNpcPrefab;
         [SerializeField] private Vector2Int m_placeholderStartingAreaFootprint = new Vector2Int(3, 3);
 
+        [Header("Navigation")]
+        [Tooltip("Built once after every generated object exists. Optional while no AI navigation is present.")]
+        [SerializeField] private NavMeshSurface m_navMeshSurface;
+
         [Header("Debug")]
         [SerializeField] private bool m_showGrid;
         [SerializeField] private bool m_showConnections = true;
@@ -65,9 +82,12 @@ namespace CouchGuys.ProceduralGeneration
 
         private readonly List<GeneratedRoad> m_generatedRoads = new List<GeneratedRoad>();
         private readonly List<GeneratedProperty> m_generatedProperties = new List<GeneratedProperty>();
+        private readonly List<GeneratedLot> m_generatedLots = new List<GeneratedLot>();
+        private readonly List<DeliveryDestination> m_deliveryDestinations = new List<DeliveryDestination>();
         private readonly HashSet<GridCoordinate> m_roadCells = new HashSet<GridCoordinate>();
         private readonly HashSet<GridCoordinate> m_propertyCells = new HashSet<GridCoordinate>();
         private readonly HashSet<GridCoordinate> m_startingAreaCells = new HashSet<GridCoordinate>();
+        private readonly HashSet<LotDefinition> m_spawnedUniqueLots = new HashSet<LotDefinition>();
         private readonly List<GridCoordinate> m_roadOrder = new List<GridCoordinate>();
         private readonly Dictionary<GridCoordinate, RoadConnections> m_logicalRoads =
             new Dictionary<GridCoordinate, RoadConnections>();
@@ -81,6 +101,9 @@ namespace CouchGuys.ProceduralGeneration
         private Transform m_roadsRoot;
         private Transform m_residentialGroundRoot;
         private Transform m_housesRoot;
+        private Transform m_landmarksRoot;
+        private Transform m_propsRoot;
+        private Transform m_hazardsRoot;
         private Vector3 m_gridOrigin;
         private CardinalDirection m_startDirection;
         private bool m_warnedAboutRoadPlaceholders;
@@ -106,10 +129,23 @@ namespace CouchGuys.ProceduralGeneration
         public StartingArea GeneratedStartingArea { get; private set; }
         public IReadOnlyList<GeneratedRoad> GeneratedRoads => m_generatedRoads;
         public IReadOnlyList<GeneratedProperty> GeneratedProperties => m_generatedProperties;
+        public IReadOnlyList<GeneratedLot> GeneratedLots => m_generatedLots;
+        public IReadOnlyList<DeliveryDestination> DeliveryDestinations => m_deliveryDestinations;
+        public RegionDefinition SelectedRegion => m_selectedRegion;
+        public string CurrentRegionId => m_selectedRegion != null ? m_selectedRegion.RegionId : "suburbs";
+        public string CurrentRegionName => m_selectedRegion != null ? m_selectedRegion.DisplayName : "Suburbs (Legacy)";
+        public int SelectedRegionIndex => FindRegionIndex(m_selectedRegion);
         public GameObject DeliveryNpcPrefab => m_deliveryNpcPrefab;
         public int CurrentSeed { get; private set; }
+        public int GeneratedLandmarkCount { get; private set; }
+        public int GeneratedPropCount { get; private set; }
+        public int GeneratedHazardCount { get; private set; }
+        public double LastGenerationMilliseconds { get; private set; }
         public float TileSize => m_roadTileSize;
-        public bool HasGeneratedNeighbourhood => GeneratedStartingArea != null && m_generatedRoads.Count > 0;
+        public bool IsGenerationReady { get; private set; }
+        public bool IsNavMeshReady { get; private set; }
+        public bool HasGeneratedNeighbourhood =>
+            IsGenerationReady && GeneratedStartingArea != null && m_generatedRoads.Count > 0;
         public Bounds GeneratedWorldBounds { get; private set; }
 
         private void Start()
@@ -128,11 +164,18 @@ namespace CouchGuys.ProceduralGeneration
 
         public void Generate(int seed)
         {
+            Generate(m_selectedRegion, seed);
+        }
+
+        public void Generate(RegionDefinition region, int seed)
+        {
+            ApplyRegionConfiguration(region);
             if (!ValidateConfiguration())
             {
                 return;
             }
 
+            Stopwatch stopwatch = Stopwatch.StartNew();
             Clear();
             CurrentSeed = seed;
             System.Random layoutRandom = new System.Random(seed);
@@ -149,16 +192,79 @@ namespace CouchGuys.ProceduralGeneration
             m_startDirection = ClosestDirection(GeneratedStartingArea.RoadConnection.forward);
             ReserveStartingArea(GeneratedStartingArea);
             AssignBlockElevations(layoutRandom);
-            GenerateRoadLayout();
+            GenerateRoadLayout(new System.Random(DeriveSeed(seed, 0x1874A2B1)));
             CalculateRoadConnections();
             // Visual selection has its own stream so adding art cannot perturb the
             // logical road/property decisions made for a given seed.
             CreateRoadVisuals(new System.Random(DeriveSeed(seed, 0x2D31A7B5)));
             CreateResidentialGround();
+            GenerateLandmarks(new System.Random(DeriveSeed(seed, 0x4F1BBCDC)));
             GenerateProperties(new System.Random(DeriveSeed(seed, 0x61C88647)));
+            GenerateRegionObjects(
+                m_selectedRegion != null ? m_selectedRegion.Props : null,
+                m_propsRoot,
+                new System.Random(DeriveSeed(seed, 0x15342E19)),
+                false);
+            GenerateRegionObjects(
+                m_selectedRegion != null ? m_selectedRegion.Hazards : null,
+                m_hazardsRoot,
+                new System.Random(DeriveSeed(seed, 0x72AE91C3)),
+                true);
             CreateDeliveryNpc();
             CalculateWorldBounds();
             ValidateLayout();
+            BuildNavMeshOnce();
+            IsGenerationReady = true;
+            stopwatch.Stop();
+            LastGenerationMilliseconds = stopwatch.Elapsed.TotalMilliseconds;
+            Debug.Log(
+                $"Generated region '{CurrentRegionName}' with seed {CurrentSeed}: " +
+                $"{m_generatedRoads.Count} roads, {m_generatedLots.Count} lots, " +
+                $"{m_deliveryDestinations.Count} destinations, {GeneratedLandmarkCount} landmarks, " +
+                $"{GeneratedHazardCount} hazards in {LastGenerationMilliseconds:F1} ms.",
+                this);
+            RegionGenerated?.Invoke(this);
+        }
+
+        public bool TrySelectRegion(int regionIndex)
+        {
+            if (regionIndex == -1)
+            {
+                m_selectedRegion = null;
+                return true;
+            }
+
+            if (m_availableRegions == null || regionIndex < 0 || regionIndex >= m_availableRegions.Length ||
+                m_availableRegions[regionIndex] == null)
+            {
+                return false;
+            }
+
+            m_selectedRegion = m_availableRegions[regionIndex];
+            return true;
+        }
+
+        public bool TrySelectRegion(string regionId)
+        {
+            if (string.IsNullOrWhiteSpace(regionId))
+            {
+                return false;
+            }
+
+            for (int index = 0; index < m_availableRegions.Length; index++)
+            {
+                RegionDefinition region = m_availableRegions[index];
+                if (region != null && string.Equals(
+                        region.RegionId,
+                        regionId,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    m_selectedRegion = region;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public int SelectSeed()
@@ -166,6 +272,52 @@ namespace CouchGuys.ProceduralGeneration
             return m_useRandomSeed
                 ? unchecked(Environment.TickCount ^ Guid.NewGuid().GetHashCode())
                 : m_seed;
+        }
+
+        private void ApplyRegionConfiguration(RegionDefinition region)
+        {
+            m_selectedRegion = region;
+            if (region == null)
+            {
+                return;
+            }
+
+            RegionGridSettings grid = region.Grid;
+            RegionElevationSettings elevation = region.Elevation;
+            m_gridWidth = grid.GridWidth;
+            m_gridHeight = grid.GridHeight;
+            m_blockWidth = grid.BlockWidth;
+            m_blockHeight = grid.BlockHeight;
+            m_roadTileSize = grid.RoadTileSize;
+            m_housesPerBlock = grid.LotsPerBlock;
+            m_minimumHouseSpacing = grid.MinimumLotSpacing;
+            m_elevationEnabled = elevation.Enabled;
+            m_minimumElevationStep = elevation.MinimumStep;
+            m_elevationStep = elevation.MaximumStep;
+            m_maximumElevation = elevation.MaximumElevation;
+            m_maximumRoadSlope = elevation.MaximumRoadSlope;
+            m_roadPrefabs = region.RoadPrefabs ?? Array.Empty<GameObject>();
+            m_residentialGroundPrefab = region.GroundPrefab;
+            m_startingAreaPrefab = region.StartingAreaPrefab;
+            m_deliveryNpcPrefab = region.DeliveryNpcPrefab;
+        }
+
+        private int FindRegionIndex(RegionDefinition region)
+        {
+            if (region == null || m_availableRegions == null)
+            {
+                return -1;
+            }
+
+            for (int index = 0; index < m_availableRegions.Length; index++)
+            {
+                if (m_availableRegions[index] == region)
+                {
+                    return index;
+                }
+            }
+
+            return -1;
         }
 
         public void SetDeliveryNpcPrefab(GameObject deliveryNpcPrefab)
@@ -193,6 +345,16 @@ namespace CouchGuys.ProceduralGeneration
         [ContextMenu("Clear Generated Neighbourhood")]
         public void Clear()
         {
+            if (IsGenerationReady || m_generatedRoot != null)
+            {
+                RegionClearing?.Invoke(this);
+            }
+
+            if (m_navMeshSurface != null && m_navMeshSurface.navMeshData != null)
+            {
+                m_navMeshSurface.RemoveData();
+            }
+
             GeneratedNeighbourhoodRoot existingRoot = GetComponentInChildren<GeneratedNeighbourhoodRoot>(true);
             if (existingRoot != null && existingRoot.transform.parent == transform)
             {
@@ -210,12 +372,20 @@ namespace CouchGuys.ProceduralGeneration
             m_roadsRoot = null;
             m_residentialGroundRoot = null;
             m_housesRoot = null;
+            m_landmarksRoot = null;
+            m_propsRoot = null;
+            m_hazardsRoot = null;
             GeneratedStartingArea = null;
+            IsGenerationReady = false;
+            IsNavMeshReady = false;
             m_generatedRoads.Clear();
             m_generatedProperties.Clear();
+            m_generatedLots.Clear();
+            m_deliveryDestinations.Clear();
             m_roadCells.Clear();
             m_propertyCells.Clear();
             m_startingAreaCells.Clear();
+            m_spawnedUniqueLots.Clear();
             m_roadOrder.Clear();
             m_logicalRoads.Clear();
             m_roadHeights.Clear();
@@ -223,6 +393,9 @@ namespace CouchGuys.ProceduralGeneration
             GeneratedWorldBounds = new Bounds(transform.position, Vector3.zero);
             m_warnedAboutRoadPlaceholders = false;
             m_warnedAboutHousePlaceholders = false;
+            GeneratedLandmarkCount = 0;
+            GeneratedPropCount = 0;
+            GeneratedHazardCount = 0;
         }
 
         public Vector3 GridToWorld(GridCoordinate coordinate)
@@ -305,6 +478,12 @@ namespace CouchGuys.ProceduralGeneration
             m_residentialGroundRoot.SetParent(m_generatedRoot, false);
             m_housesRoot = new GameObject("Houses").transform;
             m_housesRoot.SetParent(m_generatedRoot, false);
+            m_landmarksRoot = new GameObject("Landmarks").transform;
+            m_landmarksRoot.SetParent(m_generatedRoot, false);
+            m_propsRoot = new GameObject("Props").transform;
+            m_propsRoot.SetParent(m_generatedRoot, false);
+            m_hazardsRoot = new GameObject("Hazards").transform;
+            m_hazardsRoot.SetParent(m_generatedRoot, false);
         }
 
         private StartingArea CreateStartingArea()
@@ -546,8 +725,21 @@ namespace CouchGuys.ProceduralGeneration
             }
         }
 
-        private void GenerateRoadLayout()
+        private void GenerateRoadLayout(System.Random random)
         {
+            if (m_selectedRegion != null && m_selectedRegion.RoadStrategy != null)
+            {
+                RegionGridSettings grid = m_selectedRegion.Grid;
+                m_minimumLocalX = -(grid.GridWidth / 2) * (grid.BlockWidth + 1);
+                RegionRoadGenerationContext context = new RegionRoadGenerationContext(
+                    grid,
+                    (localX, localY) => AddRoad(
+                        LocalToGrid(localX, localY),
+                        RoadHeightAtLocal(localY)));
+                m_selectedRegion.RoadStrategy.Generate(context, random);
+                return;
+            }
+
             // Keep one boundary aligned with the Starting Area connection, then build
             // the complete rectangular road lattice forward from it.
             m_minimumLocalX = -(m_gridWidth / 2) * (m_blockWidth + 1);
@@ -884,9 +1076,22 @@ namespace CouchGuys.ProceduralGeneration
                          candidateIndex < candidates.Count && housesInBlock < m_housesPerBlock;
                          candidateIndex++)
                     {
+                        if (m_selectedRegion != null && random.NextDouble() > m_selectedRegion.LotDensity)
+                        {
+                            continue;
+                        }
+
                         PropertyCandidate candidate = candidates[candidateIndex];
-                        GameObject prefab = SelectHousePrefab(random);
-                        Vector2Int footprint = GetPropertyFootprint(prefab);
+                        LotDefinition lotDefinition = SelectLotDefinition(random, false);
+                        if (m_selectedRegion != null && lotDefinition == null)
+                        {
+                            continue;
+                        }
+
+                        GameObject prefab = lotDefinition != null
+                            ? ValidateLotPrefab(lotDefinition.Prefab)
+                            : SelectHousePrefab(random);
+                        Vector2Int footprint = GetLotFootprint(lotDefinition, prefab);
                         List<GridCoordinate> cells = GetPropertyCells(
                             candidate.Anchor, candidate.PropertyToRoad, footprint);
                         if (!CanPlaceProperty(cells, minimumX, maximumX, minimumY, maximumY))
@@ -900,36 +1105,257 @@ namespace CouchGuys.ProceduralGeneration
                         }
 
                         Vector3 centre = CalculateCellCentre(cells);
-                        GameObject property = prefab != null
-                            ? Instantiate(prefab, centre, Quaternion.identity, m_housesRoot)
-                            : CreatePlaceholderHouse(centre, footprint);
-                        property.name = prefab != null
-                            ? $"House_{houseIndex:000}"
-                            : $"Placeholder_House_{houseIndex:000}";
-
-                        GeneratedProperty generatedProperty = property.GetComponent<GeneratedProperty>();
-                        if (generatedProperty == null)
-                        {
-                            generatedProperty = property.AddComponent<GeneratedProperty>();
-                        }
-
-                        Transform deliveryPoint = generatedProperty.DeliveryPoint;
-                        Transform roadConnection = generatedProperty.RoadConnection;
-                        if (prefab == null)
-                        {
-                            roadConnection = property.transform.Find("RoadConnection");
-                            deliveryPoint = property.transform.Find("DeliveryPoint");
-                        }
-
-                        generatedProperty.Initialise(candidate.Anchor, footprint, roadConnection, deliveryPoint);
-                        FacePropertyTowardsRoad(property.transform, candidate.Road);
-                        FitPropertyVisualToFootprint(generatedProperty, footprint);
-                        m_generatedProperties.Add(generatedProperty);
+                        SpawnLot(
+                            lotDefinition,
+                            prefab,
+                            candidate,
+                            footprint,
+                            centre,
+                            m_housesRoot,
+                            $"Lot_{houseIndex:000}");
                         housesInBlock++;
                         houseIndex++;
                     }
                 }
             }
+        }
+
+        private void GenerateLandmarks(System.Random random)
+        {
+            if (m_selectedRegion == null || m_selectedRegion.MaximumLandmarks <= 0)
+            {
+                return;
+            }
+
+            int targetCount = random.Next(
+                m_selectedRegion.MinimumLandmarks,
+                m_selectedRegion.MaximumLandmarks + 1);
+            if (targetCount <= 0)
+            {
+                return;
+            }
+
+            List<PropertyCandidate> candidates = new List<PropertyCandidate>();
+            int horizontalSpan = m_blockWidth + 1;
+            int verticalSpan = m_blockHeight + 1;
+            for (int blockY = 0; blockY < m_gridHeight; blockY++)
+            {
+                int minimumY = blockY * verticalSpan + 1;
+                int maximumY = minimumY + m_blockHeight - 1;
+                for (int blockX = 0; blockX < m_gridWidth; blockX++)
+                {
+                    int minimumX = m_minimumLocalX + blockX * horizontalSpan + 1;
+                    int maximumX = minimumX + m_blockWidth - 1;
+                    candidates.AddRange(CreatePropertyCandidates(
+                        minimumX, maximumX, minimumY, maximumY));
+                }
+            }
+
+            Shuffle(candidates, random);
+            for (int index = 0; index < candidates.Count && GeneratedLandmarkCount < targetCount; index++)
+            {
+                LotDefinition definition = SelectLotDefinition(random, true);
+                if (definition == null)
+                {
+                    break;
+                }
+
+                PropertyCandidate candidate = candidates[index];
+                GameObject prefab = ValidateLotPrefab(definition.Prefab);
+                Vector2Int footprint = GetLotFootprint(definition, prefab);
+                List<GridCoordinate> cells = GetPropertyCells(
+                    candidate.Anchor,
+                    candidate.PropertyToRoad,
+                    footprint);
+                Vector2Int local = GridToLocal(candidate.Anchor);
+                int blockX = Mathf.Clamp((local.x - m_minimumLocalX) / horizontalSpan, 0, m_gridWidth - 1);
+                int blockY = Mathf.Clamp(local.y / verticalSpan, 0, m_gridHeight - 1);
+                int minimumX = m_minimumLocalX + blockX * horizontalSpan + 1;
+                int maximumX = minimumX + m_blockWidth - 1;
+                int minimumY = blockY * verticalSpan + 1;
+                int maximumY = minimumY + m_blockHeight - 1;
+                if (!CanPlaceProperty(cells, minimumX, maximumX, minimumY, maximumY))
+                {
+                    continue;
+                }
+
+                for (int cellIndex = 0; cellIndex < cells.Count; cellIndex++)
+                {
+                    m_propertyCells.Add(cells[cellIndex]);
+                }
+
+                SpawnLot(
+                    definition,
+                    prefab,
+                    candidate,
+                    footprint,
+                    CalculateCellCentre(cells),
+                    m_landmarksRoot,
+                    $"Landmark_{GeneratedLandmarkCount:000}");
+                GeneratedLandmarkCount++;
+            }
+        }
+
+        private void SpawnLot(
+            LotDefinition definition,
+            GameObject prefab,
+            PropertyCandidate candidate,
+            Vector2Int footprint,
+            Vector3 centre,
+            Transform parent,
+            string instanceName)
+        {
+            GameObject property = prefab != null
+                ? Instantiate(prefab, centre, Quaternion.identity, parent)
+                : CreatePlaceholderHouse(centre, footprint);
+            property.name = prefab != null ? instanceName : $"Placeholder_{instanceName}";
+            if (property.transform.parent != parent)
+            {
+                property.transform.SetParent(parent, true);
+            }
+
+            GeneratedProperty generatedProperty = property.GetComponent<GeneratedProperty>();
+            if (generatedProperty == null)
+            {
+                generatedProperty = property.AddComponent<GeneratedProperty>();
+            }
+
+            Transform deliveryPoint = generatedProperty.DeliveryPoint;
+            Transform roadConnection = generatedProperty.RoadConnection;
+            if (prefab == null)
+            {
+                roadConnection = property.transform.Find("RoadConnection");
+                deliveryPoint = property.transform.Find("DeliveryPoint");
+            }
+
+            generatedProperty.Initialise(candidate.Anchor, footprint, roadConnection, deliveryPoint);
+            FacePropertyTowardsRoad(property.transform, candidate.Road);
+            FitPropertyVisualToFootprint(generatedProperty, footprint);
+            m_generatedProperties.Add(generatedProperty);
+
+            GeneratedLot generatedLot = property.GetComponent<GeneratedLot>();
+            if (generatedLot == null)
+            {
+                generatedLot = property.AddComponent<GeneratedLot>();
+            }
+
+            generatedLot.Initialise(definition, candidate.Anchor);
+            m_generatedLots.Add(generatedLot);
+            if (definition != null && definition.UniquePerMap)
+            {
+                m_spawnedUniqueLots.Add(definition);
+            }
+
+            RegisterDeliveryDestination(property, generatedProperty, definition);
+        }
+
+        private void RegisterDeliveryDestination(
+            GameObject property,
+            GeneratedProperty generatedProperty,
+            LotDefinition definition)
+        {
+            bool canDeliver = definition == null || definition.CanBeDeliveryDestination;
+            if (!canDeliver || generatedProperty.DeliveryPoint == null)
+            {
+                return;
+            }
+
+            DeliveryDestination destination = property.GetComponent<DeliveryDestination>();
+            if (destination == null)
+            {
+                destination = property.AddComponent<DeliveryDestination>();
+            }
+
+            LotType lotType = definition != null ? definition.LotType : LotType.Residential;
+            DeliveryDestinationType destinationType = lotType switch
+            {
+                LotType.Commercial => DeliveryDestinationType.Commercial,
+                LotType.Landmark => DeliveryDestinationType.Landmark,
+                LotType.Special => DeliveryDestinationType.Special,
+                _ => DeliveryDestinationType.Standard
+            };
+            destination.Initialise(
+                generatedProperty.DeliveryPoint,
+                destinationType,
+                definition != null ? definition.DestinationDisplayName : "House",
+                definition != null ? definition.DeliveryDifficultyModifier : 1f,
+                definition != null ? definition.DeliveryRewardModifier : 1f,
+                true);
+            m_deliveryDestinations.Add(destination);
+        }
+
+        private LotDefinition SelectLotDefinition(System.Random random, bool landmarkOnly)
+        {
+            WeightedLot[] lots = m_selectedRegion != null ? m_selectedRegion.Lots : null;
+            if (lots == null || lots.Length == 0)
+            {
+                return null;
+            }
+
+            float totalWeight = 0f;
+            for (int index = 0; index < lots.Length; index++)
+            {
+                LotDefinition definition = lots[index].Definition;
+                if (definition == null ||
+                    (definition.LotType == LotType.Landmark) != landmarkOnly ||
+                    (definition.UniquePerMap && m_spawnedUniqueLots.Contains(definition)))
+                {
+                    continue;
+                }
+
+                totalWeight += Mathf.Max(0.01f, lots[index].Weight);
+            }
+
+            if (totalWeight <= 0f)
+            {
+                return null;
+            }
+
+            float selection = (float)random.NextDouble() * totalWeight;
+            for (int index = 0; index < lots.Length; index++)
+            {
+                LotDefinition definition = lots[index].Definition;
+                if (definition == null ||
+                    (definition.LotType == LotType.Landmark) != landmarkOnly ||
+                    (definition.UniquePerMap && m_spawnedUniqueLots.Contains(definition)))
+                {
+                    continue;
+                }
+
+                selection -= Mathf.Max(0.01f, lots[index].Weight);
+                if (selection <= 0f)
+                {
+                    return definition;
+                }
+            }
+
+            return null;
+        }
+
+        private static GameObject ValidateLotPrefab(GameObject prefab)
+        {
+            if (prefab == null || !prefab.TryGetComponent(out GeneratedProperty property) ||
+                property.RoadConnection == null || property.GridFootprint.x <= 0 ||
+                property.GridFootprint.y <= 0)
+            {
+                return null;
+            }
+
+            return prefab;
+        }
+
+        private Vector2Int GetLotFootprint(LotDefinition definition, GameObject prefab)
+        {
+            Vector2Int footprint = GetPropertyFootprint(prefab);
+            if (definition == null)
+            {
+                return footprint;
+            }
+
+            Vector2Int minimum = definition.MinimumFootprint;
+            return new Vector2Int(
+                Mathf.Max(footprint.x, minimum.x),
+                Mathf.Max(footprint.y, minimum.y));
         }
 
         private List<PropertyCandidate> CreatePropertyCandidates(
@@ -966,6 +1392,141 @@ namespace CouchGuys.ProceduralGeneration
             }
 
             return candidates;
+        }
+
+        private void GenerateRegionObjects(
+            RegionSpawnRule[] rules,
+            Transform parent,
+            System.Random random,
+            bool hazards)
+        {
+            if (rules == null || rules.Length == 0 || parent == null || m_roadOrder.Count == 0)
+            {
+                return;
+            }
+
+            int[] spawnedPerRule = new int[rules.Length];
+            int additionalCount = 0;
+            for (int ruleIndex = 0; ruleIndex < rules.Length; ruleIndex++)
+            {
+                int minimum = Mathf.Max(0, rules[ruleIndex].MinimumCount);
+                int maximum = Mathf.Max(minimum, rules[ruleIndex].MaximumCount);
+                if (rules[ruleIndex].Prefab == null)
+                {
+                    continue;
+                }
+
+                for (int instanceIndex = 0; instanceIndex < minimum; instanceIndex++)
+                {
+                    SpawnRegionObject(rules[ruleIndex], parent, random, hazards);
+                    spawnedPerRule[ruleIndex]++;
+                }
+
+                additionalCount += maximum > minimum
+                    ? random.Next(0, maximum - minimum + 1)
+                    : 0;
+            }
+
+            for (int index = 0; index < additionalCount; index++)
+            {
+                int selectedRule = SelectSpawnRule(rules, spawnedPerRule, random);
+                if (selectedRule < 0)
+                {
+                    break;
+                }
+
+                SpawnRegionObject(rules[selectedRule], parent, random, hazards);
+                spawnedPerRule[selectedRule]++;
+            }
+        }
+
+        private void SpawnRegionObject(
+            RegionSpawnRule rule,
+            Transform parent,
+            System.Random random,
+            bool hazards)
+        {
+            GridCoordinate road = m_roadOrder[random.Next(m_roadOrder.Count)];
+            Vector3 centre = GridToWorld(road);
+            double angle = random.NextDouble() * Math.PI * 2.0;
+            float placementOffset = rule.Placement switch
+            {
+                RegionObjectPlacement.Roadside => m_roadTileSize * 0.55f,
+                RegionObjectPlacement.OpenLot => m_roadTileSize,
+                _ => 0f
+            };
+            float minimumOffset = Mathf.Max(placementOffset, rule.MinimumRoadOffset);
+            float maximumOffset = Mathf.Max(minimumOffset, rule.MaximumRoadOffset);
+            float offset = Mathf.Lerp(minimumOffset, maximumOffset, (float)random.NextDouble());
+            Vector3 direction = new Vector3((float)Math.Cos(angle), 0f, (float)Math.Sin(angle));
+            Vector3 position = centre + direction * offset;
+            position.y = GetCellHeight(WorldToGrid(position));
+            GameObject instance = Instantiate(
+                rule.Prefab,
+                position,
+                Quaternion.Euler(0f, (float)random.NextDouble() * 360f, 0f),
+                parent);
+            instance.name = hazards
+                ? $"Hazard_{GeneratedHazardCount:000}"
+                : $"Prop_{GeneratedPropCount:000}";
+            if (hazards)
+            {
+                GeneratedHazardCount++;
+            }
+            else
+            {
+                GeneratedPropCount++;
+            }
+        }
+
+        private static int SelectSpawnRule(
+            RegionSpawnRule[] rules,
+            int[] spawnedPerRule,
+            System.Random random)
+        {
+            float totalWeight = 0f;
+            for (int index = 0; index < rules.Length; index++)
+            {
+                int maximum = Mathf.Max(rules[index].MinimumCount, rules[index].MaximumCount);
+                if (spawnedPerRule[index] < maximum && rules[index].Prefab != null)
+                {
+                    totalWeight += Mathf.Max(0.01f, rules[index].Weight);
+                }
+            }
+
+            if (totalWeight <= 0f)
+            {
+                return -1;
+            }
+
+            float selection = (float)random.NextDouble() * totalWeight;
+            for (int index = 0; index < rules.Length; index++)
+            {
+                int maximum = Mathf.Max(rules[index].MinimumCount, rules[index].MaximumCount);
+                if (spawnedPerRule[index] >= maximum || rules[index].Prefab == null)
+                {
+                    continue;
+                }
+
+                selection -= Mathf.Max(0.01f, rules[index].Weight);
+                if (selection <= 0f)
+                {
+                    return index;
+                }
+            }
+
+            return -1;
+        }
+
+        private void BuildNavMeshOnce()
+        {
+            bool shouldBuild = m_selectedRegion == null || m_selectedRegion.BuildNavMesh;
+            if (shouldBuild && m_navMeshSurface != null)
+            {
+                m_navMeshSurface.BuildNavMesh();
+                IsNavMeshReady = m_navMeshSurface.navMeshData != null &&
+                                 NavMesh.CalculateTriangulation().vertices.Length > 0;
+            }
         }
 
         private GameObject SelectHousePrefab(System.Random random)
@@ -1401,6 +1962,16 @@ namespace CouchGuys.ProceduralGeneration
                                 centre + new Vector3(offset.X, 0f, offset.Y) * (m_roadTileSize * 0.45f));
                         }
                     }
+                }
+            }
+
+            Gizmos.color = new Color(1f, 0.3f, 0.85f, 0.9f);
+            for (int index = 0; index < m_deliveryDestinations.Count; index++)
+            {
+                DeliveryDestination destination = m_deliveryDestinations[index];
+                if (destination != null && destination.DropPosition != null)
+                {
+                    Gizmos.DrawWireSphere(destination.DropPosition.position, 0.5f);
                 }
             }
         }
