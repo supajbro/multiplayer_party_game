@@ -1523,6 +1523,11 @@ namespace CouchGuys.ProceduralGeneration
             bool shouldBuild = m_selectedRegion == null || m_selectedRegion.BuildNavMesh;
             if (shouldBuild && m_navMeshSurface != null)
             {
+                // Runtime render-mesh collection requires every imported mesh to have
+                // Read/Write enabled. The generated roads, ground and building bounds
+                // already have colliders, so collider geometry is both build-safe and
+                // considerably cheaper than reading decorative house meshes.
+                m_navMeshSurface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
                 m_navMeshSurface.BuildNavMesh();
                 IsNavMeshReady = m_navMeshSurface.navMeshData != null &&
                                  NavMesh.CalculateTriangulation().vertices.Length > 0;

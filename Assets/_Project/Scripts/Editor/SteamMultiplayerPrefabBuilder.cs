@@ -1,5 +1,6 @@
 using CouchGuys.Networking;
 using CouchGuys.Gameplay.Delivery;
+using CouchGuys.Player;
 using FishNet.Managing;
 using FishNet.Managing.Object;
 using FishNet.Managing.Transporting;
@@ -30,6 +31,7 @@ namespace CouchGuys.Editor
                 playerPrefab.GetComponent<NetworkObject>() == null ||
                 playerPrefab.GetComponent<NetworkObject>().NetworkBehaviours.Count == 0 ||
                 playerPrefab.GetComponent<NeighbourhoodMap>() == null ||
+                playerPrefab.GetComponent<PlayerHealth>() == null ||
                 bootstrapPrefab == null ||
                 bootstrapPrefab.GetComponent<NeighbourhoodPlayerSpawner>() == null)
             {
@@ -90,7 +92,9 @@ namespace CouchGuys.Editor
             for (int index = 0; index < spawnablePrefabs.Prefabs.Count; index++)
             {
                 NetworkObject existing = spawnablePrefabs.Prefabs[index];
-                if (existing != null && existing != playerNetworkObject && existing != couchNetworkObject)
+                string existingPath = existing != null ? AssetDatabase.GetAssetPath(existing) : string.Empty;
+                if (existing != null && existing != playerNetworkObject && existing != couchNetworkObject &&
+                    existingPath != "Assets/_Project/Prefabs/Enemies/Thief.prefab")
                 {
                     preservedPrefabs.Add(existing);
                 }

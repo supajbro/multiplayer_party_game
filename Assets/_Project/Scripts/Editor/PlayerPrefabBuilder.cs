@@ -166,6 +166,15 @@ namespace CouchGuys.Editor
             SetObjectReference(couchCarrier, "m_playerController", player.GetComponent<ThirdPersonPlayerController>());
             RepairLegacyCarryDistances(couchCarrier);
 
+            PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
+            if (playerHealth == null)
+            {
+                playerHealth = player.AddComponent<PlayerHealth>();
+            }
+
+            SetObjectReference(playerHealth, "m_playerController", player.GetComponent<ThirdPersonPlayerController>());
+            SetObjectReference(playerHealth, "m_visualRoot", player.transform.Find("Visual"));
+
             if (player.GetComponent<NeighbourhoodMap>() == null)
             {
                 player.AddComponent<NeighbourhoodMap>();
@@ -196,19 +205,22 @@ namespace CouchGuys.Editor
                 throw new UnityException("FishNet NetworkObject behaviour list was not found.");
             }
 
-            behaviours.arraySize = 3;
+            behaviours.arraySize = 4;
             behaviours.GetArrayElementAtIndex(0).objectReferenceValue = networkTransform;
             behaviours.GetArrayElementAtIndex(1).objectReferenceValue = ownership;
             behaviours.GetArrayElementAtIndex(2).objectReferenceValue = couchCarrier;
+            behaviours.GetArrayElementAtIndex(3).objectReferenceValue = playerHealth;
             serialisedNetworkObject.ApplyModifiedPropertiesWithoutUndo();
 
             SetNetworkBehaviourReferences(networkTransform, networkObject, 0);
             SetNetworkBehaviourReferences(ownership, networkObject, 1);
             SetNetworkBehaviourReferences(couchCarrier, networkObject, 2);
+            SetNetworkBehaviourReferences(playerHealth, networkObject, 3);
             EditorUtility.SetDirty(networkObject);
             EditorUtility.SetDirty(networkTransform);
             EditorUtility.SetDirty(ownership);
             EditorUtility.SetDirty(couchCarrier);
+            EditorUtility.SetDirty(playerHealth);
         }
 
         private static void RepairLegacyCarryDistances(PlayerCouchCarrier couchCarrier)
@@ -373,6 +385,7 @@ namespace CouchGuys.Editor
                 prefab.GetComponent<NetworkTransform>() == null ||
                 prefab.GetComponent<NetworkPlayerOwnership>() == null ||
                 prefab.GetComponent<PlayerCouchCarrier>() == null ||
+                prefab.GetComponent<PlayerHealth>() == null ||
                 prefab.GetComponent<NeighbourhoodMap>() == null ||
                 prefab.GetComponent<CouchGuyAnimationDriver>() == null ||
                 prefab.GetComponent<DebugCouchBotController>() == null ||

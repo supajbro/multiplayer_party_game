@@ -71,6 +71,11 @@ namespace CouchGuys.Player
 
         private void Update()
         {
+            if (TryGetComponent(out PlayerHealth health) && health.IsKnockedDown)
+            {
+                return;
+            }
+
             if (!IsOwner)
             {
                 return;
@@ -285,7 +290,8 @@ namespace CouchGuys.Player
         [ServerRpc]
         private void RequestGrabServerRpc(NetworkObject couchObject, int pointIndex)
         {
-            if (IsCarrying || couchObject == null || !couchObject.IsSpawned ||
+            if ((TryGetComponent(out PlayerHealth health) && health.IsKnockedDown) ||
+                IsCarrying || couchObject == null || !couchObject.IsSpawned ||
                 !couchObject.TryGetComponent(out CouchCarryController couch))
             {
                 return;
@@ -354,6 +360,14 @@ namespace CouchGuys.Player
             {
                 m_carriedCouch.Value = null;
                 m_carriedPointIndex.Value = -1;
+            }
+        }
+
+        internal void ReleaseForDamageServer()
+        {
+            if (IsServerInitialized)
+            {
+                ReleaseCurrentCouchServer();
             }
         }
 

@@ -74,22 +74,32 @@ namespace CouchGuys.EditorTools
             bool changed = DrawDefaultInspector();
             EditorGUILayout.Space();
             EnemySpawnManager manager = (EnemySpawnManager)target;
-            if (manager.ThiefPrefab == null)
+            if (manager.EnemyPrefabs == null || manager.EnemyPrefabs.Count == 0)
             {
                 EditorGUILayout.HelpBox(
-                    "Assign the existing networked Thief prefab to enable spawning.",
+                    "Assign the networked Pistol, Assault Rifle, and Shotgun enemy prefabs to enable spawning.",
                     MessageType.Warning);
             }
-            else if (manager.ThiefPrefab.GetComponentInChildren<NavMeshAgent>() == null)
+            else
             {
-                EditorGUILayout.HelpBox(
-                    "The assigned Thief prefab needs a NavMeshAgent.",
-                    MessageType.Error);
+                for (int index = 0; index < manager.EnemyPrefabs.Count; index++)
+                {
+                    FishNet.Object.NetworkObject prefab = manager.EnemyPrefabs[index];
+                    if (prefab != null && prefab.GetComponentInChildren<NavMeshAgent>() == null)
+                    {
+                        EditorGUILayout.HelpBox(
+                            $"{prefab.name} needs a NavMeshAgent.",
+                            MessageType.Error);
+                    }
+                }
             }
 
-            if (changed && manager.ThiefPrefab != null)
+            if (changed && manager.EnemyPrefabs != null)
             {
-                RegisterNetworkPrefab(manager.ThiefPrefab);
+                for (int index = 0; index < manager.EnemyPrefabs.Count; index++)
+                {
+                    RegisterNetworkPrefab(manager.EnemyPrefabs[index]);
+                }
             }
 
             EditorGUILayout.LabelField("Runtime Status", EditorStyles.boldLabel);
@@ -109,7 +119,7 @@ namespace CouchGuys.EditorTools
         {
             const string spawnablesPath = "Assets/_Project/Settings/NetworkSpawnablePrefabs.asset";
             SinglePrefabObjects spawnables = AssetDatabase.LoadAssetAtPath<SinglePrefabObjects>(spawnablesPath);
-            if (spawnables == null)
+            if (spawnables == null || prefab == null)
             {
                 return;
             }

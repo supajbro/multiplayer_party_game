@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 2770509040782231261}
   - component: {fileID: 5385180417060675768}
   - component: {fileID: 7619104973454978121}
+  - component: {fileID: 8111111111111111111}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -107,6 +108,7 @@ MonoBehaviour:
   m_gravity: -25
   m_groundedForce: 2
   m_terminalVelocity: 50
+  m_knockbackDamping: 8
 --- !u!114 &4753475039817145927
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -156,6 +158,7 @@ MonoBehaviour:
   - {fileID: 2770509040782231261}
   - {fileID: 5385180417060675768}
   - {fileID: 6842772898105403012}
+  - {fileID: 8111111111111111111}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -323,6 +326,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49b1e3edba294a9b92b972e39fdbcb7b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Delivery.NeighbourhoodMap
+--- !u!114 &8111111111111111111
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7c9826403ae43f99d1e670c3843911a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.PlayerHealth
+  _componentIndexCache: 3
+  _addedNetworkObject: {fileID: 4753475039817145927}
+  _networkObjectCache: {fileID: 4753475039817145927}
+  m_maxHealth: 100
+  m_knockdownDamageFraction: 0.25
+  m_knockdownDuration: 2.25
+  m_upwardImpulse: 2.5
+  m_fallAngle: 78
+  m_fallDegreesPerSecond: 360
+  m_getUpDegreesPerSecond: 180
+  m_visualRoot: {fileID: 200001}
+  m_playerController: {fileID: 100004}
 --- !u!1 &200000
 GameObject:
   m_ObjectHideFlags: 0

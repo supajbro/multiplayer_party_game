@@ -8,35 +8,104 @@ using UnityEngine.AI;
 
 namespace CouchGuys.Editor
 {
-    /// <summary>Builds the correctly scaled network-ready capsule used as the placeholder Thief.</summary>
+    /// <summary>Builds the three network-ready capsule enemies and their placeholder cube weapons.</summary>
     public static class ThiefPrefabBuilder
     {
-        public const string PrefabPath = "Assets/_Project/Prefabs/Enemies/Thief.prefab";
+        public const string PistolPrefabPath = "Assets/_Project/Prefabs/Enemies/Thief_Pistol.prefab";
+        public const string AssaultRiflePrefabPath = "Assets/_Project/Prefabs/Enemies/Thief_AssaultRifle.prefab";
+        public const string ShotgunPrefabPath = "Assets/_Project/Prefabs/Enemies/Thief_Shotgun.prefab";
+        public const string PrefabPath = PistolPrefabPath;
         private const string SpawnablesPath = "Assets/_Project/Settings/NetworkSpawnablePrefabs.asset";
 
-        [InitializeOnLoadMethod]
-        private static void BuildMissingPrefabAfterImport()
+        private readonly struct WeaponSpec
         {
-            EditorApplication.delayCall += () => EnsureThiefPrefab();
+            public readonly EnemyWeaponType Type;
+            public readonly string Name;
+            public readonly string Path;
+            public readonly Vector3 CubeScale;
+            public readonly float FireInterval;
+            public readonly float Range;
+            public readonly int Pellets;
+            public readonly float Spread;
+            public readonly float Damage;
+            public readonly float Knockback;
+            public readonly float PreferredRange;
+
+            public WeaponSpec(
+                EnemyWeaponType type, string name, string path, Vector3 cubeScale,
+                float fireInterval, float range, int pellets, float spread,
+                float damage, float knockback, float preferredRange)
+            {
+                Type = type;
+                Name = name;
+                Path = path;
+                CubeScale = cubeScale;
+                FireInterval = fireInterval;
+                Range = range;
+                Pellets = pellets;
+                Spread = spread;
+                Damage = damage;
+                Knockback = knockback;
+                PreferredRange = preferredRange;
+            }
+        }
+
+        private static readonly WeaponSpec[] Specs =
+        {
+            new(EnemyWeaponType.Pistol, "Thief_Pistol", PistolPrefabPath,
+                new Vector3(0.14f, 0.14f, 0.38f), 0.8f, 28f, 1, 2f, 20f, 5f, 5f),
+            new(EnemyWeaponType.AssaultRifle, "Thief_AssaultRifle", AssaultRiflePrefabPath,
+                new Vector3(0.16f, 0.16f, 0.8f), 0.12f, 34f, 1, 1.5f, 9f, 3.5f, 7f),
+            new(EnemyWeaponType.Shotgun, "Thief_Shotgun", ShotgunPrefabPath,
+                new Vector3(0.24f, 0.2f, 0.65f), 1.4f, 20f, 8, 7f, 8f, 9f, 3.5f)
+        };
+
+        [InitializeOnLoadMethod]
+        private static void BuildMissingPrefabsAfterImport()
+        {
+            EditorApplication.delayCall += () => EnsureEnemyPrefabs();
+        }
+
+        [MenuItem("Couch Guys/Build Enemy Weapon Prefabs")]
+        public static void BuildEnemyWeaponPrefabs()
+        {
+            Selection.objects = EnsureEnemyPrefabs();
         }
 
         [MenuItem("Couch Guys/Build Thief Prefab")]
-        public static void BuildThiefPrefab()
+        private static void BuildLegacyMenuAlias()
         {
-            Selection.activeObject = EnsureThiefPrefab();
+            BuildEnemyWeaponPrefabs();
         }
 
         public static GameObject EnsureThiefPrefab()
         {
+            return EnsureEnemyPrefabs()[0];
+        }
+
+        public static GameObject[] EnsureEnemyPrefabs()
+        {
             EnsureFolder("Assets/_Project/Prefabs", "Enemies");
-            GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
-            if (IsValid(existing))
+            GameObject[] result = new GameObject[Specs.Length];
+            for (int index = 0; index < Specs.Length; index++)
+            {
+                result[index] = EnsureEnemyPrefab(Specs[index]);
+            }
+
+            AssetDatabase.SaveAssets();
+            return result;
+        }
+
+        private static GameObject EnsureEnemyPrefab(WeaponSpec spec)
+        {
+            GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(spec.Path);
+            if (IsValid(existing, spec.Type))
             {
                 RegisterNetworkPrefab(existing.GetComponent<NetworkObject>());
                 return existing;
             }
 
-            GameObject root = new GameObject("Thief");
+            GameObject root = new GameObject(spec.Name);
             try
             {
                 NetworkObject networkObject = root.AddComponent<NetworkObject>();
@@ -44,16 +113,15 @@ namespace CouchGuys.Editor
                 NavMeshAgent agent = root.AddComponent<NavMeshAgent>();
                 CapsuleCollider collider = root.AddComponent<CapsuleCollider>();
                 ThiefNavigator navigator = root.AddComponent<ThiefNavigator>();
+                EnemyWeapon weapon = root.AddComponent<EnemyWeapon>();
 
-                // Root pivot remains at ground level so NavMesh placement and agent movement
-                // do not require a compensating vertical offset.
                 agent.radius = 0.35f;
                 agent.height = 1.8f;
                 agent.baseOffset = 0f;
                 agent.speed = 4.5f;
                 agent.angularSpeed = 720f;
                 agent.acceleration = 16f;
-                agent.stoppingDistance = 1.25f;
+                agent.stoppingDistance = spec.PreferredRange;
                 agent.autoBraking = true;
 
                 collider.radius = 0.35f;
@@ -64,32 +132,28 @@ namespace CouchGuys.Editor
                 visual.name = "CapsuleVisual";
                 visual.transform.SetParent(root.transform, false);
                 visual.transform.localPosition = new Vector3(0f, 0.9f, 0f);
-                visual.transform.localRotation = Quaternion.identity;
                 visual.transform.localScale = new Vector3(0.7f, 0.9f, 0.7f);
                 Object.DestroyImmediate(visual.GetComponent<Collider>());
 
-                SerializedObject serialisedTransform = new SerializedObject(networkTransform);
-                serialisedTransform.FindProperty("_componentConfiguration").enumValueIndex =
-                    (int)NetworkTransform.ComponentConfigurationType.Disabled;
-                serialisedTransform.FindProperty("_clientAuthoritative").boolValue = false;
-                serialisedTransform.FindProperty("_synchronizePosition").boolValue = true;
-                serialisedTransform.FindProperty("_synchronizeRotation").boolValue = true;
-                serialisedTransform.FindProperty("_synchronizeScale").boolValue = false;
-                serialisedTransform.ApplyModifiedPropertiesWithoutUndo();
+                GameObject weaponVisual = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                weaponVisual.name = $"{spec.Type}Weapon";
+                weaponVisual.transform.SetParent(root.transform, false);
+                weaponVisual.transform.localPosition = new Vector3(0.28f, 1.05f, 0.42f);
+                weaponVisual.transform.localScale = spec.CubeScale;
+                Object.DestroyImmediate(weaponVisual.GetComponent<Collider>());
 
-                SerializedObject serialisedNavigator = new SerializedObject(navigator);
-                serialisedNavigator.FindProperty("m_agent").objectReferenceValue = agent;
-                serialisedNavigator.ApplyModifiedPropertiesWithoutUndo();
+                ConfigureNetworkTransform(networkTransform);
+                SetObjectReference(navigator, "m_agent", agent);
+                ConfigureWeapon(weapon, weaponVisual.transform, spec);
+                ConfigureNetworkBehaviours(networkObject, networkTransform, navigator, weapon);
 
-                ConfigureNetworkBehaviours(networkObject, networkTransform, navigator);
-                GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
+                GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, spec.Path);
                 if (saved == null)
                 {
-                    throw new UnityException($"Failed to save the Thief prefab at {PrefabPath}.");
+                    throw new UnityException($"Failed to save enemy prefab at {spec.Path}.");
                 }
 
                 RegisterNetworkPrefab(saved.GetComponent<NetworkObject>());
-                AssetDatabase.SaveAssets();
                 return saved;
             }
             finally
@@ -98,30 +162,64 @@ namespace CouchGuys.Editor
             }
         }
 
-        private static void ConfigureNetworkBehaviours(
-            NetworkObject networkObject,
-            NetworkTransform networkTransform,
-            ThiefNavigator navigator)
+        private static void ConfigureWeapon(EnemyWeapon weapon, Transform muzzle, WeaponSpec spec)
         {
+            SerializedObject serialised = new SerializedObject(weapon);
+            serialised.FindProperty("m_weaponType").enumValueIndex = (int)spec.Type;
+            serialised.FindProperty("m_muzzle").objectReferenceValue = muzzle;
+            serialised.FindProperty("m_fireInterval").floatValue = spec.FireInterval;
+            serialised.FindProperty("m_range").floatValue = spec.Range;
+            serialised.FindProperty("m_pelletsPerShot").intValue = spec.Pellets;
+            serialised.FindProperty("m_spreadAngle").floatValue = spec.Spread;
+            serialised.FindProperty("m_damagePerPellet").floatValue = spec.Damage;
+            serialised.FindProperty("m_knockbackForce").floatValue = spec.Knockback;
+            serialised.FindProperty("m_preferredRange").floatValue = spec.PreferredRange;
+            serialised.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void ConfigureNetworkTransform(NetworkTransform networkTransform)
+        {
+            SerializedObject serialised = new SerializedObject(networkTransform);
+            serialised.FindProperty("_componentConfiguration").enumValueIndex =
+                (int)NetworkTransform.ComponentConfigurationType.Disabled;
+            serialised.FindProperty("_clientAuthoritative").boolValue = false;
+            serialised.FindProperty("_synchronizePosition").boolValue = true;
+            serialised.FindProperty("_synchronizeRotation").boolValue = true;
+            serialised.FindProperty("_synchronizeScale").boolValue = false;
+            serialised.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void ConfigureNetworkBehaviours(
+            NetworkObject networkObject, NetworkTransform networkTransform,
+            ThiefNavigator navigator, EnemyWeapon weapon)
+        {
+            NetworkBehaviour[] behaviours = { networkTransform, navigator, weapon };
             SerializedObject serialisedNetworkObject = new SerializedObject(networkObject);
-            SerializedProperty behaviours = serialisedNetworkObject.FindProperty("NetworkBehaviours");
-            behaviours.arraySize = 2;
-            behaviours.GetArrayElementAtIndex(0).objectReferenceValue = networkTransform;
-            behaviours.GetArrayElementAtIndex(1).objectReferenceValue = navigator;
+            SerializedProperty property = serialisedNetworkObject.FindProperty("NetworkBehaviours");
+            property.arraySize = behaviours.Length;
+            for (int index = 0; index < behaviours.Length; index++)
+            {
+                property.GetArrayElementAtIndex(index).objectReferenceValue = behaviours[index];
+                SetNetworkBehaviourReferences(behaviours[index], networkObject, index);
+            }
+
             serialisedNetworkObject.ApplyModifiedPropertiesWithoutUndo();
-            SetNetworkBehaviourReferences(networkTransform, networkObject, 0);
-            SetNetworkBehaviourReferences(navigator, networkObject, 1);
         }
 
         private static void SetNetworkBehaviourReferences(
-            NetworkBehaviour behaviour,
-            NetworkObject networkObject,
-            int componentIndex)
+            NetworkBehaviour behaviour, NetworkObject networkObject, int componentIndex)
         {
             SerializedObject serialised = new SerializedObject(behaviour);
             serialised.FindProperty("_componentIndexCache").intValue = componentIndex;
             serialised.FindProperty("_addedNetworkObject").objectReferenceValue = networkObject;
             serialised.FindProperty("_networkObjectCache").objectReferenceValue = networkObject;
+            serialised.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void SetObjectReference(Object target, string propertyName, Object value)
+        {
+            SerializedObject serialised = new SerializedObject(target);
+            serialised.FindProperty(propertyName).objectReferenceValue = value;
             serialised.ApplyModifiedPropertiesWithoutUndo();
         }
 
@@ -137,13 +235,14 @@ namespace CouchGuys.Editor
             EditorUtility.SetDirty(spawnables);
         }
 
-        private static bool IsValid(GameObject prefab)
+        private static bool IsValid(GameObject prefab, EnemyWeaponType type)
         {
             return prefab != null && prefab.GetComponent<NetworkObject>() != null &&
                    prefab.GetComponent<NetworkTransform>() != null &&
                    prefab.GetComponent<NavMeshAgent>() != null &&
                    prefab.GetComponent<CapsuleCollider>() != null &&
-                   prefab.GetComponent<ThiefNavigator>() != null;
+                   prefab.GetComponent<ThiefNavigator>() != null &&
+                   prefab.TryGetComponent(out EnemyWeapon weapon) && weapon.WeaponType == type;
         }
 
         private static void EnsureFolder(string parent, string child)

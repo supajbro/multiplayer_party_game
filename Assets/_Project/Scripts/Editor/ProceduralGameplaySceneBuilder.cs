@@ -50,7 +50,7 @@ namespace CouchGuys.Editor
 
             GameObject defaultDeliveryNpcPrefab = DeliveryNPCPrefabBuilder.EnsureDeliveryNpcPrefab();
             GameObject[] defaultHousePrefabs = HousePrefabBuilder.LoadHousePrefabs();
-            GameObject thiefPrefab = ThiefPrefabBuilder.EnsureThiefPrefab();
+            GameObject[] enemyPrefabs = ThiefPrefabBuilder.EnsureEnemyPrefabs();
 
             Scene scene = SceneManager.GetSceneByPath(GameplayScenePath);
             bool openedTemporarily = !scene.IsValid() || !scene.isLoaded;
@@ -83,8 +83,15 @@ namespace CouchGuys.Editor
             }
 
             enemySpawnManager.SetGenerator(generator);
-            enemySpawnManager.SetThiefPrefab(
-                thiefPrefab != null ? thiefPrefab.GetComponent<NetworkObject>() : null);
+            NetworkObject[] enemyNetworkPrefabs = new NetworkObject[enemyPrefabs.Length];
+            for (int index = 0; index < enemyPrefabs.Length; index++)
+            {
+                enemyNetworkPrefabs[index] = enemyPrefabs[index] != null
+                    ? enemyPrefabs[index].GetComponent<NetworkObject>()
+                    : null;
+            }
+
+            enemySpawnManager.SetEnemyPrefabs(enemyNetworkPrefabs);
 
             if (IsConfigured(scene))
             {
@@ -129,6 +136,8 @@ namespace CouchGuys.Editor
             {
                 navMeshSurface = generator.gameObject.AddComponent<NavMeshSurface>();
             }
+
+            navMeshSurface.useGeometry = UnityEngine.AI.NavMeshCollectGeometry.PhysicsColliders;
 
             SerializedObject serialisedGenerator = new SerializedObject(generator);
             serialisedGenerator.FindProperty("m_navMeshSurface").objectReferenceValue = navMeshSurface;

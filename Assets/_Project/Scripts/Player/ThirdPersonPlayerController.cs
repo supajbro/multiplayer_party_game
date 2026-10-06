@@ -36,6 +36,9 @@ namespace CouchGuys.Player
         [SerializeField, Min(0f)] private float m_groundedForce = 2f;
         [SerializeField, Min(0f)] private float m_terminalVelocity = 50f;
 
+        [Header("External Impacts")]
+        [SerializeField, Min(0f)] private float m_knockbackDamping = 8f;
+
         private CharacterController m_characterController;
         private float m_currentSpeed;
         private float m_verticalVelocity;
@@ -48,9 +51,24 @@ namespace CouchGuys.Player
         // CharacterController supplies this through its normal collision callback;
         // retaining it avoids an additional ground raycast every frame.
         private Vector3 m_groundNormal = Vector3.up;
+        private Vector3 m_externalVelocity;
+        private bool m_movementLocked;
 
         public bool IsGrounded => m_characterController != null && m_characterController.isGrounded;
         public Vector3 MovementIntent { get; private set; }
+        public bool MovementLocked => m_movementLocked;
+
+        public void SetMovementLocked(bool locked)
+        {
+            m_movementLocked = locked;
+            m_currentSpeed = 0f;
+            MovementIntent = Vector3.zero;
+        }
+
+        public void ApplyExternalImpulse(Vector3 impulse)
+        {
+            m_externalVelocity += impulse;
+        }
 
         /// <summary>
         /// Applies a gameplay speed modifier without coupling movement to the carrying system.
@@ -123,7 +141,19 @@ namespace CouchGuys.Player
         private void Update()
         {
             UpdateVerticalMovement();
-            UpdateHorizontalMovement();
+            if (m_movementLocked)
+            {
+                UpdateLockedMovement();
+            }
+            else
+            {
+                UpdateHorizontalMovement();
+            }
+
+            m_externalVelocity = Vector3.MoveTowards(
+                m_externalVelocity,
+                Vector3.zero,
+                m_knockbackDamping * Time.deltaTime);
         }
 
         private void UpdateVerticalMovement()
@@ -133,7 +163,7 @@ namespace CouchGuys.Player
                 m_verticalVelocity = -m_groundedForce;
             }
 
-            if (IsGrounded && m_input.JumpPressedThisFrame)
+            if (!m_movementLocked && IsGrounded && m_input.JumpPressedThisFrame)
             {
                 m_verticalVelocity = Mathf.Sqrt(m_jumpHeight * -2f * m_gravity);
             }
@@ -192,7 +222,18 @@ namespace CouchGuys.Player
             // Start collecting the normal for next frame before Move invokes
             // OnControllerColliderHit for this movement.
             m_groundNormal = Vector3.zero;
-            m_characterController.Move(velocity * Time.deltaTime + attachmentCorrection);
+            m_characterController.Move(
+                (velocity + m_externalVelocity) * Time.deltaTime + attachmentCorrection);
+        }
+
+        private void UpdateLockedMovement()
+        {
+            MovementIntent = Vector3.zero;
+            m_currentSpeed = 0f;
+            m_groundNormal = Vector3.zero;
+            Vector3 velocity = m_externalVelocity;
+            velocity.y += m_verticalVelocity;
+            m_characterController.Move(velocity * Time.deltaTime);
         }
 
         private float CalculateUphillSpeedMultiplier(Vector3 movementDirection)
@@ -301,6 +342,7 @@ namespace CouchGuys.Player
             m_runSpeed = Mathf.Max(m_walkSpeed, m_runSpeed);
             m_gravity = Mathf.Min(-0.01f, m_gravity);
             m_terminalVelocity = Mathf.Max(0f, m_terminalVelocity);
+            m_knockbackDamping = Mathf.Max(0f, m_knockbackDamping);
             m_maximumUphillSlopeAngle = Mathf.Max(
                 m_minimumUphillSlopeAngle + 0.01f,
                 m_maximumUphillSlopeAngle);

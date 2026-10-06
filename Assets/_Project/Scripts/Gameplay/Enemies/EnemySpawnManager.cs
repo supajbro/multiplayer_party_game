@@ -10,15 +10,15 @@ using UnityEngine.AI;
 namespace CouchGuys.Gameplay.Enemies
 {
     /// <summary>
-    /// Server-authoritative, region-independent group spawner for the existing thief prefab.
-    /// Individual thief AI remains responsible for targeting, combat, health, and navigation.
+    /// Server-authoritative, region-independent group spawner for weapon-equipped enemy prefabs.
+    /// Individual enemy components remain responsible for targeting, combat, and navigation.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class EnemySpawnManager : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] private NeighbourhoodGenerator m_generator;
-        [SerializeField] private NetworkObject m_thiefPrefab;
+        [SerializeField] private NetworkObject[] m_enemyPrefabs;
 
         [Header("Spawn Timing")]
         [SerializeField, Min(0.1f)] private float m_minSpawnInterval = 20f;
@@ -54,7 +54,7 @@ namespace CouchGuys.Gameplay.Enemies
         private bool m_hasLastSpawn;
 
         public bool SpawningEnabled => m_regionReady && IsServerStarted();
-        public NetworkObject ThiefPrefab => m_thiefPrefab;
+        public IReadOnlyList<NetworkObject> EnemyPrefabs => m_enemyPrefabs;
         public string CurrentRegionName => m_generator != null ? m_generator.CurrentRegionName : "None";
         public bool NavMeshReady => m_generator != null && m_generator.IsNavMeshReady;
         public int ActiveThiefCount => m_activeThieves.Count;
@@ -114,12 +114,12 @@ namespace CouchGuys.Gameplay.Enemies
                 return;
             }
 
-            if (m_thiefPrefab == null)
+            if (!HasEnemyPrefabs())
             {
                 if (!m_warnedMissingPrefab)
                 {
                     Debug.LogWarning(
-                        "Enemy Spawn Manager has no Thief prefab. Assign the existing networked Thief prefab to enable spawning.",
+                        "Enemy Spawn Manager has no enemy weapon prefabs. Assign at least one prefab to enable spawning.",
                         this);
                     m_warnedMissingPrefab = true;
                 }
@@ -137,10 +137,15 @@ namespace CouchGuys.Gameplay.Enemies
             m_generator = generator;
         }
 
+        public void SetEnemyPrefabs(NetworkObject[] enemyPrefabs)
+        {
+            m_enemyPrefabs = enemyPrefabs;
+            m_warnedMissingPrefab = false;
+        }
+
         public void SetThiefPrefab(NetworkObject thiefPrefab)
         {
-            m_thiefPrefab = thiefPrefab;
-            m_warnedMissingPrefab = false;
+            SetEnemyPrefabs(thiefPrefab != null ? new[] { thiefPrefab } : System.Array.Empty<NetworkObject>());
         }
 
         internal void Unregister(NetworkObject thief)
@@ -204,14 +209,20 @@ namespace CouchGuys.Gameplay.Enemies
             int spawnedCount = 0;
             for (int index = 0; index < m_groupPositions.Count; index++)
             {
+                NetworkObject selectedPrefab = SelectEnemyPrefab();
+                if (selectedPrefab == null)
+                {
+                    break;
+                }
+
                 NetworkObject thief = Instantiate(
-                    m_thiefPrefab,
+                    selectedPrefab,
                     m_groupPositions[index],
                     Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
                 NavMeshAgent agent = thief.GetComponentInChildren<NavMeshAgent>();
                 if (agent == null)
                 {
-                    Debug.LogError("The assigned Thief prefab requires a NavMeshAgent.", m_thiefPrefab);
+                    Debug.LogError("The assigned enemy prefab requires a NavMeshAgent.", selectedPrefab);
                     Destroy(thief.gameObject);
                     break;
                 }
@@ -223,9 +234,22 @@ namespace CouchGuys.Gameplay.Enemies
                 }
 
                 member.Register(this, thief);
+                if (!target.TryGetComponent(out PlayerHealth targetHealth))
+                {
+                    Destroy(thief.gameObject);
+                    continue;
+                }
+
+                float preferredRange = 1.25f;
+                if (thief.TryGetComponent(out EnemyWeapon weapon))
+                {
+                    weapon.SetTargetServer(targetHealth);
+                    preferredRange = weapon.PreferredRange;
+                }
+
                 if (thief.TryGetComponent(out ThiefNavigator navigator))
                 {
-                    navigator.SetTargetServer(target.transform);
+                    navigator.SetTargetServer(targetHealth, preferredRange);
                 }
 
                 InstanceFinder.ServerManager.Spawn(thief);
@@ -405,6 +429,44 @@ namespace CouchGuys.Gameplay.Enemies
         private void ScheduleNextSpawn()
         {
             m_nextSpawnTime = Time.time + Random.Range(m_minSpawnInterval, m_maxSpawnInterval);
+        }
+
+        private bool HasEnemyPrefabs()
+        {
+            if (m_enemyPrefabs == null)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < m_enemyPrefabs.Length; index++)
+            {
+                if (m_enemyPrefabs[index] != null)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private NetworkObject SelectEnemyPrefab()
+        {
+            if (!HasEnemyPrefabs())
+            {
+                return null;
+            }
+
+            int startIndex = Random.Range(0, m_enemyPrefabs.Length);
+            for (int offset = 0; offset < m_enemyPrefabs.Length; offset++)
+            {
+                NetworkObject candidate = m_enemyPrefabs[(startIndex + offset) % m_enemyPrefabs.Length];
+                if (candidate != null)
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
         }
 
         private void PruneMissingThieves()
