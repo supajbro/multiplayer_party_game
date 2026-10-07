@@ -66,6 +66,17 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField, Min(0f)] private float m_maximumElevation = 24f;
         [SerializeField, Range(1f, 60f)] private float m_maximumRoadSlope = 45f;
 
+        [Header("Suburbs Progression")]
+        [SerializeField] private RegionProgressionSettings m_progression = RegionProgressionSettings.SuburbsDefault;
+
+        [Header("Continuous Terrain")]
+        [SerializeField] private GeneratedTerrainSettings m_terrainSettings =
+            GeneratedTerrainSettings.SuburbsDefault;
+
+        [Header("Delivery Difficulty")]
+        [SerializeField] private DeliveryDifficultySettings m_deliveryDifficulty =
+            DeliveryDifficultySettings.SuburbsDefault;
+
         [Header("Starting Area")]
         [SerializeField] private GameObject m_startingAreaPrefab;
         [SerializeField] private GameObject m_deliveryNpcPrefab;
@@ -79,6 +90,10 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private bool m_showGrid;
         [SerializeField] private bool m_showConnections = true;
         [SerializeField] private bool m_showOccupiedCells;
+        [SerializeField] private bool m_showDeliveryDifficulty = true;
+        [SerializeField] private bool m_showProgressionZones = true;
+        [SerializeField] private bool m_showPrimaryRoute = true;
+        [SerializeField] private bool m_showElevation;
 
         private readonly List<GeneratedRoad> m_generatedRoads = new List<GeneratedRoad>();
         private readonly List<GeneratedProperty> m_generatedProperties = new List<GeneratedProperty>();
@@ -93,6 +108,9 @@ namespace CouchGuys.ProceduralGeneration
             new Dictionary<GridCoordinate, RoadConnections>();
         private readonly Dictionary<GridCoordinate, float> m_roadHeights =
             new Dictionary<GridCoordinate, float>();
+        private readonly Dictionary<GridCoordinate, SuburbZone> m_roadZones =
+            new Dictionary<GridCoordinate, SuburbZone>();
+        private readonly HashSet<GridCoordinate> m_primaryRoadCells = new HashSet<GridCoordinate>();
 
         private float[,] m_blockElevations;
         private int m_minimumLocalX;
@@ -108,6 +126,8 @@ namespace CouchGuys.ProceduralGeneration
         private CardinalDirection m_startDirection;
         private bool m_warnedAboutRoadPlaceholders;
         private bool m_warnedAboutHousePlaceholders;
+        private float m_elevationNoiseOffsetX;
+        private float m_elevationNoiseOffsetY;
 
         private readonly struct PropertyCandidate
         {
@@ -127,6 +147,7 @@ namespace CouchGuys.ProceduralGeneration
         }
 
         public StartingArea GeneratedStartingArea { get; private set; }
+        public GeneratedTerrainMesh GeneratedTerrain { get; private set; }
         public IReadOnlyList<GeneratedRoad> GeneratedRoads => m_generatedRoads;
         public IReadOnlyList<GeneratedProperty> GeneratedProperties => m_generatedProperties;
         public IReadOnlyList<GeneratedLot> GeneratedLots => m_generatedLots;
@@ -144,6 +165,8 @@ namespace CouchGuys.ProceduralGeneration
         public float TileSize => m_roadTileSize;
         public bool IsGenerationReady { get; private set; }
         public bool IsNavMeshReady { get; private set; }
+        public bool IsDeliveryDifficultyReady { get; private set; }
+        public bool LastValidationSucceeded { get; private set; }
         public bool HasGeneratedNeighbourhood =>
             IsGenerationReady && GeneratedStartingArea != null && m_generatedRoads.Count > 0;
         public Bounds GeneratedWorldBounds { get; private set; }
@@ -169,7 +192,31 @@ namespace CouchGuys.ProceduralGeneration
 
         public void Generate(RegionDefinition region, int seed)
         {
+            GenerateInternal(region, seed, 0);
+        }
+
+        private void EnsureDifficultySettings()
+        {
+            if (m_deliveryDifficulty.TotalWeight <= 0.001f ||
+                m_deliveryDifficulty.LongRouteDistance <= 0f ||
+                m_deliveryDifficulty.LongDirectDistance <= 0f ||
+                m_deliveryDifficulty.HighElevationGain <= 0f ||
+                m_deliveryDifficulty.SteepRoadGrade <= 0f ||
+                m_deliveryDifficulty.ManyTurns <= 0 ||
+                m_deliveryDifficulty.ManyIntersections <= 0 ||
+                m_deliveryDifficulty.LongFinalCarry <= 0f ||
+                m_deliveryDifficulty.HighFinalCarryElevation <= 0f)
+            {
+                m_deliveryDifficulty = DeliveryDifficultySettings.SuburbsDefault;
+            }
+        }
+
+        private void GenerateInternal(RegionDefinition region, int seed, int attemptIndex)
+        {
             ApplyRegionConfiguration(region);
+            m_progression.Validate();
+            m_terrainSettings.Validate();
+            EnsureDifficultySettings();
             if (!ValidateConfiguration())
             {
                 return;
@@ -191,15 +238,18 @@ namespace CouchGuys.ProceduralGeneration
             m_gridOrigin = GeneratedStartingArea.RoadConnection.position;
             m_startDirection = ClosestDirection(GeneratedStartingArea.RoadConnection.forward);
             ReserveStartingArea(GeneratedStartingArea);
+            m_minimumLocalX = -(m_gridWidth / 2) * (m_blockWidth + 1);
             AssignBlockElevations(layoutRandom);
             GenerateRoadLayout(new System.Random(DeriveSeed(seed, 0x1874A2B1)));
             CalculateRoadConnections();
+            ResolveRoadElevations();
+            RefreshBlockElevationsFromRoads();
             // Visual selection has its own stream so adding art cannot perturb the
             // logical road/property decisions made for a given seed.
             CreateRoadVisuals(new System.Random(DeriveSeed(seed, 0x2D31A7B5)));
-            CreateResidentialGround();
             GenerateLandmarks(new System.Random(DeriveSeed(seed, 0x4F1BBCDC)));
             GenerateProperties(new System.Random(DeriveSeed(seed, 0x61C88647)));
+            CreateContinuousTerrain();
             GenerateRegionObjects(
                 m_selectedRegion != null ? m_selectedRegion.Props : null,
                 m_propsRoot,
@@ -210,9 +260,33 @@ namespace CouchGuys.ProceduralGeneration
                 m_hazardsRoot,
                 new System.Random(DeriveSeed(seed, 0x72AE91C3)),
                 true);
+            AnalyseDeliveryDestinations();
             CreateDeliveryNpc();
             CalculateWorldBounds();
-            ValidateLayout();
+            LastValidationSucceeded = ValidateLayout();
+            if (!LastValidationSucceeded)
+            {
+                stopwatch.Stop();
+                LastGenerationMilliseconds = stopwatch.Elapsed.TotalMilliseconds;
+                int maximumAttempts = Mathf.Max(1, m_progression.MaximumGenerationAttempts);
+                if (attemptIndex + 1 < maximumAttempts)
+                {
+                    int retrySeed = DeriveSeed(seed, 0x51ED270B + attemptIndex);
+                    Debug.LogWarning(
+                        $"Generated Suburbs seed {CurrentSeed} failed validation; " +
+                        $"retrying with deterministic repair seed {retrySeed} " +
+                        $"({attemptIndex + 2}/{maximumAttempts}).",
+                        this);
+                    GenerateInternal(region, retrySeed, attemptIndex + 1);
+                    return;
+                }
+
+                Debug.LogError(
+                    $"Generated Suburbs seed {CurrentSeed} failed validation after " +
+                    $"{maximumAttempts} attempts and will not be exposed to gameplay.",
+                    this);
+                return;
+            }
             BuildNavMeshOnce();
             IsGenerationReady = true;
             stopwatch.Stop();
@@ -221,7 +295,17 @@ namespace CouchGuys.ProceduralGeneration
                 $"Generated region '{CurrentRegionName}' with seed {CurrentSeed}: " +
                 $"{m_generatedRoads.Count} roads, {m_generatedLots.Count} lots, " +
                 $"{m_deliveryDestinations.Count} destinations, {GeneratedLandmarkCount} landmarks, " +
-                $"{GeneratedHazardCount} hazards in {LastGenerationMilliseconds:F1} ms.",
+                $"{GeneratedHazardCount} hazards, " +
+                $"{GeneratedTerrain?.VertexCount ?? 0} terrain vertices, difficulty pools " +
+                $"{(IsDeliveryDifficultyReady ? "ready" : "incomplete")} " +
+                $"[{GetStrictDestinationCountForStage(0)}/" +
+                $"{GetStrictDestinationCountForStage(1)}/" +
+                $"{GetStrictDestinationCountForStage(2)}/" +
+                $"{GetStrictDestinationCountForStage(3)}/" +
+                $"{GetStrictDestinationCountForStage(4)}/" +
+                $"{GetStrictDestinationCountForStage(5)}/" +
+                $"{GetStrictDestinationCountForStage(6)}] in " +
+                $"{LastGenerationMilliseconds:F1} ms.",
                 this);
             RegionGenerated?.Invoke(this);
         }
@@ -296,6 +380,8 @@ namespace CouchGuys.ProceduralGeneration
             m_elevationStep = elevation.MaximumStep;
             m_maximumElevation = elevation.MaximumElevation;
             m_maximumRoadSlope = elevation.MaximumRoadSlope;
+            m_progression = region.Progression;
+            m_terrainSettings = region.Terrain;
             m_roadPrefabs = region.RoadPrefabs ?? Array.Empty<GameObject>();
             m_residentialGroundPrefab = region.GroundPrefab;
             m_startingAreaPrefab = region.StartingAreaPrefab;
@@ -376,8 +462,10 @@ namespace CouchGuys.ProceduralGeneration
             m_propsRoot = null;
             m_hazardsRoot = null;
             GeneratedStartingArea = null;
+            GeneratedTerrain = null;
             IsGenerationReady = false;
             IsNavMeshReady = false;
+            IsDeliveryDifficultyReady = false;
             m_generatedRoads.Clear();
             m_generatedProperties.Clear();
             m_generatedLots.Clear();
@@ -389,6 +477,8 @@ namespace CouchGuys.ProceduralGeneration
             m_roadOrder.Clear();
             m_logicalRoads.Clear();
             m_roadHeights.Clear();
+            m_roadZones.Clear();
+            m_primaryRoadCells.Clear();
             m_blockElevations = null;
             GeneratedWorldBounds = new Bounds(transform.position, Vector3.zero);
             m_warnedAboutRoadPlaceholders = false;
@@ -396,6 +486,7 @@ namespace CouchGuys.ProceduralGeneration
             GeneratedLandmarkCount = 0;
             GeneratedPropCount = 0;
             GeneratedHazardCount = 0;
+            LastValidationSucceeded = false;
         }
 
         public Vector3 GridToWorld(GridCoordinate coordinate)
@@ -405,6 +496,49 @@ namespace CouchGuys.ProceduralGeneration
                 coordinate.X * m_roadTileSize,
                 height,
                 coordinate.Y * m_roadTileSize);
+        }
+
+        public bool TryGetRoadHeight(GridCoordinate coordinate, out float height) =>
+            m_roadHeights.TryGetValue(coordinate, out height);
+
+        public bool TryGetRoadConnections(GridCoordinate coordinate, out RoadConnections connections) =>
+            m_logicalRoads.TryGetValue(coordinate, out connections);
+
+        public bool TryGetRoadZone(GridCoordinate coordinate, out SuburbZone zone) =>
+            m_roadZones.TryGetValue(coordinate, out zone);
+
+        public bool IsPrimaryRoad(GridCoordinate coordinate) => m_primaryRoadCells.Contains(coordinate);
+
+        public SuburbZone GetProgressionZone(Vector3 worldPosition) =>
+            CalculateZone(GridToLocal(WorldToGrid(worldPosition)).y);
+
+        public float GetEnemySpawnOpportunity(Vector3 worldPosition)
+        {
+            return GetProgressionZone(worldPosition) switch
+            {
+                SuburbZone.Start => 0f,
+                SuburbZone.Easy => 0.15f,
+                SuburbZone.Medium => 0.55f,
+                SuburbZone.Hilly => 0.85f,
+                _ => 1f
+            };
+        }
+
+        public int GetStrictDestinationCountForStage(int stageIndex)
+        {
+            DeliveryDestinationQuery query = DeliveryDestinationQuery.ForSuburbsStage(stageIndex);
+            int count = 0;
+            for (int index = 0; index < m_deliveryDestinations.Count; index++)
+            {
+                DeliveryDestination destination = m_deliveryDestinations[index];
+                if (destination != null && destination.CanReceiveDelivery &&
+                    query.Matches(destination.RouteMetrics))
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         private float GetCellHeight(GridCoordinate coordinate)
@@ -420,14 +554,7 @@ namespace CouchGuys.ProceduralGeneration
             }
 
             Vector2Int local = GridToLocal(coordinate);
-            int horizontalSpan = m_blockWidth + 1;
-            int verticalSpan = m_blockHeight + 1;
-            int relativeX = local.x - m_minimumLocalX;
-            int blockX = Mathf.FloorToInt(relativeX / (float)horizontalSpan);
-            int blockY = Mathf.FloorToInt(local.y / (float)verticalSpan);
-            return blockX >= 0 && blockX < m_gridWidth && blockY >= 0 && blockY < m_gridHeight
-                ? m_blockElevations[blockX, blockY]
-                : 0f;
+            return CalculateProgressiveElevation(local.x, local.y);
         }
 
         public GridCoordinate WorldToGrid(Vector3 worldPosition)
@@ -599,6 +726,13 @@ namespace CouchGuys.ProceduralGeneration
         {
             bool hasPoint = false;
             Bounds bounds = new Bounds(transform.position, Vector3.zero);
+            if (GeneratedTerrain != null &&
+                GeneratedTerrain.TryGetComponent(out Renderer terrainRenderer))
+            {
+                bounds = terrainRenderer.bounds;
+                hasPoint = true;
+            }
+
             for (int index = 0; index < m_generatedRoads.Count; index++)
             {
                 EncapsulatePoint(ref bounds, ref hasPoint, m_generatedRoads[index].transform.position);
@@ -660,67 +794,22 @@ namespace CouchGuys.ProceduralGeneration
         private void AssignBlockElevations(System.Random random)
         {
             m_blockElevations = new float[m_gridWidth, m_gridHeight];
-            if (!m_elevationEnabled || m_gridHeight < 2)
+            m_elevationNoiseOffsetX = (float)random.NextDouble() * 1000f;
+            m_elevationNoiseOffsetY = (float)random.NextDouble() * 1000f;
+            if (!m_elevationEnabled)
             {
                 return;
             }
 
-            float maximumRise = Mathf.Tan(m_maximumRoadSlope * Mathf.Deg2Rad) * m_roadTileSize;
-            float maximumStep = Mathf.Min(m_elevationStep, maximumRise, m_maximumElevation);
-            float minimumStep = Mathf.Min(m_minimumElevationStep, maximumStep);
-            float elevationStep = Mathf.Round(
-                Mathf.Lerp(minimumStep, maximumStep, (float)random.NextDouble()) * 2f) * 0.5f;
-            elevationStep = Mathf.Max(0.1f, elevationStep);
-            int maximumLevel = Mathf.FloorToInt(m_maximumElevation / elevationStep);
-            if (maximumLevel <= 0)
+            int spanX = m_blockWidth + 1;
+            int spanY = m_blockHeight + 1;
+            for (int blockY = 0; blockY < m_gridHeight; blockY++)
             {
-                Debug.LogWarning(
-                    "Elevation is enabled, but Maximum Elevation does not allow one elevation step. " +
-                    "The generated grid will remain flat.", this);
-                return;
-            }
-
-            int maximumLevelChange = Mathf.Max(1, Mathf.FloorToInt(maximumRise / elevationStep));
-            int[] rowLevels = new int[m_gridHeight];
-            bool hasElevation = false;
-            for (int row = 1; row < m_gridHeight; row++)
-            {
-                int previousLevel = rowLevels[row - 1];
-                int nextLevel = previousLevel;
-                if (random.Next(100) < 75)
+                for (int blockX = 0; blockX < m_gridWidth; blockX++)
                 {
-                    bool moveUp = previousLevel <= 0 ||
-                                  (previousLevel < maximumLevel && random.Next(100) < 60);
-                    int availableLevels = moveUp
-                        ? maximumLevel - previousLevel
-                        : previousLevel;
-                    int changeLimit = Mathf.Min(maximumLevelChange, availableLevels);
-                    if (changeLimit > 0)
-                    {
-                        int change = random.Next(1, changeLimit + 1);
-                        nextLevel += moveUp ? change : -change;
-                    }
-                }
-
-                rowLevels[row] = nextLevel;
-                hasElevation |= nextLevel > 0;
-            }
-
-            if (!hasElevation)
-            {
-                int raisedRow = random.Next(1, m_gridHeight);
-                for (int row = raisedRow; row < m_gridHeight; row++)
-                {
-                    rowLevels[row] = 1;
-                }
-            }
-
-            for (int row = 0; row < m_gridHeight; row++)
-            {
-                float elevation = rowLevels[row] * elevationStep;
-                for (int column = 0; column < m_gridWidth; column++)
-                {
-                    m_blockElevations[column, row] = elevation;
+                    float localX = m_minimumLocalX + blockX * spanX + spanX * 0.5f;
+                    float localY = blockY * spanY + spanY * 0.5f;
+                    m_blockElevations[blockX, blockY] = CalculateProgressiveElevation(localX, localY);
                 }
             }
         }
@@ -735,7 +824,7 @@ namespace CouchGuys.ProceduralGeneration
                     grid,
                     (localX, localY) => AddRoad(
                         LocalToGrid(localX, localY),
-                        RoadHeightAtLocal(localY)));
+                        CalculateProgressiveElevation(localX, localY)));
                 m_selectedRegion.RoadStrategy.Generate(context, random);
                 return;
             }
@@ -751,7 +840,7 @@ namespace CouchGuys.ProceduralGeneration
                 int localX = m_minimumLocalX + boundary * (m_blockWidth + 1);
                 for (int localY = 0; localY <= maximumLocalY; localY++)
                 {
-                    AddRoad(LocalToGrid(localX, localY), RoadHeightAtLocal(localY));
+                    AddRoad(LocalToGrid(localX, localY), CalculateProgressiveElevation(localX, localY));
                 }
             }
 
@@ -760,28 +849,53 @@ namespace CouchGuys.ProceduralGeneration
                 int localY = boundary * (m_blockHeight + 1);
                 for (int localX = m_minimumLocalX; localX <= maximumLocalX; localX++)
                 {
-                    AddRoad(LocalToGrid(localX, localY), RoadHeightAtLocal(localY));
+                    AddRoad(LocalToGrid(localX, localY), CalculateProgressiveElevation(localX, localY));
                 }
             }
         }
 
-        private float RoadHeightAtLocal(int localY)
+        private float CalculateProgressiveElevation(float localX, float localY)
         {
-            if (m_blockElevations == null || m_gridHeight == 0)
+            if (!m_elevationEnabled || m_gridHeight <= 0)
             {
                 return 0f;
             }
 
-            int span = m_blockHeight + 1;
-            int boundary = localY / span;
-            if (localY % span == 0 && boundary > 0 && boundary < m_gridHeight)
+            int maximumLocalY = m_gridHeight * (m_blockHeight + 1);
+            float flatRadius = Mathf.Max(1, m_progression.DepotFlatRadiusTiles);
+            if (localY <= flatRadius)
             {
-                return (m_blockElevations[0, boundary - 1] +
-                        m_blockElevations[0, boundary]) * 0.5f;
+                return 0f;
             }
 
-            int row = Mathf.Clamp(boundary, 0, m_gridHeight - 1);
-            return m_blockElevations[0, row];
+            float usableProgress = Mathf.InverseLerp(flatRadius, maximumLocalY, localY);
+            float trend = Mathf.Pow(
+                Mathf.Clamp01(usableProgress),
+                Mathf.Max(0.5f, m_progression.ElevationTrendExponent));
+            float maximum = m_maximumElevation * Mathf.Lerp(
+                1f,
+                Mathf.Max(1f, m_progression.OuterElevationMultiplier),
+                Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(
+                    m_progression.HillyEndNormalized,
+                    1f,
+                    usableProgress)));
+            float baseElevation = maximum * trend * 0.82f;
+
+            float frequency = Mathf.Max(0.005f, m_progression.ElevationNoiseFrequency);
+            float firstNoise = Mathf.PerlinNoise(
+                m_elevationNoiseOffsetX + localX * frequency,
+                m_elevationNoiseOffsetY + localY * frequency);
+            float secondNoise = Mathf.PerlinNoise(
+                m_elevationNoiseOffsetX * 0.37f + localX * frequency * 2.1f,
+                m_elevationNoiseOffsetY * 0.37f + localY * frequency * 2.1f);
+            float rollingHills = Mathf.Sin(
+                (localY * frequency + m_elevationNoiseOffsetY * 0.01f) * Mathf.PI * 2f) * 0.4f;
+            float signedNoise = (firstNoise - 0.5f) * 2f +
+                                (secondNoise - 0.5f) * 0.55f +
+                                rollingHills;
+            float variation = m_progression.ElevationNoiseAmplitude *
+                Mathf.SmoothStep(0f, 1f, usableProgress) * signedNoise;
+            return Mathf.Clamp(baseElevation + variation, 0f, maximum);
         }
 
         private GridCoordinate LocalToGrid(int localX, int localY)
@@ -829,6 +943,191 @@ namespace CouchGuys.ProceduralGeneration
             }
         }
 
+        private void ResolveRoadElevations()
+        {
+            for (int index = 0; index < m_roadOrder.Count; index++)
+            {
+                GridCoordinate coordinate = m_roadOrder[index];
+                Vector2Int local = GridToLocal(coordinate);
+                m_roadZones[coordinate] = CalculateZone(local.y);
+                if (local.x == 0)
+                {
+                    m_primaryRoadCells.Add(coordinate);
+                }
+
+                if (local.y <= m_progression.DepotFlatRadiusTiles)
+                {
+                    m_roadHeights[coordinate] = 0f;
+                }
+            }
+
+            if (!m_roadCells.Contains(GridCoordinate.Zero))
+            {
+                return;
+            }
+
+            // First constrain the connected graph outward from the depot. This gives
+            // every road a valid route even before cycle edges are relaxed below.
+            Queue<GridCoordinate> frontier = new Queue<GridCoordinate>();
+            HashSet<GridCoordinate> visited = new HashSet<GridCoordinate> { GridCoordinate.Zero };
+            frontier.Enqueue(GridCoordinate.Zero);
+            while (frontier.Count > 0)
+            {
+                GridCoordinate current = frontier.Dequeue();
+                for (int directionIndex = 0; directionIndex < 4; directionIndex++)
+                {
+                    CardinalDirection direction = (CardinalDirection)directionIndex;
+                    if ((m_logicalRoads[current] & DirectionConnection(direction)) == 0)
+                    {
+                        continue;
+                    }
+
+                    GridCoordinate neighbour = current + DirectionOffset(direction);
+                    if (!m_roadCells.Contains(neighbour) || !visited.Add(neighbour))
+                    {
+                        continue;
+                    }
+
+                    float maximumRise = MaximumRoadRise(current, neighbour);
+                    m_roadHeights[neighbour] = Mathf.Clamp(
+                        m_roadHeights[neighbour],
+                        m_roadHeights[current] - maximumRise,
+                        m_roadHeights[current] + maximumRise);
+                    frontier.Enqueue(neighbour);
+                }
+            }
+
+            // Resolve cycle edges too. Lowering the higher endpoint preserves the
+            // flat depot and avoids introducing artificial pits beside roads.
+            for (int iteration = 0; iteration < 32; iteration++)
+            {
+                bool changed = false;
+                for (int roadIndex = 0; roadIndex < m_roadOrder.Count; roadIndex++)
+                {
+                    GridCoordinate roadCoordinate = m_roadOrder[roadIndex];
+                    RoadConnections roadConnections = m_logicalRoads[roadCoordinate];
+                    for (int directionIndex = 0; directionIndex < 2; directionIndex++)
+                    {
+                        CardinalDirection direction = (CardinalDirection)directionIndex;
+                        if ((roadConnections & DirectionConnection(direction)) == 0)
+                        {
+                            continue;
+                        }
+
+                        GridCoordinate neighbour = roadCoordinate + DirectionOffset(direction);
+                        if (!m_roadHeights.ContainsKey(neighbour))
+                        {
+                            continue;
+                        }
+
+                        float maximumRise = MaximumRoadRise(roadCoordinate, neighbour);
+                        float first = m_roadHeights[roadCoordinate];
+                        float second = m_roadHeights[neighbour];
+                        if (Mathf.Abs(first - second) <= maximumRise + 0.001f)
+                        {
+                            continue;
+                        }
+
+                        if (first > second)
+                        {
+                            m_roadHeights[roadCoordinate] = second + maximumRise;
+                        }
+                        else
+                        {
+                            m_roadHeights[neighbour] = first + maximumRise;
+                        }
+
+                        changed = true;
+                    }
+                }
+
+                if (!changed)
+                {
+                    break;
+                }
+            }
+        }
+
+        private float MaximumRoadRise(GridCoordinate first, GridCoordinate second)
+        {
+            bool primaryConnection = m_primaryRoadCells.Contains(first) &&
+                                     m_primaryRoadCells.Contains(second);
+            float configuredSlope = primaryConnection
+                ? m_progression.PrimaryRoadMaximumSlope
+                : m_progression.ResidentialRoadMaximumSlope;
+            float slope = Mathf.Min(m_maximumRoadSlope, Mathf.Max(1f, configuredSlope));
+            return Mathf.Tan(slope * Mathf.Deg2Rad) * m_roadTileSize;
+        }
+
+        private void RefreshBlockElevationsFromRoads()
+        {
+            if (m_blockElevations == null)
+            {
+                return;
+            }
+
+            int spanX = m_blockWidth + 1;
+            int spanY = m_blockHeight + 1;
+            for (int blockY = 0; blockY < m_gridHeight; blockY++)
+            {
+                for (int blockX = 0; blockX < m_gridWidth; blockX++)
+                {
+                    float localX = m_minimumLocalX + blockX * spanX + spanX * 0.5f;
+                    float localY = blockY * spanY + spanY * 0.5f;
+                    m_blockElevations[blockX, blockY] = CalculateProgressiveElevation(localX, localY);
+                }
+            }
+        }
+
+        private SuburbZone CalculateZone(int localY)
+        {
+            if (localY <= m_progression.DepotFlatRadiusTiles)
+            {
+                return SuburbZone.Start;
+            }
+
+            float maximumLocalY = Mathf.Max(1, m_gridHeight * (m_blockHeight + 1));
+            float progress = Mathf.Clamp01(localY / maximumLocalY);
+            if (progress <= m_progression.EasyEndNormalized)
+            {
+                return SuburbZone.Easy;
+            }
+
+            if (progress <= m_progression.MediumEndNormalized)
+            {
+                return SuburbZone.Medium;
+            }
+
+            return progress <= m_progression.HillyEndNormalized
+                ? SuburbZone.Hilly
+                : SuburbZone.Outer;
+        }
+
+        private float GetMaximumConnectedGrade(GridCoordinate coordinate)
+        {
+            float maximum = 0f;
+            if (!m_logicalRoads.TryGetValue(coordinate, out RoadConnections connections))
+            {
+                return maximum;
+            }
+
+            for (int directionIndex = 0; directionIndex < 4; directionIndex++)
+            {
+                CardinalDirection direction = (CardinalDirection)directionIndex;
+                GridCoordinate neighbour = coordinate + DirectionOffset(direction);
+                if ((connections & DirectionConnection(direction)) == 0 ||
+                    !m_roadHeights.TryGetValue(neighbour, out float neighbourHeight))
+                {
+                    continue;
+                }
+
+                float rise = Mathf.Abs(neighbourHeight - m_roadHeights[coordinate]);
+                maximum = Mathf.Max(maximum, Mathf.Atan2(rise, m_roadTileSize) * Mathf.Rad2Deg);
+            }
+
+            return maximum;
+        }
+
         private void CreateRoadVisuals(System.Random random)
         {
             for (int index = 0; index < m_roadOrder.Count; index++)
@@ -836,12 +1135,14 @@ namespace CouchGuys.ProceduralGeneration
                 GridCoordinate coordinate = m_roadOrder[index];
                 RoadConnections connections = m_logicalRoads[coordinate];
                 Quaternion surfaceRotation = CalculateRoadSurfaceRotation(coordinate);
+                Vector3 roadPosition = GridToWorld(coordinate) +
+                                       Vector3.up * m_terrainSettings.RoadSurfaceOffset;
                 GameObject road = TryCreateRoadPrefab(
-                    connections, GridToWorld(coordinate), surfaceRotation, random);
+                    connections, roadPosition, surfaceRotation, random);
                 if (road == null)
                 {
                     road = GameObject.CreatePrimitive(PrimitiveType.Plane);
-                    road.transform.SetPositionAndRotation(GridToWorld(coordinate), surfaceRotation);
+                    road.transform.SetPositionAndRotation(roadPosition, surfaceRotation);
                     road.transform.localScale = new Vector3(
                         m_roadTileSize / 10f, 1f, m_roadTileSize / 10f);
                     if (!m_warnedAboutRoadPlaceholders)
@@ -857,7 +1158,15 @@ namespace CouchGuys.ProceduralGeneration
                 road.transform.SetParent(m_roadsRoot, true);
                 FitRoadVisualToTile(road.transform);
                 GeneratedRoad generatedRoad = road.AddComponent<GeneratedRoad>();
-                generatedRoad.Initialise(coordinate, connections);
+                generatedRoad.Initialise(
+                    coordinate,
+                    connections,
+                    m_roadZones[coordinate],
+                    m_primaryRoadCells.Contains(coordinate)
+                        ? GeneratedRoadRole.Primary
+                        : GeneratedRoadRole.Residential,
+                    m_roadHeights[coordinate],
+                    GetMaximumConnectedGrade(coordinate));
                 m_generatedRoads.Add(generatedRoad);
             }
         }
@@ -926,35 +1235,339 @@ namespace CouchGuys.ProceduralGeneration
 
         private Quaternion CalculateRoadSurfaceRotation(GridCoordinate coordinate)
         {
-            int localY = GridToLocal(coordinate).y;
-            int span = m_blockHeight + 1;
-            if (localY % span != 0)
-            {
-                return Quaternion.identity;
-            }
-
-            int boundary = localY / span;
-            if (boundary <= 0 || boundary >= m_gridHeight)
-            {
-                return Quaternion.identity;
-            }
-
-            float rise = m_blockElevations[0, boundary] -
-                         m_blockElevations[0, boundary - 1];
-            return CalculateSlopeRotation(rise, m_roadTileSize);
+            float centre = m_roadHeights[coordinate];
+            float west = m_roadHeights.TryGetValue(
+                coordinate + new GridCoordinate(-1, 0), out float westHeight)
+                ? westHeight
+                : centre;
+            float east = m_roadHeights.TryGetValue(
+                coordinate + new GridCoordinate(1, 0), out float eastHeight)
+                ? eastHeight
+                : centre;
+            float south = m_roadHeights.TryGetValue(
+                coordinate + new GridCoordinate(0, -1), out float southHeight)
+                ? southHeight
+                : centre;
+            float north = m_roadHeights.TryGetValue(
+                coordinate + new GridCoordinate(0, 1), out float northHeight)
+                ? northHeight
+                : centre;
+            float gradientX = (east - west) / (2f * m_roadTileSize);
+            float gradientZ = (north - south) / (2f * m_roadTileSize);
+            Vector3 normal = new Vector3(-gradientX, 1f, -gradientZ).normalized;
+            return Quaternion.FromToRotation(Vector3.up, normal);
         }
 
-        private Quaternion CalculateSlopeRotation(float rise, float run)
+        private void CreateContinuousTerrain()
         {
-            if (Mathf.Abs(rise) <= 0.001f || run <= 0.001f)
+            float borderTiles = m_terrainSettings.MapBorder / m_roadTileSize;
+            float minimumLocalX = m_minimumLocalX - borderTiles;
+            float maximumLocalX = m_minimumLocalX +
+                                  m_gridWidth * (m_blockWidth + 1) + borderTiles;
+            float depotDepth = GeneratedStartingArea != null
+                ? GeneratedStartingArea.GridFootprint.y
+                : m_placeholderStartingAreaFootprint.y;
+            float minimumLocalY = -(depotDepth + borderTiles);
+            float maximumLocalY = m_gridHeight * (m_blockHeight + 1) + borderTiles;
+            float widthMetres = (maximumLocalX - minimumLocalX) * m_roadTileSize;
+            float depthMetres = (maximumLocalY - minimumLocalY) * m_roadTileSize;
+            int vertexCountX = Mathf.Max(
+                2,
+                Mathf.CeilToInt(widthMetres / m_terrainSettings.VertexSpacing) + 1);
+            int vertexCountZ = Mathf.Max(
+                2,
+                Mathf.CeilToInt(depthMetres / m_terrainSettings.VertexSpacing) + 1);
+            float stepX = (maximumLocalX - minimumLocalX) / (vertexCountX - 1);
+            float stepZ = (maximumLocalY - minimumLocalY) / (vertexCountZ - 1);
+
+            GameObject terrainObject = new GameObject(
+                "ContinuousTerrain",
+                typeof(MeshFilter),
+                typeof(MeshRenderer),
+                typeof(MeshCollider),
+                typeof(GeneratedTerrainMesh));
+            terrainObject.transform.SetParent(m_residentialGroundRoot, false);
+            Vector3[] vertices = new Vector3[vertexCountX * vertexCountZ];
+            Vector2[] uvs = new Vector2[vertices.Length];
+            for (int z = 0; z < vertexCountZ; z++)
             {
-                return Quaternion.identity;
+                float localY = minimumLocalY + z * stepZ;
+                for (int x = 0; x < vertexCountX; x++)
+                {
+                    float localX = minimumLocalX + x * stepX;
+                    Vector3 flatWorldPosition = LocalCoordinatesToWorld(localX, localY, 0f);
+                    float height = SampleContinuousTerrainHeight(
+                        localX,
+                        localY,
+                        flatWorldPosition);
+                    Vector3 worldPosition = LocalCoordinatesToWorld(localX, localY, height);
+                    int vertexIndex = z * vertexCountX + x;
+                    vertices[vertexIndex] = terrainObject.transform.InverseTransformPoint(worldPosition);
+                    uvs[vertexIndex] = new Vector2(
+                        localX * m_roadTileSize / m_terrainSettings.TextureScale,
+                        localY * m_roadTileSize / m_terrainSettings.TextureScale);
+                }
             }
 
+            int[] triangles = new int[(vertexCountX - 1) * (vertexCountZ - 1) * 6];
+            int triangleIndex = 0;
+            for (int z = 0; z < vertexCountZ - 1; z++)
+            {
+                for (int x = 0; x < vertexCountX - 1; x++)
+                {
+                    int bottomLeft = z * vertexCountX + x;
+                    int bottomRight = bottomLeft + 1;
+                    int topLeft = bottomLeft + vertexCountX;
+                    int topRight = topLeft + 1;
+                    triangles[triangleIndex++] = bottomLeft;
+                    triangles[triangleIndex++] = topLeft;
+                    triangles[triangleIndex++] = topRight;
+                    triangles[triangleIndex++] = bottomLeft;
+                    triangles[triangleIndex++] = topRight;
+                    triangles[triangleIndex++] = bottomRight;
+                }
+            }
+
+            Mesh mesh = new Mesh
+            {
+                name = $"GeneratedTerrain_{CurrentSeed}",
+                indexFormat = vertices.Length > ushort.MaxValue
+                    ? UnityEngine.Rendering.IndexFormat.UInt32
+                    : UnityEngine.Rendering.IndexFormat.UInt16
+            };
+            mesh.vertices = vertices;
+            mesh.triangles = triangles;
+            mesh.uv = uvs;
+            mesh.RecalculateNormals();
+            mesh.RecalculateTangents();
+            mesh.RecalculateBounds();
+
+            MeshFilter meshFilter = terrainObject.GetComponent<MeshFilter>();
+            MeshRenderer meshRenderer = terrainObject.GetComponent<MeshRenderer>();
+            MeshCollider meshCollider = terrainObject.GetComponent<MeshCollider>();
+            meshFilter.sharedMesh = mesh;
+            Material runtimeMaterial = null;
+            Material surfaceMaterial = m_terrainSettings.SurfaceMaterial;
+            if (surfaceMaterial == null && m_residentialGroundPrefab != null)
+            {
+                Renderer prefabRenderer =
+                    m_residentialGroundPrefab.GetComponentInChildren<Renderer>(true);
+                if (prefabRenderer != null)
+                {
+                    surfaceMaterial = prefabRenderer.sharedMaterial;
+                }
+            }
+
+            if (surfaceMaterial == null)
+            {
+                Shader shader = Shader.Find("Universal Render Pipeline/Lit") ??
+                                Shader.Find("Standard");
+                if (shader != null)
+                {
+                    runtimeMaterial = new Material(shader)
+                    {
+                        name = "Generated Suburbs Terrain Material",
+                        color = new Color(0.32f, 0.56f, 0.24f)
+                    };
+                    surfaceMaterial = runtimeMaterial;
+                }
+            }
+
+            meshRenderer.sharedMaterial = surfaceMaterial;
+            meshCollider.sharedMesh = mesh;
+            GeneratedTerrain = terrainObject.GetComponent<GeneratedTerrainMesh>();
+            GeneratedTerrain.Initialise(mesh, runtimeMaterial);
+        }
+
+        private float SampleContinuousTerrainHeight(
+            float localX,
+            float localY,
+            Vector3 flatWorldPosition)
+        {
+            float height = CalculateProgressiveElevation(localX, localY);
+            height = BlendHousePads(height, flatWorldPosition);
+            height = BlendDepotPad(height, flatWorldPosition);
+            if (TrySampleRoadCorridor(
+                    localX,
+                    localY,
+                    flatWorldPosition,
+                    out float roadHeight,
+                    out float distanceToRoad))
+            {
+                float roadEdge = m_terrainSettings.RoadHalfWidth;
+                float shoulderEdge = roadEdge + m_terrainSettings.RoadShoulderWidth;
+                if (distanceToRoad <= roadEdge)
+                {
+                    height = roadHeight;
+                }
+                else if (distanceToRoad < shoulderEdge && shoulderEdge > roadEdge)
+                {
+                    float blend = Mathf.SmoothStep(
+                        0f,
+                        1f,
+                        Mathf.InverseLerp(roadEdge, shoulderEdge, distanceToRoad));
+                    height = Mathf.Lerp(roadHeight, height, blend);
+                }
+            }
+
+            return height;
+        }
+
+        private float BlendHousePads(float terrainHeight, Vector3 flatWorldPosition)
+        {
+            float result = terrainHeight;
+            for (int index = 0; index < m_generatedProperties.Count; index++)
+            {
+                GeneratedProperty property = m_generatedProperties[index];
+                if (property == null)
+                {
+                    continue;
+                }
+
+                Vector3 sample = flatWorldPosition;
+                sample.y = property.transform.position.y;
+                Vector3 local = property.transform.InverseTransformPoint(sample);
+                float halfWidth = property.GridFootprint.x * m_roadTileSize * 0.5f;
+                float halfDepth = property.GridFootprint.y * m_roadTileSize * 0.5f;
+                float outsideX = Mathf.Max(0f, Mathf.Abs(local.x) - halfWidth);
+                float outsideZ = Mathf.Max(0f, Mathf.Abs(local.z) - halfDepth);
+                float distance = Mathf.Sqrt(outsideX * outsideX + outsideZ * outsideZ);
+                if (distance > m_terrainSettings.HousePadBlendWidth)
+                {
+                    continue;
+                }
+
+                float influence = m_terrainSettings.HousePadBlendWidth <= 0.001f
+                    ? 1f
+                    : 1f - Mathf.SmoothStep(
+                        0f,
+                        1f,
+                        distance / m_terrainSettings.HousePadBlendWidth);
+                float propertyHeight = property.transform.position.y - m_gridOrigin.y;
+                result = Mathf.Lerp(result, propertyHeight, influence);
+            }
+
+            return result;
+        }
+
+        private float BlendDepotPad(float terrainHeight, Vector3 flatWorldPosition)
+        {
+            if (GeneratedStartingArea == null)
+            {
+                return terrainHeight;
+            }
+
+            Vector3 sample = flatWorldPosition;
+            sample.y = GeneratedStartingArea.transform.position.y;
+            Vector3 local = GeneratedStartingArea.transform.InverseTransformPoint(sample);
+            float halfWidth = GeneratedStartingArea.GridFootprint.x * m_roadTileSize * 0.5f;
+            float halfDepth = GeneratedStartingArea.GridFootprint.y * m_roadTileSize * 0.5f;
+            float outsideX = Mathf.Max(0f, Mathf.Abs(local.x) - halfWidth);
+            float outsideZ = Mathf.Max(0f, Mathf.Abs(local.z) - halfDepth);
+            float distance = Mathf.Sqrt(outsideX * outsideX + outsideZ * outsideZ);
+            if (distance > m_terrainSettings.DepotBlendWidth)
+            {
+                return terrainHeight;
+            }
+
+            float influence = m_terrainSettings.DepotBlendWidth <= 0.001f
+                ? 1f
+                : 1f - Mathf.SmoothStep(
+                    0f,
+                    1f,
+                    distance / m_terrainSettings.DepotBlendWidth);
+            float depotHeight = GeneratedStartingArea.transform.position.y - m_gridOrigin.y;
+            return Mathf.Lerp(terrainHeight, depotHeight, influence);
+        }
+
+        private bool TrySampleRoadCorridor(
+            float localX,
+            float localY,
+            Vector3 flatWorldPosition,
+            out float roadHeight,
+            out float distanceToRoad)
+        {
+            roadHeight = 0f;
+            distanceToRoad = float.PositiveInfinity;
+            float influenceDistance = m_terrainSettings.RoadHalfWidth +
+                                      m_terrainSettings.RoadShoulderWidth;
+            int searchRadius = Mathf.CeilToInt(influenceDistance / m_roadTileSize) + 1;
+            int centreX = Mathf.RoundToInt(localX);
+            int centreY = Mathf.RoundToInt(localY);
+            for (int y = centreY - searchRadius; y <= centreY + searchRadius; y++)
+            {
+                for (int x = centreX - searchRadius; x <= centreX + searchRadius; x++)
+                {
+                    GridCoordinate coordinate = LocalToGrid(x, y);
+                    if (!m_logicalRoads.TryGetValue(coordinate, out RoadConnections connections))
+                    {
+                        continue;
+                    }
+
+                    Vector3 first = GridToWorld(coordinate);
+                    TryUseRoadSample(flatWorldPosition, first, first, ref roadHeight, ref distanceToRoad);
+                    for (int directionIndex = 0; directionIndex < 2; directionIndex++)
+                    {
+                        CardinalDirection direction = (CardinalDirection)directionIndex;
+                        if ((connections & DirectionConnection(direction)) == 0)
+                        {
+                            continue;
+                        }
+
+                        GridCoordinate neighbour = coordinate + DirectionOffset(direction);
+                        if (m_roadHeights.ContainsKey(neighbour))
+                        {
+                            TryUseRoadSample(
+                                flatWorldPosition,
+                                first,
+                                GridToWorld(neighbour),
+                                ref roadHeight,
+                                ref distanceToRoad);
+                        }
+                    }
+                }
+            }
+
+            return distanceToRoad <= influenceDistance;
+        }
+
+        private void TryUseRoadSample(
+            Vector3 sample,
+            Vector3 first,
+            Vector3 second,
+            ref float selectedHeight,
+            ref float selectedDistance)
+        {
+            Vector3 firstFlat = first;
+            Vector3 secondFlat = second;
+            firstFlat.y = 0f;
+            secondFlat.y = 0f;
+            sample.y = 0f;
+            Vector3 segment = secondFlat - firstFlat;
+            float t = segment.sqrMagnitude > 0.0001f
+                ? Mathf.Clamp01(Vector3.Dot(sample - firstFlat, segment) / segment.sqrMagnitude)
+                : 0f;
+            Vector3 closest = Vector3.Lerp(firstFlat, secondFlat, t);
+            float distance = Vector3.Distance(sample, closest);
+            if (distance >= selectedDistance)
+            {
+                return;
+            }
+
+            selectedDistance = distance;
+            selectedHeight = Mathf.Lerp(first.y, second.y, t) - m_gridOrigin.y;
+        }
+
+        private Vector3 LocalCoordinatesToWorld(float localX, float localY, float height)
+        {
+            GridCoordinate rightOffset = DirectionOffset(TurnRight(m_startDirection));
             GridCoordinate forwardOffset = DirectionOffset(m_startDirection);
+            Vector3 right = new Vector3(rightOffset.X, 0f, rightOffset.Y);
             Vector3 forward = new Vector3(forwardOffset.X, 0f, forwardOffset.Y);
-            Vector3 normal = (Vector3.up - forward * (rise / run)).normalized;
-            return Quaternion.FromToRotation(Vector3.up, normal);
+            return m_gridOrigin +
+                   right * (localX * m_roadTileSize) +
+                   forward * (localY * m_roadTileSize) +
+                   Vector3.up * height;
         }
 
         private void CreateResidentialGround()
@@ -966,7 +1579,6 @@ namespace CouchGuys.ProceduralGeneration
             GridCoordinate forwardOffset = DirectionOffset(m_startDirection);
             Vector3 right = new Vector3(rightOffset.X, 0f, rightOffset.Y);
             Vector3 forward = new Vector3(forwardOffset.X, 0f, forwardOffset.Y);
-            Quaternion directionRotation = Quaternion.LookRotation(forward, Vector3.up);
 
             for (int blockY = 0; blockY < m_gridHeight; blockY++)
             {
@@ -980,7 +1592,20 @@ namespace CouchGuys.ProceduralGeneration
                                      forward * (localCentreY * m_roadTileSize);
                     centre.y += m_blockElevations[blockX, blockY] -
                                 m_residentialGroundVerticalOffset;
-                    Quaternion rotation = directionRotation;
+                    float halfWidth = m_blockWidth * 0.5f;
+                    float halfDepth = m_blockHeight * 0.5f;
+                    float leftHeight = CalculateProgressiveElevation(localCentreX - halfWidth, localCentreY);
+                    float rightHeight = CalculateProgressiveElevation(localCentreX + halfWidth, localCentreY);
+                    float backHeight = CalculateProgressiveElevation(localCentreX, localCentreY - halfDepth);
+                    float frontHeight = CalculateProgressiveElevation(localCentreX, localCentreY + halfDepth);
+                    Vector3 rightTangent = right * (m_blockWidth * m_roadTileSize) +
+                                           Vector3.up * (rightHeight - leftHeight);
+                    Vector3 forwardTangent = forward * (m_blockHeight * m_roadTileSize) +
+                                             Vector3.up * (frontHeight - backHeight);
+                    Vector3 normal = Vector3.Cross(forwardTangent, rightTangent).normalized;
+                    Quaternion rotation = Quaternion.LookRotation(
+                        Vector3.ProjectOnPlane(forwardTangent, normal).normalized,
+                        normal);
 
                     bool isPlaceholder = m_residentialGroundPrefab == null;
                     GameObject ground = isPlaceholder
@@ -1228,9 +1853,21 @@ namespace CouchGuys.ProceduralGeneration
                 deliveryPoint = property.transform.Find("DeliveryPoint");
             }
 
-            generatedProperty.Initialise(candidate.Anchor, footprint, roadConnection, deliveryPoint);
+            generatedProperty.Initialise(
+                candidate.Anchor,
+                candidate.Road,
+                footprint,
+                roadConnection,
+                deliveryPoint,
+                m_roadZones.TryGetValue(candidate.Road, out SuburbZone zone)
+                    ? zone
+                    : CalculateZone(GridToLocal(candidate.Road).y),
+                m_roadHeights.TryGetValue(candidate.Road, out float roadElevation)
+                    ? roadElevation
+                    : 0f);
             FacePropertyTowardsRoad(property.transform, candidate.Road);
             FitPropertyVisualToFootprint(generatedProperty, footprint);
+            generatedProperty.SetAccessMetadata(GridToWorld(candidate.Road));
             m_generatedProperties.Add(generatedProperty);
 
             GeneratedLot generatedLot = property.GetComponent<GeneratedLot>();
@@ -1282,6 +1919,252 @@ namespace CouchGuys.ProceduralGeneration
                 definition != null ? definition.DeliveryRewardModifier : 1f,
                 true);
             m_deliveryDestinations.Add(destination);
+        }
+
+        private void AnalyseDeliveryDestinations()
+        {
+            IsDeliveryDifficultyReady = false;
+            Dictionary<GridCoordinate, GridCoordinate> previous =
+                new Dictionary<GridCoordinate, GridCoordinate>();
+            Dictionary<GridCoordinate, int> distanceInTiles =
+                new Dictionary<GridCoordinate, int>();
+            Queue<GridCoordinate> frontier = new Queue<GridCoordinate>();
+
+            if (!m_logicalRoads.ContainsKey(GridCoordinate.Zero))
+            {
+                Debug.LogWarning("Delivery difficulty could not find the depot road tile.", this);
+                return;
+            }
+
+            distanceInTiles[GridCoordinate.Zero] = 0;
+            frontier.Enqueue(GridCoordinate.Zero);
+            while (frontier.Count > 0)
+            {
+                GridCoordinate current = frontier.Dequeue();
+                RoadConnections connections = m_logicalRoads[current];
+                for (int directionIndex = 0; directionIndex < 4; directionIndex++)
+                {
+                    CardinalDirection direction = (CardinalDirection)directionIndex;
+                    if ((connections & DirectionConnection(direction)) == 0)
+                    {
+                        continue;
+                    }
+
+                    GridCoordinate neighbour = current + DirectionOffset(direction);
+                    if (!m_logicalRoads.ContainsKey(neighbour) || distanceInTiles.ContainsKey(neighbour))
+                    {
+                        continue;
+                    }
+
+                    distanceInTiles[neighbour] = distanceInTiles[current] + 1;
+                    previous[neighbour] = current;
+                    frontier.Enqueue(neighbour);
+                }
+            }
+
+            int reachableCount = 0;
+            int tutorialCount = 0;
+            int stageTwoCount = 0;
+            int stageThreeCount = 0;
+            for (int index = 0; index < m_deliveryDestinations.Count; index++)
+            {
+                DeliveryDestination destination = m_deliveryDestinations[index];
+                GeneratedProperty property = destination != null
+                    ? destination.GetComponent<GeneratedProperty>()
+                    : null;
+                if (destination == null || property == null ||
+                    !distanceInTiles.ContainsKey(property.RoadCoordinate))
+                {
+                    destination?.SetRouteMetrics(CreateUnreachableMetrics(
+                        property != null ? property.RoadCoordinate : GridCoordinate.Zero));
+                    continue;
+                }
+
+                List<GridCoordinate> path = ReconstructRoadPath(property.RoadCoordinate, previous);
+                DeliveryRouteMetrics metrics = CalculateDeliveryRouteMetrics(destination, property, path);
+                destination.SetRouteMetrics(metrics);
+                reachableCount++;
+                tutorialCount += DeliveryDestinationQuery.ForSuburbsStage(0).Matches(metrics) ? 1 : 0;
+                stageTwoCount += DeliveryDestinationQuery.ForSuburbsStage(1).Matches(metrics) ? 1 : 0;
+                stageThreeCount += DeliveryDestinationQuery.ForSuburbsStage(2).Matches(metrics) ? 1 : 0;
+            }
+
+            IsDeliveryDifficultyReady = reachableCount > 0;
+            if (tutorialCount == 0 || stageTwoCount == 0 || stageThreeCount == 0)
+            {
+                Debug.LogWarning(
+                    $"Seed {CurrentSeed} has sparse strict delivery pools: tutorial={tutorialCount}, " +
+                    $"stage2={stageTwoCount}, stage3={stageThreeCount}. " +
+                    "Deterministic relaxed selection will be used where required.",
+                    this);
+            }
+        }
+
+        private static List<GridCoordinate> ReconstructRoadPath(
+            GridCoordinate destination,
+            Dictionary<GridCoordinate, GridCoordinate> previous)
+        {
+            List<GridCoordinate> path = new List<GridCoordinate> { destination };
+            GridCoordinate current = destination;
+            while (current != GridCoordinate.Zero && previous.TryGetValue(current, out GridCoordinate parent))
+            {
+                current = parent;
+                path.Add(current);
+            }
+
+            path.Reverse();
+            return path;
+        }
+
+        private DeliveryRouteMetrics CalculateDeliveryRouteMetrics(
+            DeliveryDestination destination,
+            GeneratedProperty property,
+            List<GridCoordinate> path)
+        {
+            float routeLength = Mathf.Max(0, path.Count - 1) * m_roadTileSize;
+            float elevationGain = 0f;
+            float maximumGrade = 0f;
+            int turnCount = 0;
+            int intersectionCount = 0;
+            GridCoordinate previousDirection = GridCoordinate.Zero;
+
+            for (int index = 0; index < path.Count; index++)
+            {
+                if (CountConnections(m_logicalRoads[path[index]]) >= 3)
+                {
+                    intersectionCount++;
+                }
+
+                if (index == 0)
+                {
+                    continue;
+                }
+
+                float rise = m_roadHeights[path[index]] - m_roadHeights[path[index - 1]];
+                elevationGain += Mathf.Max(0f, rise);
+                maximumGrade = Mathf.Max(
+                    maximumGrade,
+                    Mathf.Atan2(Mathf.Abs(rise), m_roadTileSize) * Mathf.Rad2Deg);
+                GridCoordinate direction = path[index] - path[index - 1];
+                if (index > 1 && direction != previousDirection)
+                {
+                    turnCount++;
+                }
+
+                previousDirection = direction;
+            }
+
+            Vector3 depotPosition = GeneratedStartingArea.RoadConnection.position;
+            Vector3 destinationPosition = destination.DropPosition.position;
+            float straightLineDistance = HorizontalDistance(depotPosition, destinationPosition);
+            Vector3 roadConnectionPosition = GridToWorld(property.RoadCoordinate);
+            float finalCarryDistance = HorizontalDistance(roadConnectionPosition, destinationPosition);
+            float finalCarryElevationGain = Mathf.Max(0f, destinationPosition.y - roadConnectionPosition.y);
+
+            float weightedDifficulty =
+                Mathf.Clamp01(routeLength / m_deliveryDifficulty.LongRouteDistance) *
+                    m_deliveryDifficulty.RouteDistanceWeight +
+                Mathf.Clamp01(straightLineDistance / m_deliveryDifficulty.LongDirectDistance) *
+                    m_deliveryDifficulty.DirectDistanceWeight +
+                Mathf.Clamp01(elevationGain / m_deliveryDifficulty.HighElevationGain) *
+                    m_deliveryDifficulty.ElevationGainWeight +
+                Mathf.Clamp01(maximumGrade / m_deliveryDifficulty.SteepRoadGrade) *
+                    m_deliveryDifficulty.MaximumGradeWeight +
+                Mathf.Clamp01(turnCount / (float)m_deliveryDifficulty.ManyTurns) *
+                    m_deliveryDifficulty.TurnWeight +
+                Mathf.Clamp01(intersectionCount / (float)m_deliveryDifficulty.ManyIntersections) *
+                    m_deliveryDifficulty.IntersectionWeight +
+                Mathf.Clamp01(finalCarryDistance / m_deliveryDifficulty.LongFinalCarry) *
+                    m_deliveryDifficulty.FinalCarryWeight +
+                Mathf.Clamp01(finalCarryElevationGain / m_deliveryDifficulty.HighFinalCarryElevation) *
+                    m_deliveryDifficulty.FinalCarryElevationWeight +
+                ((int)property.Zone / (float)(int)SuburbZone.Outer) *
+                    m_deliveryDifficulty.ProgressionZoneWeight;
+            float score = 100f * destination.DifficultyModifier *
+                          weightedDifficulty / m_deliveryDifficulty.TotalWeight;
+            score = Mathf.Clamp(score, 0f, 100f);
+
+            DeliveryDifficultyZone zone = ClassifyDifficultyZone(
+                routeLength,
+                elevationGain,
+                maximumGrade,
+                finalCarryDistance,
+                score);
+            return new DeliveryRouteMetrics(
+                true,
+                property.RoadCoordinate,
+                routeLength,
+                straightLineDistance,
+                elevationGain,
+                maximumGrade,
+                turnCount,
+                intersectionCount,
+                finalCarryDistance,
+                finalCarryElevationGain,
+                score,
+                zone,
+                property.Zone,
+                destinationPosition.y - m_gridOrigin.y,
+                property.VanAccessible);
+        }
+
+        private static DeliveryRouteMetrics CreateUnreachableMetrics(GridCoordinate roadCoordinate) =>
+            new DeliveryRouteMetrics(
+                false, roadCoordinate, 0f, 0f, 0f, 0f, 0, 0, 0f, 0f, 100f,
+                DeliveryDifficultyZone.Final, SuburbZone.Outer, 0f, false);
+
+        private DeliveryDifficultyZone ClassifyDifficultyZone(
+            float routeLength,
+            float elevationGain,
+            float maximumGrade,
+            float finalCarryDistance,
+            float score)
+        {
+            if (routeLength <= m_roadTileSize)
+            {
+                return DeliveryDifficultyZone.Depot;
+            }
+
+            if (routeLength <= 96f && elevationGain <= 4f &&
+                maximumGrade <= 18f && finalCarryDistance <= 32f)
+            {
+                return DeliveryDifficultyZone.Easy;
+            }
+
+            if (elevationGain >= 10f || maximumGrade >= 22f)
+            {
+                return score >= 72f ? DeliveryDifficultyZone.Difficult : DeliveryDifficultyZone.Hilly;
+            }
+
+            if (score < 42f)
+            {
+                return DeliveryDifficultyZone.Medium;
+            }
+
+            if (score < 72f)
+            {
+                return DeliveryDifficultyZone.Difficult;
+            }
+
+            return DeliveryDifficultyZone.Final;
+        }
+
+        private static int CountConnections(RoadConnections connections)
+        {
+            int count = 0;
+            for (int bit = 0; bit < 4; bit++)
+            {
+                count += ((int)connections & (1 << bit)) != 0 ? 1 : 0;
+            }
+
+            return count;
+        }
+
+        private static float HorizontalDistance(Vector3 first, Vector3 second)
+        {
+            first.y = 0f;
+            second.y = 0f;
+            return Vector3.Distance(first, second);
         }
 
         private LotDefinition SelectLotDefinition(System.Random random, bool landmarkOnly)
@@ -1368,11 +2251,11 @@ namespace CouchGuys.ProceduralGeneration
                 (m_blockWidth + m_blockHeight) * 2);
             for (int localX = minimumX; localX <= maximumX; localX++)
             {
-                candidates.Add(new PropertyCandidate(
+                AddPropertyCandidateIfRoad(candidates, new PropertyCandidate(
                     LocalToGrid(localX, minimumY),
                     LocalToGrid(localX, minimumY - 1),
                     Opposite(m_startDirection)));
-                candidates.Add(new PropertyCandidate(
+                AddPropertyCandidateIfRoad(candidates, new PropertyCandidate(
                     LocalToGrid(localX, maximumY),
                     LocalToGrid(localX, maximumY + 1),
                     m_startDirection));
@@ -1381,17 +2264,27 @@ namespace CouchGuys.ProceduralGeneration
             CardinalDirection right = TurnRight(m_startDirection);
             for (int localY = minimumY; localY <= maximumY; localY++)
             {
-                candidates.Add(new PropertyCandidate(
+                AddPropertyCandidateIfRoad(candidates, new PropertyCandidate(
                     LocalToGrid(minimumX, localY),
                     LocalToGrid(minimumX - 1, localY),
                     Opposite(right)));
-                candidates.Add(new PropertyCandidate(
+                AddPropertyCandidateIfRoad(candidates, new PropertyCandidate(
                     LocalToGrid(maximumX, localY),
                     LocalToGrid(maximumX + 1, localY),
                     right));
             }
 
             return candidates;
+        }
+
+        private void AddPropertyCandidateIfRoad(
+            List<PropertyCandidate> candidates,
+            PropertyCandidate candidate)
+        {
+            if (m_roadCells.Contains(candidate.Road))
+            {
+                candidates.Add(candidate);
+            }
         }
 
         private void GenerateRegionObjects(
@@ -1825,12 +2718,28 @@ namespace CouchGuys.ProceduralGeneration
             return centre / cells.Count;
         }
 
-        private void ValidateLayout()
+        private bool ValidateLayout()
         {
+            if (GeneratedTerrain == null ||
+                GeneratedTerrain.VertexCount < 4 ||
+                GeneratedTerrain.TriangleCount < 2 ||
+                !GeneratedTerrain.TryGetComponent(out MeshCollider terrainCollider) ||
+                terrainCollider.sharedMesh == null)
+            {
+                Debug.LogError("Generated neighbourhood has no valid continuous terrain mesh.", this);
+                return false;
+            }
+
             if (m_roadCells.Count != m_logicalRoads.Count || m_roadCells.Count != m_roadHeights.Count)
             {
                 Debug.LogError("Generated neighbourhood road data is inconsistent.", this);
-                return;
+                return false;
+            }
+
+            if (GeneratedStartingArea == null || !m_roadCells.Contains(GridCoordinate.Zero))
+            {
+                Debug.LogError("Generated neighbourhood has no connected depot road.", this);
+                return false;
             }
 
             foreach (GridCoordinate propertyCell in m_propertyCells)
@@ -1838,8 +2747,35 @@ namespace CouchGuys.ProceduralGeneration
                 if (m_roadCells.Contains(propertyCell) || m_startingAreaCells.Contains(propertyCell))
                 {
                     Debug.LogError($"Generated property cell {propertyCell} overlaps reserved neighbourhood space.", this);
-                    return;
+                    return false;
                 }
+            }
+
+            HashSet<GridCoordinate> reachable = new HashSet<GridCoordinate> { GridCoordinate.Zero };
+            Queue<GridCoordinate> frontier = new Queue<GridCoordinate>();
+            frontier.Enqueue(GridCoordinate.Zero);
+            while (frontier.Count > 0)
+            {
+                GridCoordinate current = frontier.Dequeue();
+                RoadConnections connections = m_logicalRoads[current];
+                for (int directionIndex = 0; directionIndex < 4; directionIndex++)
+                {
+                    CardinalDirection direction = (CardinalDirection)directionIndex;
+                    GridCoordinate neighbour = current + DirectionOffset(direction);
+                    if ((connections & DirectionConnection(direction)) != 0 &&
+                        m_roadCells.Contains(neighbour) && reachable.Add(neighbour))
+                    {
+                        frontier.Enqueue(neighbour);
+                    }
+                }
+            }
+
+            if (reachable.Count != m_roadCells.Count)
+            {
+                Debug.LogError(
+                    $"Generated road graph is disconnected ({reachable.Count}/{m_roadCells.Count} reachable).",
+                    this);
+                return false;
             }
 
             foreach (KeyValuePair<GridCoordinate, RoadConnections> road in m_logicalRoads)
@@ -1860,15 +2796,111 @@ namespace CouchGuys.ProceduralGeneration
 
                     float rise = Mathf.Abs(neighbourHeight - m_roadHeights[road.Key]);
                     float slope = Mathf.Atan2(rise, m_roadTileSize) * Mathf.Rad2Deg;
-                    if (slope > m_maximumRoadSlope + 0.01f)
+                    float allowedSlope = Mathf.Atan2(
+                        MaximumRoadRise(road.Key, neighbour),
+                        m_roadTileSize) * Mathf.Rad2Deg;
+                    if (slope > allowedSlope + 0.05f)
                     {
                         Debug.LogError(
-                            $"Generated road slope of {slope:F1} degrees exceeds the configured maximum.",
+                            $"Generated road slope of {slope:F1} degrees exceeds its " +
+                            $"{allowedSlope:F1} degree role limit.",
                             this);
-                        return;
+                        return false;
                     }
                 }
             }
+
+            int[] roadsPerZone = new int[5];
+            float[] elevationPerZone = new float[5];
+            foreach (KeyValuePair<GridCoordinate, SuburbZone> roadZone in m_roadZones)
+            {
+                int zoneIndex = (int)roadZone.Value;
+                roadsPerZone[zoneIndex]++;
+                elevationPerZone[zoneIndex] += m_roadHeights[roadZone.Key];
+            }
+
+            int[] destinationsPerZone = new int[5];
+            int unreachableDestinations = 0;
+            for (int index = 0; index < m_deliveryDestinations.Count; index++)
+            {
+                DeliveryRouteMetrics metrics = m_deliveryDestinations[index]?.RouteMetrics;
+                if (metrics == null || !metrics.IsReachable)
+                {
+                    unreachableDestinations++;
+                    continue;
+                }
+
+                destinationsPerZone[(int)metrics.ProgressionZone]++;
+            }
+
+            for (int zoneIndex = (int)SuburbZone.Easy; zoneIndex <= (int)SuburbZone.Outer; zoneIndex++)
+            {
+                if (roadsPerZone[zoneIndex] == 0 ||
+                    destinationsPerZone[zoneIndex] < m_progression.MinimumDestinationsPerZone)
+                {
+                    Debug.LogError(
+                        $"Generated zone {(SuburbZone)zoneIndex} is missing roads or has only " +
+                        $"{destinationsPerZone[zoneIndex]} delivery destinations.",
+                        this);
+                    return false;
+                }
+            }
+
+            if (unreachableDestinations > 0)
+            {
+                Debug.LogError(
+                    $"Generated neighbourhood contains {unreachableDestinations} unreachable destinations.",
+                    this);
+                return false;
+            }
+
+            int maximumLocalY = m_gridHeight * (m_blockHeight + 1);
+            GridCoordinate outerSpine = LocalToGrid(0, maximumLocalY);
+            if (!reachable.Contains(outerSpine) || !m_primaryRoadCells.Contains(outerSpine))
+            {
+                Debug.LogError("Primary road does not reach the outer Suburbs boundary.", this);
+                return false;
+            }
+
+            float easyAverage = elevationPerZone[(int)SuburbZone.Easy] /
+                                Mathf.Max(1, roadsPerZone[(int)SuburbZone.Easy]);
+            float outerAverage = elevationPerZone[(int)SuburbZone.Outer] /
+                                 Mathf.Max(1, roadsPerZone[(int)SuburbZone.Outer]);
+            if (outerAverage < easyAverage + Mathf.Min(5f, m_maximumElevation * 0.2f))
+            {
+                Debug.LogError(
+                    $"Outer Suburbs elevation ({outerAverage:F1}m) does not sufficiently exceed " +
+                    $"Easy Suburbs elevation ({easyAverage:F1}m).",
+                    this);
+                return false;
+            }
+
+            int descentCount = 0;
+            float previousHeight = m_roadHeights[GridCoordinate.Zero];
+            int descentStart = Mathf.RoundToInt(maximumLocalY * m_progression.MediumEndNormalized);
+            for (int localY = 1; localY <= maximumLocalY; localY++)
+            {
+                GridCoordinate coordinate = LocalToGrid(0, localY);
+                if (!m_roadHeights.TryGetValue(coordinate, out float height))
+                {
+                    continue;
+                }
+
+                if (localY >= descentStart && height < previousHeight - 0.05f)
+                {
+                    descentCount++;
+                }
+
+                previousHeight = height;
+            }
+
+            if (descentCount == 0)
+            {
+                Debug.LogError("Primary route contains no late-zone descent or valley.", this);
+                return false;
+            }
+
+            return true;
         }
 
         private static int DeriveSeed(int seed, int salt)
@@ -1927,7 +2959,9 @@ namespace CouchGuys.ProceduralGeneration
 #if UNITY_EDITOR
         private void OnDrawGizmosSelected()
         {
-            if (!m_showGrid && !m_showOccupiedCells && !m_showConnections)
+            if (!m_showGrid && !m_showOccupiedCells && !m_showConnections &&
+                !m_showDeliveryDifficulty && !m_showProgressionZones &&
+                !m_showPrimaryRoute && !m_showElevation)
             {
                 return;
             }
@@ -1970,15 +3004,89 @@ namespace CouchGuys.ProceduralGeneration
                 }
             }
 
-            Gizmos.color = new Color(1f, 0.3f, 0.85f, 0.9f);
+            if (m_showProgressionZones)
+            {
+                foreach (KeyValuePair<GridCoordinate, SuburbZone> road in m_roadZones)
+                {
+                    Gizmos.color = ProgressionZoneColour(road.Value);
+                    Gizmos.DrawCube(
+                        GridToWorld(road.Key) + Vector3.up * 0.12f,
+                        new Vector3(m_roadTileSize * 0.72f, 0.08f, m_roadTileSize * 0.72f));
+                }
+            }
+
+            if (m_showPrimaryRoute)
+            {
+                Gizmos.color = new Color(0.1f, 1f, 1f, 0.95f);
+                foreach (GridCoordinate coordinate in m_primaryRoadCells)
+                {
+                    Gizmos.DrawWireCube(
+                        GridToWorld(coordinate) + Vector3.up * 0.35f,
+                        new Vector3(m_roadTileSize * 0.82f, 0.25f, m_roadTileSize * 0.82f));
+                }
+            }
+
+            if (m_showElevation)
+            {
+                foreach (GridCoordinate coordinate in m_roadCells)
+                {
+                    Vector3 top = GridToWorld(coordinate);
+                    Vector3 basePoint = new Vector3(top.x, m_gridOrigin.y, top.z);
+                    Gizmos.color = ProgressionZoneColour(m_roadZones[coordinate]);
+                    Gizmos.DrawLine(basePoint, top);
+                }
+            }
+
+            if (!m_showDeliveryDifficulty)
+            {
+                return;
+            }
+
             for (int index = 0; index < m_deliveryDestinations.Count; index++)
             {
                 DeliveryDestination destination = m_deliveryDestinations[index];
                 if (destination != null && destination.DropPosition != null)
                 {
-                    Gizmos.DrawWireSphere(destination.DropPosition.position, 0.5f);
+                    Gizmos.color = DifficultyZoneColour(destination.RouteMetrics);
+                    Gizmos.DrawWireSphere(destination.DropPosition.position, 0.65f);
+                    if (destination.RouteMetrics != null)
+                    {
+                        Gizmos.DrawLine(
+                            destination.DropPosition.position,
+                            GridToWorld(destination.RouteMetrics.RoadCoordinate) + Vector3.up * 0.2f);
+                    }
                 }
             }
+        }
+
+        private static Color ProgressionZoneColour(SuburbZone zone)
+        {
+            return zone switch
+            {
+                SuburbZone.Start => new Color(0.2f, 1f, 0.35f, 0.32f),
+                SuburbZone.Easy => new Color(0.15f, 0.6f, 1f, 0.32f),
+                SuburbZone.Medium => new Color(1f, 0.85f, 0.1f, 0.32f),
+                SuburbZone.Hilly => new Color(1f, 0.45f, 0.05f, 0.32f),
+                _ => new Color(1f, 0.12f, 0.12f, 0.32f)
+            };
+        }
+
+        private static Color DifficultyZoneColour(DeliveryRouteMetrics metrics)
+        {
+            if (metrics == null || !metrics.IsReachable)
+            {
+                return Color.magenta;
+            }
+
+            return metrics.Zone switch
+            {
+                DeliveryDifficultyZone.Depot => Color.white,
+                DeliveryDifficultyZone.Easy => Color.green,
+                DeliveryDifficultyZone.Medium => Color.yellow,
+                DeliveryDifficultyZone.Hilly => new Color(1f, 0.55f, 0.1f),
+                DeliveryDifficultyZone.Difficult => Color.red,
+                _ => new Color(0.65f, 0.1f, 1f)
+            };
         }
 
         private void DrawCells(HashSet<GridCoordinate> cells, Color colour)
@@ -2008,6 +3116,9 @@ namespace CouchGuys.ProceduralGeneration
                 m_elevationStep);
             m_maximumElevation = Mathf.Max(0f, m_maximumElevation);
             m_maximumRoadSlope = Mathf.Clamp(m_maximumRoadSlope, 1f, 60f);
+            m_progression.Validate();
+            m_terrainSettings.Validate();
+            EnsureDifficultySettings();
             m_residentialGroundVerticalOffset = Mathf.Max(0f, m_residentialGroundVerticalOffset);
             m_standardPropertyFootprint.x = Mathf.Max(1, m_standardPropertyFootprint.x);
             m_standardPropertyFootprint.y = Mathf.Max(1, m_standardPropertyFootprint.y);

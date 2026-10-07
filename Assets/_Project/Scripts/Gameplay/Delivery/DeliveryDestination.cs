@@ -19,6 +19,7 @@ namespace CouchGuys.Gameplay.Delivery
         [SerializeField, Min(0.01f)] private float m_difficultyModifier = 1f;
         [SerializeField, Min(0.01f)] private float m_rewardModifier = 1f;
         [SerializeField] private bool m_canReceiveDelivery = true;
+        [SerializeField] private DeliveryRouteMetrics m_routeMetrics;
 
         public Transform DropPosition => m_dropPosition;
         public DeliveryDestinationType DestinationType => m_destinationType;
@@ -26,6 +27,8 @@ namespace CouchGuys.Gameplay.Delivery
         public float DifficultyModifier => m_difficultyModifier;
         public float RewardModifier => m_rewardModifier;
         public bool CanReceiveDelivery => m_canReceiveDelivery && m_dropPosition != null;
+        public DeliveryRouteMetrics RouteMetrics => m_routeMetrics;
+        public bool HasReachableRoute => m_routeMetrics != null && m_routeMetrics.IsReachable;
 
         public void Initialise(
             Transform dropPosition,
@@ -41,6 +44,11 @@ namespace CouchGuys.Gameplay.Delivery
             m_difficultyModifier = Mathf.Max(0.01f, difficultyModifier);
             m_rewardModifier = Mathf.Max(0.01f, rewardModifier);
             m_canReceiveDelivery = canReceiveDelivery;
+        }
+
+        public void SetRouteMetrics(DeliveryRouteMetrics routeMetrics)
+        {
+            m_routeMetrics = routeMetrics;
         }
     }
 }

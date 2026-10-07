@@ -325,6 +325,7 @@ namespace CouchGuys.Gameplay.Enemies
                 Vector3 candidate = targetPosition +
                     new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * distance;
                 if (!IsInsideWorld(candidate) ||
+                    Random.value > m_generator.GetEnemySpawnOpportunity(candidate) ||
                     !NavMesh.SamplePosition(candidate, out NavMeshHit hit, m_navMeshSampleRadius, NavMesh.AllAreas) ||
                     !IsInsideWorld(hit.position) ||
                     !IsWithinSpawnRange(hit.position, targetPosition) ||

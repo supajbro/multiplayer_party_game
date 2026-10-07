@@ -1,4 +1,6 @@
 using System;
+using CouchGuys.Networking;
+using CouchGuys.ProceduralGeneration;
 using FishNet.Connection;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
@@ -14,6 +16,9 @@ namespace CouchGuys.Player
         [SerializeField, Min(1f)] private float m_maxHealth = 100f;
         [Tooltip("One damage event at or above this fraction of maximum health causes a knockdown.")]
         [SerializeField, Range(0.01f, 1f)] private float m_knockdownDamageFraction = 0.25f;
+
+        [Header("Death And Respawn")]
+        [SerializeField, Min(0.1f)] private float m_respawnDelay = 5f;
 
         [Header("Knockdown")]
         [SerializeField, Min(0.1f)] private float m_knockdownDuration = 2.25f;
@@ -31,9 +36,12 @@ namespace CouchGuys.Player
         private Quaternion m_visualBaseRotation;
         private float m_visualFallProgress;
         private float m_recoverAtServerTime;
+        private float m_respawnAtServerTime = float.PositiveInfinity;
 
         public event Action<float, float> HealthChanged;
         public event Action<bool> KnockdownChanged;
+        public event Action Died;
+        public event Action Respawned;
 
         public float CurrentHealth => m_currentHealth.Value;
         public float MaximumHealth => m_maxHealth;
@@ -65,6 +73,7 @@ namespace CouchGuys.Player
             base.OnStartServer();
             m_currentHealth.Value = m_maxHealth;
             m_knockedDown.Value = false;
+            m_respawnAtServerTime = float.PositiveInfinity;
         }
 
         public override void OnStartClient()
@@ -76,7 +85,12 @@ namespace CouchGuys.Player
 
         private void Update()
         {
-            if (IsServerInitialized && m_knockedDown.Value && Time.time >= m_recoverAtServerTime)
+            if (IsServerInitialized && !IsAlive && Time.time >= m_respawnAtServerTime)
+            {
+                RespawnAtDepotServer();
+            }
+            else if (IsServerInitialized && IsAlive && m_knockedDown.Value &&
+                     Time.time >= m_recoverAtServerTime)
             {
                 m_knockedDown.Value = false;
             }
@@ -94,6 +108,7 @@ namespace CouchGuys.Player
 
             float appliedDamage = Mathf.Min(damage, m_currentHealth.Value);
             m_currentHealth.Value = Mathf.Max(0f, m_currentHealth.Value - appliedDamage);
+            bool died = !IsAlive;
             Vector3 horizontalDirection = Vector3.ProjectOnPlane(impactDirection, Vector3.up);
             if (horizontalDirection.sqrMagnitude < 0.001f)
             {
@@ -101,16 +116,23 @@ namespace CouchGuys.Player
             }
 
             horizontalDirection.Normalize();
-            bool severeHit = appliedDamage >= m_maxHealth * m_knockdownDamageFraction || !IsAlive;
+            bool severeHit = appliedDamage >= m_maxHealth * m_knockdownDamageFraction || died;
             float appliedForce = severeHit ? knockbackForce : knockbackForce * 0.3f;
             Vector3 impulse = horizontalDirection * appliedForce;
             if (severeHit)
             {
                 impulse += Vector3.up * m_upwardImpulse;
                 m_knockdownDirection.Value = horizontalDirection;
-                m_recoverAtServerTime = Time.time + m_knockdownDuration;
+                m_recoverAtServerTime = died
+                    ? float.PositiveInfinity
+                    : Time.time + m_knockdownDuration;
                 m_knockedDown.Value = true;
                 GetComponent<PlayerCouchCarrier>()?.ReleaseForDamageServer();
+                if (died)
+                {
+                    m_respawnAtServerTime = Time.time + m_respawnDelay;
+                    NotifyDiedObserversRpc();
+                }
             }
 
             ApplyImpactTargetRpc(Owner, impulse);
@@ -123,6 +145,53 @@ namespace CouchGuys.Player
             {
                 m_playerController?.ApplyExternalImpulse(impulse);
             }
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void NotifyDiedObserversRpc()
+        {
+            Died?.Invoke();
+        }
+
+        [Server]
+        private void RespawnAtDepotServer()
+        {
+            NeighbourhoodGenerator generator = FindFirstObjectByType<NeighbourhoodGenerator>();
+            Transform spawnPoint = generator != null
+                ? NeighbourhoodPlayerSpawner.SelectSpawnPoint(
+                    generator.GeneratedStartingArea,
+                    OwnerId)
+                : null;
+            if (spawnPoint == null)
+            {
+                // Generation should always be ready before a Player exists. Retry on
+                // the next frame rather than reviving at an unsafe arbitrary position.
+                m_respawnAtServerTime = Time.time + 0.1f;
+                return;
+            }
+
+            GetComponent<PlayerCouchCarrier>()?.ReleaseForDamageServer();
+            PlayerCouchCarrier carrier = GetComponent<PlayerCouchCarrier>();
+            if (carrier != null)
+            {
+                carrier.TeleportWithCouchServer(spawnPoint.position, spawnPoint.rotation);
+            }
+            else
+            {
+                m_playerController?.Teleport(spawnPoint.position, spawnPoint.rotation);
+            }
+
+            m_currentHealth.Value = m_maxHealth;
+            m_knockedDown.Value = false;
+            m_recoverAtServerTime = 0f;
+            m_respawnAtServerTime = float.PositiveInfinity;
+            NotifyRespawnedObserversRpc();
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void NotifyRespawnedObserversRpc()
+        {
+            Respawned?.Invoke();
         }
 
         private void OnHealthChanged(float previous, float next, bool asServer)
@@ -173,6 +242,7 @@ namespace CouchGuys.Player
             base.OnValidate();
             m_maxHealth = Mathf.Max(1f, m_maxHealth);
             m_knockdownDuration = Mathf.Max(0.1f, m_knockdownDuration);
+            m_respawnDelay = Mathf.Max(0.1f, m_respawnDelay);
         }
 #endif
     }

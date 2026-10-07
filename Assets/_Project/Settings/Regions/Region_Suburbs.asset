@@ -17,7 +17,7 @@ MonoBehaviour:
   m_description: 
   m_unlockCost: 0
   m_difficulty: 1
-  m_roadStrategy: {fileID: 11400000, guid: cb84342ef1346f34b956c9cc09755cdc, type: 2}
+  m_roadStrategy: {fileID: 11400000, guid: 41cedb1556ec4fb699342f8710a95dc6, type: 2}
   m_grid:
     GridWidth: 6
     GridHeight: 6
@@ -30,8 +30,32 @@ MonoBehaviour:
     Enabled: 1
     MinimumStep: 2
     MaximumStep: 4
-    MaximumElevation: 24
-    MaximumRoadSlope: 45
+    MaximumElevation: 30
+    MaximumRoadSlope: 20
+  m_progression:
+    Enabled: 1
+    EasyEndNormalized: 0.28
+    MediumEndNormalized: 0.55
+    HillyEndNormalized: 0.8
+    DepotFlatRadiusTiles: 4
+    ElevationTrendExponent: 1.15
+    ElevationNoiseAmplitude: 7
+    ElevationNoiseFrequency: 0.075
+    OuterElevationMultiplier: 1.2
+    PrimaryRoadMaximumSlope: 10
+    ResidentialRoadMaximumSlope: 18
+    MinimumDestinationsPerZone: 2
+    MaximumGenerationAttempts: 3
+  m_terrain:
+    VertexSpacing: 2
+    MapBorder: 8
+    RoadHalfWidth: 4
+    RoadShoulderWidth: 4
+    DepotBlendWidth: 4
+    HousePadBlendWidth: 3
+    RoadSurfaceOffset: 0.035
+    TextureScale: 16
+    SurfaceMaterial: {fileID: 0}
   m_roadPrefabs: []
   m_groundPrefab: {fileID: 0}
   m_startingAreaPrefab: {fileID: 0}

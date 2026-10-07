@@ -95,7 +95,8 @@ namespace CouchGuys.Networking
             }
         }
 
-        private static Transform SelectSpawnPoint(StartingArea startingArea, int clientId)
+        /// <summary>Returns the stable depot spawn assigned to a network client.</summary>
+        public static Transform SelectSpawnPoint(StartingArea startingArea, int clientId)
         {
             if (startingArea == null || startingArea.PlayerSpawnPoints == null ||
                 startingArea.PlayerSpawnPoints.Length == 0)

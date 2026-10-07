@@ -17,6 +17,8 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private RegionRoadGenerationStrategy m_roadStrategy;
         [SerializeField] private RegionGridSettings m_grid = RegionGridSettings.SuburbsDefault;
         [SerializeField] private RegionElevationSettings m_elevation = RegionElevationSettings.SuburbsDefault;
+        [SerializeField] private RegionProgressionSettings m_progression = RegionProgressionSettings.SuburbsDefault;
+        [SerializeField] private GeneratedTerrainSettings m_terrain = GeneratedTerrainSettings.SuburbsDefault;
 
         [Header("World Prefabs")]
         [SerializeField] private GameObject[] m_roadPrefabs = Array.Empty<GameObject>();
@@ -45,6 +47,8 @@ namespace CouchGuys.ProceduralGeneration
         public RegionRoadGenerationStrategy RoadStrategy => m_roadStrategy;
         public RegionGridSettings Grid => m_grid;
         public RegionElevationSettings Elevation => m_elevation;
+        public RegionProgressionSettings Progression => m_progression;
+        public GeneratedTerrainSettings Terrain => m_terrain;
         public GameObject[] RoadPrefabs => m_roadPrefabs;
         public GameObject GroundPrefab => m_groundPrefab;
         public GameObject StartingAreaPrefab => m_startingAreaPrefab;
@@ -68,6 +72,8 @@ namespace CouchGuys.ProceduralGeneration
             m_maximumLandmarks = Mathf.Max(m_minimumLandmarks, m_maximumLandmarks);
             m_grid.Validate();
             m_elevation.Validate();
+            m_progression.Validate();
+            m_terrain.Validate();
         }
 #endif
     }
@@ -130,6 +136,66 @@ namespace CouchGuys.ProceduralGeneration
             MinimumStep = Mathf.Clamp(MinimumStep, 0.1f, MaximumStep);
             MaximumElevation = Mathf.Max(0f, MaximumElevation);
             MaximumRoadSlope = Mathf.Clamp(MaximumRoadSlope, 1f, 60f);
+        }
+    }
+
+    [Serializable]
+    public struct RegionProgressionSettings
+    {
+        public bool Enabled;
+        [Range(0.05f, 0.45f)] public float EasyEndNormalized;
+        [Range(0.2f, 0.7f)] public float MediumEndNormalized;
+        [Range(0.5f, 0.95f)] public float HillyEndNormalized;
+        [Min(1)] public int DepotFlatRadiusTiles;
+
+        [Header("Elevation Shape")]
+        [Range(0.5f, 3f)] public float ElevationTrendExponent;
+        [Min(0f)] public float ElevationNoiseAmplitude;
+        [Range(0.005f, 0.5f)] public float ElevationNoiseFrequency;
+        [Range(1f, 2f)] public float OuterElevationMultiplier;
+
+        [Header("Vehicle Safety")]
+        [Range(1f, 30f)] public float PrimaryRoadMaximumSlope;
+        [Range(1f, 45f)] public float ResidentialRoadMaximumSlope;
+
+        [Header("Validation")]
+        [Min(1)] public int MinimumDestinationsPerZone;
+        [Range(1, 5)] public int MaximumGenerationAttempts;
+
+        public static RegionProgressionSettings SuburbsDefault => new RegionProgressionSettings
+        {
+            Enabled = true,
+            EasyEndNormalized = 0.28f,
+            MediumEndNormalized = 0.55f,
+            HillyEndNormalized = 0.8f,
+            DepotFlatRadiusTiles = 4,
+            ElevationTrendExponent = 1.15f,
+            ElevationNoiseAmplitude = 7f,
+            ElevationNoiseFrequency = 0.075f,
+            OuterElevationMultiplier = 1.2f,
+            PrimaryRoadMaximumSlope = 10f,
+            ResidentialRoadMaximumSlope = 18f,
+            MinimumDestinationsPerZone = 2,
+            MaximumGenerationAttempts = 3
+        };
+
+        public void Validate()
+        {
+            EasyEndNormalized = Mathf.Clamp(EasyEndNormalized, 0.05f, 0.45f);
+            MediumEndNormalized = Mathf.Clamp(MediumEndNormalized, EasyEndNormalized + 0.05f, 0.75f);
+            HillyEndNormalized = Mathf.Clamp(HillyEndNormalized, MediumEndNormalized + 0.05f, 0.95f);
+            DepotFlatRadiusTiles = Mathf.Max(1, DepotFlatRadiusTiles);
+            ElevationTrendExponent = Mathf.Clamp(ElevationTrendExponent, 0.5f, 3f);
+            ElevationNoiseAmplitude = Mathf.Max(0f, ElevationNoiseAmplitude);
+            ElevationNoiseFrequency = Mathf.Clamp(ElevationNoiseFrequency, 0.005f, 0.5f);
+            OuterElevationMultiplier = Mathf.Clamp(OuterElevationMultiplier, 1f, 2f);
+            PrimaryRoadMaximumSlope = Mathf.Clamp(PrimaryRoadMaximumSlope, 1f, 30f);
+            ResidentialRoadMaximumSlope = Mathf.Clamp(
+                ResidentialRoadMaximumSlope,
+                PrimaryRoadMaximumSlope,
+                45f);
+            MinimumDestinationsPerZone = Mathf.Max(1, MinimumDestinationsPerZone);
+            MaximumGenerationAttempts = Mathf.Clamp(MaximumGenerationAttempts, 1, 5);
         }
     }
 

@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 395b44ad0d7c437fb99df7802cc58b5b, type: 3}
+  m_Name: SuburbsChapterDefinition
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Delivery.SuburbsChapterDefinition
+  m_stages:
+  - m_stageId: suburbs_01_first_delivery
+    m_displayName: Just Around the Corner
+    m_reward: 100
+    m_requiresVan: 0
+    m_finalDelivery: 0
+  - m_stageId: suburbs_02_proper_carrying
+    m_displayName: This Looked Closer on the Map
+    m_reward: 125
+    m_requiresVan: 0
+    m_finalDelivery: 0
+  - m_stageId: suburbs_03_van_fund
+    m_displayName: Definitely a Safe Neighbourhood
+    m_reward: 175
+    m_requiresVan: 0
+    m_finalDelivery: 0
+  - m_stageId: suburbs_04_van_tutorial
+    m_displayName: Van With a Plan
+    m_reward: 200
+    m_requiresVan: 1
+    m_finalDelivery: 0
+  - m_stageId: suburbs_05_hill_start
+    m_displayName: Hill Start
+    m_reward: 250
+    m_requiresVan: 1
+    m_finalDelivery: 0
+  - m_stageId: suburbs_06_scenic_route
+    m_displayName: The Scenic Route
+    m_reward: 300
+    m_requiresVan: 1
+    m_finalDelivery: 0
+  - m_stageId: suburbs_07_final
+    m_displayName: The House on Absolutely the Wrong Hill
+    m_reward: 500
+    m_requiresVan: 1
+    m_finalDelivery: 1
