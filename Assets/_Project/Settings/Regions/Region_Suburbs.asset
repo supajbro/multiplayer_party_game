@@ -56,7 +56,12 @@ MonoBehaviour:
     RoadSurfaceOffset: 0.035
     TextureScale: 16
     SurfaceMaterial: {fileID: 0}
-  m_roadPrefabs: []
+  m_roadPrefabs:
+  - {fileID: 5829771970680532857, guid: 177b5b5d1f130604fadd58a080d3a87b, type: 3}
+  - {fileID: 7279090636439207543, guid: 117251c449fe5f04aaac8d409cd59b3a, type: 3}
+  - {fileID: 390435489318421988, guid: ecd18de936dcdb34dbf16ab9deb43629, type: 3}
+  - {fileID: 2038927126481807055, guid: 71428dd5478758e488012140f51f73c0, type: 3}
+  - {fileID: 7446332652584344945, guid: fac88f3d511c80b429e881e1e72a2691, type: 3}
   m_groundPrefab: {fileID: 0}
   m_startingAreaPrefab: {fileID: 0}
   m_deliveryNpcPrefab: {fileID: 100000, guid: 745a18178b59482a906e0b428dbcb8ce, type: 3}
