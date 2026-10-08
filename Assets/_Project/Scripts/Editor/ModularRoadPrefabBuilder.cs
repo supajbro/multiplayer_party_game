@@ -113,7 +113,9 @@ namespace CouchGuys.EditorTools
 
             for (int index = 0; index < Definitions.Length; index++)
             {
-                if (AssetDatabase.LoadAssetAtPath<GameObject>(Definitions[index].PrefabPath) == null)
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                    Definitions[index].PrefabPath);
+                if (prefab == null || prefab.GetComponentsInChildren<Renderer>(true).Length == 0)
                 {
                     return true;
                 }
@@ -243,10 +245,6 @@ namespace CouchGuys.EditorTools
             GameObject prefabRoot = null;
             try
             {
-                PrefabUtility.UnpackPrefabInstance(
-                    modelInstance,
-                    PrefabUnpackMode.Completely,
-                    InteractionMode.AutomatedAction);
                 Transform roadModel =
                     FindDescendant(modelInstance.transform, definition.ObjectName);
                 if (roadModel == null)
@@ -256,12 +254,7 @@ namespace CouchGuys.EditorTools
                 }
 
                 prefabRoot = new GameObject(definition.ObjectName);
-                roadModel.SetParent(prefabRoot.transform, true);
-
-                // The combined Blender scene lays its tiles out for preview. Re-centre
-                // the selected hierarchy while preserving Unity's imported axis fix.
-                roadModel.localPosition = Vector3.zero;
-                roadModel.name = "Visual";
+                CloneVisualHierarchy(roadModel, prefabRoot.transform, true);
 
                 RoadTile roadTile = prefabRoot.AddComponent<RoadTile>();
                 SerializedObject roadTileData = new SerializedObject(roadTile);
@@ -287,6 +280,12 @@ namespace CouchGuys.EditorTools
                         $"Unity could not save '{definition.PrefabPath}'.");
                 }
 
+                if (prefab.GetComponentsInChildren<Renderer>(true).Length == 0)
+                {
+                    throw new InvalidOperationException(
+                        $"'{definition.ObjectName}' produced a prefab with no renderers.");
+                }
+
                 return prefab;
             }
             finally
@@ -296,6 +295,42 @@ namespace CouchGuys.EditorTools
                 {
                     Object.DestroyImmediate(prefabRoot);
                 }
+            }
+        }
+
+        private static void CloneVisualHierarchy(
+            Transform source,
+            Transform parent,
+            bool isTileRoot)
+        {
+            GameObject clone = new GameObject(isTileRoot ? "Visual" : source.name);
+            Transform cloneTransform = clone.transform;
+            cloneTransform.SetParent(parent, false);
+            cloneTransform.localPosition = isTileRoot ? Vector3.zero : source.localPosition;
+            cloneTransform.localRotation = isTileRoot ? source.rotation : source.localRotation;
+            cloneTransform.localScale = isTileRoot ? source.lossyScale : source.localScale;
+
+            if (source.TryGetComponent(out MeshFilter sourceFilter))
+            {
+                MeshFilter targetFilter = clone.AddComponent<MeshFilter>();
+                targetFilter.sharedMesh = sourceFilter.sharedMesh;
+            }
+
+            if (source.TryGetComponent(out MeshRenderer sourceRenderer))
+            {
+                MeshRenderer targetRenderer = clone.AddComponent<MeshRenderer>();
+                EditorUtility.CopySerialized(sourceRenderer, targetRenderer);
+            }
+
+            if (source.TryGetComponent(out MeshCollider sourceCollider))
+            {
+                MeshCollider targetCollider = clone.AddComponent<MeshCollider>();
+                EditorUtility.CopySerialized(sourceCollider, targetCollider);
+            }
+
+            for (int index = 0; index < source.childCount; index++)
+            {
+                CloneVisualHierarchy(source.GetChild(index), cloneTransform, false);
             }
         }
 
