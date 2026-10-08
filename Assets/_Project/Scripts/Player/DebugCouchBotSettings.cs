@@ -40,14 +40,21 @@ namespace CouchGuys.Player
         [Header("Movement")]
         [SerializeField, Min(0.1f)] private float m_approachSpeed = 3.5f;
         [SerializeField, Min(0.1f)] private float m_carryingSpeed = 7.5f;
+        [SerializeField, Min(0.25f)] private float m_followDistance = 1.75f;
         [SerializeField, Min(0f)] private float m_pointStandOff = 0.55f;
         [SerializeField, Min(1f)] private float m_turnSpeed = 540f;
         [SerializeField] private Vector3 m_configuredDirection = Vector3.forward;
 
         [Header("Decisions")]
+        [SerializeField, Min(0.05f)] private float m_destinationUpdateInterval = 0.25f;
         [SerializeField, Min(0.1f)] private float m_targetSearchInterval = 0.75f;
         [SerializeField, Min(0.1f)] private float m_retryDelay = 0.75f;
         [SerializeField, Min(0.1f)] private float m_wanderDirectionInterval = 2f;
+
+        [Header("Combat")]
+        [SerializeField, Min(1f)] private float m_enemyDetectionRadius = 24f;
+        [SerializeField, Min(1f)] private float m_combatRange = 16f;
+        [SerializeField, Min(0.1f)] private float m_enemyDetectionInterval = 0.5f;
 
         public int DebugBotCount => Mathf.Clamp(m_debugBotCount, 0, 3);
         public BehaviourState Behaviour => m_behaviour;
@@ -55,11 +62,16 @@ namespace CouchGuys.Player
         public Vector3 SpawnOffset => m_spawnOffset;
         public float ApproachSpeed => m_approachSpeed;
         public float CarryingSpeed => m_carryingSpeed;
+        public float FollowDistance => m_followDistance;
         public float PointStandOff => m_pointStandOff;
         public float TurnSpeed => m_turnSpeed;
         public Vector3 ConfiguredDirection => m_configuredDirection;
+        public float DestinationUpdateInterval => m_destinationUpdateInterval;
         public float TargetSearchInterval => m_targetSearchInterval;
         public float RetryDelay => m_retryDelay;
         public float WanderDirectionInterval => m_wanderDirectionInterval;
+        public float EnemyDetectionRadius => m_enemyDetectionRadius;
+        public float CombatRange => m_combatRange;
+        public float EnemyDetectionInterval => m_enemyDetectionInterval;
     }
 }

@@ -407,8 +407,16 @@ namespace CouchGuys.Gameplay.Enemies
 
         private static bool IsValidPlayer(NetworkPlayerOwnership player)
         {
-            return player != null && player.isActiveAndEnabled && player.NetworkObject != null &&
-                   player.NetworkObject.IsSpawned && player.Owner.IsValid;
+            if (player == null || !player.isActiveAndEnabled ||
+                player.NetworkObject == null || !player.NetworkObject.IsSpawned ||
+                !player.TryGetComponent(out PlayerHealth health) || !health.IsAlive)
+            {
+                return false;
+            }
+
+            return player.Owner.IsValid || health.IsAiTeammate ||
+                   (player.TryGetComponent(out DebugCouchBotController bot) &&
+                    bot.IsAiTeammate);
         }
 
         private void RegisterPlayer(NetworkPlayerOwnership player)

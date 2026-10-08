@@ -8,6 +8,7 @@ using FishNet.Component.Transforming;
 using FishNet.Object;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.InputSystem;
 
 namespace CouchGuys.Editor
@@ -55,6 +56,9 @@ namespace CouchGuys.Editor
                 characterController.stepOffset = 0.3f;
                 characterController.skinWidth = 0.08f;
                 characterController.minMoveDistance = 0f;
+
+                NavMeshAgent navMeshAgent = player.AddComponent<NavMeshAgent>();
+                ConfigureBotNavMeshAgent(navMeshAgent);
 
                 PlayerInputReader inputReader = player.AddComponent<PlayerInputReader>();
                 SetObjectReference(inputReader, "m_inputActions", inputActions);
@@ -123,6 +127,14 @@ namespace CouchGuys.Editor
         /// </summary>
         public static void EnsureNetworkConfiguration(GameObject player)
         {
+            NavMeshAgent navMeshAgent = player.GetComponent<NavMeshAgent>();
+            if (navMeshAgent == null)
+            {
+                navMeshAgent = player.AddComponent<NavMeshAgent>();
+            }
+
+            ConfigureBotNavMeshAgent(navMeshAgent);
+
             NetworkObject networkObject = player.GetComponent<NetworkObject>();
             if (networkObject == null)
             {
@@ -231,6 +243,21 @@ namespace CouchGuys.Editor
             EditorUtility.SetDirty(couchCarrier);
             EditorUtility.SetDirty(playerHealth);
             EditorUtility.SetDirty(weaponController);
+        }
+
+        private static void ConfigureBotNavMeshAgent(NavMeshAgent agent)
+        {
+            agent.radius = 0.3f;
+            agent.height = 1.8f;
+            agent.baseOffset = 0f;
+            agent.speed = 3.5f;
+            agent.acceleration = 18f;
+            agent.angularSpeed = 540f;
+            agent.stoppingDistance = 0.1f;
+            agent.autoBraking = true;
+            agent.autoRepath = true;
+            agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
+            agent.enabled = false;
         }
 
         private static void RepairLegacyCarryDistances(PlayerCouchCarrier couchCarrier)
@@ -371,6 +398,7 @@ namespace CouchGuys.Editor
             }
 
             CharacterController characterController = prefab.GetComponent<CharacterController>();
+            NavMeshAgent navMeshAgent = prefab.GetComponent<NavMeshAgent>();
             Transform visual = prefab.transform.Find("Visual");
             Transform capsule = prefab.transform.Find("Visual/Capsule");
             Transform couchGuy = prefab.transform.Find("Visual/CouchGuy");
@@ -383,6 +411,8 @@ namespace CouchGuys.Editor
 
             if (prefab.transform.localScale != Vector3.one ||
                 characterController == null ||
+                navMeshAgent == null ||
+                navMeshAgent.enabled ||
                 !Mathf.Approximately(characterController.height, 1.8f) ||
                 !Mathf.Approximately(characterController.radius, 0.3f) ||
                 !hasValidVisual ||

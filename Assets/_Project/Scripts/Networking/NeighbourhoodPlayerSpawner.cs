@@ -1,9 +1,12 @@
+using CouchGuys.Player;
 using CouchGuys.ProceduralGeneration;
 using FishNet;
 using FishNet.Connection;
 using FishNet.Managing;
 using FishNet.Object;
+using FishNet.Transporting;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace CouchGuys.Networking
 {
@@ -17,7 +20,13 @@ namespace CouchGuys.Networking
         [SerializeField] private NetworkObject m_playerPrefab;
         [SerializeField] private bool m_addToDefaultScene = true;
 
+        [Header("AI Teammates")]
+        [SerializeField, Range(0, 3)] private int m_aiTeammateCount = 3;
+        [SerializeField, Min(1f)] private float m_aiSpawnRadius = 3f;
+        [SerializeField, Min(0.5f)] private float m_aiNavMeshSampleRadius = 4f;
+
         private NetworkManager m_networkManager;
+        private bool m_aiTeamSpawned;
 
         public NetworkObject PlayerPrefab => m_playerPrefab;
 
@@ -32,6 +41,7 @@ namespace CouchGuys.Networking
             }
 
             m_networkManager.SceneManager.OnClientLoadedStartScenes += OnClientLoadedStartScenes;
+            m_networkManager.ServerManager.OnServerConnectionState += OnServerConnectionState;
         }
 
         private void OnDestroy()
@@ -39,6 +49,15 @@ namespace CouchGuys.Networking
             if (m_networkManager != null && m_networkManager.SceneManager != null)
             {
                 m_networkManager.SceneManager.OnClientLoadedStartScenes -= OnClientLoadedStartScenes;
+                m_networkManager.ServerManager.OnServerConnectionState -= OnServerConnectionState;
+            }
+        }
+
+        private void OnServerConnectionState(ServerConnectionStateArgs args)
+        {
+            if (args.ConnectionState == LocalConnectionState.Stopped)
+            {
+                m_aiTeamSpawned = false;
             }
         }
 
@@ -93,6 +112,85 @@ namespace CouchGuys.Networking
             {
                 m_networkManager.SceneManager.AddOwnerToDefaultScene(player);
             }
+
+            SpawnAiTeammatesServer(player, generator);
+        }
+
+        private void SpawnAiTeammatesServer(
+            NetworkObject leaderObject,
+            NeighbourhoodGenerator generator)
+        {
+            if (m_aiTeamSpawned || m_aiTeammateCount <= 0 || leaderObject == null ||
+                generator == null || !generator.IsGenerationReady || !generator.IsNavMeshReady ||
+                !leaderObject.TryGetComponent(out PlayerHealth leaderHealth) ||
+                !leaderObject.TryGetComponent(out PlayerCouchCarrier leaderCarrier))
+            {
+                return;
+            }
+
+            // Set this before spawning so connection callbacks cannot create a second team.
+            m_aiTeamSpawned = true;
+            int count = Mathf.Clamp(m_aiTeammateCount, 0, 3);
+            for (int index = 0; index < count; index++)
+            {
+                if (!TryFindAiSpawnPosition(leaderObject.transform, index, count, out Vector3 position))
+                {
+                    Debug.LogError($"No NavMesh position was found for AI teammate {index + 1}.", this);
+                    continue;
+                }
+
+                NetworkObject bot = Instantiate(
+                    m_playerPrefab,
+                    position,
+                    leaderObject.transform.rotation);
+                if (!bot.TryGetComponent(out DebugCouchBotController controller))
+                {
+                    Debug.LogError("The Player prefab is missing DebugCouchBotController.", bot);
+                    Destroy(bot.gameObject);
+                    continue;
+                }
+
+                controller.Initialise(leaderCarrier.DebugBotSettings, index, leaderHealth);
+                m_networkManager.ServerManager.Spawn(bot);
+            }
+        }
+
+        private bool TryFindAiSpawnPosition(
+            Transform leader,
+            int index,
+            int count,
+            out Vector3 position)
+        {
+            float angleStep = 360f / Mathf.Max(1, count);
+            for (int attempt = 0; attempt < 8; attempt++)
+            {
+                float angle = angleStep * index + attempt * 45f;
+                Vector3 offset = Quaternion.Euler(0f, angle, 0f) *
+                                 (Vector3.back * m_aiSpawnRadius);
+                Vector3 candidate = leader.position + offset;
+                if (NavMesh.SamplePosition(
+                        candidate,
+                        out NavMeshHit hit,
+                        m_aiNavMeshSampleRadius,
+                        NavMesh.AllAreas))
+                {
+                    position = hit.position;
+                    return true;
+                }
+            }
+
+            if (NavMesh.SamplePosition(
+                    leader.position,
+                    out NavMeshHit fallback,
+                    m_aiNavMeshSampleRadius * 2f,
+                    NavMesh.AllAreas))
+            {
+                position = fallback.position;
+                return true;
+            }
+
+            position = default;
+            return false;
         }
 
         /// <summary>Returns the stable depot spawn assigned to a network client.</summary>

@@ -1,34 +1,62 @@
+using System.Collections.Generic;
 using CouchGuys.Gameplay.Couch;
+using CouchGuys.Gameplay.Enemies;
+using CouchGuys.Gameplay.Weapons;
 using FishNet.Object;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace CouchGuys.Player
 {
     /// <summary>
-    /// Drives an unowned network Player on the server for repeatable couch tests.
-    /// Human input, special couch forces, and client-side bot simulation are deliberately avoided.
+    /// Server-authoritative teammate controller built on the original debug couch bot.
+    /// It drives an unowned Player prefab through NavMesh navigation and the normal
+    /// couch, weapon, health, animation, and NetworkTransform systems.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     [RequireComponent(typeof(PlayerCouchCarrier))]
+    [RequireComponent(typeof(PlayerHealth))]
     [RequireComponent(typeof(NetworkObject))]
     [DisallowMultipleComponent]
     public sealed class DebugCouchBotController : MonoBehaviour
     {
-        private static CouchCarryPoint[] s_cachedCarryPoints;
-        private static float s_nextCarryPointCacheRefreshTime;
+        public enum AiState
+        {
+            FollowPlayer,
+            MoveToCouch,
+            CarryCouch,
+            Combat,
+            Dead
+        }
 
-        private CharacterController m_characterController;
+        private static readonly Dictionary<CouchCarryPoint, DebugCouchBotController>
+            s_carryPointReservations = new();
+        private static ThiefHealth[] s_cachedThieves;
+        private static float s_nextThiefCacheRefreshTime;
+
+        private NavMeshAgent m_agent;
         private PlayerCouchCarrier m_carrier;
+        private PlayerHealth m_health;
+        private PlayerWeaponController m_weapon;
         private NetworkObject m_networkObject;
         private DebugCouchBotSettings m_settings;
+        private PlayerHealth m_leader;
+        private CouchCarryController m_targetCouch;
         private CouchCarryPoint m_targetPoint;
-        private Vector3 m_wanderDirection;
-        private float m_verticalVelocity;
-        private float m_nextTargetSearchTime;
+        private ThiefHealth m_combatTarget;
+        private Vector3 m_externalVelocity;
+        private float m_nextDestinationTime;
         private float m_nextGrabAttemptTime;
-        private float m_nextWanderDirectionTime;
+        private float m_nextEnemyScanTime;
+        private float m_nextLeaderSearchTime;
         private int m_botIndex;
         private bool m_isInitialised;
+        private bool m_weaponConfigured;
+        private bool m_deadStateApplied;
+
+        public bool IsAiTeammate => m_isInitialised;
+        public int BotIndex => m_botIndex;
+        public AiState State { get; private set; } = AiState.FollowPlayer;
 
         private void Awake()
         {
@@ -38,11 +66,15 @@ namespace CouchGuys.Player
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetSharedCache()
         {
-            s_cachedCarryPoints = null;
-            s_nextCarryPointCacheRefreshTime = 0f;
+            s_carryPointReservations.Clear();
+            s_cachedThieves = null;
+            s_nextThiefCacheRefreshTime = 0f;
         }
 
-        internal void Initialise(DebugCouchBotSettings settings, int botIndex)
+        internal void Initialise(
+            DebugCouchBotSettings settings,
+            int botIndex,
+            PlayerHealth leader)
         {
             if (settings == null)
             {
@@ -51,214 +83,343 @@ namespace CouchGuys.Player
 
             ResolveReferences();
             m_settings = settings;
-            m_botIndex = Mathf.Clamp(botIndex, 0, 3);
+            m_botIndex = Mathf.Max(0, botIndex);
+            m_leader = leader;
             m_isInitialised = true;
             enabled = true;
+            ConfigureAgent();
         }
 
-        private void FixedUpdate()
+        internal void ApplyExternalImpulseServer(Vector3 impulse)
         {
-            if (!m_isInitialised || m_settings == null || m_networkObject == null ||
-                !m_networkObject.IsServerInitialized || m_networkObject.Owner.IsValid)
+            if (m_isInitialised && m_health != null && m_health.IsAlive)
+            {
+                m_externalVelocity += impulse;
+            }
+        }
+
+        private void Update()
+        {
+            if (!CanSimulate())
             {
                 return;
             }
 
-            if (m_carrier.IsCarrying)
+            if (!m_weaponConfigured)
             {
-                TickCarrying();
+                m_weapon?.ConfigureAiWeaponServer(PlayerWeaponType.AssaultRifle);
+                m_weaponConfigured = true;
+            }
+
+            if (!m_health.IsAlive)
+            {
+                EnterDeadState();
+                return;
+            }
+
+            m_deadStateApplied = false;
+            if (m_health.IsKnockedDown)
+            {
+                State = AiState.FollowPlayer;
+                m_carrier.SetDebugBotMovementIntentServer(Vector3.zero);
+                StopAgent();
+                ApplyKnockback();
+                return;
+            }
+
+            ResolveLivingLeader();
+            CouchCarryController leaderCouch = GetLeaderCouch();
+            if (leaderCouch != null)
+            {
+                m_combatTarget = null;
+                if (m_carrier.IsCarrying)
+                {
+                    if (m_carrier.GetCarriedCouchServer() != leaderCouch)
+                    {
+                        m_carrier.ReleaseForAiServer();
+                        m_targetPoint = null;
+                        State = AiState.MoveToCouch;
+                    }
+                    else
+                    {
+                        State = AiState.CarryCouch;
+                    }
+                }
+                else
+                {
+                    m_targetCouch = leaderCouch;
+                    State = AiState.MoveToCouch;
+                }
             }
             else
             {
-                TickSeeking();
-            }
-        }
-
-        private void TickSeeking()
-        {
-            if (!IsTargetValid())
-            {
+                m_targetCouch = null;
+                ReleaseTargetPointReservation();
                 m_targetPoint = null;
-                if (Time.unscaledTime < m_nextTargetSearchTime)
+                if (m_carrier.IsCarrying)
                 {
-                    Move(Vector3.zero, m_settings.ApproachSpeed);
-                    return;
+                    m_carrier.ReleaseForAiServer();
                 }
 
-                m_nextTargetSearchTime = Time.unscaledTime + m_settings.TargetSearchInterval;
-                m_targetPoint = FindBestTargetPoint();
+                RefreshCombatTarget();
+                State = m_combatTarget != null ? AiState.Combat : AiState.FollowPlayer;
+            }
+
+            switch (State)
+            {
+                case AiState.MoveToCouch:
+                    TickMoveToCouch();
+                    break;
+                case AiState.CarryCouch:
+                    TickCarryCouch();
+                    break;
+                case AiState.Combat:
+                    TickCombat();
+                    break;
+                default:
+                    TickFollowPlayer();
+                    break;
+            }
+
+            ApplyKnockback();
+            UpdateFacing();
+        }
+
+        private bool CanSimulate()
+        {
+            return m_isInitialised && m_settings != null && m_networkObject != null &&
+                   m_networkObject.IsServerInitialized && !m_networkObject.Owner.IsValid &&
+                   m_health != null && m_carrier != null && m_agent != null;
+        }
+
+        private void TickFollowPlayer()
+        {
+            m_carrier.SetDebugBotMovementIntentServer(Vector3.zero);
+            if (m_leader == null)
+            {
+                StopAgent();
+                return;
+            }
+
+            Vector3 localOffset = m_botIndex switch
+            {
+                0 => new Vector3(-1f, 0f, -1f),
+                1 => new Vector3(1f, 0f, -1f),
+                _ => new Vector3(0f, 0f, -1.6f)
+            };
+            localOffset *= m_settings.FollowDistance;
+            Vector3 destination = m_leader.transform.position +
+                                  m_leader.transform.TransformDirection(localOffset);
+            SetDestination(destination, m_settings.ApproachSpeed, m_settings.FollowDistance * 0.45f);
+        }
+
+        private void TickMoveToCouch()
+        {
+            if (m_targetCouch == null || !m_targetCouch.IsSpawned)
+            {
+                m_targetPoint = null;
+                StopAgent();
+                return;
+            }
+
+            if (!IsTargetPointValid())
+            {
+                ReleaseTargetPointReservation();
+                m_targetPoint = FindAvailablePoint(m_targetCouch);
             }
 
             if (m_targetPoint == null)
             {
-                Move(Vector3.zero, m_settings.ApproachSpeed);
+                Vector3 waitingOffset = Quaternion.Euler(0f, m_botIndex * 120f, 0f) *
+                                        (Vector3.back * 2f);
+                SetDestination(
+                    m_targetCouch.transform.position + waitingOffset,
+                    m_settings.ApproachSpeed,
+                    0.75f);
                 return;
             }
 
             Vector3 standPosition = CalculateStandPosition(m_targetPoint);
-            Vector3 offset = Vector3.ProjectOnPlane(standPosition - transform.position, Vector3.up);
-            float stopDistance = Mathf.Max(0.08f, m_characterController.radius * 0.5f);
-            Vector3 movement = offset.sqrMagnitude > stopDistance * stopDistance
-                ? offset.normalized
-                : Vector3.zero;
-            Move(movement, m_settings.ApproachSpeed);
-
-            if (offset.sqrMagnitude <= stopDistance * stopDistance &&
+            SetDestination(standPosition, m_settings.ApproachSpeed, 0.15f);
+            float grabDistance = Mathf.Max(0.7f, m_settings.PointStandOff + 0.45f);
+            if ((transform.position - standPosition).sqrMagnitude <= grabDistance * grabDistance &&
                 Time.unscaledTime >= m_nextGrabAttemptTime)
             {
                 bool grabbed = m_carrier.TryGrabPointForDebugBotServer(
-                    m_targetPoint.Couch,
+                    m_targetCouch,
                     m_targetPoint.PointIndex);
                 m_nextGrabAttemptTime = Time.unscaledTime + m_settings.RetryDelay;
-                if (!grabbed)
+                if (grabbed)
                 {
+                    ReleaseTargetPointReservation();
+                    State = AiState.CarryCouch;
+                }
+                else
+                {
+                    ReleaseTargetPointReservation();
                     m_targetPoint = null;
                 }
             }
         }
 
-        private void TickCarrying()
+        private void TickCarryCouch()
         {
             CouchCarryController couch = m_carrier.GetCarriedCouchServer();
-            if (couch == null)
+            if (couch == null || couch != GetLeaderCouch())
             {
-                m_carrier.SetDebugBotMovementIntentServer(Vector3.zero);
+                m_carrier.ReleaseForAiServer();
+                m_targetPoint = null;
+                State = AiState.FollowPlayer;
                 return;
             }
 
-            Vector3 movementIntent = CalculateMovementIntent(couch);
-            Vector3 constrainedMovement = movementIntent;
-            CouchCarryPoint carryPoint = couch.GetPoint(m_carrier.CarriedPointIndex);
-            if (carryPoint != null)
-            {
-                constrainedMovement = ThirdPersonPlayerController.ApplyDirectionalResistance(
-                    movementIntent,
-                    transform.position,
-                    carryPoint.transform.position,
-                    m_carrier.ComfortableCarryDistance,
-                    m_carrier.MaximumCarrySeparation);
-            }
-
-            m_carrier.SetDebugBotMovementIntentServer(movementIntent);
-            float speedMultiplier = m_carrier.CalculateCarryingSpeedMultiplier(couch);
-            Vector3 facingDirection = carryPoint != null
-                ? Vector3.ProjectOnPlane(carryPoint.transform.position - transform.position, Vector3.up)
-                : Vector3.zero;
-            Vector3 attachmentCorrection = carryPoint != null
-                ? ThirdPersonPlayerController.CalculateAttachmentCorrection(
-                    transform.position,
-                    carryPoint.transform.position,
-                    m_carrier.MaximumCarrySeparation)
-                : Vector3.zero;
-            Move(
-                constrainedMovement,
-                m_settings.CarryingSpeed * speedMultiplier,
-                facingDirection,
-                attachmentCorrection);
-        }
-
-        private Vector3 CalculateMovementIntent(CouchCarryController couch)
-        {
             PlayerCouchCarrier humanCarrier = couch.GetFirstHumanCarrierServer(m_carrier);
-            Vector3 humanIntent = humanCarrier != null
+            Vector3 movementIntent = humanCarrier != null
                 ? humanCarrier.GetServerMovementIntent()
                 : Vector3.zero;
+            movementIntent = Vector3.ClampMagnitude(
+                Vector3.ProjectOnPlane(movementIntent, Vector3.up),
+                1f);
+            m_carrier.SetDebugBotMovementIntentServer(movementIntent);
 
-            Vector3 result = m_settings.Behaviour switch
+            CouchCarryPoint point = couch.GetPoint(m_carrier.CarriedPointIndex);
+            if (point == null)
             {
-                DebugCouchBotSettings.BehaviourState.CooperateWithPlayer => humanIntent,
-                DebugCouchBotSettings.BehaviourState.PullAgainstPlayer => -humanIntent,
-                DebugCouchBotSettings.BehaviourState.HoldPosition => Vector3.zero,
-                DebugCouchBotSettings.BehaviourState.RotateClockwise => CalculateTangentialDirection(couch, true),
-                DebugCouchBotSettings.BehaviourState.RotateAnticlockwise => CalculateTangentialDirection(couch, false),
-                DebugCouchBotSettings.BehaviourState.Wander => GetWanderDirection(),
-                DebugCouchBotSettings.BehaviourState.MoveInConfiguredDirection => m_settings.ConfiguredDirection,
-                _ => Vector3.zero
-            };
+                m_carrier.ReleaseForAiServer();
+                return;
+            }
 
-            return Vector3.ClampMagnitude(Vector3.ProjectOnPlane(result, Vector3.up), 1f);
+            m_targetPoint = point;
+            float speed = m_settings.CarryingSpeed *
+                          m_carrier.CalculateCarryingSpeedMultiplier(couch);
+            SetDestination(CalculateStandPosition(point), speed, 0.08f);
         }
 
-        private Vector3 CalculateTangentialDirection(CouchCarryController couch, bool clockwise)
+        private void TickCombat()
         {
-            Vector3 radial = Vector3.ProjectOnPlane(
-                transform.position - couch.CouchRigidbody.worldCenterOfMass,
+            if (!IsCombatTargetValid(m_combatTarget))
+            {
+                m_combatTarget = null;
+                State = AiState.FollowPlayer;
+                StopAgent();
+                return;
+            }
+
+            Vector3 offset = Vector3.ProjectOnPlane(
+                m_combatTarget.transform.position - transform.position,
                 Vector3.up);
-            if (radial.sqrMagnitude < 0.001f)
+            float combatRange = m_settings.CombatRange;
+            if (offset.sqrMagnitude > combatRange * combatRange)
             {
-                radial = transform.forward;
+                SetDestination(
+                    m_combatTarget.transform.position,
+                    m_settings.ApproachSpeed,
+                    combatRange * 0.8f);
+                return;
             }
 
-            Vector3 tangent = Vector3.Cross(Vector3.up, radial.normalized);
-            return clockwise ? tangent : -tangent;
+            StopAgent();
+            FaceDirection(offset);
+            m_weapon?.TryFireAtThiefServer(m_combatTarget);
         }
 
-        private Vector3 GetWanderDirection()
+        private void RefreshCombatTarget()
         {
-            if (Time.unscaledTime >= m_nextWanderDirectionTime || m_wanderDirection.sqrMagnitude < 0.01f)
+            if (IsCombatTargetValid(m_combatTarget) &&
+                (m_combatTarget.transform.position - transform.position).sqrMagnitude <=
+                m_settings.EnemyDetectionRadius * m_settings.EnemyDetectionRadius)
             {
-                Vector2 randomDirection = Random.insideUnitCircle.normalized;
-                m_wanderDirection = new Vector3(randomDirection.x, 0f, randomDirection.y);
-                m_nextWanderDirectionTime = Time.unscaledTime + m_settings.WanderDirectionInterval;
+                return;
             }
 
-            return m_wanderDirection;
-        }
-
-        private CouchCarryPoint FindBestTargetPoint()
-        {
-            CouchCarryPoint[] points = GetCachedCarryPoints();
-            CouchCarryPoint bestPoint = null;
-            float bestScore = float.PositiveInfinity;
-            bool bestCouchHasCarrier = false;
-            bool bestMatchesPreference = false;
-            int configuredPreference = (int)m_settings.PreferredCarryPoint;
-            int preferredIndex = configuredPreference >= 0
-                ? (configuredPreference + m_botIndex) % CouchCarryController.MaximumCarryPoints
-                : m_botIndex;
-
-            foreach (CouchCarryPoint point in points)
+            m_combatTarget = null;
+            if (Time.unscaledTime < m_nextEnemyScanTime)
             {
-                if (point == null || !point.IsAvailable || point.Couch == null || !point.Couch.IsSpawned)
+                return;
+            }
+
+            m_nextEnemyScanTime = Time.unscaledTime + m_settings.EnemyDetectionInterval;
+            ThiefHealth[] thieves = GetCachedThieves();
+            float bestDistance = m_settings.EnemyDetectionRadius * m_settings.EnemyDetectionRadius;
+            for (int index = 0; index < thieves.Length; index++)
+            {
+                ThiefHealth thief = thieves[index];
+                if (!IsCombatTargetValid(thief))
                 {
                     continue;
                 }
 
-                float score = (point.transform.position - transform.position).sqrMagnitude;
-                bool couchHasCarrier = point.Couch.ActiveCarrierCount > 0;
-                bool matchesPreference = point.PointIndex == preferredIndex;
-                if ((couchHasCarrier && !bestCouchHasCarrier) ||
-                    (couchHasCarrier == bestCouchHasCarrier && matchesPreference && !bestMatchesPreference) ||
-                    (couchHasCarrier == bestCouchHasCarrier && matchesPreference == bestMatchesPreference &&
-                        score < bestScore))
+                float distance = (thief.transform.position - transform.position).sqrMagnitude;
+                if (distance < bestDistance)
                 {
-                    bestScore = score;
-                    bestPoint = point;
-                    bestCouchHasCarrier = couchHasCarrier;
-                    bestMatchesPreference = matchesPreference;
+                    bestDistance = distance;
+                    m_combatTarget = thief;
                 }
             }
-
-            return bestPoint;
         }
 
-        private CouchCarryPoint[] GetCachedCarryPoints()
+        private ThiefHealth[] GetCachedThieves()
         {
-            if (s_cachedCarryPoints == null || Time.unscaledTime >= s_nextCarryPointCacheRefreshTime)
+            if (s_cachedThieves == null || Time.unscaledTime >= s_nextThiefCacheRefreshTime)
             {
-                s_cachedCarryPoints = FindObjectsByType<CouchCarryPoint>(
+                s_cachedThieves = FindObjectsByType<ThiefHealth>(
                     FindObjectsInactive.Exclude,
                     FindObjectsSortMode.None);
-                s_nextCarryPointCacheRefreshTime = Time.unscaledTime + m_settings.TargetSearchInterval;
+                s_nextThiefCacheRefreshTime =
+                    Time.unscaledTime + m_settings.EnemyDetectionInterval;
             }
 
-            return s_cachedCarryPoints;
+            return s_cachedThieves;
         }
 
-        private bool IsTargetValid()
+        private static bool IsCombatTargetValid(ThiefHealth target)
         {
-            return m_targetPoint != null && m_targetPoint.IsAvailable &&
-                m_targetPoint.Couch != null && m_targetPoint.Couch.IsSpawned;
+            return target != null && target.isActiveAndEnabled && target.IsAlive &&
+                   target.NetworkObject != null && target.NetworkObject.IsSpawned;
+        }
+
+        private CouchCarryPoint FindAvailablePoint(CouchCarryController couch)
+        {
+            for (int offset = 0; offset < CouchCarryController.MaximumCarryPoints; offset++)
+            {
+                int pointIndex = (m_botIndex + 1 + offset) %
+                                 CouchCarryController.MaximumCarryPoints;
+                CouchCarryPoint point = couch.GetPoint(pointIndex);
+                if (point == null || !point.IsAvailable)
+                {
+                    continue;
+                }
+
+                if (s_carryPointReservations.TryGetValue(point, out DebugCouchBotController owner) &&
+                    owner != null && owner != this && owner.m_health != null &&
+                    owner.m_health.IsAlive)
+                {
+                    continue;
+                }
+
+                s_carryPointReservations[point] = this;
+                return point;
+            }
+
+            return null;
+        }
+
+        private void ReleaseTargetPointReservation()
+        {
+            if (m_targetPoint != null &&
+                s_carryPointReservations.TryGetValue(
+                    m_targetPoint,
+                    out DebugCouchBotController owner) &&
+                owner == this)
+            {
+                s_carryPointReservations.Remove(m_targetPoint);
+            }
+        }
+
+        private bool IsTargetPointValid()
+        {
+            return m_targetPoint != null && m_targetPoint.Couch == m_targetCouch &&
+                   m_targetPoint.IsAvailable;
         }
 
         private Vector3 CalculateStandPosition(CouchCarryPoint point)
@@ -271,50 +432,222 @@ namespace CouchGuys.Player
                 awayFromCouch = -point.Couch.transform.forward;
             }
 
-            float standOff = Mathf.Min(m_settings.PointStandOff, m_carrier.MaximumCarrySeparation);
-            Vector3 standPosition = point.transform.position + awayFromCouch.normalized * standOff;
-            standPosition.y = transform.position.y;
-            return standPosition;
+            float standOff = Mathf.Min(
+                m_settings.PointStandOff,
+                m_carrier.MaximumCarrySeparation);
+            return point.transform.position + awayFromCouch.normalized * standOff;
         }
 
-        private void Move(
-            Vector3 horizontalDirection,
-            float speed,
-            Vector3 facingDirection = default,
-            Vector3 attachmentCorrection = default)
+        private void SetDestination(Vector3 destination, float speed, float stoppingDistance)
         {
-            Vector3 direction = Vector3.ClampMagnitude(
-                Vector3.ProjectOnPlane(horizontalDirection, Vector3.up),
-                1f);
-            Vector3 lookDirection = facingDirection.sqrMagnitude > 0.001f
-                ? facingDirection.normalized
-                : direction;
-            if (lookDirection.sqrMagnitude > 0.001f)
+            if (!m_agent.enabled)
             {
-                Quaternion targetRotation = Quaternion.LookRotation(lookDirection, Vector3.up);
-                transform.rotation = Quaternion.RotateTowards(
-                    transform.rotation,
-                    targetRotation,
-                    m_settings.TurnSpeed * Time.fixedDeltaTime);
+                return;
             }
 
-            if (m_characterController.isGrounded && m_verticalVelocity < 0f)
+            if (!m_agent.isOnNavMesh &&
+                NavMesh.SamplePosition(
+                    transform.position,
+                    out NavMeshHit currentHit,
+                    8f,
+                    m_agent.areaMask))
             {
-                m_verticalVelocity = -2f;
-            }
-            else
-            {
-                m_verticalVelocity = Mathf.Max(-50f, m_verticalVelocity + Physics.gravity.y * Time.fixedDeltaTime);
+                m_agent.Warp(currentHit.position);
             }
 
-            Vector3 velocity = direction * Mathf.Max(0f, speed) + Vector3.up * m_verticalVelocity;
-            m_characterController.Move(velocity * Time.fixedDeltaTime + attachmentCorrection);
+            if (!m_agent.isOnNavMesh)
+            {
+                return;
+            }
+
+            m_agent.speed = Mathf.Max(0.1f, speed);
+            m_agent.stoppingDistance = Mathf.Max(0.05f, stoppingDistance);
+            if (Time.unscaledTime < m_nextDestinationTime)
+            {
+                return;
+            }
+
+            m_nextDestinationTime =
+                Time.unscaledTime + m_settings.DestinationUpdateInterval;
+            if (NavMesh.SamplePosition(destination, out NavMeshHit hit, 3f, m_agent.areaMask))
+            {
+                m_agent.isStopped = false;
+                m_agent.SetDestination(hit.position);
+            }
+        }
+
+        private void StopAgent()
+        {
+            if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh)
+            {
+                m_agent.isStopped = true;
+                m_agent.ResetPath();
+            }
+        }
+
+        private void UpdateFacing()
+        {
+            if (State == AiState.Combat && m_combatTarget != null)
+            {
+                FaceDirection(m_combatTarget.transform.position - transform.position);
+            }
+            else if (State == AiState.CarryCouch && m_targetPoint != null)
+            {
+                FaceDirection(m_targetPoint.transform.position - transform.position);
+            }
+            else if (m_agent != null && m_agent.enabled)
+            {
+                FaceDirection(m_agent.desiredVelocity);
+            }
+        }
+
+        private void FaceDirection(Vector3 direction)
+        {
+            direction = Vector3.ProjectOnPlane(direction, Vector3.up);
+            if (direction.sqrMagnitude < 0.001f)
+            {
+                return;
+            }
+
+            transform.rotation = Quaternion.RotateTowards(
+                transform.rotation,
+                Quaternion.LookRotation(direction.normalized, Vector3.up),
+                m_settings.TurnSpeed * Time.deltaTime);
+        }
+
+        private void ApplyKnockback()
+        {
+            if (m_externalVelocity.sqrMagnitude < 0.0001f)
+            {
+                return;
+            }
+
+            if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh)
+            {
+                m_agent.Move(m_externalVelocity * Time.deltaTime);
+            }
+
+            m_externalVelocity = Vector3.MoveTowards(
+                m_externalVelocity,
+                Vector3.zero,
+                8f * Time.deltaTime);
+        }
+
+        private CouchCarryController GetLeaderCouch()
+        {
+            if (m_leader == null || !m_leader.IsAlive ||
+                !m_leader.TryGetComponent(out PlayerCouchCarrier carrier))
+            {
+                return null;
+            }
+
+            return carrier.GetCarriedCouchServer();
+        }
+
+        private void ResolveLivingLeader()
+        {
+            if (m_leader != null && m_leader.IsAlive && !m_leader.IsAiTeammate)
+            {
+                return;
+            }
+
+            if (Time.unscaledTime < m_nextLeaderSearchTime)
+            {
+                return;
+            }
+
+            m_nextLeaderSearchTime = Time.unscaledTime + 1f;
+            PlayerHealth[] players = FindObjectsByType<PlayerHealth>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None);
+            float bestDistance = float.PositiveInfinity;
+            m_leader = null;
+            for (int index = 0; index < players.Length; index++)
+            {
+                PlayerHealth player = players[index];
+                if (player == null || !player.IsAlive || player.IsAiTeammate ||
+                    player.NetworkObject == null || !player.NetworkObject.IsSpawned ||
+                    !player.Owner.IsValid)
+                {
+                    continue;
+                }
+
+                float distance = (player.transform.position - transform.position).sqrMagnitude;
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    m_leader = player;
+                }
+            }
+        }
+
+        private void EnterDeadState()
+        {
+            State = AiState.Dead;
+            if (m_deadStateApplied)
+            {
+                return;
+            }
+
+            m_deadStateApplied = true;
+            m_carrier.SetDebugBotMovementIntentServer(Vector3.zero);
+            m_carrier.ReleaseForAiServer();
+            m_combatTarget = null;
+            m_targetCouch = null;
+            ReleaseTargetPointReservation();
+            m_targetPoint = null;
+            StopAgent();
+            if (m_agent != null)
+            {
+                m_agent.enabled = false;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            ReleaseTargetPointReservation();
+        }
+
+        private void ConfigureAgent()
+        {
+            m_agent = GetComponent<NavMeshAgent>();
+            if (m_agent == null)
+            {
+                m_agent = gameObject.AddComponent<NavMeshAgent>();
+            }
+
+            if (m_agent == null)
+            {
+                Debug.LogError("AI teammate requires a NavMeshAgent.", this);
+                enabled = false;
+                return;
+            }
+
+            CharacterController characterController = GetComponent<CharacterController>();
+            m_agent.radius = characterController != null
+                ? Mathf.Max(0.1f, characterController.radius)
+                : 0.4f;
+            m_agent.height = characterController != null
+                ? Mathf.Max(0.5f, characterController.height)
+                : 1.8f;
+            m_agent.baseOffset = 0f;
+            m_agent.speed = m_settings.ApproachSpeed;
+            m_agent.angularSpeed = m_settings.TurnSpeed;
+            m_agent.acceleration = 18f;
+            m_agent.autoBraking = true;
+            m_agent.updateRotation = false;
+            m_agent.enabled = true;
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 4f, NavMesh.AllAreas))
+            {
+                m_agent.Warp(hit.position);
+            }
         }
 
         private void ResolveReferences()
         {
-            m_characterController ??= GetComponent<CharacterController>();
             m_carrier ??= GetComponent<PlayerCouchCarrier>();
+            m_health ??= GetComponent<PlayerHealth>();
+            m_weapon ??= GetComponent<PlayerWeaponController>();
             m_networkObject ??= GetComponent<NetworkObject>();
         }
     }

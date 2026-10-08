@@ -71,7 +71,7 @@ namespace CouchGuys.Networking
             base.OnStartClient();
             SetCameraRigDetached(IsOwner);
             SetLocalControl(IsOwner);
-            ApplyPlayerColour(OwnerId);
+            ApplyIdentityColour();
         }
 
         public override void OnStartServer()
@@ -91,7 +91,7 @@ namespace CouchGuys.Networking
             base.OnOwnershipClient(previousOwner);
             SetCameraRigDetached(IsOwner);
             SetLocalControl(IsOwner);
-            ApplyPlayerColour(OwnerId);
+            ApplyIdentityColour();
         }
 
         public override void OnStopClient()
@@ -190,6 +190,12 @@ namespace CouchGuys.Networking
             {
                 m_audioListener.enabled = isLocalOwner;
             }
+        }
+
+        private void ApplyIdentityColour()
+        {
+            PlayerHealth health = GetComponent<PlayerHealth>();
+            ApplyPlayerColour(health != null && health.IsAiTeammate ? 2 : OwnerId);
         }
 
         private void ApplyPlayerColour(int playerIndex)

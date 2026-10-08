@@ -19,11 +19,14 @@ namespace CouchGuys.Gameplay.Enemies
         [SerializeField, Min(0.25f)] private float m_targetNavMeshSampleRadius = 6f;
 
         private PlayerHealth m_target;
+        private EnemyWeapon m_weapon;
         private float m_nextPathRefreshTime;
+        private float m_nextTargetSearchTime;
 
         private void Awake()
         {
             m_agent ??= GetComponent<NavMeshAgent>();
+            m_weapon ??= GetComponent<EnemyWeapon>();
         }
 
         public override void OnStartServer()
@@ -57,8 +60,23 @@ namespace CouchGuys.Gameplay.Enemies
 
         private void Update()
         {
-            if (!IsServerInitialized || m_agent == null || !m_agent.enabled ||
-                !m_agent.isOnNavMesh || m_target == null)
+            if (!IsServerInitialized)
+            {
+                return;
+            }
+
+            if ((m_target == null || !m_target.IsAlive) &&
+                Time.time >= m_nextTargetSearchTime)
+            {
+                m_nextTargetSearchTime = Time.time + m_pathRefreshInterval;
+                SetTargetServer(FindNearestLivingTarget(), m_agent != null
+                    ? m_agent.stoppingDistance
+                    : 1.25f);
+                m_weapon?.SetTargetServer(m_target);
+            }
+
+            if (m_agent == null || !m_agent.enabled ||
+                !m_agent.isOnNavMesh || m_target == null || !m_target.IsAlive)
             {
                 return;
             }
@@ -95,6 +113,35 @@ namespace CouchGuys.Gameplay.Enemies
             // updating the destination so displaced players are pursued immediately.
             m_agent.isStopped = false;
             m_agent.SetDestination(targetHit.position);
+        }
+
+        private PlayerHealth FindNearestLivingTarget()
+        {
+            PlayerHealth[] players = FindObjectsByType<PlayerHealth>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None);
+            PlayerHealth best = null;
+            float bestDistance = float.PositiveInfinity;
+            for (int index = 0; index < players.Length; index++)
+            {
+                PlayerHealth candidate = players[index];
+                if (candidate == null || !candidate.IsAlive ||
+                    candidate.NetworkObject == null ||
+                    !candidate.NetworkObject.IsSpawned)
+                {
+                    continue;
+                }
+
+                float distance =
+                    (candidate.transform.position - transform.position).sqrMagnitude;
+                if (distance < bestDistance)
+                {
+                    bestDistance = distance;
+                    best = candidate;
+                }
+            }
+
+            return best;
         }
 
 #if UNITY_EDITOR

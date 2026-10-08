@@ -56,10 +56,11 @@ namespace CouchGuys.Player
         private CouchCarryController m_cachedMovementCouch;
         private Transform m_cachedMovementAnchor;
         private int m_cachedMovementPointIndex = int.MinValue;
-        private readonly NetworkObject[] m_spawnedDebugBots = new NetworkObject[4];
+
 
         public float ComfortableCarryDistance => Mathf.Min(m_comfortableCarryDistance, m_maximumCarrySeparation);
         public float MaximumCarrySeparation => m_maximumCarrySeparation;
+        internal DebugCouchBotSettings DebugBotSettings => m_debugBot;
         internal int CarriedPointIndex => m_carriedPointIndex.Value;
         public bool IsCarrying => m_carriedCouch.Value != null;
 
@@ -101,28 +102,11 @@ namespace CouchGuys.Player
             }
         }
 
-        public override void OnStartServer()
-        {
-            base.OnStartServer();
-            if (Owner.IsLocalClient && m_debugBot != null && m_debugBot.DebugBotCount > 0)
-            {
-                SpawnDebugBotsServer();
-            }
-        }
+        public override void OnStartServer() => base.OnStartServer();
 
         public override void OnStopServer()
         {
             ReleaseCurrentCouchServer();
-            for (int index = 0; index < m_spawnedDebugBots.Length; index++)
-            {
-                NetworkObject bot = m_spawnedDebugBots[index];
-                if (bot != null && bot.IsSpawned)
-                {
-                    Despawn(bot);
-                }
-
-                m_spawnedDebugBots[index] = null;
-            }
             base.OnStopServer();
         }
 
@@ -371,6 +355,14 @@ namespace CouchGuys.Player
             }
         }
 
+        internal void ReleaseForAiServer()
+        {
+            if (IsServerInitialized)
+            {
+                ReleaseCurrentCouchServer();
+            }
+        }
+
         private void UpdateMovementIntent()
         {
             if (!IsCarrying || m_playerController == null)
@@ -478,46 +470,6 @@ namespace CouchGuys.Player
             m_cachedMovementAnchor = point != null ? point.transform : null;
         }
 
-        private void SpawnDebugBotsServer()
-        {
-            NetworkObject playerPrefab = NetworkManager.GetPrefab(NetworkObject.PrefabId, true);
-            if (playerPrefab == null)
-            {
-                Debug.LogError("Debug couch bot could not find the registered Player prefab.", this);
-                return;
-            }
-
-            int botCount = m_debugBot.DebugBotCount;
-            for (int index = 0; index < botCount; index++)
-            {
-                Vector3 localOffset = m_debugBot.SpawnOffset + CalculateDebugBotFormationOffset(index, botCount);
-                Vector3 spawnPosition = transform.position + transform.TransformDirection(localOffset);
-                NetworkObject bot = Instantiate(playerPrefab, spawnPosition, transform.rotation);
-                if (!bot.TryGetComponent(out DebugCouchBotController botController))
-                {
-                    Debug.LogError("The Player prefab is missing DebugCouchBotController.", bot);
-                    Destroy(bot.gameObject);
-                    return;
-                }
-
-                botController.Initialise(m_debugBot, index);
-                Spawn(bot);
-                m_spawnedDebugBots[index] = bot;
-            }
-        }
-
-        private static Vector3 CalculateDebugBotFormationOffset(int index, int botCount)
-        {
-            const float spacing = 1.25f;
-            if (botCount <= 1)
-            {
-                return Vector3.zero;
-            }
-
-            float column = index % 2 == 0 ? -0.5f : 0.5f;
-            float row = index < 2 ? -0.5f : 0.5f;
-            return new Vector3(column * spacing, 0f, row * spacing);
-        }
 
 #if UNITY_EDITOR
         protected override void OnValidate()

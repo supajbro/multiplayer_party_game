@@ -164,7 +164,15 @@ namespace CouchGuys.Gameplay.Weapons
 
             m_reloadingIndex = index;
             m_reloadCompleteAt = Time.time + weapon.ReloadDuration;
-            SendWeaponStateTargetRpc(Owner, index, m_magazine[index], m_reserve[index], true);
+            if (Owner.IsValid)
+            {
+                SendWeaponStateTargetRpc(
+                    Owner,
+                    index,
+                    m_magazine[index],
+                    m_reserve[index],
+                    true);
+            }
         }
 
         [ServerRpc]
@@ -177,18 +185,80 @@ namespace CouchGuys.Gameplay.Weapons
         [ServerRpc]
         private void RequestFireServerRpc(Vector3 aimOrigin, Vector3 aimDirection)
         {
+            TryFireServer(aimOrigin, aimDirection);
+        }
+
+        internal void ConfigureAiWeaponServer(PlayerWeaponType weaponType)
+        {
+            if (!IsServerInitialized || Owner.IsValid ||
+                !ValidIndex((int)weaponType) || !m_health.IsAlive)
+            {
+                return;
+            }
+
+            int index = (int)weaponType;
+            m_reloadingIndex = -1;
+            m_equippedIndex.Value = index;
+            m_switchCompleteAt = Time.time;
+        }
+
+        internal bool TryFireAtThiefServer(ThiefHealth target)
+        {
+            if (!IsServerInitialized || Owner.IsValid ||
+                target == null || !target.IsAlive)
+            {
+                return false;
+            }
+
+            int index = m_equippedIndex.Value;
+            WeaponDefinition weapon = GetWeapon(index);
+            if (weapon == null)
+            {
+                return false;
+            }
+
+            Vector3 origin = GetMuzzlePosition(index, m_health.AimPoint);
+            Vector3 aimPoint = target.transform.position + Vector3.up * 0.9f;
+            Vector3 direction = aimPoint - origin;
+            if (direction.sqrMagnitude > weapon.Range * weapon.Range ||
+                direction.sqrMagnitude < 0.01f ||
+                !TryGetNearestNonSelfHit(
+                    origin,
+                    direction.normalized,
+                    weapon.Range,
+                    out RaycastHit firstHit) ||
+                firstHit.collider.GetComponentInParent<ThiefHealth>() != target)
+            {
+                return false;
+            }
+
+            m_animationDriver?.SetPointing(true);
+            return TryFireServer(origin, direction.normalized);
+        }
+
+        private bool TryFireServer(Vector3 aimOrigin, Vector3 aimDirection)
+        {
+            if (!IsServerInitialized)
+            {
+                return false;
+            }
+
             int index = m_equippedIndex.Value;
             WeaponDefinition weapon = GetWeapon(index);
             if (weapon == null || m_reloadingIndex >= 0 || Time.time < m_switchCompleteAt ||
                 Time.time < m_nextServerFireTime[index] || !m_health.IsAlive ||
                 (m_couchCarrier != null && m_couchCarrier.IsCarrying) ||
-                (aimOrigin - m_health.AimPoint).sqrMagnitude > m_maximumAimOriginDistance * m_maximumAimOriginDistance ||
-                aimDirection.sqrMagnitude < 0.5f) return;
+                (aimOrigin - m_health.AimPoint).sqrMagnitude >
+                m_maximumAimOriginDistance * m_maximumAimOriginDistance ||
+                aimDirection.sqrMagnitude < 0.5f)
+            {
+                return false;
+            }
 
             if (m_magazine[index] <= 0)
             {
                 BeginReloadServer();
-                return;
+                return false;
             }
 
             m_nextServerFireTime[index] = Time.time + weapon.FireInterval;
@@ -196,13 +266,34 @@ namespace CouchGuys.Gameplay.Weapons
             Vector3 muzzle = GetMuzzlePosition(index, aimOrigin);
             Vector3 cameraDirection = aimDirection.normalized;
             Vector3 aimPoint = aimOrigin + cameraDirection * weapon.Range;
-            if (TryGetNearestNonSelfHit(aimOrigin, cameraDirection, weapon.Range, out RaycastHit aimHit))
+            if (TryGetNearestNonSelfHit(
+                    aimOrigin,
+                    cameraDirection,
+                    weapon.Range,
+                    out RaycastHit aimHit))
+            {
                 aimPoint = aimHit.point;
+            }
+
             Vector3 muzzleDirection = aimPoint - muzzle;
-            if (muzzleDirection.sqrMagnitude < 0.001f) muzzleDirection = cameraDirection;
+            if (muzzleDirection.sqrMagnitude < 0.001f)
+            {
+                muzzleDirection = cameraDirection;
+            }
+
             Vector3[] ends = ResolveHitsServer(muzzle, muzzleDirection.normalized, weapon);
             ShowShotObserversRpc(index, muzzle, ends);
-            SendWeaponStateTargetRpc(Owner, index, m_magazine[index], m_reserve[index], false);
+            if (Owner.IsValid)
+            {
+                SendWeaponStateTargetRpc(
+                    Owner,
+                    index,
+                    m_magazine[index],
+                    m_reserve[index],
+                    false);
+            }
+
+            return true;
         }
 
         [Server]
@@ -279,7 +370,15 @@ namespace CouchGuys.Gameplay.Weapons
             int transfer = Mathf.Min(weapon.MagazineCapacity - m_magazine[index], m_reserve[index]);
             m_magazine[index] += transfer;
             m_reserve[index] -= transfer;
-            SendWeaponStateTargetRpc(Owner, index, m_magazine[index], m_reserve[index], false);
+            if (Owner.IsValid)
+            {
+                SendWeaponStateTargetRpc(
+                    Owner,
+                    index,
+                    m_magazine[index],
+                    m_reserve[index],
+                    false);
+            }
         }
 
         [TargetRpc]

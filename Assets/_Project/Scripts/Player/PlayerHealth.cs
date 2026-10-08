@@ -32,6 +32,7 @@ namespace CouchGuys.Player
         private readonly SyncVar<float> m_currentHealth = new();
         private readonly SyncVar<bool> m_knockedDown = new();
         private readonly SyncVar<Vector3> m_knockdownDirection = new(Vector3.forward);
+        private readonly SyncVar<int> m_aiTeammateIndex = new(-1);
 
         private Quaternion m_visualBaseRotation;
         private float m_visualFallProgress;
@@ -47,6 +48,8 @@ namespace CouchGuys.Player
         public float MaximumHealth => m_maxHealth;
         public bool IsAlive => m_currentHealth.Value > 0f;
         public bool IsKnockedDown => m_knockedDown.Value;
+        public bool IsAiTeammate => m_aiTeammateIndex.Value >= 0;
+        public int AiTeammateIndex => m_aiTeammateIndex.Value;
         public Vector3 AimPoint => transform.position + Vector3.up * 0.9f;
 
         private void Awake()
@@ -74,6 +77,8 @@ namespace CouchGuys.Player
             m_currentHealth.Value = m_maxHealth;
             m_knockedDown.Value = false;
             m_respawnAtServerTime = float.PositiveInfinity;
+            DebugCouchBotController bot = GetComponent<DebugCouchBotController>();
+            m_aiTeammateIndex.Value = bot != null && bot.IsAiTeammate ? bot.BotIndex : -1;
         }
 
         public override void OnStartClient()
@@ -85,7 +90,7 @@ namespace CouchGuys.Player
 
         private void Update()
         {
-            if (IsServerInitialized && !IsAlive && Time.time >= m_respawnAtServerTime)
+            if (IsServerInitialized && !IsAlive && !IsAiTeammate && Time.time >= m_respawnAtServerTime)
             {
                 RespawnAtDepotServer();
             }
@@ -130,12 +135,22 @@ namespace CouchGuys.Player
                 GetComponent<PlayerCouchCarrier>()?.ReleaseForDamageServer();
                 if (died)
                 {
-                    m_respawnAtServerTime = Time.time + m_respawnDelay;
+                    m_respawnAtServerTime = IsAiTeammate
+                        ? float.PositiveInfinity
+                        : Time.time + m_respawnDelay;
                     NotifyDiedObserversRpc();
                 }
             }
 
-            ApplyImpactTargetRpc(Owner, impulse);
+            if (Owner.IsValid)
+            {
+                ApplyImpactTargetRpc(Owner, impulse);
+            }
+            else
+            {
+                GetComponent<DebugCouchBotController>()?.ApplyExternalImpulseServer(impulse);
+            }
+
             PlayHitObserversRpc();
         }
 
