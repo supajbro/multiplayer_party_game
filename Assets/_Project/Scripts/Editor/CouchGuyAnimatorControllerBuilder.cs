@@ -27,7 +27,10 @@ namespace CouchGuys.Editor
             "Strafe_R",
             "Carry_Idle",
             "Carry_Move",
-            "Hold_Item"
+            "Hold_Item",
+            "Pistol_Idle", "Pistol_Walk",
+            "AssaultRifle_Idle", "AssaultRifle_Walk",
+            "Shotgun_Idle", "Shotgun_Walk"
         };
 
         [InitializeOnLoadMethod]
@@ -173,6 +176,9 @@ namespace CouchGuys.Editor
                 "Idle", "HoverMove", "HoverMove_Backward", "Strafe_L", "Strafe_R",
                 "Pickup", "Carry_Idle", "Carry_Move", "Drop", "Hold_Item",
                 "Point", "Hit_Reaction", "Jump"
+                , "Pistol_Idle", "Pistol_Walk", "Pistol_Shoot"
+                , "AssaultRifle_Idle", "AssaultRifle_Walk", "AssaultRifle_Shoot"
+                , "Shotgun_Idle", "Shotgun_Walk", "Shotgun_Shoot"
             };
 
             List<string> missing = new();
@@ -204,6 +210,8 @@ namespace CouchGuys.Editor
             controller.AddParameter("Pickup", AnimatorControllerParameterType.Trigger);
             controller.AddParameter("Drop", AnimatorControllerParameterType.Trigger);
             controller.AddParameter("Hit", AnimatorControllerParameterType.Trigger);
+            controller.AddParameter("EquippedWeapon", AnimatorControllerParameterType.Int);
+            controller.AddParameter("WeaponShoot", AnimatorControllerParameterType.Trigger);
         }
 
         private static void BuildStateMachine(
@@ -224,6 +232,15 @@ namespace CouchGuys.Editor
             AnimatorState pointing = AddState(machine, "Point", clips["Point"], new Vector3(20f, 270f));
             AnimatorState jump = AddState(machine, "Jump", clips["Jump"], new Vector3(20f, 60f));
             AnimatorState hit = AddState(machine, "Hit Reaction", clips["Hit_Reaction"], new Vector3(520f, 300f));
+            AnimatorState pistol = AddState(machine, "Pistol", CreateWeaponTree(controller, clips,
+                "Pistol"), new Vector3(1020f, -120f));
+            AnimatorState rifle = AddState(machine, "Assault Rifle", CreateWeaponTree(controller, clips,
+                "AssaultRifle"), new Vector3(1020f, 20f));
+            AnimatorState shotgun = AddState(machine, "Shotgun", CreateWeaponTree(controller, clips,
+                "Shotgun"), new Vector3(1020f, 160f));
+            AnimatorState pistolShoot = AddState(machine, "Pistol Shoot", clips["Pistol_Shoot"], new Vector3(1270f, -120f));
+            AnimatorState rifleShoot = AddState(machine, "Assault Rifle Shoot", clips["AssaultRifle_Shoot"], new Vector3(1270f, 20f));
+            AnimatorState shotgunShoot = AddState(machine, "Shotgun Shoot", clips["Shotgun_Shoot"], new Vector3(1270f, 160f));
             machine.defaultState = locomotion;
 
             AddConditionTransition(locomotion, pickup, "Pickup", AnimatorConditionMode.If, 0f, false);
@@ -231,6 +248,13 @@ namespace CouchGuys.Editor
             AddConditionTransition(locomotion, holding, "HoldingItem", AnimatorConditionMode.If, 0f, false);
             AddConditionTransition(locomotion, pointing, "Pointing", AnimatorConditionMode.If, 0f, false);
             AddConditionTransition(locomotion, jump, "Grounded", AnimatorConditionMode.IfNot, 0f, false);
+            AddWeaponTransitions(locomotion, pistol, rifle, shotgun, carrying);
+            AddWeaponShotTransitions(pistol, pistolShoot);
+            AddWeaponShotTransitions(rifle, rifleShoot);
+            AddWeaponShotTransitions(shotgun, shotgunShoot);
+            AddExitTransition(pistolShoot, pistol, 0.8f);
+            AddExitTransition(rifleShoot, rifle, 0.8f);
+            AddExitTransition(shotgunShoot, shotgun, 0.8f);
 
             AddConditionTransition(pickup, carrying, "IsCarrying", AnimatorConditionMode.If, 0f, true, 0.72f);
             AddConditionTransition(pickup, locomotion, "IsCarrying", AnimatorConditionMode.IfNot, 0f, true, 0.72f);
@@ -284,6 +308,49 @@ namespace CouchGuys.Editor
             tree.AddChild(clips["Carry_Idle"], 0f);
             tree.AddChild(clips["Carry_Move"], 1f);
             return tree;
+        }
+
+        private static BlendTree CreateWeaponTree(AnimatorController controller,
+            IReadOnlyDictionary<string, AnimationClip> clips, string prefix)
+        {
+            BlendTree tree = new()
+            {
+                name = $"{prefix} Locomotion",
+                blendType = BlendTreeType.Simple1D,
+                blendParameter = "Speed",
+                useAutomaticThresholds = false
+            };
+            AssetDatabase.AddObjectToAsset(tree, controller);
+            tree.AddChild(clips[$"{prefix}_Idle"], 0f);
+            tree.AddChild(clips[$"{prefix}_Walk"], 1f);
+            return tree;
+        }
+
+        private static void AddWeaponTransitions(AnimatorState locomotion, AnimatorState pistol,
+            AnimatorState rifle, AnimatorState shotgun, AnimatorState carrying)
+        {
+            AnimatorState[] states = { locomotion, pistol, rifle, shotgun };
+            AnimatorState[] weapons = { pistol, rifle, shotgun };
+            for (int fromIndex = 0; fromIndex < states.Length; fromIndex++)
+            {
+                AnimatorState from = states[fromIndex];
+                for (int weaponIndex = 0; weaponIndex < weapons.Length; weaponIndex++)
+                {
+                    if (from == weapons[weaponIndex]) continue;
+                    AddConditionTransition(from, weapons[weaponIndex], "EquippedWeapon",
+                        AnimatorConditionMode.Equals, weaponIndex + 1, false);
+                }
+                if (from != locomotion)
+                {
+                    AddConditionTransition(from, locomotion, "EquippedWeapon", AnimatorConditionMode.Equals, 0f, false);
+                    AddConditionTransition(from, carrying, "IsCarrying", AnimatorConditionMode.If, 0f, false);
+                }
+            }
+        }
+
+        private static void AddWeaponShotTransitions(AnimatorState holding, AnimatorState shooting)
+        {
+            AddConditionTransition(holding, shooting, "WeaponShoot", AnimatorConditionMode.If, 0f, false);
         }
 
         private static AnimatorState AddState(

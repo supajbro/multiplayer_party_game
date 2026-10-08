@@ -18,8 +18,11 @@ GameObject:
   - component: {fileID: 8315246159304729164}
   - component: {fileID: 2770509040782231261}
   - component: {fileID: 5385180417060675768}
-  - component: {fileID: 7619104973454978121}
   - component: {fileID: 8111111111111111111}
+  - component: {fileID: 7188027003381171713}
+  - component: {fileID: 2634208340619463066}
+  - component: {fileID: 2114314630447923985}
+  - component: {fileID: 7619104973454978121}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -97,10 +100,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.ThirdPersonPlayerController
   m_input: {fileID: 100003}
   m_cameraTransform: {fileID: 410001}
-  m_walkSpeed: 4.5
-  m_runSpeed: 7.5
-  m_speedChangeRate: 16
-  m_rotationSmoothTime: 0.09
+  m_walkSpeed: 3.5
+  m_runSpeed: 6
+  m_speedChangeRate: 12
+  m_rotationSmoothTime: 0.1
   m_minimumUphillSlopeAngle: 4
   m_maximumUphillSlopeAngle: 40
   m_uphillSlowdownStrength: 0.45
@@ -155,10 +158,11 @@ MonoBehaviour:
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
   NetworkBehaviours:
+  - {fileID: 6842772898105403012}
   - {fileID: 2770509040782231261}
   - {fileID: 5385180417060675768}
-  - {fileID: 6842772898105403012}
   - {fileID: 8111111111111111111}
+  - {fileID: 2634208340619463066}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -169,7 +173,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584104854513743894
+  _initializedTimestamp: -8584101635594882015
 --- !u!114 &6842772898105403012
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -182,7 +186,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27e6fb1c1393463d811426219e682af9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.PlayerCouchCarrier
-  _componentIndexCache: 2
+  _componentIndexCache: 0
   _addedNetworkObject: {fileID: 4753475039817145927}
   _networkObjectCache: {fileID: 4753475039817145927}
   m_input: {fileID: 100003}
@@ -191,15 +195,15 @@ MonoBehaviour:
   m_serverRangeTolerance: 0.35
   m_carryDistance: 0.45
   m_carryHeight: 0.45
-  m_singleCarrierSpeedMultiplier: 0.2
-  m_maximumCooperativeSpeedMultiplier: 0.52
-  m_comfortableCarryDistance: 1.6
-  m_maximumCarrySeparation: 3
+  m_singleCarrierSpeedMultiplier: 0.35
+  m_maximumCooperativeSpeedMultiplier: 1
+  m_comfortableCarryDistance: 0.65
+  m_maximumCarrySeparation: 1
   m_intentSendInterval: 0.1
   m_intentHeartbeatInterval: 0.5
   m_intentTimeout: 0.6
   m_debugBot:
-    m_debugBotCount: 2
+    m_debugBotCount: 0
     m_behaviour: 0
     m_preferredCarryPoint: -1
     m_spawnOffset: {x: 2, y: 0, z: 2}
@@ -253,7 +257,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: FishNet.Runtime::FishNet.Component.Transforming.NetworkTransform
-  _componentIndexCache: 0
+  _componentIndexCache: 1
   _addedNetworkObject: {fileID: 4753475039817145927}
   _networkObjectCache: {fileID: 4753475039817145927}
   _componentConfiguration: 1
@@ -299,7 +303,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03031e9f7a755f441a700e11056a4d9d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Networking.NetworkPlayerOwnership
-  _componentIndexCache: 1
+  _componentIndexCache: 2
   _addedNetworkObject: {fileID: 4753475039817145927}
   _networkObjectCache: {fileID: 4753475039817145927}
   m_input: {fileID: 100003}
@@ -314,18 +318,6 @@ MonoBehaviour:
     - {r: 1, g: 0.25, b: 0.2, a: 1}
     - {r: 0.2, g: 0.85, b: 0.35, a: 1}
     - {r: 1, g: 0.72, b: 0.12, a: 1}
---- !u!114 &7619104973454978121
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 100000}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 49b1e3edba294a9b92b972e39fdbcb7b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Delivery.NeighbourhoodMap
 --- !u!114 &8111111111111111111
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -343,6 +335,7 @@ MonoBehaviour:
   _networkObjectCache: {fileID: 4753475039817145927}
   m_maxHealth: 100
   m_knockdownDamageFraction: 0.25
+  m_respawnDelay: 5
   m_knockdownDuration: 2.25
   m_upwardImpulse: 2.5
   m_fallAngle: 78
@@ -350,6 +343,123 @@ MonoBehaviour:
   m_getUpDegreesPerSecond: 180
   m_visualRoot: {fileID: 200001}
   m_playerController: {fileID: 100004}
+--- !u!114 &7188027003381171713
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1745c87afc03e5499441abd5a07174d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Weapons.PlayerWeaponEffects
+--- !u!114 &2634208340619463066
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80627fd9de6b42bcad59d51adef7462e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Weapons.PlayerWeaponController
+  _componentIndexCache: 4
+  _addedNetworkObject: {fileID: 4753475039817145927}
+  _networkObjectCache: {fileID: 4753475039817145927}
+  m_input: {fileID: 0}
+  m_health: {fileID: 0}
+  m_couchCarrier: {fileID: 0}
+  m_animationDriver: {fileID: 0}
+  m_aimCamera: {fileID: 0}
+  m_weaponModels:
+  - {fileID: 649590994020720611}
+  - {fileID: 15239812611621516}
+  - {fileID: 206381422924844575}
+  m_muzzles:
+  - {fileID: 8141928565966986288}
+  - {fileID: 0}
+  - {fileID: 0}
+  m_effects: {fileID: 0}
+  m_map: {fileID: 0}
+  m_weapons:
+  - m_type: 0
+    m_displayName: Pistol
+    m_automatic: 0
+    m_fireInterval: 0.42
+    m_range: 45
+    m_pellets: 1
+    m_spreadDegrees: 0.8
+    m_damagePerPellet: 28
+    m_minimumDamageMultiplier: 0.8
+    m_falloffStart: 0.72
+    m_recoil: 8
+    m_magazineCapacity: 12
+    m_startingReserve: 60
+    m_reloadDuration: 1.25
+    m_knockback: 2.5
+  - m_type: 1
+    m_displayName: Assault Rifle
+    m_automatic: 1
+    m_fireInterval: 0.095
+    m_range: 55
+    m_pellets: 1
+    m_spreadDegrees: 1.8
+    m_damagePerPellet: 12
+    m_minimumDamageMultiplier: 0.65
+    m_falloffStart: 0.55
+    m_recoil: 3
+    m_magazineCapacity: 30
+    m_startingReserve: 120
+    m_reloadDuration: 1.8
+    m_knockback: 1.5
+  - m_type: 2
+    m_displayName: Shotgun
+    m_automatic: 0
+    m_fireInterval: 0.9
+    m_range: 28
+    m_pellets: 9
+    m_spreadDegrees: 7.5
+    m_damagePerPellet: 11
+    m_minimumDamageMultiplier: 0.22
+    m_falloffStart: 0.3
+    m_recoil: 14
+    m_magazineCapacity: 6
+    m_startingReserve: 36
+    m_reloadDuration: 2.2
+    m_knockback: 12
+  m_hitMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_switchDuration: 0.18
+  m_maximumAimOriginDistance: 3.5
+--- !u!114 &2114314630447923985
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eac8ad8f08dc4596a71bb72533311852, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Weapons.PlayerWeaponHud
+--- !u!114 &7619104973454978121
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49b1e3edba294a9b92b972e39fdbcb7b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Delivery.NeighbourhoodMap
 --- !u!1 &200000
 GameObject:
   m_ObjectHideFlags: 0
@@ -666,6 +776,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 200001}
     m_Modifications:
+    - target: {fileID: -9132216562274044638, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 89.98021
+      objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
       propertyPath: m_LocalScale.x
       value: 50
@@ -684,7 +798,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.7
+      value: 1.2405435
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
       propertyPath: m_LocalPosition.z
@@ -722,9 +836,105 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: -1778440678005120201, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -34.095165
+      objectReference: {fileID: 0}
+    - target: {fileID: -1778440678005120201, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -128.62708
+      objectReference: {fileID: 0}
+    - target: {fileID: -1778440678005120201, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: -128.40462
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
       propertyPath: m_Name
       value: CouchGuy
+      objectReference: {fileID: 0}
+    - target: {fileID: 1475704052132034492, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -12.104154
+      objectReference: {fileID: 0}
+    - target: {fileID: 1475704052132034492, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 90.09905
+      objectReference: {fileID: 0}
+    - target: {fileID: 1475704052132034492, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: -23.283552
+      objectReference: {fileID: 0}
+    - target: {fileID: 1877960483454365629, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -33.98934
+      objectReference: {fileID: 0}
+    - target: {fileID: 1877960483454365629, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 128.50476
+      objectReference: {fileID: 0}
+    - target: {fileID: 1877960483454365629, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 128.50061
+      objectReference: {fileID: 0}
+    - target: {fileID: 3622571092179356533, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -30.302317
+      objectReference: {fileID: 0}
+    - target: {fileID: 3622571092179356533, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -13.354975
+      objectReference: {fileID: 0}
+    - target: {fileID: 3622571092179356533, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: -17.532476
+      objectReference: {fileID: 0}
+    - target: {fileID: 5408518322925871603, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -12.104154
+      objectReference: {fileID: 0}
+    - target: {fileID: 5408518322925871603, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -90.09905
+      objectReference: {fileID: 0}
+    - target: {fileID: 5408518322925871603, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 23.283552
+      objectReference: {fileID: 0}
+    - target: {fileID: 5461446117034863049, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0.06717098
+      objectReference: {fileID: 0}
+    - target: {fileID: 5461446117034863049, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0.008725181
+      objectReference: {fileID: 0}
+    - target: {fileID: 5461446117034863049, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: -0.100661755
+      objectReference: {fileID: 0}
+    - target: {fileID: 6159516728511213365, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -4.9272895
+      objectReference: {fileID: 0}
+    - target: {fileID: 6159516728511213365, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -0.3476907
+      objectReference: {fileID: 0}
+    - target: {fileID: 6159516728511213365, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 3.9685233
+      objectReference: {fileID: 0}
+    - target: {fileID: 9066485297820291800, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -30.302317
+      objectReference: {fileID: 0}
+    - target: {fileID: 9066485297820291800, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 13.354975
+      objectReference: {fileID: 0}
+    - target: {fileID: 9066485297820291800, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 17.532476
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -734,6 +944,21 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 352851093201976270}
   m_SourcePrefab: {fileID: 100100000, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+--- !u!4 &15239812611621516 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -3619961159260148776, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+  m_PrefabInstance: {fileID: 5617523680016771412}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &206381422924844575 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5703882361822930763, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+  m_PrefabInstance: {fileID: 5617523680016771412}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &649590994020720611 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -4254006540398528841, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+  m_PrefabInstance: {fileID: 5617523680016771412}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &4698413123943764997 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
@@ -764,5 +989,10 @@ Animator:
 --- !u!4 &5368235210456682175 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
+  m_PrefabInstance: {fileID: 5617523680016771412}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &8141928565966986288 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4397911145305863524, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
   m_PrefabInstance: {fileID: 5617523680016771412}
   m_PrefabAsset: {fileID: 0}

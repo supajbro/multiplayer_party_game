@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 7061547564633968353}
   - component: {fileID: 3187178056114871217}
   - component: {fileID: 2487758398986249954}
+  - component: {fileID: 2765408819408653509}
   - component: {fileID: 4131775180735103772}
   m_Layer: 0
   m_Name: Thief_Shotgun
@@ -88,6 +89,7 @@ MonoBehaviour:
   - {fileID: 2940593921858262672}
   - {fileID: 3187178056114871217}
   - {fileID: 2487758398986249954}
+  - {fileID: 2765408819408653509}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -239,6 +241,27 @@ MonoBehaviour:
   m_tracerDuration: 0.16
   m_tracerWidth: 0.035
   m_tracerColour: {r: 1, g: 0.72, b: 0.12, a: 1}
+--- !u!114 &2765408819408653509
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3721535447601552465}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccd362814cebad845ae2dc7098ee6650, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Enemies.ThiefHealth
+  _componentIndexCache: 3
+  _addedNetworkObject: {fileID: 4702605854175706486}
+  _networkObjectCache: {fileID: 4702605854175706486}
+  m_maxHealth: 100
+  m_knockbackDuration: 0.22
+  m_knockbackDamping: 14
+  m_deathDespawnDelay: 2.5
+  m_agent: {fileID: 6091760547220716315}
+  m_collider: {fileID: 7061547564633968353}
 --- !u!114 &4131775180735103772
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -264,15 +287,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalScale.x
-      value: 50
+      value: 81.466225
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalScale.y
-      value: 50
+      value: 81.466225
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalScale.z
-      value: 50
+      value: 81.466225
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -280,7 +303,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: 1.3886316
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalPosition.z
@@ -288,11 +311,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.7071068
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.7071068
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalRotation.y
@@ -304,7 +327,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: -90
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
@@ -313,10 +336,6 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
-      propertyPath: m_ConstrainProportionsScale
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_Name

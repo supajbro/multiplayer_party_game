@@ -1,5 +1,6 @@
 using CouchGuys.CameraSystem;
 using CouchGuys.Gameplay.Delivery;
+using CouchGuys.Gameplay.Weapons;
 using CouchGuys.Input;
 using CouchGuys.Networking;
 using CouchGuys.Player;
@@ -23,7 +24,7 @@ namespace CouchGuys.Editor
         private static void BuildMissingPrefabAfterImport()
         {
             GameObject playerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
-            if (playerPrefab == null)
+            if (playerPrefab == null || playerPrefab.GetComponent<PlayerWeaponController>() == null)
             {
                 EditorApplication.delayCall += BuildPlayerPrefab;
             }
@@ -175,6 +176,12 @@ namespace CouchGuys.Editor
             SetObjectReference(playerHealth, "m_playerController", player.GetComponent<ThirdPersonPlayerController>());
             SetObjectReference(playerHealth, "m_visualRoot", player.transform.Find("Visual"));
 
+            PlayerWeaponEffects weaponEffects = player.GetComponent<PlayerWeaponEffects>();
+            if (weaponEffects == null) weaponEffects = player.AddComponent<PlayerWeaponEffects>();
+            PlayerWeaponController weaponController = player.GetComponent<PlayerWeaponController>();
+            if (weaponController == null) weaponController = player.AddComponent<PlayerWeaponController>();
+            if (player.GetComponent<PlayerWeaponHud>() == null) player.AddComponent<PlayerWeaponHud>();
+
             if (player.GetComponent<NeighbourhoodMap>() == null)
             {
                 player.AddComponent<NeighbourhoodMap>();
@@ -205,22 +212,25 @@ namespace CouchGuys.Editor
                 throw new UnityException("FishNet NetworkObject behaviour list was not found.");
             }
 
-            behaviours.arraySize = 4;
+            behaviours.arraySize = 5;
             behaviours.GetArrayElementAtIndex(0).objectReferenceValue = networkTransform;
             behaviours.GetArrayElementAtIndex(1).objectReferenceValue = ownership;
             behaviours.GetArrayElementAtIndex(2).objectReferenceValue = couchCarrier;
             behaviours.GetArrayElementAtIndex(3).objectReferenceValue = playerHealth;
+            behaviours.GetArrayElementAtIndex(4).objectReferenceValue = weaponController;
             serialisedNetworkObject.ApplyModifiedPropertiesWithoutUndo();
 
             SetNetworkBehaviourReferences(networkTransform, networkObject, 0);
             SetNetworkBehaviourReferences(ownership, networkObject, 1);
             SetNetworkBehaviourReferences(couchCarrier, networkObject, 2);
             SetNetworkBehaviourReferences(playerHealth, networkObject, 3);
+            SetNetworkBehaviourReferences(weaponController, networkObject, 4);
             EditorUtility.SetDirty(networkObject);
             EditorUtility.SetDirty(networkTransform);
             EditorUtility.SetDirty(ownership);
             EditorUtility.SetDirty(couchCarrier);
             EditorUtility.SetDirty(playerHealth);
+            EditorUtility.SetDirty(weaponController);
         }
 
         private static void RepairLegacyCarryDistances(PlayerCouchCarrier couchCarrier)
@@ -386,6 +396,9 @@ namespace CouchGuys.Editor
                 prefab.GetComponent<NetworkPlayerOwnership>() == null ||
                 prefab.GetComponent<PlayerCouchCarrier>() == null ||
                 prefab.GetComponent<PlayerHealth>() == null ||
+                prefab.GetComponent<PlayerWeaponController>() == null ||
+                prefab.GetComponent<PlayerWeaponEffects>() == null ||
+                prefab.GetComponent<PlayerWeaponHud>() == null ||
                 prefab.GetComponent<NeighbourhoodMap>() == null ||
                 prefab.GetComponent<CouchGuyAnimationDriver>() == null ||
                 prefab.GetComponent<DebugCouchBotController>() == null ||

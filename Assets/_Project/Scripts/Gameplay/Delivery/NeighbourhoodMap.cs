@@ -28,6 +28,8 @@ namespace CouchGuys.Gameplay.Delivery
         private float m_worldToMapScale;
         private float m_nextPlayerRefreshTime;
 
+        public bool IsOpen => m_canvasRoot != null && m_canvasRoot.activeSelf;
+
         private void Awake()
         {
             m_networkObject = GetComponent<NetworkObject>();

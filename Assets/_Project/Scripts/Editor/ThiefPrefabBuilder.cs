@@ -126,6 +126,7 @@ namespace CouchGuys.Editor
                 CapsuleCollider collider = root.AddComponent<CapsuleCollider>();
                 ThiefNavigator navigator = root.AddComponent<ThiefNavigator>();
                 EnemyWeapon weapon = root.AddComponent<EnemyWeapon>();
+                ThiefHealth health = root.AddComponent<ThiefHealth>();
                 ThiefAnimationDriver animationDriver = root.AddComponent<ThiefAnimationDriver>();
 
                 agent.radius = 0.35f;
@@ -146,8 +147,10 @@ namespace CouchGuys.Editor
                 ConfigureNetworkTransform(networkTransform);
                 SetObjectReference(navigator, "m_agent", agent);
                 SetObjectReference(animationDriver, "m_animator", animator);
+                SetObjectReference(health, "m_agent", agent);
+                SetObjectReference(health, "m_collider", collider);
                 ConfigureWeapon(weapon, muzzle, spec);
-                ConfigureNetworkBehaviours(networkObject, networkTransform, navigator, weapon);
+                ConfigureNetworkBehaviours(networkObject, networkTransform, navigator, weapon, health);
 
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, spec.Path);
                 if (saved == null)
@@ -275,9 +278,9 @@ namespace CouchGuys.Editor
 
         private static void ConfigureNetworkBehaviours(
             NetworkObject networkObject, NetworkTransform networkTransform,
-            ThiefNavigator navigator, EnemyWeapon weapon)
+            ThiefNavigator navigator, EnemyWeapon weapon, ThiefHealth health)
         {
-            NetworkBehaviour[] behaviours = { networkTransform, navigator, weapon };
+            NetworkBehaviour[] behaviours = { networkTransform, navigator, weapon, health };
             SerializedObject serialisedNetworkObject = new SerializedObject(networkObject);
             SerializedProperty property = serialisedNetworkObject.FindProperty("NetworkBehaviours");
             property.arraySize = behaviours.Length;
@@ -343,6 +346,7 @@ namespace CouchGuys.Editor
                    prefab.GetComponent<NavMeshAgent>() != null &&
                    prefab.GetComponent<CapsuleCollider>() != null &&
                    prefab.GetComponent<ThiefNavigator>() != null &&
+                   prefab.GetComponent<ThiefHealth>() != null &&
                    prefab.GetComponent<ThiefAnimationDriver>() != null &&
                    prefab.GetComponentInChildren<Animator>(true)?.runtimeAnimatorController != null &&
                    FindDescendant(prefab.transform, "Muzzle") != null &&

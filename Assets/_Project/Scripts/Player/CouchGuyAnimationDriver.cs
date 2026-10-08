@@ -1,4 +1,5 @@
 using UnityEngine;
+using CouchGuys.Gameplay.Weapons;
 
 namespace CouchGuys.Player
 {
@@ -20,6 +21,8 @@ namespace CouchGuys.Player
         private static readonly int PickupHash = Animator.StringToHash("Pickup");
         private static readonly int DropHash = Animator.StringToHash("Drop");
         private static readonly int HitHash = Animator.StringToHash("Hit");
+        private static readonly int EquippedWeaponHash = Animator.StringToHash("EquippedWeapon");
+        private static readonly int WeaponShootHash = Animator.StringToHash("WeaponShoot");
 
         [Header("References")]
         [SerializeField] private Animator m_animator;
@@ -36,6 +39,7 @@ namespace CouchGuys.Player
         private bool m_holdingItem;
         private bool m_pointing;
         private bool m_hasPositionSample;
+        private bool m_hasWeaponParameters;
 
         public Animator Animator => m_animator;
 
@@ -53,6 +57,7 @@ namespace CouchGuys.Player
 
             if (m_animator != null)
             {
+                CacheWeaponParameterSupport();
                 m_animator.SetBool(CarryingHash, m_wasCarrying);
                 m_animator.SetBool(HoldingItemHash, m_holdingItem);
                 m_animator.SetBool(PointingHash, m_pointing);
@@ -98,6 +103,19 @@ namespace CouchGuys.Player
         public void PlayHitReaction()
         {
             m_animator?.SetTrigger(HitHash);
+        }
+
+        public void SetEquippedWeapon(int weaponIndex)
+        {
+            if (m_animator != null && m_hasWeaponParameters)
+                m_animator.SetInteger(EquippedWeaponHash, weaponIndex);
+        }
+
+        public void PlayWeaponShot(PlayerWeaponType weapon)
+        {
+            if (m_animator == null || !m_hasWeaponParameters) return;
+            m_animator.SetInteger(EquippedWeaponHash, (int)weapon + 1);
+            m_animator.SetTrigger(WeaponShootHash);
         }
 
         private void UpdateMovementParameters()
@@ -163,6 +181,20 @@ namespace CouchGuys.Player
             m_playerController ??= GetComponent<ThirdPersonPlayerController>();
             m_couchCarrier ??= GetComponent<PlayerCouchCarrier>();
             m_animator ??= GetComponentInChildren<Animator>(true);
+        }
+
+        private void CacheWeaponParameterSupport()
+        {
+            m_hasWeaponParameters = false;
+            if (m_animator == null) return;
+            bool hasEquipped = false;
+            bool hasShoot = false;
+            foreach (AnimatorControllerParameter parameter in m_animator.parameters)
+            {
+                hasEquipped |= parameter.nameHash == EquippedWeaponHash;
+                hasShoot |= parameter.nameHash == WeaponShootHash;
+            }
+            m_hasWeaponParameters = hasEquipped && hasShoot;
         }
 
 #if UNITY_EDITOR

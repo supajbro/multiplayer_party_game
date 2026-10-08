@@ -85,6 +85,15 @@ def create_materials():
             "DarkJoints", (0.035, 0.045, 0.065, 1.0), metallic=0.3,
             roughness=0.28
         ),
+        "gunmetal": make_material(
+            "WeaponGunmetal", (0.055, 0.07, 0.095, 1.0), metallic=0.55,
+            roughness=0.24
+        ),
+        "weapon_accent": make_material(
+            "WeaponAccent", (1.0, 0.22, 0.06, 1.0), metallic=0.1,
+            roughness=0.3, emission_color=(1.0, 0.06, 0.01, 1.0),
+            emission_strength=2.0
+        ),
     }
 
 
@@ -350,6 +359,61 @@ def create_hover_ring(materials, root):
     return ring
 
 
+def create_weapon_models(materials, root):
+    """Create three readable low-poly weapons, all attached to the right hand."""
+    weapons = []
+    specs = (
+        ("Weapon_Pistol", 0.62, 0.18, 0.22, 0.16),
+        ("Weapon_AssaultRifle", 1.18, 0.17, 0.24, 0.34),
+        ("Weapon_Shotgun", 1.34, 0.20, 0.22, 0.42),
+    )
+    for name, length, width, height, stock_length in specs:
+        weapon = create_empty(name, root)
+        body = create_rounded_box(
+            name + "_Body", (0.98, -0.72 - length * 0.38, 0.91),
+            (width, length, height), materials["gunmetal"], bevel=0.055)
+        grip = create_rounded_box(
+            name + "_Grip", (0.98, -0.58, 0.75),
+            (0.15, 0.24, 0.32), materials["joints"], bevel=0.05,
+            rotation=(math.radians(-18.0), 0.0, 0.0))
+        barrel = create_capsule(
+            name + "_Barrel", (0.98, -0.78, 0.94),
+            (0.98, -0.78 - length * 0.58, 0.94),
+            0.075 if name == "Weapon_Shotgun" else 0.055,
+            materials["gunmetal"], bevel=0.035)
+        accent = create_rounded_box(
+            name + "_Accent", (0.98, -0.73, 1.025),
+            (width * 0.72, max(0.16, length * 0.28), 0.035),
+            materials["weapon_accent"], bevel=0.015)
+        pieces = [body, grip, barrel, accent]
+        if name != "Weapon_Pistol":
+            stock = create_rounded_box(
+                name + "_Stock", (0.98, -0.47 + stock_length * 0.35, 0.88),
+                (width * 1.25, stock_length, height * 1.25),
+                materials["joints"], bevel=0.07)
+            pieces.append(stock)
+        if name == "Weapon_AssaultRifle":
+            magazine = create_rounded_box(
+                name + "_Magazine", (0.98, -0.76, 0.72),
+                (0.16, 0.24, 0.34), materials["weapon_accent"], bevel=0.045,
+                rotation=(math.radians(-10.0), 0.0, 0.0))
+            pieces.append(magazine)
+        elif name == "Weapon_Shotgun":
+            pump = create_rounded_box(
+                name + "_Pump", (0.98, -1.15, 0.91),
+                (0.24, 0.34, 0.20), materials["weapon_accent"], bevel=0.06)
+            pieces.append(pump)
+
+        for piece in pieces:
+            parent_to(piece, weapon)
+        muzzle = create_empty("Muzzle", weapon)
+        muzzle.location = (0.98, -0.82 - length * 0.58, 0.94)
+        weapon["unity_default_active"] = False
+        weapon.hide_set(True)
+        weapons.append(weapon)
+    return weapons
+
+
 # -----------------------------------------------------------------------------
 # Rigging
 # -----------------------------------------------------------------------------
@@ -425,6 +489,16 @@ def rig_character(rig, geometry):
         bind_rigid_object(geometry[f"Forearm_{side}"], rig,
                           f"LowerArm_{side}")
         bind_rigid_object(geometry[f"Hand_{side}"], rig, f"Hand_{side}")
+
+
+def attach_weapons_to_hand(rig, weapons):
+    """Bone-parent each weapon root while preserving its authored world placement."""
+    for weapon in weapons:
+        world_matrix = weapon.matrix_world.copy()
+        weapon.parent = rig
+        weapon.parent_type = "BONE"
+        weapon.parent_bone = "Hand_R"
+        weapon.matrix_world = world_matrix
 
 
 # -----------------------------------------------------------------------------
@@ -642,6 +716,86 @@ def create_animation_library(rig):
         (16, jump_peak), (30, neutral),
     ])
 
+    pistol_hold = {
+        "Torso": {"rotation": (-2.0, 0.0, -4.0)},
+        "Head": {"rotation": (2.0, 0.0, 4.0)},
+        "UpperArm_R": {"rotation": (-38.0, 9.0, -28.0)},
+        "LowerArm_R": {"rotation": (-20.0, 0.0, 0.0)},
+        "Hand_R": {"rotation": (-8.0, 0.0, 0.0)},
+        "UpperArm_L": {"rotation": (-14.0, -5.0, 12.0)},
+    }
+    rifle_hold = {
+        "Torso": {"rotation": (-5.0, 0.0, 0.0)},
+        "Head": {"rotation": (4.0, 0.0, 0.0)},
+        "UpperArm_R": {"rotation": (-34.0, 8.0, -24.0)},
+        "LowerArm_R": {"rotation": (-24.0, 0.0, 0.0)},
+        "Hand_R": {"rotation": (-6.0, 0.0, 0.0)},
+        "UpperArm_L": {"rotation": (-31.0, -12.0, 24.0)},
+        "LowerArm_L": {"rotation": (-31.0, 0.0, 0.0)},
+        "Hand_L": {"rotation": (4.0, 0.0, -6.0)},
+    }
+    shotgun_hold = dict(rifle_hold)
+    shotgun_hold["Torso"] = {"rotation": (-7.0, 0.0, 0.0)}
+    shotgun_hold["UpperArm_L"] = {"rotation": (-36.0, -13.0, 27.0)}
+
+    def breathing_pose(base, height, roll):
+        pose = dict(base)
+        torso_rotation = base.get("Torso", {}).get("rotation", (0.0, 0.0, 0.0))
+        pose["Torso"] = {
+            "location": (0.0, 0.0, height),
+            "rotation": (torso_rotation[0], torso_rotation[1], roll),
+        }
+        return pose
+
+    def weapon_walk_pose(base, side):
+        pose = dict(base)
+        torso_rotation = base["Torso"]["rotation"]
+        pose["Torso"] = {
+            "location": (0.0, -0.015, 0.025 if side > 0 else -0.015),
+            "rotation": (torso_rotation[0] - 3.0, 0.0, side * 2.5),
+        }
+        pose["Head"] = {"rotation": (4.0, 0.0, -side * 2.0)}
+        return pose
+
+    for prefix, hold in (("Pistol", pistol_hold),
+                         ("AssaultRifle", rifle_hold),
+                         ("Shotgun", shotgun_hold)):
+        create_action(rig, prefix + "_Idle", 42, [
+            (1, hold), (11, breathing_pose(hold, 0.025, 1.0)),
+            (22, hold), (32, breathing_pose(hold, -0.015, -1.0)),
+            (42, hold),
+        ], loop=True)
+        create_action(rig, prefix + "_Walk", 24, [
+            (1, weapon_walk_pose(hold, 1.0)), (7, hold),
+            (13, weapon_walk_pose(hold, -1.0)), (19, hold),
+            (24, weapon_walk_pose(hold, 1.0)),
+        ], loop=True)
+
+    pistol_recoil = dict(pistol_hold)
+    pistol_recoil["Torso"] = {"location": (0.0, 0.06, 0.0), "rotation": (9.0, 0.0, -6.0)}
+    pistol_recoil["UpperArm_R"] = {"rotation": (-24.0, 9.0, -28.0)}
+    create_action(rig, "Pistol_Shoot", 14, [
+        (1, pistol_hold), (3, pistol_recoil), (8, pistol_hold), (14, pistol_hold),
+    ])
+
+    rifle_recoil = dict(rifle_hold)
+    rifle_recoil["Torso"] = {"location": (0.0, 0.025, 0.0), "rotation": (0.0, 0.0, 0.0)}
+    rifle_recoil["UpperArm_R"] = {"rotation": (-29.0, 8.0, -24.0)}
+    create_action(rig, "AssaultRifle_Shoot", 8, [
+        (1, rifle_hold), (2, rifle_recoil), (4, rifle_hold),
+        (5, rifle_recoil), (8, rifle_hold),
+    ])
+
+    shotgun_recoil = dict(shotgun_hold)
+    shotgun_recoil["Torso"] = {"location": (0.0, 0.12, -0.025), "rotation": (18.0, 0.0, 0.0)}
+    shotgun_recoil["Head"] = {"rotation": (-10.0, 0.0, 0.0)}
+    shotgun_recoil["UpperArm_R"] = {"rotation": (-15.0, 8.0, -22.0)}
+    shotgun_recoil["UpperArm_L"] = {"rotation": (-18.0, -11.0, 20.0)}
+    create_action(rig, "Shotgun_Shoot", 20, [
+        (1, shotgun_hold), (4, shotgun_recoil), (11, shotgun_hold),
+        (20, shotgun_hold),
+    ])
+
     # Leave Idle active so pressing Play in Blender immediately previews safely.
     rig.animation_data.action = bpy.data.actions["Idle"]
     bpy.context.scene.frame_start = 1
@@ -667,10 +821,12 @@ def setup_character():
     left_arm = create_arm("L", materials, root)
     right_arm = create_arm("R", materials, root)
     create_hover_ring(materials, root)
+    weapons = create_weapon_models(materials, root)
 
     rig = create_armature(left_arm, right_arm, root)
     geometry = {obj.name: obj for obj in bpy.context.scene.objects}
     rig_character(rig, geometry)
+    attach_weapons_to_hand(rig, weapons)
     create_animation_library(rig)
 
     # Clean selection and a useful default viewport presentation.

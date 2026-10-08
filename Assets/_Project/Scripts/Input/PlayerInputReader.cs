@@ -22,6 +22,11 @@ namespace CouchGuys.Input
         private InputAction m_sprintAction;
         private InputAction m_interactAction;
         private InputAction m_mapAction;
+        private InputAction m_shootAction;
+        private InputAction m_reloadAction;
+        private InputAction m_pistolAction;
+        private InputAction m_assaultRifleAction;
+        private InputAction m_shotgunAction;
         private InputAction m_teleportToDeliveryAction;
         private InputActionAsset m_runtimeInputActions;
 
@@ -31,6 +36,19 @@ namespace CouchGuys.Input
         public bool SprintHeld => m_sprintAction?.IsPressed() ?? false;
         public bool InteractPressedThisFrame => m_interactAction?.WasPressedThisFrame() ?? false;
         public bool MapPressedThisFrame => m_mapAction?.WasPressedThisFrame() ?? false;
+        public bool ShootHeld => m_shootAction?.IsPressed() ?? false;
+        public bool ShootPressedThisFrame => m_shootAction?.WasPressedThisFrame() ?? false;
+        public bool ReloadPressedThisFrame => m_reloadAction?.WasPressedThisFrame() ?? false;
+        public int WeaponSelectionPressedThisFrame
+        {
+            get
+            {
+                if (m_pistolAction?.WasPressedThisFrame() ?? false) return 0;
+                if (m_assaultRifleAction?.WasPressedThisFrame() ?? false) return 1;
+                if (m_shotgunAction?.WasPressedThisFrame() ?? false) return 2;
+                return -1;
+            }
+        }
         public bool TeleportToDeliveryPressedThisFrame =>
             m_teleportToDeliveryAction?.WasPressedThisFrame() ?? false;
 
@@ -80,6 +98,11 @@ namespace CouchGuys.Input
             m_sprintAction = m_playerMap.FindAction("Sprint", true);
             m_interactAction = m_playerMap.FindAction("Interact", true);
             m_mapAction = m_playerMap.FindAction("Map", true);
+            m_shootAction = m_playerMap.FindAction("Shoot", true);
+            m_reloadAction = m_playerMap.FindAction("Reload", true);
+            m_pistolAction = m_playerMap.FindAction("Equip Pistol", true);
+            m_assaultRifleAction = m_playerMap.FindAction("Equip Assault Rifle", true);
+            m_shotgunAction = m_playerMap.FindAction("Equip Shotgun", true);
             m_teleportToDeliveryAction = m_playerMap.FindAction("Teleport To Delivery", true);
         }
 

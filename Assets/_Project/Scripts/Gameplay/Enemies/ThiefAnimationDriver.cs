@@ -69,6 +69,14 @@ namespace CouchGuys.Gameplay.Enemies
             }
         }
 
+        public void TriggerHit()
+        {
+            // The compact thief rig has no separate hit clip yet; restarting the short
+            // shoot upper-body reaction provides readable damage feedback without a new layer.
+            if (m_animator != null && !m_animator.GetBool(DeadHash))
+                m_animator.SetTrigger(ShootHash);
+        }
+
         private void RememberPosition()
         {
             m_previousPosition = transform.position;

@@ -136,6 +136,13 @@ namespace CouchGuys.Player
             }
 
             ApplyImpactTargetRpc(Owner, impulse);
+            PlayHitObserversRpc();
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void PlayHitObserversRpc()
+        {
+            GetComponent<CouchGuyAnimationDriver>()?.PlayHitReaction();
         }
 
         [TargetRpc]
