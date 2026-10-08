@@ -270,7 +270,7 @@ namespace CouchGuys.Gameplay.Weapons
 
             GameObject cameraObject = new("PortraitCamera", typeof(Camera), typeof(Light));
             cameraObject.transform.SetParent(transform, false);
-            cameraObject.transform.localPosition = new Vector3(0f, 1.25f, 2.4f);
+            cameraObject.transform.localPosition = new Vector3(0f, 2.0f, 2.4f);
             cameraObject.transform.localRotation = Quaternion.LookRotation(new Vector3(0f, -0.08f, -1f));
             m_portraitCamera = cameraObject.GetComponent<Camera>();
             m_portraitCamera.targetTexture = m_portraitTexture;
