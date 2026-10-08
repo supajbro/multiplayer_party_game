@@ -275,6 +275,7 @@ namespace CouchGuys.Player
         private void RequestGrabServerRpc(NetworkObject couchObject, int pointIndex)
         {
             if ((TryGetComponent(out PlayerHealth health) && health.IsKnockedDown) ||
+                (TryGetComponent(out PlayerStamina stamina) && !stamina.CanAttachToCouch) ||
                 IsCarrying || couchObject == null || !couchObject.IsSpawned ||
                 !couchObject.TryGetComponent(out CouchCarryController couch))
             {
@@ -356,6 +357,14 @@ namespace CouchGuys.Player
         }
 
         internal void ReleaseForAiServer()
+        {
+            if (IsServerInitialized)
+            {
+                ReleaseCurrentCouchServer();
+            }
+        }
+
+        internal void ReleaseForStaminaServer()
         {
             if (IsServerInitialized)
             {

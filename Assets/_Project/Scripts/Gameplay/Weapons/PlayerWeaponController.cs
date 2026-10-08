@@ -36,6 +36,7 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField, Min(0.5f)] private float m_maximumAimOriginDistance = 3.5f;
 
         private readonly SyncVar<int> m_equippedIndex = new(-1);
+        private readonly SyncVar<int> m_selectedHotbarSlot = new();
         private readonly int[] m_magazine = new int[WeaponCount];
         private readonly int[] m_reserve = new int[WeaponCount];
         private readonly float[] m_nextServerFireTime = new float[WeaponCount];
@@ -55,6 +56,8 @@ namespace CouchGuys.Gameplay.Weapons
         public int CurrentMagazine => ValidIndex(m_equippedIndex.Value) ? m_magazine[m_equippedIndex.Value] : 0;
         public int CurrentReserve => ValidIndex(m_equippedIndex.Value) ? m_reserve[m_equippedIndex.Value] : 0;
         public bool IsReloading => m_localReloading || m_reloadingIndex >= 0;
+        public bool HasEquippedWeapon => ValidIndex(m_equippedIndex.Value);
+        public int SelectedHotbarSlot => Mathf.Clamp(m_selectedHotbarSlot.Value, 0, 4);
 
         private void Awake()
         {
@@ -85,6 +88,7 @@ namespace CouchGuys.Gameplay.Weapons
                 m_reserve[i] = weapon.StartingReserve;
             }
             m_equippedIndex.Value = 0;
+            m_selectedHotbarSlot.Value = 0;
             m_switchCompleteAt = Time.time + m_switchDuration;
         }
 
@@ -104,11 +108,11 @@ namespace CouchGuys.Gameplay.Weapons
                 !m_health.IsAlive || m_health.IsKnockedDown)
                 return;
 
-            int selection = m_input.WeaponSelectionPressedThisFrame;
-            if (selection >= 0 && selection != m_equippedIndex.Value)
+            int selection = m_input.HotbarSelectionPressedThisFrame;
+            if (selection >= 0 && selection != m_selectedHotbarSlot.Value)
             {
                 m_localReloading = false;
-                RequestEquipServerRpc(selection);
+                RequestHotbarSelectionServerRpc(selection);
                 m_nextLocalRequestTime = Time.time + m_switchDuration;
             }
 
@@ -138,13 +142,16 @@ namespace CouchGuys.Gameplay.Weapons
         }
 
         [ServerRpc]
-        private void RequestEquipServerRpc(int index)
+        private void RequestHotbarSelectionServerRpc(int slot)
         {
-            if (!ValidIndex(index) || index == m_equippedIndex.Value || !m_health.IsAlive) return;
+            if (slot < 0 || slot >= 5 || slot == m_selectedHotbarSlot.Value || !m_health.IsAlive) return;
+            int index = slot < WeaponCount ? slot : -1;
             m_reloadingIndex = -1;
+            m_selectedHotbarSlot.Value = slot;
             m_equippedIndex.Value = index;
             m_switchCompleteAt = Time.time + m_switchDuration;
-            SendWeaponStateTargetRpc(Owner, index, m_magazine[index], m_reserve[index], false);
+            if (ValidIndex(index))
+                SendWeaponStateTargetRpc(Owner, index, m_magazine[index], m_reserve[index], false);
         }
 
         [ServerRpc]

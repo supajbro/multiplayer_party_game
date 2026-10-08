@@ -86,6 +86,23 @@ namespace CouchGuys.Gameplay.Couch
         public Vector3 CurrentVelocity => m_rigidbody != null ? m_rigidbody.linearVelocity : Vector3.zero;
         internal int ServerCarrierCount => IsServerInitialized ? CountServerCarriers() : 0;
 
+        internal int ValidServerCarrierCount
+        {
+            get
+            {
+                if (!IsServerInitialized) return 0;
+                int count = 0;
+                for (int index = 0; index < MaximumCarryPoints; index++)
+                {
+                    PlayerCouchCarrier carrier = m_serverOccupants[index];
+                    if (carrier == null || !carrier.IsSpawned) continue;
+                    PlayerHealth health = carrier.GetComponent<PlayerHealth>();
+                    if (health == null || health.IsAlive) count++;
+                }
+                return count;
+            }
+        }
+
         private void Awake()
         {
             m_rigidbody ??= GetComponent<Rigidbody>();

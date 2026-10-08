@@ -39,16 +39,21 @@ namespace CouchGuys.Input
         public bool ShootHeld => m_shootAction?.IsPressed() ?? false;
         public bool ShootPressedThisFrame => m_shootAction?.WasPressedThisFrame() ?? false;
         public bool ReloadPressedThisFrame => m_reloadAction?.WasPressedThisFrame() ?? false;
-        public int WeaponSelectionPressedThisFrame
+        public int HotbarSelectionPressedThisFrame
         {
             get
             {
                 if (m_pistolAction?.WasPressedThisFrame() ?? false) return 0;
                 if (m_assaultRifleAction?.WasPressedThisFrame() ?? false) return 1;
                 if (m_shotgunAction?.WasPressedThisFrame() ?? false) return 2;
+                if (Keyboard.current?.digit4Key.wasPressedThisFrame ?? false) return 3;
+                if (Keyboard.current?.digit5Key.wasPressedThisFrame ?? false) return 4;
                 return -1;
             }
         }
+        public int WeaponSelectionPressedThisFrame => HotbarSelectionPressedThisFrame < 3
+            ? HotbarSelectionPressedThisFrame
+            : -1;
         public bool TeleportToDeliveryPressedThisFrame =>
             m_teleportToDeliveryAction?.WasPressedThisFrame() ?? false;
 

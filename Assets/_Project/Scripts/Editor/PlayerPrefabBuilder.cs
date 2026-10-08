@@ -188,6 +188,13 @@ namespace CouchGuys.Editor
             SetObjectReference(playerHealth, "m_playerController", player.GetComponent<ThirdPersonPlayerController>());
             SetObjectReference(playerHealth, "m_visualRoot", player.transform.Find("Visual"));
 
+            PlayerStamina playerStamina = player.GetComponent<PlayerStamina>();
+            if (playerStamina == null)
+            {
+                playerStamina = player.AddComponent<PlayerStamina>();
+            }
+
+            SetObjectReference(player.GetComponent<ThirdPersonPlayerController>(), "m_stamina", playerStamina);
             PlayerWeaponEffects weaponEffects = player.GetComponent<PlayerWeaponEffects>();
             if (weaponEffects == null) weaponEffects = player.AddComponent<PlayerWeaponEffects>();
             PlayerWeaponController weaponController = player.GetComponent<PlayerWeaponController>();
@@ -224,12 +231,13 @@ namespace CouchGuys.Editor
                 throw new UnityException("FishNet NetworkObject behaviour list was not found.");
             }
 
-            behaviours.arraySize = 5;
+            behaviours.arraySize = 6;
             behaviours.GetArrayElementAtIndex(0).objectReferenceValue = networkTransform;
             behaviours.GetArrayElementAtIndex(1).objectReferenceValue = ownership;
             behaviours.GetArrayElementAtIndex(2).objectReferenceValue = couchCarrier;
             behaviours.GetArrayElementAtIndex(3).objectReferenceValue = playerHealth;
             behaviours.GetArrayElementAtIndex(4).objectReferenceValue = weaponController;
+            behaviours.GetArrayElementAtIndex(5).objectReferenceValue = playerStamina;
             serialisedNetworkObject.ApplyModifiedPropertiesWithoutUndo();
 
             SetNetworkBehaviourReferences(networkTransform, networkObject, 0);
@@ -237,12 +245,14 @@ namespace CouchGuys.Editor
             SetNetworkBehaviourReferences(couchCarrier, networkObject, 2);
             SetNetworkBehaviourReferences(playerHealth, networkObject, 3);
             SetNetworkBehaviourReferences(weaponController, networkObject, 4);
+            SetNetworkBehaviourReferences(playerStamina, networkObject, 5);
             EditorUtility.SetDirty(networkObject);
             EditorUtility.SetDirty(networkTransform);
             EditorUtility.SetDirty(ownership);
             EditorUtility.SetDirty(couchCarrier);
             EditorUtility.SetDirty(playerHealth);
             EditorUtility.SetDirty(weaponController);
+            EditorUtility.SetDirty(playerStamina);
         }
 
         private static void ConfigureBotNavMeshAgent(NavMeshAgent agent)
@@ -426,6 +436,7 @@ namespace CouchGuys.Editor
                 prefab.GetComponent<NetworkPlayerOwnership>() == null ||
                 prefab.GetComponent<PlayerCouchCarrier>() == null ||
                 prefab.GetComponent<PlayerHealth>() == null ||
+                prefab.GetComponent<PlayerStamina>() == null ||
                 prefab.GetComponent<PlayerWeaponController>() == null ||
                 prefab.GetComponent<PlayerWeaponEffects>() == null ||
                 prefab.GetComponent<PlayerWeaponHud>() == null ||

@@ -24,6 +24,7 @@ GameObject:
   - component: {fileID: 2634208340619463066}
   - component: {fileID: 2114314630447923985}
   - component: {fileID: 7619104973454978121}
+  - component: {fileID: 3016622510690859693}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -123,6 +124,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.ThirdPersonPlayerController
   m_input: {fileID: 100003}
   m_cameraTransform: {fileID: 410001}
+  m_stamina: {fileID: 3016622510690859693}
   m_walkSpeed: 3.5
   m_runSpeed: 6
   m_speedChangeRate: 12
@@ -181,11 +183,12 @@ MonoBehaviour:
   <PredictedSpawn>k__BackingField: {fileID: 0}
   <PredictedOwner>k__BackingField: {fileID: 0}
   NetworkBehaviours:
-  - {fileID: 6842772898105403012}
   - {fileID: 2770509040782231261}
   - {fileID: 5385180417060675768}
+  - {fileID: 6842772898105403012}
   - {fileID: 8111111111111111111}
   - {fileID: 2634208340619463066}
+  - {fileID: 3016622510690859693}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -209,7 +212,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27e6fb1c1393463d811426219e682af9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.PlayerCouchCarrier
-  _componentIndexCache: 0
+  _componentIndexCache: 2
   _addedNetworkObject: {fileID: 4753475039817145927}
   _networkObjectCache: {fileID: 4753475039817145927}
   m_input: {fileID: 100003}
@@ -285,7 +288,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: FishNet.Runtime::FishNet.Component.Transforming.NetworkTransform
-  _componentIndexCache: 1
+  _componentIndexCache: 0
   _addedNetworkObject: {fileID: 4753475039817145927}
   _networkObjectCache: {fileID: 4753475039817145927}
   _componentConfiguration: 1
@@ -331,7 +334,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03031e9f7a755f441a700e11056a4d9d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Networking.NetworkPlayerOwnership
-  _componentIndexCache: 2
+  _componentIndexCache: 1
   _addedNetworkObject: {fileID: 4753475039817145927}
   _networkObjectCache: {fileID: 4753475039817145927}
   m_input: {fileID: 100003}
@@ -488,6 +491,72 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49b1e3edba294a9b92b972e39fdbcb7b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Delivery.NeighbourhoodMap
+--- !u!114 &3016622510690859693
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47c21e25554f452c8484fd395ac9b816, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.PlayerStamina
+  _componentIndexCache: 5
+  _addedNetworkObject: {fileID: 4753475039817145927}
+  _networkObjectCache: {fileID: 4753475039817145927}
+  m_maximumStamina: 100
+  m_minimumStaminaToResume: 15
+  m_sprintDrain: 12
+  m_couchCarryDrain: 6
+  m_couchSprintAdditionalDrain: 12
+  m_recoveryRate: 15
+  m_recoveryDelay: 1.5
+  m_carrierDrainMultiplier:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 2
+      value: 0.75
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 3
+      value: 0.6
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 4
+      value: 0.5
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  m_replicationInterval: 0.1
+  m_intentSendInterval: 0.2
 --- !u!1 &200000
 GameObject:
   m_ObjectHideFlags: 0

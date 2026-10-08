@@ -32,6 +32,7 @@ namespace CouchGuys.Editor
                 playerPrefab.GetComponent<NetworkObject>().NetworkBehaviours.Count == 0 ||
                 playerPrefab.GetComponent<NeighbourhoodMap>() == null ||
                 playerPrefab.GetComponent<PlayerHealth>() == null ||
+                playerPrefab.GetComponent<PlayerStamina>() == null ||
                 bootstrapPrefab == null ||
                 bootstrapPrefab.GetComponent<NeighbourhoodPlayerSpawner>() == null)
             {

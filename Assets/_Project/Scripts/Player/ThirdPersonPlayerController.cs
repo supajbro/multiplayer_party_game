@@ -15,6 +15,7 @@ namespace CouchGuys.Player
         [Header("References")]
         [SerializeField] private PlayerInputReader m_input;
         [SerializeField] private Transform m_cameraTransform;
+        [SerializeField] private PlayerStamina m_stamina;
 
         [Header("Movement")]
         [SerializeField, Min(0f)] private float m_walkSpeed = 3.5f;
@@ -57,6 +58,7 @@ namespace CouchGuys.Player
         public bool IsGrounded => m_characterController != null && m_characterController.isGrounded;
         public Vector3 MovementIntent { get; private set; }
         public bool MovementLocked => m_movementLocked;
+        public bool IsSprinting { get; private set; }
 
         public void SetMovementLocked(bool locked)
         {
@@ -136,6 +138,8 @@ namespace CouchGuys.Player
             {
                 m_input = GetComponent<PlayerInputReader>();
             }
+
+            m_stamina ??= GetComponent<PlayerStamina>();
         }
 
         private void Update()
@@ -178,7 +182,9 @@ namespace CouchGuys.Player
         {
             Vector2 moveInput = Vector2.ClampMagnitude(m_input.Move, 1f);
             float inputMagnitude = moveInput.magnitude;
-            float topSpeed = m_input.SprintHeld ? m_runSpeed : m_walkSpeed;
+            IsSprinting = inputMagnitude > 0.05f && m_input.SprintHeld &&
+                (m_stamina == null || m_stamina.CanSprint);
+            float topSpeed = IsSprinting ? m_runSpeed : m_walkSpeed;
             Vector3 intendedMoveDirection = CalculateCameraRelativeDirection(moveInput);
             float uphillMultiplier = CalculateUphillSpeedMultiplier(intendedMoveDirection);
             float targetSpeed = topSpeed * inputMagnitude * m_externalSpeedMultiplier * uphillMultiplier;
