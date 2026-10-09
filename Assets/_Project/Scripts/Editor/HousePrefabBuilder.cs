@@ -76,12 +76,14 @@ namespace CouchGuys.Editor
 
                 LogModelInspection(modelPath, modelInstance);
                 CorrectModelOrientationAndPivot(visualRoot, modelInstance);
+                // Scale around the corrected ground-level wrapper pivot.
+                visualRoot.localScale = Vector3.one * 2f;
 
-                Transform roadConnection = CreatePoint(root.transform, "RoadConnection", new Vector3(0f, 0f, 5f));
-                Transform deliveryPoint = CreatePoint(root.transform, "DeliveryPoint", new Vector3(0f, 0f, 5.5f));
+                Transform roadConnection = CreatePoint(root.transform, "RoadConnection", new Vector3(0f, 0f, 10f));
+                Transform deliveryPoint = CreatePoint(root.transform, "DeliveryPoint", new Vector3(0f, 0f, 10.5f));
                 GeneratedProperty property = root.AddComponent<GeneratedProperty>();
                 property.ConfigurePrefab(
-                    Vector2Int.one,
+                    new Vector2Int(2, 2),
                     roadConnection,
                     deliveryPoint,
                     visualRoot,

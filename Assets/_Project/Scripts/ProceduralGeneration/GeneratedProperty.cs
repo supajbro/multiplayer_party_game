@@ -19,6 +19,11 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private float m_drivewayLength;
         [SerializeField] private float m_drivewayGrade;
         [SerializeField] private bool m_vanAccessible;
+        [SerializeField] private Vector3 m_frontageDirection;
+        [SerializeField] private Vector3 m_drivewayStart;
+        [SerializeField] private Vector3 m_drivewayEnd;
+        [SerializeField] private float m_reservedDrivewayWidth;
+        [SerializeField] private float m_drivewayClearance;
 
         public Transform RoadConnection => m_roadConnection;
         public Transform DeliveryPoint => m_deliveryPoint;
@@ -33,6 +38,11 @@ namespace CouchGuys.ProceduralGeneration
         public float DrivewayLength => m_drivewayLength;
         public float DrivewayGrade => m_drivewayGrade;
         public bool VanAccessible => m_vanAccessible;
+        public Vector3 FrontageDirection => m_frontageDirection;
+        public Vector3 DrivewayStart => m_drivewayStart;
+        public Vector3 DrivewayEnd => m_drivewayEnd;
+        public float ReservedDrivewayWidth => m_reservedDrivewayWidth;
+        public float DrivewayClearance => m_drivewayClearance;
 
         public void Initialise(
             GridCoordinate anchorCoordinate,
@@ -66,6 +76,20 @@ namespace CouchGuys.ProceduralGeneration
                 ? Mathf.Atan2(Mathf.Abs(m_lotElevation - m_roadElevation), m_drivewayLength) * Mathf.Rad2Deg
                 : 0f;
             m_vanAccessible = m_drivewayGrade <= 16f && m_drivewayLength <= 24f;
+        }
+
+        public void SetDrivewayReservation(
+            Vector3 frontageDirection,
+            Vector3 drivewayStart,
+            Vector3 drivewayEnd,
+            float width,
+            float clearance)
+        {
+            m_frontageDirection = Vector3.ProjectOnPlane(frontageDirection, Vector3.up).normalized;
+            m_drivewayStart = drivewayStart;
+            m_drivewayEnd = drivewayEnd;
+            m_reservedDrivewayWidth = Mathf.Max(0f, width);
+            m_drivewayClearance = Mathf.Max(0f, clearance);
         }
 
         public void Initialise(

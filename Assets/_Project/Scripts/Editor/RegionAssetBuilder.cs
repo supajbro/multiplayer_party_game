@@ -28,6 +28,7 @@ namespace CouchGuys.Editor
                     SerializedObject lot = new SerializedObject(houseLots[index]);
                     lot.FindProperty("m_prefab").objectReferenceValue = housePrefabs[index];
                     lot.FindProperty("m_lotType").enumValueIndex = (int)LotType.Residential;
+                    lot.FindProperty("m_minimumFootprint").vector2IntValue = new Vector2Int(2, 2);
                     lot.FindProperty("m_canBeDeliveryDestination").boolValue = true;
                     lot.FindProperty("m_destinationDisplayName").stringValue = $"House {index + 1}";
                     lot.ApplyModifiedPropertiesWithoutUndo();

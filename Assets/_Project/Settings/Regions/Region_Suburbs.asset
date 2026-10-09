@@ -21,10 +21,10 @@ MonoBehaviour:
   m_grid:
     GridWidth: 6
     GridHeight: 6
-    BlockWidth: 4
-    BlockHeight: 4
-    RoadTileSize: 8
-    LotsPerBlock: 5
+    BlockWidth: 6
+    BlockHeight: 6
+    RoadTileSize: 10
+    LotsPerBlock: 3
     MinimumLotSpacing: 1
   m_elevation:
     Enabled: 1

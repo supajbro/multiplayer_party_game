@@ -61,6 +61,17 @@ namespace CouchGuys.ProceduralGeneration
         [Tooltip("Lots steeper than this are skipped. Accepted houses use the sampled surface normal for pitch and roll.")]
         [SerializeField, Range(0f, 45f)] private float m_maximumHouseSlope = 18f;
 
+        [Header("Sidewalks & Frontage")]
+        [SerializeField] private GameObject m_sidewalkPrefab;
+        [SerializeField] private Material m_sidewalkMaterial;
+        [SerializeField, Min(0f)] private float m_sidewalkWidth = 1.5f;
+        [SerializeField, Min(0f)] private float m_sidewalkSurfaceOffset = 0.06f;
+        [SerializeField, Min(0f)] private float m_houseSetbackFromSidewalk = 3f;
+        [SerializeField, Min(0f)] private float m_houseSetbackVariation = 1.5f;
+        [SerializeField, Min(0.5f)] private float m_drivewayWidth = 3.5f;
+        [SerializeField, Min(0f)] private float m_drivewayClearance = 0.75f;
+        [SerializeField, Range(1f, 30f)] private float m_maximumDrivewaySlope = 16f;
+
         [Header("Elevation")]
         [SerializeField] private bool m_elevationEnabled = true;
         [Tooltip("Minimum seeded height difference between elevated neighbourhood sections.")]
@@ -117,12 +128,15 @@ namespace CouchGuys.ProceduralGeneration
         private readonly HashSet<GridCoordinate> m_primaryRoadCells = new HashSet<GridCoordinate>();
         private readonly List<OrientedFootprint> m_placedHouseFootprints =
             new List<OrientedFootprint>();
+        private readonly List<OrientedFootprint> m_reservedDrivewayFootprints =
+            new List<OrientedFootprint>();
 
         private float[,] m_blockElevations;
         private int m_minimumLocalX;
 
         private Transform m_generatedRoot;
         private Transform m_roadsRoot;
+        private Transform m_sidewalksRoot;
         private Transform m_residentialGroundRoot;
         private Transform m_housesRoot;
         private Transform m_landmarksRoot;
@@ -276,6 +290,7 @@ namespace CouchGuys.ProceduralGeneration
             GenerateLandmarks(new System.Random(DeriveSeed(seed, 0x4F1BBCDC)));
             GenerateProperties(new System.Random(DeriveSeed(seed, 0x61C88647)));
             CreateContinuousTerrain();
+            CreateSidewalks();
             GenerateRegionObjects(
                 m_selectedRegion != null ? m_selectedRegion.Props : null,
                 m_propsRoot,
@@ -482,6 +497,7 @@ namespace CouchGuys.ProceduralGeneration
 
             m_generatedRoot = null;
             m_roadsRoot = null;
+            m_sidewalksRoot = null;
             m_residentialGroundRoot = null;
             m_housesRoot = null;
             m_landmarksRoot = null;
@@ -506,6 +522,7 @@ namespace CouchGuys.ProceduralGeneration
             m_roadZones.Clear();
             m_primaryRoadCells.Clear();
             m_placedHouseFootprints.Clear();
+            m_reservedDrivewayFootprints.Clear();
             m_blockElevations = null;
             GeneratedWorldBounds = new Bounds(transform.position, Vector3.zero);
             m_warnedAboutRoadPlaceholders = false;
@@ -628,6 +645,8 @@ namespace CouchGuys.ProceduralGeneration
 
             m_roadsRoot = new GameObject("Roads").transform;
             m_roadsRoot.SetParent(m_generatedRoot, false);
+            m_sidewalksRoot = new GameObject("Sidewalks").transform;
+            m_sidewalksRoot.SetParent(m_generatedRoot, false);
             m_residentialGroundRoot = new GameObject("ResidentialGround").transform;
             m_residentialGroundRoot.SetParent(m_generatedRoot, false);
             m_housesRoot = new GameObject("Houses").transform;
@@ -1406,6 +1425,231 @@ namespace CouchGuys.ProceduralGeneration
             GeneratedTerrain.Initialise(mesh, runtimeMaterial);
         }
 
+        private void CreateSidewalks()
+        {
+            if (m_sidewalkWidth <= 0.001f)
+            {
+                return;
+            }
+
+            List<Vector3> vertices = m_sidewalkPrefab == null
+                ? new List<Vector3>(m_roadCells.Count * 16)
+                : null;
+            List<int> triangles = m_sidewalkPrefab == null
+                ? new List<int>(m_roadCells.Count * 24)
+                : null;
+            List<Vector2> uvs = m_sidewalkPrefab == null
+                ? new List<Vector2>(m_roadCells.Count * 16)
+                : null;
+            int pieceIndex = 0;
+            foreach (GridCoordinate roadCell in m_roadOrder)
+            {
+                Vector3 centre = GridToWorld(roadCell);
+                int boundaryMask = 0;
+                for (int directionIndex = 0; directionIndex < 4; directionIndex++)
+                {
+                    CardinalDirection direction = (CardinalDirection)directionIndex;
+                    Vector3 outward = DirectionVector(direction);
+                    GridCoordinate neighbour = roadCell + DirectionOffset(direction);
+                    if (m_roadCells.Contains(neighbour))
+                    {
+                        continue;
+                    }
+
+                    boundaryMask |= 1 << directionIndex;
+
+                    Vector3 tangent = Vector3.Cross(outward, Vector3.up);
+                    float inner = m_roadTileSize * 0.5f;
+                    float outer = inner + m_sidewalkWidth;
+                    float along = m_roadTileSize * 0.5f;
+                    AddSidewalkPiece(
+                        centre + outward * inner - tangent * along,
+                        centre + outward * inner + tangent * along,
+                        centre + outward * outer + tangent * along,
+                        centre + outward * outer - tangent * along,
+                        vertices,
+                        triangles,
+                        uvs,
+                        ref pieceIndex);
+                }
+
+                for (int directionIndex = 0; directionIndex < 4; directionIndex++)
+                {
+                    int nextDirection = (directionIndex + 1) % 4;
+                    if ((boundaryMask & (1 << directionIndex)) == 0 ||
+                        (boundaryMask & (1 << nextDirection)) == 0)
+                    {
+                        continue;
+                    }
+
+                    Vector3 first = DirectionVector((CardinalDirection)directionIndex);
+                    Vector3 second = DirectionVector((CardinalDirection)nextDirection);
+                    float inner = m_roadTileSize * 0.5f;
+                    float outer = inner + m_sidewalkWidth;
+                    AddSidewalkPiece(
+                        centre + first * inner + second * inner,
+                        centre + first * outer + second * inner,
+                        centre + first * outer + second * outer,
+                        centre + first * inner + second * outer,
+                        vertices,
+                        triangles,
+                        uvs,
+                        ref pieceIndex);
+                }
+            }
+
+            if (m_sidewalkPrefab != null || vertices == null || vertices.Count == 0)
+            {
+                return;
+            }
+
+            GameObject sidewalkObject = new GameObject(
+                "GeneratedSidewalks",
+                typeof(MeshFilter),
+                typeof(MeshRenderer),
+                typeof(MeshCollider),
+                typeof(GeneratedTerrainMesh));
+            sidewalkObject.transform.SetParent(m_sidewalksRoot, false);
+            Mesh mesh = new Mesh
+            {
+                name = $"GeneratedSidewalks_{CurrentSeed}",
+                indexFormat = vertices.Count > ushort.MaxValue
+                    ? UnityEngine.Rendering.IndexFormat.UInt32
+                    : UnityEngine.Rendering.IndexFormat.UInt16
+            };
+            mesh.SetVertices(vertices);
+            mesh.SetTriangles(triangles, 0);
+            mesh.SetUVs(0, uvs);
+            mesh.RecalculateNormals();
+            mesh.RecalculateTangents();
+            mesh.RecalculateBounds();
+
+            sidewalkObject.GetComponent<MeshFilter>().sharedMesh = mesh;
+            sidewalkObject.GetComponent<MeshCollider>().sharedMesh = mesh;
+            Material runtimeMaterial = null;
+            Material material = m_sidewalkMaterial;
+            if (material == null)
+            {
+                Shader shader = Shader.Find("Universal Render Pipeline/Lit") ??
+                                Shader.Find("Standard");
+                if (shader != null)
+                {
+                    runtimeMaterial = new Material(shader)
+                    {
+                        name = "Generated Sidewalk Material",
+                        color = new Color(0.56f, 0.57f, 0.55f)
+                    };
+                    material = runtimeMaterial;
+                }
+            }
+
+            sidewalkObject.GetComponent<MeshRenderer>().sharedMaterial = material;
+            sidewalkObject.GetComponent<GeneratedTerrainMesh>().Initialise(mesh, runtimeMaterial);
+        }
+
+        private void AddSidewalkPiece(
+            Vector3 first,
+            Vector3 second,
+            Vector3 third,
+            Vector3 fourth,
+            List<Vector3> vertices,
+            List<int> triangles,
+            List<Vector2> uvs,
+            ref int pieceIndex)
+        {
+            SetSidewalkHeight(ref first);
+            SetSidewalkHeight(ref second);
+            SetSidewalkHeight(ref third);
+            SetSidewalkHeight(ref fourth);
+            if (Vector3.Cross(second - first, third - first).y < 0f)
+            {
+                (second, fourth) = (fourth, second);
+            }
+
+            if (m_sidewalkPrefab != null)
+            {
+                CreateSidewalkPrefabPiece(first, second, third, fourth, pieceIndex++);
+                return;
+            }
+
+            int vertex = vertices.Count;
+            vertices.Add(m_sidewalksRoot.InverseTransformPoint(first));
+            vertices.Add(m_sidewalksRoot.InverseTransformPoint(second));
+            vertices.Add(m_sidewalksRoot.InverseTransformPoint(third));
+            vertices.Add(m_sidewalksRoot.InverseTransformPoint(fourth));
+            triangles.Add(vertex);
+            triangles.Add(vertex + 1);
+            triangles.Add(vertex + 2);
+            triangles.Add(vertex);
+            triangles.Add(vertex + 2);
+            triangles.Add(vertex + 3);
+            float uvScale = 1f / Mathf.Max(0.1f, m_sidewalkWidth);
+            uvs.Add(new Vector2(0f, 0f));
+            uvs.Add(new Vector2(1f, 0f));
+            uvs.Add(new Vector2(1f, uvScale));
+            uvs.Add(new Vector2(0f, uvScale));
+            pieceIndex++;
+        }
+
+        private void CreateSidewalkPrefabPiece(
+            Vector3 first,
+            Vector3 second,
+            Vector3 third,
+            Vector3 fourth,
+            int pieceIndex)
+        {
+            Vector3 centre = (first + second + third + fourth) * 0.25f;
+            Vector3 lengthDirection = ((second + third) - (first + fourth)).normalized;
+            Vector3 widthDirection = ((third + fourth) - (first + second)).normalized;
+            Vector3 normal = Vector3.Cross(widthDirection, lengthDirection).normalized;
+            if (normal.y < 0f)
+            {
+                normal = -normal;
+            }
+
+            GameObject piece = Instantiate(
+                m_sidewalkPrefab,
+                centre,
+                Quaternion.LookRotation(Vector3.ProjectOnPlane(widthDirection, normal), normal),
+                m_sidewalksRoot);
+            piece.name = $"Sidewalk_{pieceIndex:000}";
+            Renderer[] renderers = piece.GetComponentsInChildren<Renderer>(true);
+            if (!TryCalculateRendererBounds(renderers, out Bounds bounds))
+            {
+                return;
+            }
+
+            float targetX = 0.5f * (
+                Vector3.Distance(first, second) + Vector3.Distance(fourth, third));
+            float targetZ = 0.5f * (
+                Vector3.Distance(first, fourth) + Vector3.Distance(second, third));
+            float renderedX = ProjectBoundsSizeOntoAxis(bounds.size, piece.transform.right);
+            float renderedZ = ProjectBoundsSizeOntoAxis(bounds.size, piece.transform.forward);
+            Vector3 scale = piece.transform.localScale;
+            if (renderedX > 0.001f)
+            {
+                scale.x *= targetX / renderedX;
+            }
+
+            if (renderedZ > 0.001f)
+            {
+                scale.z *= targetZ / renderedZ;
+            }
+
+            piece.transform.localScale = scale;
+        }
+
+        private void SetSidewalkHeight(ref Vector3 position)
+        {
+            position.y = SamplePlacementTerrainHeight(position) + m_sidewalkSurfaceOffset;
+        }
+
+        private static Vector3 DirectionVector(CardinalDirection direction)
+        {
+            GridCoordinate offset = DirectionOffset(direction);
+            return new Vector3(offset.X, 0f, offset.Y);
+        }
+
         private float SampleContinuousTerrainHeight(
             float localX,
             float localY,
@@ -1933,6 +2177,15 @@ namespace CouchGuys.ProceduralGeneration
             FacePropertyTowardsRoad(property.transform, candidate.Road);
             Renderer[] renderers = property.GetComponentsInChildren<Renderer>(true);
             FitPropertyVisualToFootprint(generatedProperty, footprint, renderers);
+            if (!TryApplyHouseSetback(
+                    generatedProperty,
+                    footprint,
+                    candidate,
+                    renderers))
+            {
+                DiscardRejectedProperty(property);
+                return false;
+            }
 
             if (!TryAlignPropertyToTerrain(
                     generatedProperty,
@@ -1943,13 +2196,20 @@ namespace CouchGuys.ProceduralGeneration
                     generatedProperty,
                     renderers,
                     out OrientedFootprint renderedFootprint) ||
-                !CanPlaceRenderedFootprint(renderedFootprint))
+                !CanPlaceRenderedFootprint(renderedFootprint) ||
+                !TryCreateDrivewayReservation(
+                    generatedProperty,
+                    renderedFootprint,
+                    out OrientedFootprint drivewayFootprint,
+                    out Vector3 drivewayStart,
+                    out Vector3 drivewayEnd))
             {
                 DiscardRejectedProperty(property);
                 return false;
             }
 
             m_placedHouseFootprints.Add(renderedFootprint);
+            m_reservedDrivewayFootprints.Add(drivewayFootprint);
             generatedProperty.Initialise(
                 candidate.Anchor,
                 candidate.Road,
@@ -1958,6 +2218,20 @@ namespace CouchGuys.ProceduralGeneration
                 deliveryPoint,
                 zone,
                 roadElevation);
+            ConfigurePropertyConnectionPoints(
+                generatedProperty,
+                drivewayStart,
+                drivewayEnd,
+                renderedFootprint.Forward);
+            generatedProperty.SetDrivewayReservation(
+                new Vector3(
+                    renderedFootprint.Forward.x,
+                    0f,
+                    renderedFootprint.Forward.y),
+                drivewayStart,
+                drivewayEnd,
+                m_drivewayWidth,
+                m_drivewayClearance);
             generatedProperty.SetAccessMetadata(GridToWorld(candidate.Road));
             m_generatedProperties.Add(generatedProperty);
 
@@ -2734,7 +3008,12 @@ namespace CouchGuys.ProceduralGeneration
                 Mathf.Max(0.1f, footprint.x * m_roadTileSize - m_minimumHouseClearance * 2f));
             float availableDepth = Mathf.Min(
                 footprint.y * m_roadTileSize * m_houseFootprintFill,
-                Mathf.Max(0.1f, footprint.y * m_roadTileSize - m_minimumHouseClearance * 2f));
+                Mathf.Max(
+                    0.1f,
+                    footprint.y * m_roadTileSize -
+                    m_sidewalkWidth -
+                    m_houseSetbackFromSidewalk -
+                    m_minimumHouseClearance));
             float uniformScale = Mathf.Min(
                 availableWidth / (renderedHalfSize.x * 2f),
                 availableDepth / (renderedHalfSize.y * 2f));
@@ -2785,6 +3064,165 @@ namespace CouchGuys.ProceduralGeneration
             {
                 property.DeliveryPoint.localPosition = frontDirection *
                     (propertyFront + m_roadTileSize * 0.05f);
+            }
+        }
+
+        private bool TryApplyHouseSetback(
+            GeneratedProperty property,
+            Vector2Int gridFootprint,
+            PropertyCandidate candidate,
+            Renderer[] renderers)
+        {
+            Vector3 roadPosition = GridToWorld(candidate.Road);
+            Vector3 awayFromRoad = property.transform.position - roadPosition;
+            awayFromRoad.y = 0f;
+            if (awayFromRoad.sqrMagnitude < 0.001f)
+            {
+                return false;
+            }
+
+            awayFromRoad.Normalize();
+            Vector3 towardRoad = -awayFromRoad;
+            Vector3 right = Vector3.Cross(Vector3.up, towardRoad).normalized;
+            if (!TryCalculateProjectedRendererFootprint(
+                    renderers,
+                    right,
+                    towardRoad,
+                    out _,
+                    out Vector2 renderedHalfSize))
+            {
+                return false;
+            }
+
+            float minimumDistance =
+                m_roadTileSize * 0.5f +
+                m_sidewalkWidth +
+                m_houseSetbackFromSidewalk +
+                renderedHalfSize.y;
+            float maximumDistance =
+                m_roadTileSize * 0.5f +
+                gridFootprint.y * m_roadTileSize -
+                m_minimumHouseClearance -
+                renderedHalfSize.y;
+            if (minimumDistance > maximumDistance + 0.001f)
+            {
+                return false;
+            }
+
+            int hash = DeriveSeed(
+                CurrentSeed,
+                candidate.Anchor.X * 73856093 ^ candidate.Anchor.Y * 19349663);
+            float variation = (hash & 0x7fffffff) / (float)int.MaxValue;
+            float distance = minimumDistance + Mathf.Min(
+                m_houseSetbackVariation * variation,
+                maximumDistance - minimumDistance);
+            Vector3 position = roadPosition + awayFromRoad * distance;
+            position.y = property.transform.position.y;
+            property.transform.position = position;
+            return true;
+        }
+
+        private bool TryCreateDrivewayReservation(
+            GeneratedProperty property,
+            OrientedFootprint houseFootprint,
+            out OrientedFootprint drivewayFootprint,
+            out Vector3 drivewayStart,
+            out Vector3 drivewayEnd)
+        {
+            Vector3 roadPosition = GridToWorld(property.RoadCoordinate);
+            Vector2 towardRoad = houseFootprint.Forward;
+            Vector2 awayFromRoad = -towardRoad;
+            Vector2 roadCentre = new Vector2(roadPosition.x, roadPosition.z);
+            Vector2 start = roadCentre + awayFromRoad *
+                (m_roadTileSize * 0.5f + m_sidewalkWidth);
+            Vector2 end = houseFootprint.Centre + towardRoad * houseFootprint.HalfSize.y;
+            Vector2 segment = end - start;
+            float length = segment.magnitude;
+            if (length < 0.1f)
+            {
+                drivewayFootprint = default;
+                drivewayStart = default;
+                drivewayEnd = default;
+                return false;
+            }
+
+            Vector2 forward = segment / length;
+            Vector2 right = new Vector2(forward.y, -forward.x);
+            drivewayFootprint = new OrientedFootprint(
+                (start + end) * 0.5f,
+                right,
+                forward,
+                new Vector2(
+                    m_drivewayWidth * 0.5f + m_drivewayClearance,
+                    length * 0.5f));
+            for (int index = 0; index < m_placedHouseFootprints.Count; index++)
+            {
+                if (FootprintsOverlap(
+                        drivewayFootprint,
+                        m_placedHouseFootprints[index],
+                        0f))
+                {
+                    drivewayStart = default;
+                    drivewayEnd = default;
+                    return false;
+                }
+            }
+
+            for (int index = 0; index < m_reservedDrivewayFootprints.Count; index++)
+            {
+                if (FootprintsOverlap(
+                        drivewayFootprint,
+                        m_reservedDrivewayFootprints[index],
+                        0f))
+                {
+                    drivewayStart = default;
+                    drivewayEnd = default;
+                    return false;
+                }
+            }
+
+            drivewayStart = new Vector3(
+                start.x,
+                SamplePlacementTerrainHeight(new Vector3(start.x, 0f, start.y)),
+                start.y);
+            drivewayEnd = new Vector3(
+                end.x,
+                property.transform.position.y,
+                end.y);
+            Vector3 propertyNormal = property.transform.up;
+            Vector3 propertyOffset = drivewayEnd - property.transform.position;
+            if (Mathf.Abs(propertyNormal.y) > 0.001f)
+            {
+                drivewayEnd.y = property.transform.position.y -
+                    (propertyNormal.x * propertyOffset.x +
+                     propertyNormal.z * propertyOffset.z) / propertyNormal.y;
+            }
+
+            float grade = Mathf.Atan2(
+                Mathf.Abs(drivewayEnd.y - drivewayStart.y),
+                length) * Mathf.Rad2Deg;
+            return grade <= m_maximumDrivewaySlope;
+        }
+
+        private static void ConfigurePropertyConnectionPoints(
+            GeneratedProperty property,
+            Vector3 drivewayStart,
+            Vector3 drivewayEnd,
+            Vector2 towardRoad)
+        {
+            Vector3 forward = new Vector3(towardRoad.x, 0f, towardRoad.y);
+            if (property.RoadConnection != null)
+            {
+                property.RoadConnection.SetPositionAndRotation(
+                    drivewayStart,
+                    Quaternion.LookRotation(-forward, Vector3.up));
+            }
+
+            if (property.DeliveryPoint != null)
+            {
+                property.DeliveryPoint.SetPositionAndRotation(
+                    drivewayEnd,
+                    Quaternion.LookRotation(forward, Vector3.up));
             }
         }
 
@@ -2908,6 +3346,14 @@ namespace CouchGuys.ProceduralGeneration
                 }
             }
 
+            for (int index = 0; index < m_reservedDrivewayFootprints.Count; index++)
+            {
+                if (FootprintsOverlap(candidate, m_reservedDrivewayFootprints[index], 0f))
+                {
+                    return false;
+                }
+            }
+
             float searchDistance = candidate.HalfSize.magnitude + m_roadTileSize * 0.5f;
             int searchRadius = Mathf.CeilToInt(searchDistance / m_roadTileSize) + 1;
             GridCoordinate centreCell = WorldToGrid(
@@ -2917,8 +3363,17 @@ namespace CouchGuys.ProceduralGeneration
                 for (int x = -searchRadius; x <= searchRadius; x++)
                 {
                     GridCoordinate cell = centreCell + new GridCoordinate(x, y);
-                    if ((m_roadCells.Contains(cell) || m_startingAreaCells.Contains(cell)) &&
-                        FootprintsOverlap(candidate, CreateCellFootprint(cell), 0f))
+                    if (m_roadCells.Contains(cell) &&
+                        FootprintsOverlap(
+                            candidate,
+                            CreateCellFootprint(cell, m_sidewalkWidth),
+                            0f))
+                    {
+                        return false;
+                    }
+
+                    if (m_startingAreaCells.Contains(cell) &&
+                        FootprintsOverlap(candidate, CreateCellFootprint(cell, 0f), 0f))
                     {
                         return false;
                     }
@@ -2928,14 +3383,16 @@ namespace CouchGuys.ProceduralGeneration
             return true;
         }
 
-        private OrientedFootprint CreateCellFootprint(GridCoordinate coordinate)
+        private OrientedFootprint CreateCellFootprint(
+            GridCoordinate coordinate,
+            float padding)
         {
             Vector3 centre = GridToWorld(coordinate);
             return new OrientedFootprint(
                 new Vector2(centre.x, centre.z),
                 Vector2.right,
                 Vector2.up,
-                Vector2.one * (m_roadTileSize * 0.5f));
+                Vector2.one * (m_roadTileSize * 0.5f + padding));
         }
 
         private static bool FootprintsOverlap(
@@ -3467,6 +3924,13 @@ namespace CouchGuys.ProceduralGeneration
             m_minimumHouseSpacing = Mathf.Max(0, m_minimumHouseSpacing);
             m_minimumHouseClearance = Mathf.Max(0f, m_minimumHouseClearance);
             m_maximumHouseSlope = Mathf.Clamp(m_maximumHouseSlope, 0f, 45f);
+            m_sidewalkWidth = Mathf.Max(0f, m_sidewalkWidth);
+            m_sidewalkSurfaceOffset = Mathf.Max(0f, m_sidewalkSurfaceOffset);
+            m_houseSetbackFromSidewalk = Mathf.Max(0f, m_houseSetbackFromSidewalk);
+            m_houseSetbackVariation = Mathf.Max(0f, m_houseSetbackVariation);
+            m_drivewayWidth = Mathf.Max(0.5f, m_drivewayWidth);
+            m_drivewayClearance = Mathf.Max(0f, m_drivewayClearance);
+            m_maximumDrivewaySlope = Mathf.Clamp(m_maximumDrivewaySlope, 1f, 30f);
             m_elevationStep = Mathf.Max(0.1f, m_elevationStep);
             m_minimumElevationStep = Mathf.Clamp(
                 m_minimumElevationStep,

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.ProceduralGeneration.LotDefinition
   m_prefab: {fileID: 100000, guid: a14321c10e5647e78aa2b0fd2e4e9cb1, type: 3}
   m_lotType: 0
-  m_minimumFootprint: {x: 1, y: 1}
+  m_minimumFootprint: {x: 2, y: 2}
   m_maximumSlope: 25
   m_requiresRoadAccess: 1
   m_uniquePerMap: 0
