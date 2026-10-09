@@ -52,10 +52,14 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private GameObject[] m_housePrefabs = Array.Empty<GameObject>();
         [SerializeField, Min(0)] private int m_housesPerBlock = 6;
         [SerializeField, Min(0)] private int m_minimumHouseSpacing = 1;
+        [Tooltip("Minimum world-space clearance kept around the rendered footprint of every house.")]
+        [SerializeField, Min(0f)] private float m_minimumHouseClearance = 1f;
         [SerializeField] private Vector2Int m_standardPropertyFootprint = Vector2Int.one;
         [SerializeField] private Vector3 m_placeholderHouseSize = new Vector3(10f, 6f, 10f);
         [Tooltip("Uniform house visual size relative to its generated property footprint. Values above 1 allow a small, intentional overhang beyond the grid cell.")]
         [SerializeField, Range(0.1f, 1.5f)] private float m_houseFootprintFill = 1.15f;
+        [Tooltip("Lots steeper than this are skipped. Accepted houses use the sampled surface normal for pitch and roll.")]
+        [SerializeField, Range(0f, 45f)] private float m_maximumHouseSlope = 18f;
 
         [Header("Elevation")]
         [SerializeField] private bool m_elevationEnabled = true;
@@ -111,6 +115,8 @@ namespace CouchGuys.ProceduralGeneration
         private readonly Dictionary<GridCoordinate, SuburbZone> m_roadZones =
             new Dictionary<GridCoordinate, SuburbZone>();
         private readonly HashSet<GridCoordinate> m_primaryRoadCells = new HashSet<GridCoordinate>();
+        private readonly List<OrientedFootprint> m_placedHouseFootprints =
+            new List<OrientedFootprint>();
 
         private float[,] m_blockElevations;
         private int m_minimumLocalX;
@@ -143,6 +149,26 @@ namespace CouchGuys.ProceduralGeneration
                 Anchor = anchor;
                 Road = road;
                 PropertyToRoad = propertyToRoad;
+            }
+        }
+
+        private readonly struct OrientedFootprint
+        {
+            public readonly Vector2 Centre;
+            public readonly Vector2 Right;
+            public readonly Vector2 Forward;
+            public readonly Vector2 HalfSize;
+
+            public OrientedFootprint(
+                Vector2 centre,
+                Vector2 right,
+                Vector2 forward,
+                Vector2 halfSize)
+            {
+                Centre = centre;
+                Right = right;
+                Forward = forward;
+                HalfSize = halfSize;
             }
         }
 
@@ -479,6 +505,7 @@ namespace CouchGuys.ProceduralGeneration
             m_roadHeights.Clear();
             m_roadZones.Clear();
             m_primaryRoadCells.Clear();
+            m_placedHouseFootprints.Clear();
             m_blockElevations = null;
             GeneratedWorldBounds = new Bounds(transform.position, Vector3.zero);
             m_warnedAboutRoadPlaceholders = false;
@@ -1386,6 +1413,24 @@ namespace CouchGuys.ProceduralGeneration
         {
             float height = CalculateProgressiveElevation(localX, localY);
             height = BlendHousePads(height, flatWorldPosition);
+            return ApplyDepotAndRoadHeights(height, localX, localY, flatWorldPosition);
+        }
+
+        private float SampleTerrainHeightWithoutHousePads(
+            float localX,
+            float localY,
+            Vector3 flatWorldPosition)
+        {
+            float height = CalculateProgressiveElevation(localX, localY);
+            return ApplyDepotAndRoadHeights(height, localX, localY, flatWorldPosition);
+        }
+
+        private float ApplyDepotAndRoadHeights(
+            float height,
+            float localX,
+            float localY,
+            Vector3 flatWorldPosition)
+        {
             height = BlendDepotPad(height, flatWorldPosition);
             if (TrySampleRoadCorridor(
                     localX,
@@ -1424,13 +1469,13 @@ namespace CouchGuys.ProceduralGeneration
                     continue;
                 }
 
-                Vector3 sample = flatWorldPosition;
-                sample.y = property.transform.position.y;
-                Vector3 local = property.transform.InverseTransformPoint(sample);
+                Vector3 right = Vector3.ProjectOnPlane(property.transform.right, Vector3.up).normalized;
+                Vector3 forward = Vector3.ProjectOnPlane(property.transform.forward, Vector3.up).normalized;
+                Vector3 offset = flatWorldPosition - property.transform.position;
                 float halfWidth = property.GridFootprint.x * m_roadTileSize * 0.5f;
                 float halfDepth = property.GridFootprint.y * m_roadTileSize * 0.5f;
-                float outsideX = Mathf.Max(0f, Mathf.Abs(local.x) - halfWidth);
-                float outsideZ = Mathf.Max(0f, Mathf.Abs(local.z) - halfDepth);
+                float outsideX = Mathf.Max(0f, Mathf.Abs(Vector3.Dot(offset, right)) - halfWidth);
+                float outsideZ = Mathf.Max(0f, Mathf.Abs(Vector3.Dot(offset, forward)) - halfDepth);
                 float distance = Mathf.Sqrt(outsideX * outsideX + outsideZ * outsideZ);
                 if (distance > m_terrainSettings.HousePadBlendWidth)
                 {
@@ -1443,7 +1488,15 @@ namespace CouchGuys.ProceduralGeneration
                         0f,
                         1f,
                         distance / m_terrainSettings.HousePadBlendWidth);
-                float propertyHeight = property.transform.position.y - m_gridOrigin.y;
+                Vector3 normal = property.transform.up;
+                float propertyWorldHeight = property.transform.position.y;
+                if (Mathf.Abs(normal.y) > 0.001f)
+                {
+                    propertyWorldHeight -=
+                        (normal.x * offset.x + normal.z * offset.z) / normal.y;
+                }
+
+                float propertyHeight = propertyWorldHeight - m_gridOrigin.y;
                 result = Mathf.Lerp(result, propertyHeight, influence);
             }
 
@@ -1724,20 +1777,24 @@ namespace CouchGuys.ProceduralGeneration
                             continue;
                         }
 
+                        Vector3 centre = CalculateCellCentre(cells);
+                        if (!TrySpawnLot(
+                                lotDefinition,
+                                prefab,
+                                candidate,
+                                footprint,
+                                centre,
+                                m_housesRoot,
+                                $"Lot_{houseIndex:000}"))
+                        {
+                            continue;
+                        }
+
                         for (int cellIndex = 0; cellIndex < cells.Count; cellIndex++)
                         {
                             m_propertyCells.Add(cells[cellIndex]);
                         }
 
-                        Vector3 centre = CalculateCellCentre(cells);
-                        SpawnLot(
-                            lotDefinition,
-                            prefab,
-                            candidate,
-                            footprint,
-                            centre,
-                            m_housesRoot,
-                            $"Lot_{houseIndex:000}");
                         housesInBlock++;
                         houseIndex++;
                     }
@@ -1804,24 +1861,28 @@ namespace CouchGuys.ProceduralGeneration
                     continue;
                 }
 
+                if (!TrySpawnLot(
+                        definition,
+                        prefab,
+                        candidate,
+                        footprint,
+                        CalculateCellCentre(cells),
+                        m_landmarksRoot,
+                        $"Landmark_{GeneratedLandmarkCount:000}"))
+                {
+                    continue;
+                }
+
                 for (int cellIndex = 0; cellIndex < cells.Count; cellIndex++)
                 {
                     m_propertyCells.Add(cells[cellIndex]);
                 }
 
-                SpawnLot(
-                    definition,
-                    prefab,
-                    candidate,
-                    footprint,
-                    CalculateCellCentre(cells),
-                    m_landmarksRoot,
-                    $"Landmark_{GeneratedLandmarkCount:000}");
                 GeneratedLandmarkCount++;
             }
         }
 
-        private void SpawnLot(
+        private bool TrySpawnLot(
             LotDefinition definition,
             GameObject prefab,
             PropertyCandidate candidate,
@@ -1853,20 +1914,50 @@ namespace CouchGuys.ProceduralGeneration
                 deliveryPoint = property.transform.Find("DeliveryPoint");
             }
 
+            SuburbZone zone = m_roadZones.TryGetValue(candidate.Road, out SuburbZone roadZone)
+                ? roadZone
+                : CalculateZone(GridToLocal(candidate.Road).y);
+            float roadElevation = m_roadHeights.TryGetValue(
+                candidate.Road,
+                out float sampledRoadElevation)
+                ? sampledRoadElevation
+                : 0f;
             generatedProperty.Initialise(
                 candidate.Anchor,
                 candidate.Road,
                 footprint,
                 roadConnection,
                 deliveryPoint,
-                m_roadZones.TryGetValue(candidate.Road, out SuburbZone zone)
-                    ? zone
-                    : CalculateZone(GridToLocal(candidate.Road).y),
-                m_roadHeights.TryGetValue(candidate.Road, out float roadElevation)
-                    ? roadElevation
-                    : 0f);
+                zone,
+                roadElevation);
             FacePropertyTowardsRoad(property.transform, candidate.Road);
-            FitPropertyVisualToFootprint(generatedProperty, footprint);
+            Renderer[] renderers = property.GetComponentsInChildren<Renderer>(true);
+            FitPropertyVisualToFootprint(generatedProperty, footprint, renderers);
+
+            if (!TryAlignPropertyToTerrain(
+                    generatedProperty,
+                    footprint,
+                    candidate.Road,
+                    renderers) ||
+                !TryCreateRenderedFootprint(
+                    generatedProperty,
+                    renderers,
+                    out OrientedFootprint renderedFootprint) ||
+                !CanPlaceRenderedFootprint(renderedFootprint))
+            {
+                DiscardRejectedProperty(property);
+                return false;
+            }
+
+            m_placedHouseFootprints.Add(renderedFootprint);
+            generatedProperty.Initialise(
+                candidate.Anchor,
+                candidate.Road,
+                footprint,
+                roadConnection,
+                deliveryPoint,
+                zone,
+                roadElevation);
             generatedProperty.SetAccessMetadata(GridToWorld(candidate.Road));
             m_generatedProperties.Add(generatedProperty);
 
@@ -1884,6 +1975,7 @@ namespace CouchGuys.ProceduralGeneration
             }
 
             RegisterDeliveryDestination(property, generatedProperty, definition);
+            return true;
         }
 
         private void RegisterDeliveryDestination(
@@ -2583,6 +2675,7 @@ namespace CouchGuys.ProceduralGeneration
                 return;
             }
 
+            property.rotation = Quaternion.LookRotation(directionToRoad.normalized, Vector3.up);
             GeneratedProperty metadata = property.GetComponent<GeneratedProperty>();
             if (metadata != null && metadata.FitVisualToFootprint && metadata.VisualRoot != null)
             {
@@ -2599,10 +2692,7 @@ namespace CouchGuys.ProceduralGeneration
                 metadata.VisualRoot.localRotation = Quaternion.Euler(-90f, 0f, localZAngle);
                 SetPropertyPointDirection(metadata.RoadConnection, localDirectionToRoad);
                 SetPropertyPointDirection(metadata.DeliveryPoint, localDirectionToRoad);
-                return;
             }
-
-            property.rotation = Quaternion.LookRotation(directionToRoad.normalized, Vector3.up);
         }
 
         private static void SetPropertyPointDirection(Transform point, Vector3 localDirection)
@@ -2617,37 +2707,54 @@ namespace CouchGuys.ProceduralGeneration
             point.localRotation = Quaternion.LookRotation(localDirection.normalized, Vector3.up);
         }
 
-        private void FitPropertyVisualToFootprint(GeneratedProperty property, Vector2Int footprint)
+        private void FitPropertyVisualToFootprint(
+            GeneratedProperty property,
+            Vector2Int footprint,
+            Renderer[] renderers)
         {
             if (property == null || !property.FitVisualToFootprint || property.VisualRoot == null)
             {
                 return;
             }
 
-            Renderer[] renderers = property.VisualRoot.GetComponentsInChildren<Renderer>(true);
-            if (!TryCalculateRendererBounds(renderers, out Bounds bounds) ||
-                bounds.size.x <= 0.001f || bounds.size.z <= 0.001f)
+            Vector3 right = Vector3.ProjectOnPlane(property.transform.right, Vector3.up).normalized;
+            Vector3 forward = Vector3.ProjectOnPlane(property.transform.forward, Vector3.up).normalized;
+            if (!TryCalculateProjectedRendererFootprint(
+                    renderers,
+                    right,
+                    forward,
+                    out _,
+                    out Vector2 renderedHalfSize))
             {
                 return;
             }
 
-            float availableWidth = footprint.x * m_roadTileSize * m_houseFootprintFill;
-            float availableDepth = footprint.y * m_roadTileSize * m_houseFootprintFill;
+            float availableWidth = Mathf.Min(
+                footprint.x * m_roadTileSize * m_houseFootprintFill,
+                Mathf.Max(0.1f, footprint.x * m_roadTileSize - m_minimumHouseClearance * 2f));
+            float availableDepth = Mathf.Min(
+                footprint.y * m_roadTileSize * m_houseFootprintFill,
+                Mathf.Max(0.1f, footprint.y * m_roadTileSize - m_minimumHouseClearance * 2f));
             float uniformScale = Mathf.Min(
-                availableWidth / bounds.size.x,
-                availableDepth / bounds.size.z);
+                availableWidth / (renderedHalfSize.x * 2f),
+                availableDepth / (renderedHalfSize.y * 2f));
             property.VisualRoot.localScale *= uniformScale;
 
-            renderers = property.VisualRoot.GetComponentsInChildren<Renderer>(true);
-            if (!TryCalculateRendererBounds(renderers, out bounds))
+            if (!TryCalculateRendererBounds(renderers, out Bounds bounds) ||
+                !TryCalculateProjectedRendererFootprint(
+                    renderers,
+                    right,
+                    forward,
+                    out Vector2 renderedCentre,
+                    out _))
             {
                 return;
             }
 
             property.VisualRoot.position += new Vector3(
-                property.transform.position.x - bounds.center.x,
+                property.transform.position.x - renderedCentre.x,
                 property.transform.position.y - bounds.min.y,
-                property.transform.position.z - bounds.center.z);
+                property.transform.position.z - renderedCentre.y);
             TryCalculateRendererBounds(renderers, out bounds);
             if (!property.TryGetComponent(out BoxCollider houseCollider))
             {
@@ -2679,6 +2786,255 @@ namespace CouchGuys.ProceduralGeneration
                 property.DeliveryPoint.localPosition = frontDirection *
                     (propertyFront + m_roadTileSize * 0.05f);
             }
+        }
+
+        private bool TryAlignPropertyToTerrain(
+            GeneratedProperty property,
+            Vector2Int gridFootprint,
+            GridCoordinate roadCoordinate,
+            Renderer[] renderers)
+        {
+            Transform propertyTransform = property.transform;
+            Vector3 forward = GridToWorld(roadCoordinate) - propertyTransform.position;
+            forward.y = 0f;
+            if (forward.sqrMagnitude < 0.001f)
+            {
+                return false;
+            }
+
+            forward.Normalize();
+            Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
+            float halfWidth = gridFootprint.x * m_roadTileSize * 0.5f;
+            float halfDepth = gridFootprint.y * m_roadTileSize * 0.5f;
+            if (TryCalculateProjectedRendererFootprint(
+                    renderers,
+                    right,
+                    forward,
+                    out _,
+                    out Vector2 renderedHalfSize))
+            {
+                halfWidth = Mathf.Max(0.05f, renderedHalfSize.x);
+                halfDepth = Mathf.Max(0.05f, renderedHalfSize.y);
+            }
+
+            Vector3 centre = propertyTransform.position;
+            float leftBack = SamplePlacementTerrainHeight(
+                centre - right * halfWidth - forward * halfDepth);
+            float leftFront = SamplePlacementTerrainHeight(
+                centre - right * halfWidth + forward * halfDepth);
+            float rightBack = SamplePlacementTerrainHeight(
+                centre + right * halfWidth - forward * halfDepth);
+            float rightFront = SamplePlacementTerrainHeight(
+                centre + right * halfWidth + forward * halfDepth);
+            float leftHeight = 0.5f * (leftBack + leftFront);
+            float rightHeight = 0.5f * (rightBack + rightFront);
+            float backHeight = 0.5f * (leftBack + rightBack);
+            float frontHeight = 0.5f * (leftFront + rightFront);
+
+            float gradientRight = (rightHeight - leftHeight) / Mathf.Max(0.1f, halfWidth * 2f);
+            float gradientForward = (frontHeight - backHeight) / Mathf.Max(0.1f, halfDepth * 2f);
+            Vector3 normal = (Vector3.up - right * gradientRight - forward * gradientForward).normalized;
+            if (Vector3.Angle(Vector3.up, normal) > m_maximumHouseSlope)
+            {
+                return false;
+            }
+
+            centre.y = 0.25f * (leftHeight + rightHeight + backHeight + frontHeight);
+            propertyTransform.SetPositionAndRotation(
+                centre,
+                Quaternion.LookRotation(Vector3.ProjectOnPlane(forward, normal).normalized, normal));
+            return true;
+        }
+
+        private float SamplePlacementTerrainHeight(Vector3 flatWorldPosition)
+        {
+            GridCoordinate rightOffset = DirectionOffset(TurnRight(m_startDirection));
+            GridCoordinate forwardOffset = DirectionOffset(m_startDirection);
+            Vector3 gridRight = new Vector3(rightOffset.X, 0f, rightOffset.Y);
+            Vector3 gridForward = new Vector3(forwardOffset.X, 0f, forwardOffset.Y);
+            Vector3 offset = flatWorldPosition - m_gridOrigin;
+            float localX = Vector3.Dot(offset, gridRight) / m_roadTileSize;
+            float localY = Vector3.Dot(offset, gridForward) / m_roadTileSize;
+            return m_gridOrigin.y + SampleTerrainHeightWithoutHousePads(
+                localX,
+                localY,
+                flatWorldPosition);
+        }
+
+        private bool TryCreateRenderedFootprint(
+            GeneratedProperty property,
+            Renderer[] renderers,
+            out OrientedFootprint footprint)
+        {
+            Vector3 forward3 = GridToWorld(property.RoadCoordinate) - property.transform.position;
+            forward3.y = 0f;
+            if (forward3.sqrMagnitude < 0.001f)
+            {
+                footprint = default;
+                return false;
+            }
+
+            forward3.Normalize();
+            Vector3 right3 = Vector3.Cross(Vector3.up, forward3).normalized;
+            if (!TryCalculateProjectedRendererFootprint(
+                    renderers,
+                    right3,
+                    forward3,
+                    out Vector2 centre,
+                    out Vector2 halfSize))
+            {
+                footprint = default;
+                return false;
+            }
+
+            footprint = new OrientedFootprint(
+                centre,
+                new Vector2(right3.x, right3.z),
+                new Vector2(forward3.x, forward3.z),
+                halfSize);
+            return footprint.HalfSize.x > 0.001f && footprint.HalfSize.y > 0.001f;
+        }
+
+        private bool CanPlaceRenderedFootprint(OrientedFootprint candidate)
+        {
+            for (int index = 0; index < m_placedHouseFootprints.Count; index++)
+            {
+                if (FootprintsOverlap(
+                        candidate,
+                        m_placedHouseFootprints[index],
+                        m_minimumHouseClearance))
+                {
+                    return false;
+                }
+            }
+
+            float searchDistance = candidate.HalfSize.magnitude + m_roadTileSize * 0.5f;
+            int searchRadius = Mathf.CeilToInt(searchDistance / m_roadTileSize) + 1;
+            GridCoordinate centreCell = WorldToGrid(
+                new Vector3(candidate.Centre.x, m_gridOrigin.y, candidate.Centre.y));
+            for (int y = -searchRadius; y <= searchRadius; y++)
+            {
+                for (int x = -searchRadius; x <= searchRadius; x++)
+                {
+                    GridCoordinate cell = centreCell + new GridCoordinate(x, y);
+                    if ((m_roadCells.Contains(cell) || m_startingAreaCells.Contains(cell)) &&
+                        FootprintsOverlap(candidate, CreateCellFootprint(cell), 0f))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private OrientedFootprint CreateCellFootprint(GridCoordinate coordinate)
+        {
+            Vector3 centre = GridToWorld(coordinate);
+            return new OrientedFootprint(
+                new Vector2(centre.x, centre.z),
+                Vector2.right,
+                Vector2.up,
+                Vector2.one * (m_roadTileSize * 0.5f));
+        }
+
+        private static bool FootprintsOverlap(
+            OrientedFootprint first,
+            OrientedFootprint second,
+            float minimumClearance)
+        {
+            Vector2 centreOffset = second.Centre - first.Centre;
+            return OverlapsOnAxis(first, second, centreOffset, first.Right, minimumClearance) &&
+                   OverlapsOnAxis(first, second, centreOffset, first.Forward, minimumClearance) &&
+                   OverlapsOnAxis(first, second, centreOffset, second.Right, minimumClearance) &&
+                   OverlapsOnAxis(first, second, centreOffset, second.Forward, minimumClearance);
+        }
+
+        private static bool OverlapsOnAxis(
+            OrientedFootprint first,
+            OrientedFootprint second,
+            Vector2 centreOffset,
+            Vector2 axis,
+            float minimumClearance)
+        {
+            float firstRadius =
+                Mathf.Abs(Vector2.Dot(axis, first.Right)) * first.HalfSize.x +
+                Mathf.Abs(Vector2.Dot(axis, first.Forward)) * first.HalfSize.y;
+            float secondRadius =
+                Mathf.Abs(Vector2.Dot(axis, second.Right)) * second.HalfSize.x +
+                Mathf.Abs(Vector2.Dot(axis, second.Forward)) * second.HalfSize.y;
+            return Mathf.Abs(Vector2.Dot(centreOffset, axis)) <
+                   firstRadius + secondRadius + minimumClearance - 0.001f;
+        }
+
+        private static void DiscardRejectedProperty(GameObject property)
+        {
+            property.SetActive(false);
+            if (Application.isPlaying)
+            {
+                Destroy(property);
+            }
+            else
+            {
+                DestroyImmediate(property);
+            }
+        }
+
+        private static bool TryCalculateProjectedRendererFootprint(
+            Renderer[] renderers,
+            Vector3 right,
+            Vector3 forward,
+            out Vector2 centre,
+            out Vector2 halfSize)
+        {
+            float minimumRight = float.PositiveInfinity;
+            float maximumRight = float.NegativeInfinity;
+            float minimumForward = float.PositiveInfinity;
+            float maximumForward = float.NegativeInfinity;
+            bool found = false;
+            for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
+            {
+                Renderer renderer = renderers[rendererIndex];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                Bounds localBounds = renderer.localBounds;
+                for (int corner = 0; corner < 8; corner++)
+                {
+                    Vector3 localCorner = localBounds.center + Vector3.Scale(
+                        localBounds.extents,
+                        new Vector3(
+                            (corner & 1) == 0 ? -1f : 1f,
+                            (corner & 2) == 0 ? -1f : 1f,
+                            (corner & 4) == 0 ? -1f : 1f));
+                    Vector3 worldCorner = renderer.transform.TransformPoint(localCorner);
+                    float rightDistance = Vector3.Dot(worldCorner, right);
+                    float forwardDistance = Vector3.Dot(worldCorner, forward);
+                    minimumRight = Mathf.Min(minimumRight, rightDistance);
+                    maximumRight = Mathf.Max(maximumRight, rightDistance);
+                    minimumForward = Mathf.Min(minimumForward, forwardDistance);
+                    maximumForward = Mathf.Max(maximumForward, forwardDistance);
+                    found = true;
+                }
+            }
+
+            if (!found)
+            {
+                centre = default;
+                halfSize = default;
+                return false;
+            }
+
+            float centreRight = (minimumRight + maximumRight) * 0.5f;
+            float centreForward = (minimumForward + maximumForward) * 0.5f;
+            Vector3 worldCentre = right * centreRight + forward * centreForward;
+            centre = new Vector2(worldCentre.x, worldCentre.z);
+            halfSize = new Vector2(
+                (maximumRight - minimumRight) * 0.5f,
+                (maximumForward - minimumForward) * 0.5f);
+            return halfSize.x > 0.001f && halfSize.y > 0.001f;
         }
 
         private static bool TryCalculateRendererBounds(Renderer[] renderers, out Bounds bounds)
@@ -3109,6 +3465,8 @@ namespace CouchGuys.ProceduralGeneration
             m_roadTileSize = Mathf.Max(0.1f, m_roadTileSize);
             m_housesPerBlock = Mathf.Max(0, m_housesPerBlock);
             m_minimumHouseSpacing = Mathf.Max(0, m_minimumHouseSpacing);
+            m_minimumHouseClearance = Mathf.Max(0f, m_minimumHouseClearance);
+            m_maximumHouseSlope = Mathf.Clamp(m_maximumHouseSlope, 0f, 45f);
             m_elevationStep = Mathf.Max(0.1f, m_elevationStep);
             m_minimumElevationStep = Mathf.Clamp(
                 m_minimumElevationStep,
