@@ -21,6 +21,11 @@ namespace CouchGuys.Player
         [SerializeField, Min(0f)] private float m_walkSpeed = 3.5f;
         [SerializeField, Min(0f)] private float m_runSpeed = 6f;
         [SerializeField, Min(0f)] private float m_speedChangeRate = 12f;
+
+        [Header("Rotation")]
+        [Tooltip("Maximum horizontal turning speed in degrees per second.")]
+        [SerializeField, Min(0f)] private float m_rotationSpeed = 720f;
+        [Tooltip("Time taken to smooth the player toward the camera-facing direction.")]
         [SerializeField, Min(0.01f)] private float m_rotationSmoothTime = 0.1f;
 
         [Header("Uphill Movement")]
@@ -202,9 +207,10 @@ namespace CouchGuys.Player
             }
 
             MovementIntent = intendedMoveDirection * inputMagnitude;
-            Vector3 facingDirection = m_facingTarget != null
-                ? Vector3.ProjectOnPlane(m_facingTarget.position - transform.position, Vector3.up)
-                : moveDirection;
+            // Facing is independent from locomotion so backward and lateral input
+            // backpedals/strafes instead of turning the player away from their aim.
+            // Carry targets remain authoritative over camera-facing rotation.
+            Vector3 facingDirection = CalculateFacingDirection();
             if (facingDirection.sqrMagnitude > 0.001f)
             {
                 float targetAngle = Mathf.Atan2(facingDirection.x, facingDirection.z) * Mathf.Rad2Deg;
@@ -212,7 +218,9 @@ namespace CouchGuys.Player
                     transform.eulerAngles.y,
                     targetAngle,
                     ref m_rotationVelocity,
-                    m_rotationSmoothTime);
+                    m_rotationSmoothTime,
+                    m_rotationSpeed,
+                    Time.deltaTime);
 
                 transform.rotation = Quaternion.Euler(0f, smoothedAngle, 0f);
             }
@@ -341,11 +349,26 @@ namespace CouchGuys.Player
             return (cameraForward * moveInput.y + cameraRight * moveInput.x).normalized;
         }
 
+        private Vector3 CalculateFacingDirection()
+        {
+            if (m_facingTarget != null)
+            {
+                return Vector3.ProjectOnPlane(
+                    m_facingTarget.position - transform.position,
+                    Vector3.up);
+            }
+
+            Transform referenceTransform = m_cameraTransform != null ? m_cameraTransform : transform;
+            return Vector3.ProjectOnPlane(referenceTransform.forward, Vector3.up);
+        }
+
 #if UNITY_EDITOR
         private void OnValidate()
         {
             m_walkSpeed = Mathf.Max(0f, m_walkSpeed);
             m_runSpeed = Mathf.Max(m_walkSpeed, m_runSpeed);
+            m_rotationSpeed = Mathf.Max(0f, m_rotationSpeed);
+            m_rotationSmoothTime = Mathf.Max(0.01f, m_rotationSmoothTime);
             m_gravity = Mathf.Min(-0.01f, m_gravity);
             m_terminalVelocity = Mathf.Max(0f, m_terminalVelocity);
             m_knockbackDamping = Mathf.Max(0f, m_knockbackDamping);

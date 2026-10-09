@@ -128,6 +128,7 @@ MonoBehaviour:
   m_walkSpeed: 3.5
   m_runSpeed: 6
   m_speedChangeRate: 12
+  m_rotationSpeed: 720
   m_rotationSmoothTime: 0.1
   m_minimumUphillSlopeAngle: 4
   m_maximumUphillSlopeAngle: 40

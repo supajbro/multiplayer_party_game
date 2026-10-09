@@ -145,9 +145,9 @@ namespace CouchGuys.Networking
 
             if (shouldDetach)
             {
-                // The player root rotates to face movement. Keeping the camera underneath
-                // that root makes it inherit the rotation before its LateUpdate can run,
-                // which produces a visible correction on every turn.
+                // The player root rotates to face the camera or an interaction target.
+                // Keeping the camera underneath that root makes it inherit the rotation
+                // before its LateUpdate can run, producing a visible correction on every turn.
                 m_cameraRig.SetParent(null, true);
                 m_cameraRigDetached = true;
                 return;
