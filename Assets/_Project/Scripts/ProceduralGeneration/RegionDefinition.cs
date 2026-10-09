@@ -25,6 +25,8 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private GameObject m_groundPrefab;
         [SerializeField] private GameObject m_startingAreaPrefab;
         [SerializeField] private GameObject m_deliveryNpcPrefab;
+        [Tooltip("Optional large home used for one-lot blocks. Empty uses the normal house selection.")]
+        [SerializeField] private GameObject m_mansionPrefab;
 
         [Header("Lots")]
         [SerializeField] private WeightedLot[] m_lots = Array.Empty<WeightedLot>();
@@ -53,6 +55,7 @@ namespace CouchGuys.ProceduralGeneration
         public GameObject GroundPrefab => m_groundPrefab;
         public GameObject StartingAreaPrefab => m_startingAreaPrefab;
         public GameObject DeliveryNpcPrefab => m_deliveryNpcPrefab;
+        public GameObject MansionPrefab => m_mansionPrefab;
         public WeightedLot[] Lots => m_lots;
         public float LotDensity => m_lotDensity;
         public int MinimumLandmarks => m_minimumLandmarks;
@@ -86,7 +89,8 @@ namespace CouchGuys.ProceduralGeneration
         [Min(1)] public int BlockWidth;
         [Min(1)] public int BlockHeight;
         [Min(0.1f)] public float RoadTileSize;
-        [Min(0)] public int LotsPerBlock;
+        [InspectorName("Minimum Lots Per Block"), Min(0)] public int MinimumLotsPerBlock;
+        [InspectorName("Maximum Lots Per Block"), Min(0)] public int LotsPerBlock;
         [Min(0)] public int MinimumLotSpacing;
 
         public static RegionGridSettings SuburbsDefault => new RegionGridSettings
@@ -96,7 +100,8 @@ namespace CouchGuys.ProceduralGeneration
             BlockWidth = 4,
             BlockHeight = 4,
             RoadTileSize = 10f,
-            LotsPerBlock = 6,
+            MinimumLotsPerBlock = 1,
+            LotsPerBlock = 3,
             MinimumLotSpacing = 1
         };
 
@@ -108,6 +113,7 @@ namespace CouchGuys.ProceduralGeneration
             BlockHeight = Mathf.Max(1, BlockHeight);
             RoadTileSize = Mathf.Max(0.1f, RoadTileSize);
             LotsPerBlock = Mathf.Max(0, LotsPerBlock);
+            MinimumLotsPerBlock = Mathf.Clamp(MinimumLotsPerBlock, 0, LotsPerBlock);
             MinimumLotSpacing = Mathf.Max(0, MinimumLotSpacing);
         }
     }

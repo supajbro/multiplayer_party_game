@@ -50,7 +50,10 @@ namespace CouchGuys.ProceduralGeneration
 
         [Header("Houses")]
         [SerializeField] private GameObject[] m_housePrefabs = Array.Empty<GameObject>();
-        [SerializeField, Min(0)] private int m_housesPerBlock = 6;
+        [Tooltip("Optional large home used when distance progression assigns one lot to a block.")]
+        [SerializeField] private GameObject m_mansionPrefab;
+        [SerializeField, Min(0)] private int m_minimumHousesPerBlock = 1;
+        [SerializeField, Min(0)] private int m_housesPerBlock = 3;
         [SerializeField, Min(0)] private int m_minimumHouseSpacing = 1;
         [Tooltip("Minimum world-space clearance kept around the rendered footprint of every house.")]
         [SerializeField, Min(0f)] private float m_minimumHouseClearance = 1f;
@@ -414,6 +417,7 @@ namespace CouchGuys.ProceduralGeneration
             m_blockWidth = grid.BlockWidth;
             m_blockHeight = grid.BlockHeight;
             m_roadTileSize = grid.RoadTileSize;
+            m_minimumHousesPerBlock = grid.MinimumLotsPerBlock;
             m_housesPerBlock = grid.LotsPerBlock;
             m_minimumHouseSpacing = grid.MinimumLotSpacing;
             m_elevationEnabled = elevation.Enabled;
@@ -427,6 +431,7 @@ namespace CouchGuys.ProceduralGeneration
             m_residentialGroundPrefab = region.GroundPrefab;
             m_startingAreaPrefab = region.StartingAreaPrefab;
             m_deliveryNpcPrefab = region.DeliveryNpcPrefab;
+            m_mansionPrefab = region.MansionPrefab;
         }
 
         private int FindRegionIndex(RegionDefinition region)
@@ -1989,13 +1994,39 @@ namespace CouchGuys.ProceduralGeneration
                 {
                     int minimumX = m_minimumLocalX + blockX * horizontalSpan + 1;
                     int maximumX = minimumX + m_blockWidth - 1;
+                    int targetLots = CalculateLotsForBlock(
+                        blockX,
+                        blockY,
+                        horizontalSpan,
+                        verticalSpan);
+                    if (targetLots <= 0)
+                    {
+                        continue;
+                    }
+
+                    if (targetLots == 1)
+                    {
+                        if (TryGenerateCentredSingleLot(
+                                random,
+                                minimumX,
+                                maximumX,
+                                minimumY,
+                                maximumY,
+                                houseIndex))
+                        {
+                            houseIndex++;
+                        }
+
+                        continue;
+                    }
+
                     List<PropertyCandidate> candidates = CreatePropertyCandidates(
                         minimumX, maximumX, minimumY, maximumY);
                     Shuffle(candidates, random);
 
                     int housesInBlock = 0;
                     for (int candidateIndex = 0;
-                         candidateIndex < candidates.Count && housesInBlock < m_housesPerBlock;
+                         candidateIndex < candidates.Count && housesInBlock < targetLots;
                          candidateIndex++)
                     {
                         if (m_selectedRegion != null && random.NextDouble() > m_selectedRegion.LotDensity)
@@ -2046,6 +2077,129 @@ namespace CouchGuys.ProceduralGeneration
             }
         }
 
+        private int CalculateLotsForBlock(
+            int blockX,
+            int blockY,
+            int horizontalSpan,
+            int verticalSpan)
+        {
+            int minimumLots = Mathf.Clamp(m_minimumHousesPerBlock, 0, m_housesPerBlock);
+            if (minimumLots == m_housesPerBlock)
+            {
+                return minimumLots;
+            }
+
+            float centreX = m_minimumLocalX + blockX * horizontalSpan +
+                            1f + (m_blockWidth - 1f) * 0.5f;
+            float centreY = blockY * verticalSpan +
+                            1f + (m_blockHeight - 1f) * 0.5f;
+            float firstCentreX = m_minimumLocalX + 1f + (m_blockWidth - 1f) * 0.5f;
+            float lastCentreX = m_minimumLocalX + (m_gridWidth - 1) * horizontalSpan +
+                                1f + (m_blockWidth - 1f) * 0.5f;
+            float furthestX = Mathf.Max(Mathf.Abs(firstCentreX), Mathf.Abs(lastCentreX));
+            float furthestY = (m_gridHeight - 1) * verticalSpan +
+                              1f + (m_blockHeight - 1f) * 0.5f;
+            float maximumDistance = Mathf.Sqrt(furthestX * furthestX + furthestY * furthestY);
+            float distance = Mathf.Sqrt(centreX * centreX + centreY * centreY);
+            float progression = maximumDistance > 0.001f
+                ? Mathf.Clamp01(distance / maximumDistance)
+                : 0f;
+            return Mathf.Clamp(
+                Mathf.RoundToInt(Mathf.Lerp(m_housesPerBlock, minimumLots, progression)),
+                minimumLots,
+                m_housesPerBlock);
+        }
+
+        private bool TryGenerateCentredSingleLot(
+            System.Random random,
+            int minimumX,
+            int maximumX,
+            int minimumY,
+            int maximumY,
+            int houseIndex)
+        {
+            if (m_selectedRegion != null && random.NextDouble() > m_selectedRegion.LotDensity)
+            {
+                return false;
+            }
+
+            List<PropertyCandidate> candidates = CreatePropertyCandidates(
+                minimumX, maximumX, minimumY, maximumY);
+            if (candidates.Count == 0)
+            {
+                return false;
+            }
+
+            PropertyCandidate candidate = candidates[0];
+            float nearestRoadDistance = HorizontalSqrDistance(GridToWorld(candidate.Road), m_gridOrigin);
+            for (int index = 1; index < candidates.Count; index++)
+            {
+                float roadDistance = HorizontalSqrDistance(GridToWorld(candidates[index].Road), m_gridOrigin);
+                if (roadDistance < nearestRoadDistance)
+                {
+                    candidate = candidates[index];
+                    nearestRoadDistance = roadDistance;
+                }
+            }
+
+            List<GridCoordinate> cells = new List<GridCoordinate>(m_blockWidth * m_blockHeight);
+            for (int localY = minimumY; localY <= maximumY; localY++)
+            {
+                for (int localX = minimumX; localX <= maximumX; localX++)
+                {
+                    cells.Add(LocalToGrid(localX, localY));
+                }
+            }
+
+            if (!CanPlaceProperty(cells, minimumX, maximumX, minimumY, maximumY))
+            {
+                return false;
+            }
+
+            LotDefinition lotDefinition = SelectLotDefinition(random, false);
+            if (m_selectedRegion != null && lotDefinition == null)
+            {
+                return false;
+            }
+
+            GameObject fallbackPrefab = lotDefinition != null
+                ? ValidateLotPrefab(lotDefinition.Prefab)
+                : SelectHousePrefab(random);
+            GameObject mansionPrefab = ValidateLotPrefab(m_mansionPrefab);
+            GameObject prefab = mansionPrefab != null ? mansionPrefab : fallbackPrefab;
+            bool roadOnFrontOrBack =
+                candidate.PropertyToRoad == m_startDirection ||
+                candidate.PropertyToRoad == Opposite(m_startDirection);
+            Vector2Int footprint = roadOnFrontOrBack
+                ? new Vector2Int(m_blockWidth, m_blockHeight)
+                : new Vector2Int(m_blockHeight, m_blockWidth);
+            if (!TrySpawnLot(
+                    lotDefinition,
+                    prefab,
+                    candidate,
+                    footprint,
+                    CalculateCellCentre(cells),
+                    m_housesRoot,
+                    $"Lot_{houseIndex:000}",
+                    true))
+            {
+                return false;
+            }
+
+            for (int index = 0; index < cells.Count; index++)
+            {
+                m_propertyCells.Add(cells[index]);
+            }
+
+            return true;
+        }
+
+        private static float HorizontalSqrDistance(Vector3 a, Vector3 b)
+        {
+            float x = a.x - b.x;
+            float z = a.z - b.z;
+            return x * x + z * z;
+        }
         private void GenerateLandmarks(System.Random random)
         {
             if (m_selectedRegion == null || m_selectedRegion.MaximumLandmarks <= 0)
@@ -2133,7 +2287,8 @@ namespace CouchGuys.ProceduralGeneration
             Vector2Int footprint,
             Vector3 centre,
             Transform parent,
-            string instanceName)
+            string instanceName,
+            bool centreInLot = false)
         {
             GameObject property = prefab != null
                 ? Instantiate(prefab, centre, Quaternion.identity, parent)
@@ -2176,12 +2331,16 @@ namespace CouchGuys.ProceduralGeneration
                 roadElevation);
             FacePropertyTowardsRoad(property.transform, candidate.Road);
             Renderer[] renderers = property.GetComponentsInChildren<Renderer>(true);
-            FitPropertyVisualToFootprint(generatedProperty, footprint, renderers);
+            Vector2Int visualFootprint = centreInLot && prefab != m_mansionPrefab
+                ? GetLotFootprint(definition, prefab)
+                : footprint;
+            FitPropertyVisualToFootprint(generatedProperty, visualFootprint, renderers);
             if (!TryApplyHouseSetback(
                     generatedProperty,
                     footprint,
                     candidate,
-                    renderers))
+                    renderers,
+                    centreInLot))
             {
                 DiscardRejectedProperty(property);
                 return false;
@@ -3071,7 +3230,8 @@ namespace CouchGuys.ProceduralGeneration
             GeneratedProperty property,
             Vector2Int gridFootprint,
             PropertyCandidate candidate,
-            Renderer[] renderers)
+            Renderer[] renderers,
+            bool centreInLot)
         {
             Vector3 roadPosition = GridToWorld(candidate.Road);
             Vector3 awayFromRoad = property.transform.position - roadPosition;
@@ -3109,13 +3269,27 @@ namespace CouchGuys.ProceduralGeneration
                 return false;
             }
 
-            int hash = DeriveSeed(
-                CurrentSeed,
-                candidate.Anchor.X * 73856093 ^ candidate.Anchor.Y * 19349663);
-            float variation = (hash & 0x7fffffff) / (float)int.MaxValue;
-            float distance = minimumDistance + Mathf.Min(
-                m_houseSetbackVariation * variation,
-                maximumDistance - minimumDistance);
+            float distance;
+            if (centreInLot)
+            {
+                distance = Vector3.Dot(property.transform.position - roadPosition, awayFromRoad);
+                if (distance < minimumDistance - 0.001f || distance > maximumDistance + 0.001f)
+                {
+                    return false;
+                }
+
+                distance = Mathf.Clamp(distance, minimumDistance, maximumDistance);
+            }
+            else
+            {
+                int hash = DeriveSeed(
+                    CurrentSeed,
+                    candidate.Anchor.X * 73856093 ^ candidate.Anchor.Y * 19349663);
+                float variation = (hash & 0x7fffffff) / (float)int.MaxValue;
+                distance = minimumDistance + Mathf.Min(
+                    m_houseSetbackVariation * variation,
+                    maximumDistance - minimumDistance);
+            }
             Vector3 position = roadPosition + awayFromRoad * distance;
             position.y = property.transform.position.y;
             property.transform.position = position;
@@ -3921,6 +4095,10 @@ namespace CouchGuys.ProceduralGeneration
             m_blockHeight = Mathf.Max(1, m_blockHeight);
             m_roadTileSize = Mathf.Max(0.1f, m_roadTileSize);
             m_housesPerBlock = Mathf.Max(0, m_housesPerBlock);
+            m_minimumHousesPerBlock = Mathf.Clamp(
+                m_minimumHousesPerBlock,
+                0,
+                m_housesPerBlock);
             m_minimumHouseSpacing = Mathf.Max(0, m_minimumHouseSpacing);
             m_minimumHouseClearance = Mathf.Max(0f, m_minimumHouseClearance);
             m_maximumHouseSlope = Mathf.Clamp(m_maximumHouseSlope, 0f, 45f);

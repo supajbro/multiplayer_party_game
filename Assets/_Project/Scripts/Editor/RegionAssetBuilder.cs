@@ -70,7 +70,7 @@ namespace CouchGuys.Editor
                 new RegionGridSettings
                 {
                     GridWidth = 5, GridHeight = 6, BlockWidth = 7, BlockHeight = 8,
-                    RoadTileSize = 12f, LotsPerBlock = 2, MinimumLotSpacing = 2
+                    RoadTileSize = 12f, MinimumLotsPerBlock = 1, LotsPerBlock = 2, MinimumLotSpacing = 2
                 },
                 Elevation(2f, 10f, 32f, 35f));
             ConfigureCountrysideIfEmpty(countryside, countryLots, generator.DeliveryNpcPrefab);
@@ -79,7 +79,7 @@ namespace CouchGuys.Editor
                 new RegionGridSettings
                 {
                     GridWidth = 4, GridHeight = 7, BlockWidth = 6, BlockHeight = 7,
-                    RoadTileSize = 12f, LotsPerBlock = 2, MinimumLotSpacing = 2
+                    RoadTileSize = 12f, MinimumLotsPerBlock = 1, LotsPerBlock = 2, MinimumLotSpacing = 2
                 },
                 Elevation(6f, 18f, 90f, 45f));
             RegionDefinition snow = EnsurePlaceholder(
@@ -87,7 +87,7 @@ namespace CouchGuys.Editor
                 new RegionGridSettings
                 {
                     GridWidth = 4, GridHeight = 7, BlockWidth = 6, BlockHeight = 7,
-                    RoadTileSize = 12f, LotsPerBlock = 3, MinimumLotSpacing = 2
+                    RoadTileSize = 12f, MinimumLotsPerBlock = 1, LotsPerBlock = 3, MinimumLotSpacing = 2
                 },
                 Elevation(7f, 20f, 110f, 45f));
             RegionDefinition volcano = EnsurePlaceholder(
@@ -95,7 +95,7 @@ namespace CouchGuys.Editor
                 new RegionGridSettings
                 {
                     GridWidth = 3, GridHeight = 8, BlockWidth = 8, BlockHeight = 8,
-                    RoadTileSize = 14f, LotsPerBlock = 1, MinimumLotSpacing = 3
+                    RoadTileSize = 14f, MinimumLotsPerBlock = 1, LotsPerBlock = 1, MinimumLotSpacing = 3
                 },
                 Elevation(10f, 28f, 160f, 50f));
 
@@ -161,6 +161,7 @@ namespace CouchGuys.Editor
             CopyInt(source, "m_blockWidth", grid, "BlockWidth");
             CopyInt(source, "m_blockHeight", grid, "BlockHeight");
             CopyFloat(source, "m_roadTileSize", grid, "RoadTileSize");
+            CopyInt(source, "m_minimumHousesPerBlock", grid, "MinimumLotsPerBlock");
             CopyInt(source, "m_housesPerBlock", grid, "LotsPerBlock");
             CopyInt(source, "m_minimumHouseSpacing", grid, "MinimumLotSpacing");
 
@@ -178,6 +179,8 @@ namespace CouchGuys.Editor
                 source.FindProperty("m_startingAreaPrefab").objectReferenceValue;
             target.FindProperty("m_deliveryNpcPrefab").objectReferenceValue =
                 source.FindProperty("m_deliveryNpcPrefab").objectReferenceValue;
+            target.FindProperty("m_mansionPrefab").objectReferenceValue =
+                source.FindProperty("m_mansionPrefab").objectReferenceValue;
 
             SerializedProperty lots = target.FindProperty("m_lots");
             lots.arraySize = houseLots.Length;
@@ -255,6 +258,7 @@ namespace CouchGuys.Editor
             property.FindPropertyRelative("BlockWidth").intValue = value.BlockWidth;
             property.FindPropertyRelative("BlockHeight").intValue = value.BlockHeight;
             property.FindPropertyRelative("RoadTileSize").floatValue = value.RoadTileSize;
+            property.FindPropertyRelative("MinimumLotsPerBlock").intValue = value.MinimumLotsPerBlock;
             property.FindPropertyRelative("LotsPerBlock").intValue = value.LotsPerBlock;
             property.FindPropertyRelative("MinimumLotSpacing").intValue = value.MinimumLotSpacing;
         }

@@ -24,6 +24,7 @@ MonoBehaviour:
     BlockWidth: 6
     BlockHeight: 7
     RoadTileSize: 12
+    MinimumLotsPerBlock: 1
     LotsPerBlock: 3
     MinimumLotSpacing: 2
   m_elevation:
