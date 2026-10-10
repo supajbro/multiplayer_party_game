@@ -6,6 +6,17 @@ using UnityEngine;
 
 namespace CouchGuys.Gameplay.Couch
 {
+    /// <summary>Server-only carrier contract shared by players and thieves.</summary>
+    public interface ICouchCarrierServer
+    {
+        NetworkObject CarrierNetworkObject { get; }
+        bool IsCarrierAvailable { get; }
+        Vector3 CalculateDesiredCarryPosition(Vector3 couchCentre);
+        Vector3 GetServerMovementIntent();
+        void SetCarriedCouchServer(CouchCarryController couch, int pointIndex);
+        void ClearCarriedCouchServer(CouchCarryController couch, int pointIndex);
+    }
+
     /// <summary>
     /// Runs the couch's single authoritative Rigidbody simulation on the server.
     /// Every occupied point contributes an independent spring force.
@@ -57,7 +68,7 @@ namespace CouchGuys.Gameplay.Couch
         private readonly SyncVar<int> m_movingCarrierCount = new();
         private readonly SyncVar<float> m_cooperationEfficiency = new(1f);
         private readonly SyncVar<int> m_modelVariantIndex = new(-1);
-        private readonly PlayerCouchCarrier[] m_serverOccupants = new PlayerCouchCarrier[MaximumCarryPoints];
+        private readonly ICouchCarrierServer[] m_serverOccupants = new ICouchCarrierServer[MaximumCarryPoints];
         private readonly Vector3[] m_debugHorizontalForces = new Vector3[MaximumCarryPoints];
         private readonly Vector3[] m_debugLiftForces = new Vector3[MaximumCarryPoints];
         private readonly Vector3[] m_debugMovementIntents = new Vector3[MaximumCarryPoints];
@@ -78,7 +89,9 @@ namespace CouchGuys.Gameplay.Couch
         public float CurrentCooperationEfficiency => m_cooperationEfficiency.Value;
         public Vector3 CurrentVelocity => m_rigidbody != null ? m_rigidbody.linearVelocity : Vector3.zero;
         public int ModelVariantIndex => m_modelVariantIndex.Value;
-        internal int ServerCarrierCount => IsServerInitialized ? CountServerCarriers() : 0;
+        // Delivery completion still requires a player carrier; thieves contribute to
+        // physics but cannot accidentally complete the job for the party.
+        internal int ServerCarrierCount => IsServerInitialized ? CountPlayerCarriers() : 0;
 
         internal int ValidServerCarrierCount
         {
@@ -88,10 +101,8 @@ namespace CouchGuys.Gameplay.Couch
                 int count = 0;
                 for (int index = 0; index < MaximumCarryPoints; index++)
                 {
-                    PlayerCouchCarrier carrier = m_serverOccupants[index];
-                    if (carrier == null || !carrier.IsSpawned) continue;
-                    PlayerHealth health = carrier.GetComponent<PlayerHealth>();
-                    if (health == null || health.IsAlive) count++;
+                    ICouchCarrierServer carrier = m_serverOccupants[index];
+                    if (carrier != null && carrier.IsCarrierAvailable) count++;
                 }
                 return count;
             }
@@ -205,7 +216,7 @@ namespace CouchGuys.Gameplay.Couch
             for (int index = 0; index < MaximumCarryPoints; index++)
             {
                 ClearDebugForces(index);
-                PlayerCouchCarrier carrier = m_serverOccupants[index];
+                ICouchCarrierServer carrier = m_serverOccupants[index];
                 CouchCarryPoint carryPoint = GetPoint(index);
                 if (carrier == null)
                 {
@@ -217,7 +228,7 @@ namespace CouchGuys.Gameplay.Couch
                     continue;
                 }
 
-                if (!carrier.IsSpawned || carryPoint == null)
+                if (!carrier.IsCarrierAvailable || carryPoint == null)
                 {
                     ReleasePointServer(index, carrier);
                     continue;
@@ -325,7 +336,12 @@ namespace CouchGuys.Gameplay.Couch
 
         internal bool TryGrabPointServer(PlayerCouchCarrier carrier, int pointIndex)
         {
-            if (!IsServerInitialized || carrier == null || !carrier.IsSpawned ||
+            return TryGrabPointServer((ICouchCarrierServer)carrier, pointIndex);
+        }
+
+        internal bool TryGrabPointServer(ICouchCarrierServer carrier, int pointIndex)
+        {
+            if (!IsServerInitialized || carrier == null || !carrier.IsCarrierAvailable ||
                 !IsValidPointIndex(pointIndex) || GetPoint(pointIndex) == null || IsPointOccupied(pointIndex))
             {
                 return false;
@@ -340,7 +356,7 @@ namespace CouchGuys.Gameplay.Couch
             }
 
             m_serverOccupants[pointIndex] = carrier;
-            SetOccupantObjectId(pointIndex, carrier.NetworkObject.ObjectId);
+            SetOccupantObjectId(pointIndex, carrier.CarrierNetworkObject.ObjectId);
             carrier.SetCarriedCouchServer(this, pointIndex);
             return true;
         }
@@ -354,7 +370,7 @@ namespace CouchGuys.Gameplay.Couch
 
             for (int index = 0; index < MaximumCarryPoints; index++)
             {
-                PlayerCouchCarrier carrier = m_serverOccupants[index];
+                PlayerCouchCarrier carrier = m_serverOccupants[index] as PlayerCouchCarrier;
                 if (carrier != null && carrier != excludedCarrier && carrier.Owner.IsValid)
                 {
                     return carrier;
@@ -364,14 +380,35 @@ namespace CouchGuys.Gameplay.Couch
             return null;
         }
 
+        internal PlayerCouchCarrier GetPlayerCarrierServer(int preferredPointIndex)
+        {
+            if (!IsServerInitialized) return null;
+            int start = Mathf.Clamp(preferredPointIndex, 0, MaximumCarryPoints - 1);
+            for (int offset = 0; offset < MaximumCarryPoints; offset++)
+            {
+                int index = (start + offset) % MaximumCarryPoints;
+                if (m_serverOccupants[index] is PlayerCouchCarrier carrier &&
+                    ((ICouchCarrierServer)carrier).IsCarrierAvailable)
+                {
+                    return carrier;
+                }
+            }
+            return null;
+        }
+
         internal void ReleasePointServer(int pointIndex, PlayerCouchCarrier expectedCarrier)
+        {
+            ReleasePointServer(pointIndex, (ICouchCarrierServer)expectedCarrier);
+        }
+
+        internal void ReleasePointServer(int pointIndex, ICouchCarrierServer expectedCarrier)
         {
             if (!IsServerInitialized || !IsValidPointIndex(pointIndex))
             {
                 return;
             }
 
-            PlayerCouchCarrier occupant = m_serverOccupants[pointIndex];
+            ICouchCarrierServer occupant = m_serverOccupants[pointIndex];
             if (occupant == null || (expectedCarrier != null && occupant != expectedCarrier))
             {
                 return;
@@ -386,7 +423,7 @@ namespace CouchGuys.Gameplay.Couch
         {
             for (int index = 0; index < MaximumCarryPoints; index++)
             {
-                PlayerCouchCarrier occupant = m_serverOccupants[index];
+                ICouchCarrierServer occupant = m_serverOccupants[index];
                 m_serverOccupants[index] = null;
                 SetOccupantObjectId(index, -1);
                 if (occupant != null)
@@ -414,8 +451,33 @@ namespace CouchGuys.Gameplay.Couch
         internal PlayerCouchCarrier GetServerCarrier(int pointIndex)
         {
             return IsServerInitialized && IsValidPointIndex(pointIndex)
-                ? m_serverOccupants[pointIndex]
+                ? m_serverOccupants[pointIndex] as PlayerCouchCarrier
                 : null;
+        }
+
+        internal bool HasHumanCarrierServer()
+        {
+            if (!IsServerInitialized) return false;
+            for (int index = 0; index < MaximumCarryPoints; index++)
+            {
+                if (m_serverOccupants[index] is PlayerCouchCarrier) return true;
+            }
+            return false;
+        }
+
+        internal int ThiefCarrierCountServer()
+        {
+            if (!IsServerInitialized) return 0;
+            int count = 0;
+            for (int index = 0; index < MaximumCarryPoints; index++)
+            {
+                if (m_serverOccupants[index] != null &&
+                    m_serverOccupants[index] is not PlayerCouchCarrier)
+                {
+                    count++;
+                }
+            }
+            return count;
         }
 
         private void SetOccupantObjectId(int pointIndex, int objectId)
@@ -470,6 +532,16 @@ namespace CouchGuys.Gameplay.Couch
             return count;
         }
 
+        private int CountPlayerCarriers()
+        {
+            int count = 0;
+            for (int index = 0; index < MaximumCarryPoints; index++)
+            {
+                if (m_serverOccupants[index] is PlayerCouchCarrier) count++;
+            }
+            return count;
+        }
+
         private float CalculateTotalCarrierEfficiency(int carrierCount)
         {
             if (carrierCount <= 0)
@@ -497,7 +569,7 @@ namespace CouchGuys.Gameplay.Couch
             movingCarrierCount = 0;
             for (int index = 0; index < MaximumCarryPoints; index++)
             {
-                PlayerCouchCarrier carrier = m_serverOccupants[index];
+                ICouchCarrierServer carrier = m_serverOccupants[index];
                 if (carrier == null)
                 {
                     continue;

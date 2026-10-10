@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace CouchGuys.Gameplay.Delivery
@@ -8,9 +9,29 @@ namespace CouchGuys.Gameplay.Delivery
         fileName = "SuburbsChapterDefinition")]
     public sealed class SuburbsChapterDefinition : ScriptableObject
     {
+        [Serializable]
+        public struct EnemySpawnRange
+        {
+            [SerializeField, Min(1)] private int m_minimum;
+            [SerializeField, Min(1)] private int m_maximum;
+
+            public int Minimum => Mathf.Max(1, m_minimum);
+            public int Maximum => Mathf.Max(Minimum, m_maximum);
+
+            public EnemySpawnRange(int minimum, int maximum)
+            {
+                m_minimum = Mathf.Max(1, minimum);
+                m_maximum = Mathf.Max(m_minimum, maximum);
+            }
+        }
+
         public const int RequiredStageCount = 7;
 
         [SerializeField] private SuburbsDeliveryStageDefinition[] m_stages = CreateDefaultStages();
+        [Header("Enemy Spawn Counts by Delivery Difficulty")]
+        [SerializeField] private EnemySpawnRange m_easyEnemySpawnRange = new(1, 2);
+        [SerializeField] private EnemySpawnRange m_mediumEnemySpawnRange = new(2, 4);
+        [SerializeField] private EnemySpawnRange m_hardEnemySpawnRange = new(4, 4);
 
         public int StageCount => m_stages?.Length ?? 0;
 
@@ -21,9 +42,23 @@ namespace CouchGuys.Gameplay.Delivery
                 : null;
         }
 
+        public EnemySpawnRange GetEnemySpawnRange(int deliveryTierIndex)
+        {
+            return deliveryTierIndex switch
+            {
+                0 => m_easyEnemySpawnRange,
+                1 => m_mediumEnemySpawnRange,
+                2 => m_hardEnemySpawnRange,
+                _ => m_easyEnemySpawnRange
+            };
+        }
+
         public void ResetToDefaults()
         {
             m_stages = CreateDefaultStages();
+            m_easyEnemySpawnRange = new EnemySpawnRange(1, 2);
+            m_mediumEnemySpawnRange = new EnemySpawnRange(2, 4);
+            m_hardEnemySpawnRange = new EnemySpawnRange(4, 4);
         }
 
         private static SuburbsDeliveryStageDefinition[] CreateDefaultStages()

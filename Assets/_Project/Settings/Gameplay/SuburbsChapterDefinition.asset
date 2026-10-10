@@ -48,3 +48,12 @@ MonoBehaviour:
     m_reward: 500
     m_requiresVan: 1
     m_finalDelivery: 1
+  m_easyEnemySpawnRange:
+    m_minimum: 1
+    m_maximum: 2
+  m_mediumEnemySpawnRange:
+    m_minimum: 2
+    m_maximum: 4
+  m_hardEnemySpawnRange:
+    m_minimum: 4
+    m_maximum: 4

@@ -19,7 +19,7 @@ namespace CouchGuys.Player
     [RequireComponent(typeof(ThirdPersonPlayerController))]
     [RequireComponent(typeof(NetworkObject))]
     [DisallowMultipleComponent]
-    public sealed class PlayerCouchCarrier : NetworkBehaviour
+    public sealed class PlayerCouchCarrier : NetworkBehaviour, ICouchCarrierServer
     {
         [Header("References")]
         [SerializeField] private PlayerInputReader m_input;
@@ -59,6 +59,10 @@ namespace CouchGuys.Player
         internal DebugCouchBotSettings DebugBotSettings => m_debugBot;
         internal int CarriedPointIndex => m_carriedPointIndex.Value;
         public bool IsCarrying => m_carriedCouch.Value != null;
+
+        NetworkObject ICouchCarrierServer.CarrierNetworkObject => NetworkObject;
+        bool ICouchCarrierServer.IsCarrierAvailable => IsSpawned &&
+            (!TryGetComponent(out PlayerHealth health) || health.IsAlive);
 
         private void Awake()
         {
@@ -130,6 +134,9 @@ namespace CouchGuys.Player
             return transform.position + directionToCouch.normalized * CarryDistance + Vector3.up * CarryHeight;
         }
 
+        Vector3 ICouchCarrierServer.CalculateDesiredCarryPosition(Vector3 couchCentre) =>
+            CalculateDesiredCarryPosition(couchCentre);
+
         internal Vector3 GetServerMovementIntent()
         {
             float effectiveTimeout = Mathf.Max(
@@ -139,6 +146,8 @@ namespace CouchGuys.Player
                 ? m_serverMovementIntent
                 : Vector3.zero;
         }
+
+        Vector3 ICouchCarrierServer.GetServerMovementIntent() => GetServerMovementIntent();
 
         internal CouchCarryController GetCarriedCouchServer()
         {
@@ -195,6 +204,9 @@ namespace CouchGuys.Player
             m_lastServerIntentTime = float.NegativeInfinity;
         }
 
+        void ICouchCarrierServer.SetCarriedCouchServer(CouchCarryController couch, int pointIndex) =>
+            SetCarriedCouchServer(couch, pointIndex);
+
         internal void ClearCarriedCouchServer(CouchCarryController couch, int pointIndex)
         {
             if (!IsServerInitialized || m_carriedCouch.Value != couch?.NetworkObject || m_carriedPointIndex.Value != pointIndex)
@@ -207,6 +219,9 @@ namespace CouchGuys.Player
             m_serverMovementIntent = Vector3.zero;
             m_lastServerIntentTime = float.NegativeInfinity;
         }
+
+        void ICouchCarrierServer.ClearCarriedCouchServer(CouchCarryController couch, int pointIndex) =>
+            ClearCarriedCouchServer(couch, pointIndex);
 
         private void TryRequestNearestInteraction()
         {

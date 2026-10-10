@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CouchGuys.Networking;
 using CouchGuys.Player;
 using CouchGuys.ProceduralGeneration;
+using CouchGuys.Gameplay.Delivery;
 using FishNet;
 using FishNet.Object;
 using UnityEngine;
@@ -31,8 +32,6 @@ namespace CouchGuys.Gameplay.Enemies
         [SerializeField, Min(1)] private int m_spawnPositionAttempts = 12;
 
         [Header("Groups")]
-        [SerializeField, Min(1)] private int m_minGroupSize = 2;
-        [SerializeField, Min(1)] private int m_maxGroupSize = 5;
         [SerializeField, Min(0.5f)] private float m_groupSpread = 4f;
         [SerializeField, Min(1)] private int m_memberPositionAttempts = 6;
         [SerializeField, Min(1)] private int m_maxActiveThieves = 15;
@@ -44,6 +43,8 @@ namespace CouchGuys.Gameplay.Enemies
         private readonly List<NetworkObject> m_activeThieves = new List<NetworkObject>(16);
         private readonly List<Vector3> m_groupPositions = new List<Vector3>(8);
         private NavMeshPath m_path;
+        private DeliveryManager m_deliveryManager;
+        private SuburbsChapterManager m_chapterManager;
         private bool m_regionReady;
         private bool m_clearingEnemies;
         private bool m_warnedMissingPrefab;
@@ -67,6 +68,8 @@ namespace CouchGuys.Gameplay.Enemies
         private void Awake()
         {
             m_generator ??= GetComponent<NeighbourhoodGenerator>();
+            m_deliveryManager = GetComponent<DeliveryManager>();
+            m_chapterManager = GetComponent<SuburbsChapterManager>();
             m_path = new NavMeshPath();
         }
 
@@ -179,13 +182,17 @@ namespace CouchGuys.Gameplay.Enemies
         private void TrySpawnGroup()
         {
             PruneMissingThieves();
+            if (!TryGetCurrentSpawnRange(out int minimumGroupSize, out int maximumGroupSize))
+            {
+                return;
+            }
             int availableSlots = m_maxActiveThieves - m_activeThieves.Count;
-            if (availableSlots < m_minGroupSize || !TrySelectPlayer(out NetworkPlayerOwnership target))
+            if (availableSlots < minimumGroupSize || !TrySelectPlayer(out NetworkPlayerOwnership target))
             {
                 return;
             }
 
-            int desiredSize = Random.Range(m_minGroupSize, m_maxGroupSize + 1);
+            int desiredSize = Random.Range(minimumGroupSize, maximumGroupSize + 1);
             desiredSize = Mathf.Min(desiredSize, availableSlots);
             if (!TryFindGroupOrigin(target.transform.position, out Vector3 origin))
             {
@@ -201,7 +208,7 @@ namespace CouchGuys.Gameplay.Enemies
                 }
             }
 
-            if (m_groupPositions.Count < m_minGroupSize)
+            if (m_groupPositions.Count < minimumGroupSize)
             {
                 return;
             }
@@ -265,6 +272,32 @@ namespace CouchGuys.Gameplay.Enemies
                 m_lastSpawnGroupSize = spawnedCount;
                 m_hasLastSpawn = true;
             }
+        }
+
+        private bool TryGetCurrentSpawnRange(out int minimum, out int maximum)
+        {
+            minimum = 0;
+            maximum = 0;
+            m_deliveryManager ??= GetComponent<DeliveryManager>() ?? FindFirstObjectByType<DeliveryManager>();
+            m_chapterManager ??= GetComponent<SuburbsChapterManager>() ?? FindFirstObjectByType<SuburbsChapterManager>();
+            if (m_deliveryManager == null || !m_deliveryManager.HasActiveDelivery ||
+                m_deliveryManager.ActiveTierIndex < 0)
+            {
+                return false;
+            }
+
+            int tierIndex = m_deliveryManager.ActiveTierIndex;
+            SuburbsChapterDefinition.EnemySpawnRange range = m_chapterManager?.Definition != null
+                ? m_chapterManager.Definition.GetEnemySpawnRange(tierIndex)
+                : tierIndex switch
+                {
+                    0 => new SuburbsChapterDefinition.EnemySpawnRange(1, 2),
+                    1 => new SuburbsChapterDefinition.EnemySpawnRange(2, 4),
+                    _ => new SuburbsChapterDefinition.EnemySpawnRange(4, 4)
+                };
+            minimum = range.Minimum;
+            maximum = range.Maximum;
+            return true;
         }
 
         private bool TrySelectPlayer(out NetworkPlayerOwnership selected)
@@ -526,9 +559,7 @@ namespace CouchGuys.Gameplay.Enemies
             m_maxSpawnInterval = Mathf.Max(m_minSpawnInterval, m_maxSpawnInterval);
             m_minSpawnDistance = Mathf.Max(1f, m_minSpawnDistance);
             m_maxSpawnDistance = Mathf.Max(m_minSpawnDistance, m_maxSpawnDistance);
-            m_minGroupSize = Mathf.Max(1, m_minGroupSize);
-            m_maxGroupSize = Mathf.Max(m_minGroupSize, m_maxGroupSize);
-            m_maxActiveThieves = Mathf.Max(m_minGroupSize, m_maxActiveThieves);
+            m_maxActiveThieves = Mathf.Max(1, m_maxActiveThieves);
             m_spawnPositionAttempts = Mathf.Max(1, m_spawnPositionAttempts);
             m_memberPositionAttempts = Mathf.Max(1, m_memberPositionAttempts);
         }
