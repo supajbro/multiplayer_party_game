@@ -21,7 +21,13 @@ namespace CouchGuys.Gameplay.Delivery
         public void InteractServer(PlayerCouchCarrier player)
         {
             m_deliveryManager ??= FindFirstObjectByType<DeliveryManager>();
-            m_deliveryManager?.TryStartDeliveryServer(this, player);
+            m_deliveryManager?.TryBeginDialogueServer(this, player);
+        }
+
+        private void OnDestroy()
+        {
+            if (m_deliveryManager != null && m_deliveryManager.IsServerInitialized)
+                m_deliveryManager.NotifyNpcUnavailableServer(this);
         }
     }
 }

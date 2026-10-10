@@ -2407,14 +2407,19 @@ namespace CouchGuys.ProceduralGeneration
                 m_spawnedUniqueLots.Add(definition);
             }
 
-            RegisterDeliveryDestination(property, generatedProperty, definition);
+            // A centred, single-property block is the generator's logical mansion lot.
+            // It remains a mansion destination while placeholder/standard art is used,
+            // and automatically picks up dedicated mansion art once assigned.
+            RegisterDeliveryDestination(property, generatedProperty, definition,
+                centreInLot || (m_mansionPrefab != null && prefab == m_mansionPrefab));
             return true;
         }
 
         private void RegisterDeliveryDestination(
             GameObject property,
             GeneratedProperty generatedProperty,
-            LotDefinition definition)
+            LotDefinition definition,
+            bool isMansion)
         {
             bool canDeliver = definition == null || definition.CanBeDeliveryDestination;
             if (!canDeliver || generatedProperty.DeliveryPoint == null)
@@ -2429,7 +2434,9 @@ namespace CouchGuys.ProceduralGeneration
             }
 
             LotType lotType = definition != null ? definition.LotType : LotType.Residential;
-            DeliveryDestinationType destinationType = lotType switch
+            DeliveryDestinationType destinationType = isMansion
+                ? DeliveryDestinationType.Mansion
+                : lotType switch
             {
                 LotType.Commercial => DeliveryDestinationType.Commercial,
                 LotType.Landmark => DeliveryDestinationType.Landmark,
@@ -2439,7 +2446,9 @@ namespace CouchGuys.ProceduralGeneration
             destination.Initialise(
                 generatedProperty.DeliveryPoint,
                 destinationType,
-                definition != null ? definition.DestinationDisplayName : "House",
+                isMansion
+                    ? "Mansion"
+                    : definition != null ? definition.DestinationDisplayName : "House",
                 definition != null ? definition.DeliveryDifficultyModifier : 1f,
                 definition != null ? definition.DeliveryRewardModifier : 1f,
                 true);

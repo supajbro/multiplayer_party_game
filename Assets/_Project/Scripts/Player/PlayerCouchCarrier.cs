@@ -3,10 +3,13 @@ using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Input;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
+using FishNet.Connection;
 using FishNet.Transporting;
 using FishNet.Component.Transforming;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CouchGuys.UI;
+using System.Collections.Generic;
 
 namespace CouchGuys.Player
 {
@@ -104,16 +107,23 @@ namespace CouchGuys.Player
 
         public override void OnStartServer() => base.OnStartServer();
 
-        public override void OnStopServer()
-        {
-            ReleaseCurrentCouchServer();
-            base.OnStopServer();
-        }
-
         public override void OnStopClient()
         {
+            if (IsOwner)
+            {
+                DialogueShopUI.Instance.Close(false);
+                m_input?.SetGameplaySuppressed(false);
+            }
             RestoreMovementSpeed();
             base.OnStopClient();
+        }
+
+        public override void OnStopServer()
+        {
+            DeliveryManager deliveryManager = FindFirstObjectByType<DeliveryManager>();
+            deliveryManager?.ReleaseDialogueLockServer(this);
+            ReleaseCurrentCouchServer();
+            base.OnStopServer();
         }
 
         internal Vector3 CalculateDesiredCarryPosition(Vector3 couchCentre)
@@ -269,6 +279,72 @@ namespace CouchGuys.Player
             }
 
             closestNpc?.InteractServer(this);
+        }
+
+        [ServerRpc]
+        private void RequestDeliveryPurchaseServerRpc(int tierIndex)
+        {
+            DeliveryManager deliveryManager = FindFirstObjectByType<DeliveryManager>();
+            deliveryManager?.TryPurchaseDeliveryServer(this, tierIndex);
+        }
+
+        [ServerRpc]
+        private void RequestCloseDialogueServerRpc()
+        {
+            DeliveryManager deliveryManager = FindFirstObjectByType<DeliveryManager>();
+            deliveryManager?.ReleaseDialogueLockServer(this);
+        }
+
+        [TargetRpc]
+        public void OpenDeliveryDialogueTargetRpc(NetworkConnection connection,
+            bool easyAvailable, string easyReason, bool mediumAvailable, string mediumReason,
+            bool hardAvailable, string hardReason)
+        {
+            if (!IsOwner) return;
+            DeliveryManager manager = FindFirstObjectByType<DeliveryManager>();
+            List<DialogueShopOption> options = new();
+            bool[] available = { easyAvailable, mediumAvailable, hardAvailable };
+            string[] reasons = { easyReason, mediumReason, hardReason };
+            for (int index = 0; index < 3; index++)
+            {
+                int capturedTier = index;
+                DeliveryTierConfig config = manager != null ? manager.GetTierConfig(index) : null;
+                if (config == null) continue;
+                options.Add(new DialogueShopOption(
+                    config.DisplayName,
+                    config.Description,
+                    config.PurchasePrice == 0 ? "FREE" : $"${config.PurchasePrice:N0}",
+                    $"${config.Reward:N0}",
+                    config.Colour,
+                    available[index],
+                    reasons[index],
+                    () => RequestDeliveryPurchaseServerRpc(capturedTier)));
+            }
+
+            m_input?.SetGameplaySuppressed(true);
+            DialogueShopUI.Instance.Open(
+                "Hey! Pick a run and we'll get that couch moving.",
+                options,
+                () =>
+                {
+                    m_input?.SetGameplaySuppressed(false);
+                    RequestCloseDialogueServerRpc();
+                });
+        }
+
+        [TargetRpc]
+        public void CloseDeliveryDialogueTargetRpc(NetworkConnection connection, string message)
+        {
+            if (!IsOwner) return;
+            DialogueShopUI.Instance.Close(false);
+            m_input?.SetGameplaySuppressed(false);
+            if (!string.IsNullOrWhiteSpace(message)) Debug.Log(message, this);
+        }
+
+        [TargetRpc]
+        public void DeliveryNpcBusyTargetRpc(NetworkConnection connection)
+        {
+            if (IsOwner) DialogueShopUI.Instance.ShowNotice("The Delivery Manager is currently busy.");
         }
 
         [ServerRpc]

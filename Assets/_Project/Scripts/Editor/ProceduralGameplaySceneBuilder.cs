@@ -53,6 +53,7 @@ namespace CouchGuys.Editor
             GameObject[] enemyPrefabs = ThiefPrefabBuilder.EnsureEnemyPrefabs();
             SuburbsChapterDefinition suburbsChapterDefinition =
                 SuburbsProgressionAssetBuilder.EnsureDefinition();
+            DeliveryTierConfig[] deliveryTiers = DeliveryTierAssetBuilder.EnsureDeliveryTiers();
 
             Scene scene = SceneManager.GetSceneByPath(GameplayScenePath);
             bool openedTemporarily = !scene.IsValid() || !scene.isLoaded;
@@ -113,6 +114,10 @@ namespace CouchGuys.Editor
             {
                 deliveryManager = generator.gameObject.AddComponent<DeliveryManager>();
             }
+            bool assignedDeliveryTiers = deliveryManager.GetTierConfig(0) != deliveryTiers[0] ||
+                                         deliveryManager.GetTierConfig(1) != deliveryTiers[1] ||
+                                         deliveryManager.GetTierConfig(2) != deliveryTiers[2];
+            deliveryManager.SetDeliveryTiers(deliveryTiers);
 
             SuburbsChapterManager chapterManager = generator.GetComponent<SuburbsChapterManager>();
             bool addedChapterManager = chapterManager == null;
@@ -127,11 +132,12 @@ namespace CouchGuys.Editor
             if (IsConfigured(scene))
             {
                 if (assignedDefaultHouses || addedEnemySpawnManager || addedChapterManager ||
-                    assignedChapterDefinition)
+                    assignedChapterDefinition || assignedDeliveryTiers)
                 {
                     generator.Generate(12345);
                     EditorUtility.SetDirty(generator);
                     EditorUtility.SetDirty(chapterManager);
+                    EditorUtility.SetDirty(deliveryManager);
                     EditorSceneManager.MarkSceneDirty(scene);
                     EditorSceneManager.SaveScene(scene);
                     AssetDatabase.SaveAssets();

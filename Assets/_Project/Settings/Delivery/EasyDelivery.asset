@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b572ff79cc94fcc97c32509b70ed6dd, type: 3}
+  m_Name: EasyDelivery
+  m_EditorClassIdentifier: 
+  m_tier: 0
+  m_displayName: Easy Delivery
+  m_description: A nearby, mostly flat run in the early neighbourhood.
+  m_icon: {fileID: 0}
+  m_colour: {r: 0.24, g: 0.76, b: 0.34, a: 1}
+  m_purchasePrice: 0
+  m_reward: 100
+  m_baseDeliveryTime: 45
+  m_timePerRouteMetre: 0.55
+  m_minimumDeliveryTime: 60
+  m_maximumDeliveryTime: 180
+  m_uphillDistanceMultiplier: 2
+  m_minimumRouteDistance: 0
+  m_maximumRouteDistance: 110
+  m_minimumProgressionZone: 0
+  m_maximumProgressionZone: 1
+  m_maximumElevationGain: 6
+  m_maximumRoadGrade: 18
+  m_allowedCategories: 1

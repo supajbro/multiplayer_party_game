@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b572ff79cc94fcc97c32509b70ed6dd, type: 3}
+  m_Name: MediumDelivery
+  m_EditorClassIdentifier: 
+  m_tier: 1
+  m_displayName: Medium Delivery
+  m_description: A longer route through the middle streets and rolling hills.
+  m_icon: {fileID: 0}
+  m_colour: {r: 0.96, g: 0.62, b: 0.16, a: 1}
+  m_purchasePrice: 100
+  m_reward: 250
+  m_baseDeliveryTime: 55
+  m_timePerRouteMetre: 0.58
+  m_minimumDeliveryTime: 90
+  m_maximumDeliveryTime: 300
+  m_uphillDistanceMultiplier: 2
+  m_minimumRouteDistance: 80
+  m_maximumRouteDistance: 260
+  m_minimumProgressionZone: 2
+  m_maximumProgressionZone: 3
+  m_maximumElevationGain: 24
+  m_maximumRoadGrade: 32
+  m_allowedCategories: 7

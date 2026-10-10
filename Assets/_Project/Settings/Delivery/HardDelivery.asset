@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b572ff79cc94fcc97c32509b70ed6dd, type: 3}
+  m_Name: HardDelivery
+  m_EditorClassIdentifier: 
+  m_tier: 2
+  m_displayName: Hard Delivery
+  m_description: Haul the couch to a mansion at the far end of the neighbourhood.
+  m_icon: {fileID: 0}
+  m_colour: {r: 0.82, g: 0.23, b: 0.27, a: 1}
+  m_purchasePrice: 250
+  m_reward: 500
+  m_baseDeliveryTime: 75
+  m_timePerRouteMetre: 0.65
+  m_minimumDeliveryTime: 150
+  m_maximumDeliveryTime: 600
+  m_uphillDistanceMultiplier: 2
+  m_minimumRouteDistance: 160
+  m_maximumRouteDistance: 10000
+  m_minimumProgressionZone: 3
+  m_maximumProgressionZone: 4
+  m_maximumElevationGain: 10000
+  m_maximumRoadGrade: 60
+  m_allowedCategories: 16

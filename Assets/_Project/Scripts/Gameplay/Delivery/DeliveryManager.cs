@@ -6,7 +6,6 @@ using CouchGuys.ProceduralGeneration;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using UnityEngine;
-using UnityEngine.AI;
 
 namespace CouchGuys.Gameplay.Delivery
 {
@@ -22,18 +21,13 @@ namespace CouchGuys.Gameplay.Delivery
         [SerializeField] private NetworkObject m_couchPrefab;
         [SerializeField] private GameObject m_collectionMarkerPrefab;
 
+        [Header("Delivery Shop")]
+        [SerializeField] private DeliveryTierConfig[] m_deliveryTiers = new DeliveryTierConfig[3];
+        [SerializeField, Min(1f)] private float m_dialogueMaximumDistance = 4f;
+
         [Header("Delivery Completion")]
         [SerializeField, Min(0.25f)] private float m_collectionRadius = 2.5f;
-        [SerializeField, Min(0)] private int m_rewardPerDelivery = 100;
         [SerializeField, Min(0f)] private float m_markerGroundOffset = 0.035f;
-
-        [Header("Delivery Timer")]
-        [SerializeField, Min(0f)] private float m_baseDeliveryTime = 45f;
-        [SerializeField, Min(0.1f)] private float m_expectedCouchCarrySpeed = 2.5f;
-        [SerializeField, Min(0.1f)] private float m_deliveryTimeMultiplier = 1.25f;
-        [SerializeField, Min(1f)] private float m_minimumDeliveryTime = 60f;
-        [SerializeField, Min(1f)] private float m_maximumDeliveryTime = 600f;
-        [SerializeField, Min(0f)] private float m_uphillDistanceMultiplier = 2f;
 
         [Header("Debug/Test Teleport")]
         [SerializeField, Min(0.25f)] private float m_testTeleportOutsideRadius = 1.5f;
@@ -51,11 +45,19 @@ namespace CouchGuys.Gameplay.Delivery
         private readonly SyncVar<uint> m_deliveryDeadlineTick = new();
         private readonly SyncVar<float> m_deliveryDuration = new();
         private readonly SyncVar<int> m_deliveryFailureSequence = new();
+        private readonly SyncVar<int> m_activeTierIndex = new(-1);
 
         private GameObject m_collectionMarker;
         private Material m_runtimeMarkerMaterial;
         private bool m_isCompletingDelivery;
         private readonly HashSet<int> m_usedDestinationIndices = new HashSet<int>();
+        private readonly List<int>[] m_tierCandidates =
+        {
+            new List<int>(), new List<int>(), new List<int>()
+        };
+        private PlayerCouchCarrier m_dialoguePlayer;
+        private DeliveryNPC m_dialogueNpc;
+        private bool m_candidatesReady;
 
         public event Action<int> CurrencyChanged;
         public event Action<DeliveryState> StateChanged;
@@ -71,6 +73,7 @@ namespace CouchGuys.Gameplay.Delivery
         public int LastReward => m_lastReward.Value;
         public float DeliveryDuration => m_deliveryDuration.Value;
         public int DeliveryFailureSequence => m_deliveryFailureSequence.Value;
+        public int ActiveTierIndex => m_activeTierIndex.Value;
         public bool IsDeliveryTimerActive =>
             m_state.Value == DeliveryState.Transport && m_deliveryDeadlineTick.Value != 0;
         public float RemainingDeliveryTime
@@ -105,6 +108,8 @@ namespace CouchGuys.Gameplay.Delivery
             m_currency.OnChange += OnCurrencyChanged;
             m_state.OnChange += OnStateChanged;
             m_objectiveStep.OnChange += OnObjectiveStepChanged;
+            m_generator.RegionGenerated += OnRegionGenerated;
+            m_generator.RegionClearing += OnRegionClearing;
         }
 
         private void OnDestroy()
@@ -113,6 +118,13 @@ namespace CouchGuys.Gameplay.Delivery
             m_currency.OnChange -= OnCurrencyChanged;
             m_state.OnChange -= OnStateChanged;
             m_objectiveStep.OnChange -= OnObjectiveStepChanged;
+            if (m_generator != null)
+            {
+                m_generator.RegionGenerated -= OnRegionGenerated;
+                m_generator.RegionClearing -= OnRegionClearing;
+            }
+            if (IsServerInitialized && m_dialoguePlayer != null && m_dialoguePlayer.Owner.IsValid)
+                m_dialoguePlayer.CloseDeliveryDialogueTargetRpc(m_dialoguePlayer.Owner, "Delivery Manager unavailable.");
             DestroyCollectionMarker();
             if (m_runtimeMarkerMaterial != null)
             {
@@ -138,13 +150,22 @@ namespace CouchGuys.Gameplay.Delivery
             m_activeStageIndex.Value = -1;
             m_attemptNumber.Value = 0;
             m_lastReward.Value = 0;
-                    StopDeliveryTimerServer();
+            m_activeTierIndex.Value = -1;
+            StopDeliveryTimerServer();
+            RebuildCandidateCache();
         }
 
         private void Update()
         {
             if (IsServerInitialized && IsDeliveryTimerActive && TimeManager.Tick >= m_deliveryDeadlineTick.Value)
                 FailAndResetActiveDeliveryServer();
+            if (IsServerInitialized && m_dialoguePlayer != null &&
+                (m_dialogueNpc == null ||
+                 Vector3.Distance(m_dialoguePlayer.transform.position, m_dialogueNpc.transform.position) >
+                 m_dialogueMaximumDistance))
+            {
+                ReleaseDialogueLockServer(m_dialoguePlayer, true, "You moved too far from the Delivery Manager.");
+            }
         }
 
         private void FixedUpdate()
@@ -176,12 +197,74 @@ namespace CouchGuys.Gameplay.Delivery
             m_couchPrefab = couchPrefab;
         }
 
-        public bool TryStartDeliveryServer(DeliveryNPC npc, PlayerCouchCarrier player)
+        public DeliveryTierConfig GetTierConfig(int index) =>
+            m_deliveryTiers != null && index >= 0 && index < m_deliveryTiers.Length
+                ? m_deliveryTiers[index]
+                : null;
+
+        public void SetDeliveryTiers(DeliveryTierConfig[] tiers)
+        {
+            m_deliveryTiers = tiers;
+            m_candidatesReady = false;
+        }
+
+        [Server]
+        public bool TryBeginDialogueServer(DeliveryNPC npc, PlayerCouchCarrier player)
+        {
+            if (!IsServerInitialized || npc == null || player == null || !player.Owner.IsValid)
+                return false;
+            if (m_dialoguePlayer != null && m_dialoguePlayer != player)
+            {
+                player.DeliveryNpcBusyTargetRpc(player.Owner);
+                return false;
+            }
+            if (player.TryGetComponent(out PlayerHealth health) && !health.IsAlive) return false;
+            m_dialoguePlayer = player;
+            m_dialogueNpc = npc;
+            SendDialogueState(player);
+            return true;
+        }
+
+        [Server]
+        public void ReleaseDialogueLockServer(PlayerCouchCarrier player)
+        {
+            ReleaseDialogueLockServer(player, false, string.Empty);
+        }
+
+        [Server]
+        private void ReleaseDialogueLockServer(PlayerCouchCarrier player, bool closeClient, string message)
+        {
+            if (player == null || m_dialoguePlayer != player) return;
+            m_dialoguePlayer = null;
+            m_dialogueNpc = null;
+            if (closeClient && player.Owner.IsValid)
+                player.CloseDeliveryDialogueTargetRpc(player.Owner, message);
+        }
+
+        [Server]
+        public void NotifyNpcUnavailableServer(DeliveryNPC npc)
+        {
+            if (npc != null && npc == m_dialogueNpc && m_dialoguePlayer != null)
+                ReleaseDialogueLockServer(m_dialoguePlayer, true, "Delivery Manager unavailable.");
+        }
+
+        [Server]
+        public bool TryPurchaseDeliveryServer(PlayerCouchCarrier player, int tierIndex)
         {
             m_chapterManager ??= GetComponent<SuburbsChapterManager>();
-            if (!IsServerInitialized || npc == null || player == null || HasActiveDelivery ||
+            DeliveryNPC npc = m_dialogueNpc;
+            DeliveryTierConfig tier = GetTierConfig(tierIndex);
+            if (!IsServerInitialized || player == null || player != m_dialoguePlayer || npc == null ||
+                tier == null || HasActiveDelivery ||
                 m_destinationIndex.Value >= 0 || m_activeCouch.Value != null)
             {
+                if (player == m_dialoguePlayer) SendDialogueState(player);
+                return false;
+            }
+            if (Vector3.Distance(player.transform.position, npc.transform.position) >
+                m_dialogueMaximumDistance)
+            {
+                ReleaseDialogueLockServer(player, true, "You moved too far from the Delivery Manager.");
                 return false;
             }
 
@@ -207,13 +290,17 @@ namespace CouchGuys.Gameplay.Delivery
                 return false;
             }
 
-            SetStateServer(DeliveryState.NPCInteraction, DeliveryObjectiveStep.AcceptDelivery);
+            EnsureCandidateCache();
             int stageIndex = m_chapterManager.CurrentStageIndex;
-            int destinationIndex = SelectDestinationIndex(stageIndex);
+            int destinationIndex = SelectDestinationIndex(tierIndex);
             if (destinationIndex < 0)
             {
-                Debug.LogWarning("A delivery could not start because the neighbourhood has no valid delivery points.", this);
-                SetStateServer(DeliveryState.Available, DeliveryObjectiveStep.AcceptDelivery);
+                SendDialogueState(player);
+                return false;
+            }
+            if (m_currency.Value < tier.PurchasePrice)
+            {
+                SendDialogueState(player);
                 return false;
             }
 
@@ -221,12 +308,14 @@ namespace CouchGuys.Gameplay.Delivery
             m_activeStageIndex.Value = m_chapterManager.CurrentStageIndex;
             m_attemptNumber.Value = Mathf.Max(1, m_attemptNumber.Value + 1);
             m_lastReward.Value = 0;
+            m_activeTierIndex.Value = tierIndex;
             m_destinationIndex.Value = destinationIndex;
             NetworkObject couch = Instantiate(m_couchPrefab, npc.CouchSpawnPosition, npc.CouchSpawnRotation);
             Spawn(couch);
             m_activeCouch.Value = couch;
+            m_currency.Value -= tier.PurchasePrice;
             m_usedDestinationIndices.Add(destinationIndex);
-            StartDeliveryTimerServer(npc.CouchSpawnPosition, m_generator.DeliveryDestinations[destinationIndex]);
+            StartDeliveryTimerServer(m_generator.DeliveryDestinations[destinationIndex], tier);
             DeliveryRouteMetrics selectedMetrics = m_generator.DeliveryDestinations[destinationIndex].RouteMetrics;
             if (selectedMetrics != null)
             {
@@ -241,6 +330,7 @@ namespace CouchGuys.Gameplay.Delivery
             }
             SetStateServer(DeliveryState.CouchSpawned, DeliveryObjectiveStep.CarryCouch);
             SetStateServer(DeliveryState.Transport, DeliveryObjectiveStep.DeliverCouch);
+            ReleaseDialogueLockServer(player, true, $"{tier.DisplayName} started.");
             return true;
         }
 
@@ -326,13 +416,15 @@ namespace CouchGuys.Gameplay.Delivery
             m_destinationIndex.Value = -1;
             couch.ReleaseAllOccupantsServer();
             SetStateServer(DeliveryState.Completed, DeliveryObjectiveStep.None);
-            int configuredReward = m_chapterManager != null
-                ? m_chapterManager.CompleteCurrentStageServer(m_activeStageIndex.Value)
-                : m_rewardPerDelivery;
+            DeliveryTierConfig activeTier = GetTierConfig(m_activeTierIndex.Value);
+            if (m_chapterManager != null)
+                m_chapterManager.CompleteCurrentStageServer(m_activeStageIndex.Value);
+            int configuredReward = activeTier != null ? activeTier.Reward : 0;
             int reward = destination != null
                 ? Mathf.RoundToInt(configuredReward * destination.RewardModifier)
                 : configuredReward;
             m_lastReward.Value = reward;
+            m_activeTierIndex.Value = -1;
             SetStateServer(DeliveryState.Reward, DeliveryObjectiveStep.None);
             m_currency.Value += reward;
             Debug.Log(
@@ -385,18 +477,21 @@ namespace CouchGuys.Gameplay.Delivery
 
             SetStateServer(DeliveryState.Resetting, DeliveryObjectiveStep.None);
             m_activeStageIndex.Value = -1;
+            m_activeTierIndex.Value = -1;
             m_lastReward.Value = 0;
             SetStateServer(DeliveryState.Available, DeliveryObjectiveStep.AcceptDelivery);
             return true;
         }
 
         [Server]
-        private void StartDeliveryTimerServer(Vector3 startPosition, DeliveryDestination destination)
+        private void StartDeliveryTimerServer(DeliveryDestination destination, DeliveryTierConfig tier)
         {
-            float distance = CalculateTravelDistance(startPosition, destination);
-            float seconds = Mathf.Clamp(m_baseDeliveryTime +
-                distance / Mathf.Max(0.1f, m_expectedCouchCarrySpeed) * m_deliveryTimeMultiplier,
-                m_minimumDeliveryTime, m_maximumDeliveryTime);
+            if (tier == null)
+            {
+                StopDeliveryTimerServer();
+                return;
+            }
+            float seconds = tier.CalculateDuration(destination);
             m_deliveryDuration.Value = seconds;
             uint ticks = TimeManager.TimeToTicks(seconds);
             m_deliveryDeadlineTick.Value = TimeManager.Tick + (ticks == 0 ? 1u : ticks);
@@ -409,24 +504,6 @@ namespace CouchGuys.Gameplay.Delivery
             m_deliveryDuration.Value = 0f;
         }
 
-        private float CalculateTravelDistance(Vector3 startPosition, DeliveryDestination destination)
-        {
-            if (destination == null) return 0f;
-            DeliveryRouteMetrics metrics = destination.RouteMetrics;
-            if (metrics != null && metrics.IsReachable)
-                return metrics.RouteLength + metrics.FinalCarryDistance +
-                    (metrics.CumulativeElevationGain + metrics.FinalCarryElevationGain) * m_uphillDistanceMultiplier;
-            NavMeshPath path = new NavMeshPath();
-            if (NavMesh.CalculatePath(startPosition, destination.DropPosition.position, NavMesh.AllAreas, path) &&
-                path.status == NavMeshPathStatus.PathComplete)
-            {
-                float distance = 0f;
-                for (int i = 1; i < path.corners.Length; i++)
-                    distance += Vector3.Distance(path.corners[i - 1], path.corners[i]);
-                return distance;
-            }
-            return Vector3.Distance(startPosition, destination.DropPosition.position);
-        }
         [Server]
         private void SetStateServer(DeliveryState state, DeliveryObjectiveStep objectiveStep)
         {
@@ -434,76 +511,81 @@ namespace CouchGuys.Gameplay.Delivery
             m_objectiveStep.Value = objectiveStep;
         }
 
-        private int SelectDestinationIndex(int stageIndex)
+        private void OnRegionGenerated(NeighbourhoodGenerator generator)
         {
-            if (m_generator == null || !m_generator.HasGeneratedNeighbourhood ||
-                !m_generator.IsDeliveryDifficultyReady)
-            {
-                return -1;
-            }
+            RebuildCandidateCache();
+        }
+
+        private void OnRegionClearing(NeighbourhoodGenerator generator)
+        {
+            m_candidatesReady = false;
+            for (int i = 0; i < m_tierCandidates.Length; i++) m_tierCandidates[i].Clear();
+        }
+
+        private void EnsureCandidateCache()
+        {
+            if (!m_candidatesReady) RebuildCandidateCache();
+        }
+
+        private void RebuildCandidateCache()
+        {
+            for (int tierIndex = 0; tierIndex < m_tierCandidates.Length; tierIndex++)
+                m_tierCandidates[tierIndex].Clear();
+            m_candidatesReady = m_generator != null && m_generator.HasGeneratedNeighbourhood &&
+                                m_generator.IsDeliveryDifficultyReady;
+            if (!m_candidatesReady) return;
 
             IReadOnlyList<DeliveryDestination> destinations = m_generator.DeliveryDestinations;
-            DeliveryDestinationQuery query = DeliveryDestinationQuery.ForSuburbsStage(stageIndex);
-
-            int selected = FindBestDestination(destinations, query, stageIndex, true, true);
-            if (selected < 0)
+            for (int destinationIndex = 0; destinationIndex < destinations.Count; destinationIndex++)
             {
-                selected = FindBestDestination(destinations, query, stageIndex, false, true);
-            }
-
-            if (selected < 0)
-            {
-                selected = FindBestDestination(destinations, query, stageIndex, true, false);
-            }
-
-            return selected >= 0
-                ? selected
-                : FindBestDestination(destinations, query, stageIndex, false, false);
-        }
-
-        private int FindBestDestination(
-            IReadOnlyList<DeliveryDestination> destinations,
-            DeliveryDestinationQuery query,
-            int stageIndex,
-            bool requireStrictMatch,
-            bool requireUnused)
-        {
-            int selectedIndex = -1;
-            float selectedRank = float.MaxValue;
-            for (int index = 0; index < destinations.Count; index++)
-            {
-                DeliveryDestination destination = destinations[index];
-                DeliveryRouteMetrics metrics = destination != null ? destination.RouteMetrics : null;
-                if (destination == null || !destination.CanReceiveDelivery ||
-                    metrics == null || !metrics.IsReachable ||
-                    (requireUnused && m_usedDestinationIndices.Contains(index)) ||
-                    (requireStrictMatch && !query.Matches(metrics)))
+                for (int tierIndex = 0; tierIndex < m_tierCandidates.Length; tierIndex++)
                 {
-                    continue;
-                }
-
-                float rank = query.CalculateSuitability(metrics, stageIndex) +
-                    DeterministicTieBreaker(index, stageIndex);
-                if (rank < selectedRank)
-                {
-                    selectedRank = rank;
-                    selectedIndex = index;
+                    DeliveryTierConfig config = GetTierConfig(tierIndex);
+                    if (config != null && config.IsDestinationEligible(destinations[destinationIndex]))
+                        m_tierCandidates[tierIndex].Add(destinationIndex);
                 }
             }
-
-            return selectedIndex;
         }
 
-        private float DeterministicTieBreaker(int destinationIndex, int stageIndex)
+        private int SelectDestinationIndex(int tierIndex)
         {
+            EnsureCandidateCache();
+            if (tierIndex < 0 || tierIndex >= m_tierCandidates.Length ||
+                m_tierCandidates[tierIndex].Count == 0) return -1;
+
+            List<int> candidates = m_tierCandidates[tierIndex];
+            List<int> unused = new List<int>(candidates.Count);
+            for (int i = 0; i < candidates.Count; i++)
+                if (!m_usedDestinationIndices.Contains(candidates[i])) unused.Add(candidates[i]);
+            List<int> pool = unused.Count > 0 ? unused : candidates;
             unchecked
             {
-                int value = m_generator.CurrentSeed;
-                value = (value * 397) ^ destinationIndex;
-                value = (value * 397) ^ stageIndex;
-                value = (value * 397) ^ m_attemptNumber.Value;
-                return (value & 0x7fffffff) / (float)int.MaxValue * 0.01f;
+                int seed = m_generator.CurrentSeed;
+                seed = (seed * 397) ^ tierIndex;
+                seed = (seed * 397) ^ m_attemptNumber.Value;
+                return pool[new System.Random(seed).Next(pool.Count)];
             }
+        }
+
+        [Server]
+        private void SendDialogueState(PlayerCouchCarrier player)
+        {
+            if (player == null || !player.Owner.IsValid) return;
+            EnsureCandidateCache();
+            bool[] available = new bool[3];
+            string[] reasons = new string[3];
+            for (int index = 0; index < 3; index++)
+            {
+                DeliveryTierConfig tier = GetTierConfig(index);
+                if (tier == null) reasons[index] = "Not configured";
+                else if (HasActiveDelivery || (m_state.Value != DeliveryState.Available &&
+                         m_state.Value != DeliveryState.ReturnToNPC)) reasons[index] = "A delivery is already active";
+                else if (!m_candidatesReady || m_tierCandidates[index].Count == 0) reasons[index] = "No eligible houses in this neighbourhood";
+                else if (m_currency.Value < tier.PurchasePrice) reasons[index] = $"Need ${tier.PurchasePrice - m_currency.Value:N0} more";
+                else available[index] = true;
+            }
+            player.OpenDeliveryDialogueTargetRpc(player.Owner,
+                available[0], reasons[0], available[1], reasons[1], available[2], reasons[2]);
         }
 
         private void OnDestinationIndexChanged(int previous, int next, bool asServer)
@@ -636,12 +718,7 @@ namespace CouchGuys.Gameplay.Delivery
         {
             base.OnValidate();
             m_collectionRadius = Mathf.Max(0.25f, m_collectionRadius);
-            m_rewardPerDelivery = Mathf.Max(0, m_rewardPerDelivery);
             m_testTeleportOutsideRadius = Mathf.Max(0.25f, m_testTeleportOutsideRadius);
-            m_expectedCouchCarrySpeed = Mathf.Max(0.1f, m_expectedCouchCarrySpeed);
-            m_deliveryTimeMultiplier = Mathf.Max(0.1f, m_deliveryTimeMultiplier);
-            m_minimumDeliveryTime = Mathf.Max(1f, m_minimumDeliveryTime);
-            m_maximumDeliveryTime = Mathf.Max(m_minimumDeliveryTime, m_maximumDeliveryTime);
         }
 #endif
     }

@@ -7,7 +7,8 @@ namespace CouchGuys.Gameplay.Delivery
         Standard,
         Commercial,
         Landmark,
-        Special
+        Special,
+        Mansion
     }
 
     [DisallowMultipleComponent]

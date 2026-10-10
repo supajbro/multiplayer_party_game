@@ -29,20 +29,22 @@ namespace CouchGuys.Input
         private InputAction m_shotgunAction;
         private InputAction m_teleportToDeliveryAction;
         private InputActionAsset m_runtimeInputActions;
+        private bool m_gameplaySuppressed;
 
-        public Vector2 Move => m_moveAction?.ReadValue<Vector2>() ?? Vector2.zero;
-        public Vector2 Look => m_lookAction?.ReadValue<Vector2>() ?? Vector2.zero;
-        public bool JumpPressedThisFrame => m_jumpAction?.WasPressedThisFrame() ?? false;
-        public bool SprintHeld => m_sprintAction?.IsPressed() ?? false;
-        public bool InteractPressedThisFrame => m_interactAction?.WasPressedThisFrame() ?? false;
-        public bool MapPressedThisFrame => m_mapAction?.WasPressedThisFrame() ?? false;
-        public bool ShootHeld => m_shootAction?.IsPressed() ?? false;
-        public bool ShootPressedThisFrame => m_shootAction?.WasPressedThisFrame() ?? false;
-        public bool ReloadPressedThisFrame => m_reloadAction?.WasPressedThisFrame() ?? false;
+        public Vector2 Move => !m_gameplaySuppressed ? m_moveAction?.ReadValue<Vector2>() ?? Vector2.zero : Vector2.zero;
+        public Vector2 Look => !m_gameplaySuppressed ? m_lookAction?.ReadValue<Vector2>() ?? Vector2.zero : Vector2.zero;
+        public bool JumpPressedThisFrame => !m_gameplaySuppressed && (m_jumpAction?.WasPressedThisFrame() ?? false);
+        public bool SprintHeld => !m_gameplaySuppressed && (m_sprintAction?.IsPressed() ?? false);
+        public bool InteractPressedThisFrame => !m_gameplaySuppressed && (m_interactAction?.WasPressedThisFrame() ?? false);
+        public bool MapPressedThisFrame => !m_gameplaySuppressed && (m_mapAction?.WasPressedThisFrame() ?? false);
+        public bool ShootHeld => !m_gameplaySuppressed && (m_shootAction?.IsPressed() ?? false);
+        public bool ShootPressedThisFrame => !m_gameplaySuppressed && (m_shootAction?.WasPressedThisFrame() ?? false);
+        public bool ReloadPressedThisFrame => !m_gameplaySuppressed && (m_reloadAction?.WasPressedThisFrame() ?? false);
         public int HotbarSelectionPressedThisFrame
         {
             get
             {
+                if (m_gameplaySuppressed) return -1;
                 if (m_pistolAction?.WasPressedThisFrame() ?? false) return 0;
                 if (m_assaultRifleAction?.WasPressedThisFrame() ?? false) return 1;
                 if (m_shotgunAction?.WasPressedThisFrame() ?? false) return 2;
@@ -55,7 +57,12 @@ namespace CouchGuys.Input
             ? HotbarSelectionPressedThisFrame
             : -1;
         public bool TeleportToDeliveryPressedThisFrame =>
-            m_teleportToDeliveryAction?.WasPressedThisFrame() ?? false;
+            !m_gameplaySuppressed && (m_teleportToDeliveryAction?.WasPressedThisFrame() ?? false);
+
+        public void SetGameplaySuppressed(bool suppressed)
+        {
+            m_gameplaySuppressed = suppressed;
+        }
 
         private void Awake()
         {
