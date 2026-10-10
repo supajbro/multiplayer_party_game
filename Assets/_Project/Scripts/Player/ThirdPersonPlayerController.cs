@@ -227,17 +227,17 @@ namespace CouchGuys.Player
 
             Vector3 velocity = moveDirection * m_currentSpeed;
             velocity.y = m_verticalVelocity;
+            Vector3 displacement = (velocity + m_externalVelocity) * Time.deltaTime;
             Vector3 attachmentCorrection = m_resistanceAnchor != null
                 ? CalculateAttachmentCorrection(
-                    transform.position,
+                    transform.position + displacement,
                     m_resistanceAnchor.position,
                     m_maximumResistanceDistance)
                 : Vector3.zero;
             // Start collecting the normal for next frame before Move invokes
             // OnControllerColliderHit for this movement.
             m_groundNormal = Vector3.zero;
-            m_characterController.Move(
-                (velocity + m_externalVelocity) * Time.deltaTime + attachmentCorrection);
+            m_characterController.Move(displacement + attachmentCorrection);
         }
 
         private void UpdateLockedMovement()
@@ -296,7 +296,7 @@ namespace CouchGuys.Player
             float comfortableDistance,
             float maximumDistance)
         {
-            Vector3 awayFromAnchor = Vector3.ProjectOnPlane(playerPosition - anchorPosition, Vector3.up);
+            Vector3 awayFromAnchor = playerPosition - anchorPosition;
             float separation = awayFromAnchor.magnitude;
             if (separation <= comfortableDistance || awayFromAnchor.sqrMagnitude < 0.0001f)
             {
@@ -304,7 +304,14 @@ namespace CouchGuys.Player
             }
 
             Vector3 awayDirection = awayFromAnchor / separation;
-            float outwardAmount = Vector3.Dot(movement, awayDirection);
+            Vector3 horizontalAwayDirection = Vector3.ProjectOnPlane(awayDirection, Vector3.up);
+            if (horizontalAwayDirection.sqrMagnitude < 0.0001f)
+            {
+                return movement;
+            }
+
+            horizontalAwayDirection.Normalize();
+            float outwardAmount = Vector3.Dot(movement, horizontalAwayDirection);
             if (outwardAmount <= 0f)
             {
                 return movement;
@@ -316,7 +323,7 @@ namespace CouchGuys.Player
                     1f,
                     Mathf.InverseLerp(comfortableDistance, maximumDistance, separation))
                 : 1f;
-            return movement - awayDirection * outwardAmount * resistance;
+            return movement - horizontalAwayDirection * outwardAmount * resistance;
         }
 
         internal static Vector3 CalculateAttachmentCorrection(
@@ -324,7 +331,7 @@ namespace CouchGuys.Player
             Vector3 anchorPosition,
             float maximumDistance)
         {
-            Vector3 awayFromAnchor = Vector3.ProjectOnPlane(playerPosition - anchorPosition, Vector3.up);
+            Vector3 awayFromAnchor = playerPosition - anchorPosition;
             float maximumDistanceSquared = maximumDistance * maximumDistance;
             float separationSquared = awayFromAnchor.sqrMagnitude;
             if (separationSquared <= maximumDistanceSquared || separationSquared < 0.0001f)

@@ -12,6 +12,14 @@ namespace CouchGuys.Editor
     public static class CouchPrototypeBuilder
     {
         private const string PrefabPath = "Assets/_Project/Prefabs/Couch.prefab";
+        private const string CarrySettingsPath =
+            "Assets/_Project/Settings/Gameplay/CouchCarrySettings.asset";
+        private static readonly string[] ModelPaths =
+        {
+            "Assets/_Project/Models/Couch/couch_01.fbx",
+            "Assets/_Project/Models/Couch/couch_02.fbx",
+            "Assets/_Project/Models/Couch/couch_03.fbx"
+        };
 
         [InitializeOnLoadMethod]
         private static void BuildMissingPrefabAfterImport()
@@ -60,10 +68,7 @@ namespace CouchGuys.Editor
                 collider.size = new Vector3(2.1f, 0.9f, 0.9f);
 
                 Transform visual = CreateChild(couch.transform, "Visual", Vector3.zero);
-                CreateVisualCube(visual, "Base", new Vector3(0f, 0.25f, 0f), new Vector3(2.1f, 0.45f, 0.9f));
-                CreateVisualCube(visual, "Back", new Vector3(0f, 0.62f, 0.35f), new Vector3(2.1f, 0.55f, 0.2f));
-                CreateVisualCube(visual, "LeftArm", new Vector3(-0.95f, 0.52f, 0f), new Vector3(0.2f, 0.55f, 0.9f));
-                CreateVisualCube(visual, "RightArm", new Vector3(0.95f, 0.52f, 0f), new Vector3(0.2f, 0.55f, 0.9f));
+                GameObject[] modelPrefabs = LoadModelPrefabs();
 
                 Transform pointsRoot = CreateChild(couch.transform, "CarryPoints", Vector3.zero);
                 CouchCarryPoint[] points =
@@ -77,8 +82,18 @@ namespace CouchGuys.Editor
                 NetworkObject networkObject = couch.AddComponent<NetworkObject>();
                 NetworkTransform networkTransform = couch.AddComponent<NetworkTransform>();
                 CouchCarryController carryController = couch.AddComponent<CouchCarryController>();
+                CouchCarrySettings carrySettings =
+                    AssetDatabase.LoadAssetAtPath<CouchCarrySettings>(CarrySettingsPath);
+                if (carrySettings == null)
+                {
+                    throw new UnityException($"Missing couch carry settings at {CarrySettingsPath}.");
+                }
+
                 SetObjectReference(carryController, "m_rigidbody", rigidbody);
                 SetObjectArray(carryController, "m_carryPoints", points);
+                SetObjectReference(carryController, "m_modelRoot", visual);
+                SetObjectArray(carryController, "m_modelPrefabs", modelPrefabs);
+                SetObjectReference(carryController, "m_settings", carrySettings);
                 ConfigureNetworkComponents(networkObject, networkTransform, carryController);
 
                 GameObject prefab = PrefabUtility.SaveAsPrefabAsset(couch, PrefabPath, out bool savedSuccessfully);
@@ -128,15 +143,21 @@ namespace CouchGuys.Editor
             return point;
         }
 
-        private static void CreateVisualCube(Transform parent, string name, Vector3 localPosition, Vector3 localScale)
+        private static GameObject[] LoadModelPrefabs()
         {
-            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cube.name = name;
-            cube.transform.SetParent(parent, false);
-            cube.transform.localPosition = localPosition;
-            cube.transform.localRotation = Quaternion.identity;
-            cube.transform.localScale = localScale;
-            Object.DestroyImmediate(cube.GetComponent<Collider>());
+            GameObject[] modelPrefabs = new GameObject[ModelPaths.Length];
+            for (int index = 0; index < ModelPaths.Length; index++)
+            {
+                GameObject modelPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPaths[index]);
+                if (modelPrefab == null)
+                {
+                    throw new UnityException($"Missing couch model at {ModelPaths[index]}.");
+                }
+
+                modelPrefabs[index] = modelPrefab;
+            }
+
+            return modelPrefabs;
         }
 
         private static Transform CreateChild(Transform parent, string name, Vector3 localPosition)
@@ -182,10 +203,15 @@ namespace CouchGuys.Editor
         {
             GameObject couch = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             CouchCarryController controller = couch != null ? couch.GetComponent<CouchCarryController>() : null;
+            SerializedProperty settings = controller != null
+                ? new SerializedObject(controller).FindProperty("m_settings")
+                : null;
             if (couch == null || couch.transform.localScale != Vector3.one ||
                 couch.GetComponent<Rigidbody>() == null || couch.GetComponent<BoxCollider>() == null ||
                 couch.GetComponent<NetworkObject>() == null || couch.GetComponent<NetworkTransform>() == null ||
-                controller == null || couch.GetComponentsInChildren<CouchCarryPoint>(true).Length != 4)
+                controller == null || settings == null || settings.objectReferenceValue == null ||
+                couch.GetComponentsInChildren<CouchCarryPoint>(true).Length != 4 ||
+                couch.transform.Find("Visual") == null)
             {
                 throw new UnityException("Couch prefab verification failed: required hierarchy or configuration is invalid.");
             }

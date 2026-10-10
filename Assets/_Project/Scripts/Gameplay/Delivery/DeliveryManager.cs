@@ -312,6 +312,7 @@ namespace CouchGuys.Gameplay.Delivery
             m_destinationIndex.Value = destinationIndex;
             NetworkObject couch = Instantiate(m_couchPrefab, npc.CouchSpawnPosition, npc.CouchSpawnRotation);
             Spawn(couch);
+            couch.GetComponent<CouchCarryController>().SelectRandomModelVariantServer();
             m_activeCouch.Value = couch;
             m_currency.Value -= tier.PurchasePrice;
             m_usedDestinationIndices.Add(destinationIndex);

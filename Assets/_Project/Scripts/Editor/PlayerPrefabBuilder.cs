@@ -177,7 +177,6 @@ namespace CouchGuys.Editor
 
             SetObjectReference(couchCarrier, "m_input", player.GetComponent<PlayerInputReader>());
             SetObjectReference(couchCarrier, "m_playerController", player.GetComponent<ThirdPersonPlayerController>());
-            RepairLegacyCarryDistances(couchCarrier);
 
             PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
             if (playerHealth == null)
@@ -268,21 +267,6 @@ namespace CouchGuys.Editor
             agent.autoRepath = true;
             agent.obstacleAvoidanceType = ObstacleAvoidanceType.HighQualityObstacleAvoidance;
             agent.enabled = false;
-        }
-
-        private static void RepairLegacyCarryDistances(PlayerCouchCarrier couchCarrier)
-        {
-            SerializedObject serialisedCarrier = new SerializedObject(couchCarrier);
-            SerializedProperty comfortableDistance =
-                serialisedCarrier.FindProperty("m_comfortableCarryDistance");
-            SerializedProperty maximumDistance =
-                serialisedCarrier.FindProperty("m_maximumCarrySeparation");
-            if (comfortableDistance.floatValue <= 0.5f && maximumDistance.floatValue <= 0.5f)
-            {
-                comfortableDistance.floatValue = 0.65f;
-                maximumDistance.floatValue = 1f;
-                serialisedCarrier.ApplyModifiedPropertiesWithoutUndo();
-            }
         }
 
         private static void SetNetworkBehaviourReferences(NetworkBehaviour behaviour, NetworkObject networkObject, int componentIndex)

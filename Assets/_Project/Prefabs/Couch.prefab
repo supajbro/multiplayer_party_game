@@ -212,29 +212,12 @@ MonoBehaviour:
   - {fileID: 3202}
   - {fileID: 3302}
   - {fileID: 3402}
-  m_weight: 35
-  m_carryForce: 500
-  m_movementForce: 320
-  m_damping: 65
-  m_maximumHorizontalForce: 700
-  m_rotationInfluence: 0.85
-  m_minimumSlopeAngle: 3
-  m_maximumSlopeAngle: 45
-  m_slopeGravityInfluence: 0.75
-  m_slopeRollingResistance: 0.04
-  m_liftForce: 450
-  m_liftDamping: 55
-  m_maximumLiftForce: 350
-  m_singleCarrierEfficiency: 0.35
-  m_maximumCarrierEfficiency: 1
-  m_carrierCountCurveExponent: 1.8
-  m_minimumConflictEfficiency: 0.45
-  m_speedIncreasePerAdditionalMover: 0
-  m_maximumMovementSpeedMultiplier: 1
-  m_maximumLinearVelocity: 7
-  m_maximumAngularVelocity: 7
-  m_showForceGizmos: 0
-  m_debugForceScale: 0.002
+  m_modelRoot: {fileID: 2001}
+  m_modelPrefabs:
+  - {fileID: 919132149155446097, guid: 08e6ddc2aedd2ec46927d5be9ab454e0, type: 3}
+  - {fileID: 919132149155446097, guid: b7e7fe563a097ff44b491e73d1e780cd, type: 3}
+  - {fileID: 919132149155446097, guid: e491c7b88b92ca04a93849f28ec6fd46, type: 3}
+  m_settings: {fileID: 11400000, guid: 4f1d13f1162045bca704bdd737c0039d, type: 2}
 --- !u!1 &2000
 GameObject:
   m_ObjectHideFlags: 0
@@ -287,7 +270,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &2101
 Transform:
   m_ObjectHideFlags: 0
@@ -377,7 +360,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &2201
 Transform:
   m_ObjectHideFlags: 0
@@ -467,7 +450,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &2301
 Transform:
   m_ObjectHideFlags: 0
@@ -557,7 +540,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &2401
 Transform:
   m_ObjectHideFlags: 0

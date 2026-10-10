@@ -7,7 +7,6 @@ using FishNet.Connection;
 using FishNet.Transporting;
 using FishNet.Component.Transforming;
 using UnityEngine;
-using UnityEngine.Serialization;
 using CouchGuys.UI;
 using System.Collections.Generic;
 
@@ -30,15 +29,6 @@ namespace CouchGuys.Player
         [SerializeField, Min(0.1f)] private float m_interactionRange = 1.8f;
         [SerializeField, Min(0f)] private float m_serverRangeTolerance = 0.35f;
 
-        [Header("Carrying")]
-        [SerializeField, Min(0f)] private float m_carryDistance = 0.45f;
-        [SerializeField, Min(0f)] private float m_carryHeight = 0.45f;
-        [SerializeField, Range(0.1f, 1f)] private float m_singleCarrierSpeedMultiplier = 0.35f;
-        [SerializeField, Range(0.1f, 1f)] private float m_maximumCooperativeSpeedMultiplier = 1f;
-        [FormerlySerializedAs("m_softCarrySeparation")]
-        [SerializeField, Min(0.1f)] private float m_comfortableCarryDistance = 0.65f;
-        [SerializeField, Min(0.5f)] private float m_maximumCarrySeparation = 1f;
-
         [Header("Networked Movement Intent")]
         [SerializeField, Min(0.02f)] private float m_intentSendInterval = 0.1f;
         [SerializeField, Min(0.1f)] private float m_intentHeartbeatInterval = 0.5f;
@@ -46,6 +36,11 @@ namespace CouchGuys.Player
 
         [Header("Debug Bot")]
         [SerializeField] private DebugCouchBotSettings m_debugBot = new();
+
+        private const float CarryDistance = 0.45f;
+        private const float CarryHeight = 0.45f;
+        private const float SoftConstraintStartRatio = 0.7f;
+        private const float CarrierSpeedTransitionRate = 2.5f;
 
         private readonly SyncVar<NetworkObject> m_carriedCouch = new();
         private readonly SyncVar<int> m_carriedPointIndex = new(-1);
@@ -61,8 +56,6 @@ namespace CouchGuys.Player
         private int m_cachedMovementPointIndex = int.MinValue;
 
 
-        public float ComfortableCarryDistance => Mathf.Min(m_comfortableCarryDistance, m_maximumCarrySeparation);
-        public float MaximumCarrySeparation => m_maximumCarrySeparation;
         internal DebugCouchBotSettings DebugBotSettings => m_debugBot;
         internal int CarriedPointIndex => m_carriedPointIndex.Value;
         public bool IsCarrying => m_carriedCouch.Value != null;
@@ -134,7 +127,7 @@ namespace CouchGuys.Player
                 directionToCouch = transform.forward;
             }
 
-            return transform.position + directionToCouch.normalized * m_carryDistance + Vector3.up * m_carryHeight;
+            return transform.position + directionToCouch.normalized * CarryDistance + Vector3.up * CarryHeight;
         }
 
         internal Vector3 GetServerMovementIntent()
@@ -185,9 +178,7 @@ namespace CouchGuys.Player
         internal float CalculateCarryingSpeedMultiplier(CouchCarryController couch)
         {
             return couch != null
-                ? couch.CalculateCarrierSpeedMultiplier(
-                    m_singleCarrierSpeedMultiplier,
-                    m_maximumCooperativeSpeedMultiplier)
+                ? couch.CalculateCarrierMovementSpeedMultiplier()
                 : 1f;
         }
 
@@ -507,20 +498,25 @@ namespace CouchGuys.Player
 
                 if (m_cachedMovementAnchor != null)
                 {
+                    float maximumDistance = m_cachedMovementCouch.MaxCarryDistance;
                     m_playerController.SetExternalFacingTarget(m_cachedMovementAnchor);
                     m_playerController.SetExternalMovementResistance(
                         m_cachedMovementAnchor,
-                        ComfortableCarryDistance,
-                        MaximumCarrySeparation);
+                        maximumDistance * SoftConstraintStartRatio,
+                        maximumDistance);
                 }
             }
-            if (Mathf.Abs(targetMultiplier - m_appliedSpeedMultiplier) < 0.01f)
+            float nextMultiplier = Mathf.MoveTowards(
+                m_appliedSpeedMultiplier,
+                targetMultiplier,
+                CarrierSpeedTransitionRate * Time.deltaTime);
+            if (Mathf.Approximately(nextMultiplier, m_appliedSpeedMultiplier))
             {
                 return;
             }
 
-            m_playerController.SetExternalSpeedMultiplier(targetMultiplier);
-            m_appliedSpeedMultiplier = targetMultiplier;
+            m_playerController.SetExternalSpeedMultiplier(nextMultiplier);
+            m_appliedSpeedMultiplier = nextMultiplier;
         }
 
         private void RestoreMovementSpeed()
@@ -560,14 +556,6 @@ namespace CouchGuys.Player
         protected override void OnValidate()
         {
             base.OnValidate();
-            m_maximumCarrySeparation = Mathf.Max(0.5f, m_maximumCarrySeparation);
-            m_comfortableCarryDistance = Mathf.Clamp(
-                m_comfortableCarryDistance,
-                0.1f,
-                m_maximumCarrySeparation);
-            m_maximumCooperativeSpeedMultiplier = Mathf.Max(
-                m_singleCarrierSpeedMultiplier,
-                m_maximumCooperativeSpeedMultiplier);
             m_intentHeartbeatInterval = Mathf.Max(m_intentSendInterval, m_intentHeartbeatInterval);
             m_intentTimeout = Mathf.Max(
                 m_intentTimeout,

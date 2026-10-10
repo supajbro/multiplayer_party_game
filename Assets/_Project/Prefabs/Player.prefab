@@ -220,12 +220,6 @@ MonoBehaviour:
   m_playerController: {fileID: 100004}
   m_interactionRange: 1.8
   m_serverRangeTolerance: 0.35
-  m_carryDistance: 0.45
-  m_carryHeight: 0.45
-  m_singleCarrierSpeedMultiplier: 0.35
-  m_maximumCooperativeSpeedMultiplier: 1
-  m_comfortableCarryDistance: 0.65
-  m_maximumCarrySeparation: 1
   m_intentSendInterval: 0.1
   m_intentHeartbeatInterval: 0.5
   m_intentTimeout: 0.6
@@ -896,7 +890,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.2405435
+      value: 0.25
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
       propertyPath: m_LocalPosition.z

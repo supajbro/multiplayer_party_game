@@ -434,7 +434,7 @@ namespace CouchGuys.Player
 
             float standOff = Mathf.Min(
                 m_settings.PointStandOff,
-                m_carrier.MaximumCarrySeparation);
+                point.Couch.MaxCarryDistance);
             return point.transform.position + awayFromCouch.normalized * standOff;
         }
 

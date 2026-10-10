@@ -20,50 +20,35 @@ namespace CouchGuys.Gameplay.Couch
         [Header("References")]
         [SerializeField] private Rigidbody m_rigidbody;
         [SerializeField] private CouchCarryPoint[] m_carryPoints = new CouchCarryPoint[MaximumCarryPoints];
+        [SerializeField] private Transform m_modelRoot;
+        [SerializeField] private GameObject[] m_modelPrefabs;
+        [SerializeField] private CouchCarrySettings m_settings;
 
-        [Header("Weight")]
-        [SerializeField, Min(1f)] private float m_weight = 35f;
-
-        [Header("Horizontal Carrying")]
-        [SerializeField, Min(0f)] private float m_carryForce = 500f;
-        [Tooltip("Force supplied by each carrier moving in the group's resulting direction.")]
-        [SerializeField, Min(0f)] private float m_movementForce = 320f;
-        [SerializeField, Min(0f)] private float m_damping = 65f;
-        [SerializeField, Min(0f)] private float m_maximumHorizontalForce = 700f;
-        [SerializeField, Range(0f, 1f)] private float m_rotationInfluence = 0.85f;
-
-        [Header("Slope Physics")]
-        [Tooltip("Inclines below this angle receive no additional slope force.")]
-        [SerializeField, Range(0f, 89f)] private float m_minimumSlopeAngle = 3f;
-        [Tooltip("Inclines at or above this angle receive full additional slope force.")]
-        [SerializeField, Range(0f, 89f)] private float m_maximumSlopeAngle = 45f;
-        [Tooltip("Additional gravity directed down the contacted slope. Normal Rigidbody gravity always remains active.")]
-        [SerializeField, Min(0f)] private float m_slopeGravityInfluence = 0.75f;
-        [Tooltip("Ground resistance applied opposite the couch's movement along a slope.")]
-        [SerializeField, Range(0f, 1f)] private float m_slopeRollingResistance = 0.04f;
-
-        [Header("Vertical Support")]
-        [SerializeField, Min(0f)] private float m_liftForce = 450f;
-        [SerializeField, Min(0f)] private float m_liftDamping = 55f;
-        [SerializeField, Min(0f)] private float m_maximumLiftForce = 350f;
-
-        [Header("Carrier Scaling")]
-        [SerializeField, Range(0.05f, 1f)] private float m_singleCarrierEfficiency = 0.35f;
-        [SerializeField, Min(0.1f)] private float m_maximumCarrierEfficiency = 1f;
-        [Tooltip("Values above 1 keep two-player carrying heavy while shifting more benefit to the third and fourth movers.")]
-        [SerializeField, Min(0.1f)] private float m_carrierCountCurveExponent = 1.8f;
-        [SerializeField, Range(0f, 1f)] private float m_minimumConflictEfficiency = 0.45f;
-        [Tooltip("Movement-speed increase supplied by each additional player moving in the same direction.")]
-        [SerializeField, Min(0f)] private float m_speedIncreasePerAdditionalMover;
-        [SerializeField, Min(1f)] private float m_maximumMovementSpeedMultiplier = 1f;
-
-        [Header("Stability")]
-        [SerializeField, Min(0.1f)] private float m_maximumLinearVelocity = 7f;
-        [SerializeField, Min(0.1f)] private float m_maximumAngularVelocity = 7f;
-
-        [Header("Debugging")]
-        [SerializeField] private bool m_showForceGizmos;
-        [SerializeField, Min(0.0001f)] private float m_debugForceScale = 0.002f;
+        // The five designer controls live in CouchCarrySettings. The remaining
+        // physical response is deliberately kept internal so each setting has one job.
+        private const float CouchWeight = 35f;
+        private const float CarryForce = 500f;
+        private const float CarryDamping = 65f;
+        private const float MaximumHorizontalForce = 700f;
+        private const float RotationInfluence = 0.85f;
+        private const float MinimumSlopeAngle = 3f;
+        private const float MaximumSlopeAngle = 45f;
+        private const float SlopeGravityInfluence = 0.75f;
+        private const float SlopeRollingResistance = 0.04f;
+        private const float LiftForce = 450f;
+        private const float LiftDamping = 55f;
+        private const float MaximumLiftForce = 350f;
+        private const float SingleCarrierEfficiency = 0.35f;
+        private const float MaximumCarrierEfficiency = 1f;
+        private const float CarrierCountCurveExponent = 1.55f;
+        private const float MinimumConflictEfficiency = 0.45f;
+        private const float MaximumMovementAcceleration = 14f;
+        private const float SpeedLimitTransitionRate = 5f;
+        private const float MaximumAngularVelocity = 7f;
+        private const bool ShowForceGizmos = false;
+        private const float DebugForceScale = 0.002f;
+        private const float DefaultMaxCarryDistance = 1f;
+        private static readonly float[] s_defaultMoveSpeeds = { 2.5f, 3.5f, 4.5f, 5.5f };
 
         private readonly SyncVar<int> m_frontLeftOccupant = new(-1);
         private readonly SyncVar<int> m_frontRightOccupant = new(-1);
@@ -71,19 +56,28 @@ namespace CouchGuys.Gameplay.Couch
         private readonly SyncVar<int> m_rearRightOccupant = new(-1);
         private readonly SyncVar<int> m_movingCarrierCount = new();
         private readonly SyncVar<float> m_cooperationEfficiency = new(1f);
+        private readonly SyncVar<int> m_modelVariantIndex = new(-1);
         private readonly PlayerCouchCarrier[] m_serverOccupants = new PlayerCouchCarrier[MaximumCarryPoints];
         private readonly Vector3[] m_debugHorizontalForces = new Vector3[MaximumCarryPoints];
         private readonly Vector3[] m_debugLiftForces = new Vector3[MaximumCarryPoints];
         private readonly Vector3[] m_debugMovementIntents = new Vector3[MaximumCarryPoints];
         private Vector3 m_groundNormal = Vector3.up;
         private float m_lastGroundContactTime = float.NegativeInfinity;
+        private float m_currentMaximumMovementSpeed;
+        private int m_previousCarrierCount;
+        private GameObject m_modelInstance;
+        private int m_appliedModelVariantIndex = -1;
 
         public Rigidbody CouchRigidbody => m_rigidbody;
-        public float Weight => m_weight;
+        public float Weight => CouchWeight;
+        public float MaxCarryDistance => m_settings != null
+            ? m_settings.MaxCarryDistance
+            : DefaultMaxCarryDistance;
         public int ActiveCarrierCount => CountActiveCarriers();
         public int MovingCarrierCount => m_movingCarrierCount.Value;
         public float CurrentCooperationEfficiency => m_cooperationEfficiency.Value;
         public Vector3 CurrentVelocity => m_rigidbody != null ? m_rigidbody.linearVelocity : Vector3.zero;
+        public int ModelVariantIndex => m_modelVariantIndex.Value;
         internal int ServerCarrierCount => IsServerInitialized ? CountServerCarriers() : 0;
 
         internal int ValidServerCarrierCount
@@ -106,7 +100,12 @@ namespace CouchGuys.Gameplay.Couch
         private void Awake()
         {
             m_rigidbody ??= GetComponent<Rigidbody>();
+            m_modelVariantIndex.OnChange += OnModelVariantChanged;
             ApplyWeightAndStability();
+            if (m_settings == null)
+            {
+                Debug.LogError("CouchCarryController requires one CouchCarrySettings asset.", this);
+            }
             // No peer simulates before FishNet assigns authority. The server switches
             // this body back to dynamic in OnStartServer.
             m_rigidbody.isKinematic = true;
@@ -122,10 +121,54 @@ namespace CouchGuys.Gameplay.Couch
         public override void OnStartClient()
         {
             base.OnStartClient();
+            ApplyModelVariant(m_modelVariantIndex.Value);
             if (!IsServerInitialized)
             {
                 m_rigidbody.isKinematic = true;
             }
+        }
+
+        private void OnDestroy()
+        {
+            m_modelVariantIndex.OnChange -= OnModelVariantChanged;
+        }
+
+        /// <summary>Selects the visual used by this couch. Carry points and physics stay on the shared root.</summary>
+        [Server]
+        public void SelectRandomModelVariantServer()
+        {
+            if (!IsServerInitialized || m_modelPrefabs == null || m_modelPrefabs.Length == 0)
+            {
+                return;
+            }
+
+            m_modelVariantIndex.Value = Random.Range(0, m_modelPrefabs.Length);
+            ApplyModelVariant(m_modelVariantIndex.Value);
+        }
+
+        private void OnModelVariantChanged(int previousIndex, int nextIndex, bool asServer)
+        {
+            ApplyModelVariant(nextIndex);
+        }
+
+        private void ApplyModelVariant(int selectedIndex)
+        {
+            if (m_modelPrefabs == null || selectedIndex < 0 || selectedIndex >= m_modelPrefabs.Length ||
+                m_modelPrefabs[selectedIndex] == null ||
+                (m_appliedModelVariantIndex == selectedIndex && m_modelInstance != null))
+            {
+                return;
+            }
+
+            if (m_modelInstance != null)
+            {
+                Destroy(m_modelInstance);
+            }
+
+            Transform modelRoot = m_modelRoot != null ? m_modelRoot : transform;
+            m_modelInstance = Instantiate(m_modelPrefabs[selectedIndex], modelRoot, false);
+            m_modelInstance.name = m_modelPrefabs[selectedIndex].name;
+            m_appliedModelVariantIndex = selectedIndex;
         }
 
         private void FixedUpdate()
@@ -147,15 +190,11 @@ namespace CouchGuys.Gameplay.Couch
             m_cooperationEfficiency.Value = cooperationEfficiency;
             float totalCarrierEfficiency = CalculateTotalCarrierEfficiency(carrierCount);
             float perCarrierEfficiency = carrierCount > 0 ? totalCarrierEfficiency / carrierCount : 0f;
-            float movementEfficiency = CalculateTotalCarrierEfficiency(movingCarrierCount);
-            float movementSpeedMultiplier = CalculateMovementSpeedMultiplier(
-                movingCarrierCount,
-                cooperationEfficiency);
             float cooperationForceScale = Mathf.Lerp(
-                m_minimumConflictEfficiency,
+                MinimumConflictEfficiency,
                 1f,
                 cooperationEfficiency);
-            float weightForce = m_weight * Mathf.Abs(Physics.gravity.y);
+            float weightForce = CouchWeight * Mathf.Abs(Physics.gravity.y);
             // Static support remains below gravity so the couch cannot float without
             // a positive grip-height error contributing spring lift.
             float totalSupportFraction = Mathf.Min(0.9f, totalCarrierEfficiency);
@@ -192,23 +231,23 @@ namespace CouchGuys.Gameplay.Couch
                 Vector3 horizontalError = Vector3.ProjectOnPlane(targetPosition - pointPosition, Vector3.up);
                 Vector3 horizontalVelocity = Vector3.ProjectOnPlane(pointVelocity, Vector3.up);
                 Vector3 horizontalForce =
-                    (horizontalError * m_carryForce - horizontalVelocity * m_damping) *
+                    (horizontalError * CarryForce - horizontalVelocity * CarryDamping) *
                     perCarrierEfficiency * cooperationForceScale;
-                horizontalForce = Vector3.ClampMagnitude(horizontalForce, m_maximumHorizontalForce);
+                horizontalForce = Vector3.ClampMagnitude(horizontalForce, MaximumHorizontalForce);
 
                 float heightError = targetPosition.y - pointPosition.y;
-                float liftForce = supportPerCarrier + Mathf.Max(0f, heightError) * m_liftForce -
-                    pointVelocity.y * m_liftDamping;
+                float liftForce = supportPerCarrier + Mathf.Max(0f, heightError) * LiftForce -
+                    pointVelocity.y * LiftDamping;
                 liftForce = Mathf.Clamp(
                     liftForce,
                     0f,
-                    m_maximumLiftForce);
+                    MaximumLiftForce);
                 Vector3 verticalForce = Vector3.up * liftForce;
 
                 Vector3 applicationPoint = Vector3.Lerp(
                     m_rigidbody.worldCenterOfMass,
                     pointPosition,
-                    m_rotationInfluence);
+                    RotationInfluence);
                 m_rigidbody.AddForceAtPosition(horizontalForce, applicationPoint, ForceMode.Force);
                 m_rigidbody.AddForceAtPosition(verticalForce, pointPosition, ForceMode.Force);
 
@@ -217,35 +256,47 @@ namespace CouchGuys.Gameplay.Couch
                 m_debugMovementIntents[index] = movementIntent;
             }
 
-            Vector3 movementForce = combinedMovementIntent *
-                (m_movementForce * movementEfficiency * cooperationForceScale *
-                 movementSpeedMultiplier);
-            m_rigidbody.AddForce(movementForce, ForceMode.Force);
+            float configuredSpeed = carrierCount > 0 ? GetConfiguredMoveSpeed(carrierCount) : 0f;
+            if (m_previousCarrierCount == 0 && carrierCount > 0)
+            {
+                // Acceleration still starts from the current Rigidbody velocity; only
+                // initialise the cap so attaching never snaps an already-moving couch.
+                m_currentMaximumMovementSpeed = configuredSpeed;
+            }
+
+            m_currentMaximumMovementSpeed = Mathf.MoveTowards(
+                m_currentMaximumMovementSpeed,
+                configuredSpeed,
+                SpeedLimitTransitionRate * Time.fixedDeltaTime);
+            m_previousCarrierCount = carrierCount;
+
+            Vector3 averageIntent = movingCarrierCount > 0
+                ? combinedMovementIntent / movingCarrierCount
+                : Vector3.zero;
+            Vector3 desiredVelocity = Vector3.ClampMagnitude(averageIntent, 1f) *
+                                      m_currentMaximumMovementSpeed;
+            Vector3 horizontalCouchVelocity = Vector3.ProjectOnPlane(
+                m_rigidbody.linearVelocity,
+                Vector3.up);
+            Vector3 velocityChange = Vector3.MoveTowards(
+                horizontalCouchVelocity,
+                desiredVelocity,
+                MaximumMovementAcceleration * Time.fixedDeltaTime) - horizontalCouchVelocity;
+            Vector3 movementAcceleration = velocityChange / Time.fixedDeltaTime;
+            if (carrierCount > 0)
+            {
+                m_rigidbody.AddForce(movementAcceleration, ForceMode.Acceleration);
+            }
 
             ApplySlopeForces();
 
-            LimitVelocity(movementSpeedMultiplier);
+            LimitHorizontalVelocity(carrierCount > 0 ? m_currentMaximumMovementSpeed : 0f);
         }
 
-        public float CalculateCarrierSpeedMultiplier(float singleCarrierMultiplier, float maximumCooperativeMultiplier)
+        public float CalculateCarrierMovementSpeedMultiplier()
         {
-            int carrierCount = Mathf.Max(1, MovingCarrierCount);
-            float totalEfficiency = CalculateTotalCarrierEfficiency(carrierCount);
-            float countProgress = Mathf.InverseLerp(
-                m_singleCarrierEfficiency,
-                m_maximumCarrierEfficiency,
-                totalEfficiency);
-            float cooperation = carrierCount > 1 ? CurrentCooperationEfficiency : 1f;
-            float cooperativeProgress = countProgress * cooperation;
-            float baseMultiplier = Mathf.Lerp(
-                singleCarrierMultiplier,
-                maximumCooperativeMultiplier,
-                cooperativeProgress);
-
-            float effectiveWeight = m_weight / Mathf.Max(0.05f, totalEfficiency);
-            float weightMobility = 1f / (1f + effectiveWeight * 0.01f);
-            float weightMultiplier = Mathf.Lerp(0.75f, 1f, weightMobility);
-            return Mathf.Clamp(baseMultiplier * weightMultiplier, 0.25f, 1f);
+            float carrierProgress = Mathf.InverseLerp(1f, MaximumCarryPoints, ActiveCarrierCount);
+            return Mathf.Lerp(0.65f, 0.95f, carrierProgress);
         }
 
         public CouchCarryPoint GetPoint(int pointIndex)
@@ -430,10 +481,10 @@ namespace CouchGuys.Gameplay.Couch
                 1f,
                 MaximumCarryPoints,
                 Mathf.Clamp(carrierCount, 1, MaximumCarryPoints));
-            float curvedProgress = Mathf.Pow(carrierProgress, m_carrierCountCurveExponent);
+            float curvedProgress = Mathf.Pow(carrierProgress, CarrierCountCurveExponent);
             return Mathf.Lerp(
-                m_singleCarrierEfficiency,
-                m_maximumCarrierEfficiency,
+                SingleCarrierEfficiency,
+                MaximumCarrierEfficiency,
                 curvedProgress);
         }
 
@@ -474,19 +525,12 @@ namespace CouchGuys.Gameplay.Couch
                 : Mathf.Clamp01(combinedMovementIntent.magnitude / totalIntentMagnitude);
         }
 
-        private float CalculateMovementSpeedMultiplier(
-            int movingCarrierCount,
-            float cooperationEfficiency)
+        private float GetConfiguredMoveSpeed(int carrierCount)
         {
-            if (movingCarrierCount <= 1)
-            {
-                return 1f;
-            }
-
-            float cooperativeBonus = (movingCarrierCount - 1) *
-                                     m_speedIncreasePerAdditionalMover *
-                                     cooperationEfficiency;
-            return Mathf.Min(m_maximumMovementSpeedMultiplier, 1f + cooperativeBonus);
+            int clampedCount = Mathf.Clamp(carrierCount, 1, MaximumCarryPoints);
+            return m_settings != null
+                ? m_settings.GetMoveSpeed(clampedCount)
+                : s_defaultMoveSpeeds[clampedCount - 1];
         }
 
         private void ApplySlopeForces()
@@ -500,8 +544,8 @@ namespace CouchGuys.Gameplay.Couch
 
             float slopeAngle = Vector3.Angle(m_groundNormal, Vector3.up);
             float slopeProgress = Mathf.InverseLerp(
-                m_minimumSlopeAngle,
-                m_maximumSlopeAngle,
+                MinimumSlopeAngle,
+                MaximumSlopeAngle,
                 slopeAngle);
             if (slopeProgress <= 0f)
             {
@@ -515,19 +559,19 @@ namespace CouchGuys.Gameplay.Couch
             }
 
             // Unity's normal gravity already supplies one downhill component. This
-            // configurable additional component preserves real sliding while making
+            // The additional component preserves real sliding while making
             // the couch's weight meaningful against the carrying force.
             m_rigidbody.AddForce(
-                gravityAlongSlope * (m_rigidbody.mass * m_slopeGravityInfluence * slopeProgress),
+                gravityAlongSlope * (m_rigidbody.mass * SlopeGravityInfluence * slopeProgress),
                 ForceMode.Force);
 
             Vector3 slopeVelocity = Vector3.ProjectOnPlane(m_rigidbody.linearVelocity, m_groundNormal);
-            if (slopeVelocity.sqrMagnitude > 0.0001f && m_slopeRollingResistance > 0f)
+            if (slopeVelocity.sqrMagnitude > 0.0001f && SlopeRollingResistance > 0f)
             {
                 float normalForce = m_rigidbody.mass * Mathf.Abs(Physics.gravity.y) *
                                     Mathf.Clamp01(m_groundNormal.y);
                 m_rigidbody.AddForce(
-                    -slopeVelocity.normalized * normalForce * m_slopeRollingResistance,
+                    -slopeVelocity.normalized * normalForce * SlopeRollingResistance,
                     ForceMode.Force);
             }
         }
@@ -560,19 +604,27 @@ namespace CouchGuys.Gameplay.Couch
                 return;
             }
 
-            m_rigidbody.mass = Mathf.Max(1f, m_weight);
-            m_rigidbody.maxAngularVelocity = Mathf.Max(0.1f, m_maximumAngularVelocity);
+            m_rigidbody.mass = CouchWeight;
+            m_rigidbody.maxAngularVelocity = MaximumAngularVelocity;
         }
 
-        private void LimitVelocity(float movementSpeedMultiplier)
+        private void LimitHorizontalVelocity(float maximumSpeed)
         {
-            float maximumVelocity = m_maximumLinearVelocity * movementSpeedMultiplier;
-            if (m_rigidbody.linearVelocity.sqrMagnitude > maximumVelocity * maximumVelocity)
+            if (maximumSpeed <= 0f)
             {
-                m_rigidbody.linearVelocity = Vector3.ClampMagnitude(
-                    m_rigidbody.linearVelocity,
-                    maximumVelocity);
+                return;
             }
+
+            Vector3 velocity = m_rigidbody.linearVelocity;
+            Vector3 horizontalVelocity = Vector3.ProjectOnPlane(velocity, Vector3.up);
+            if (horizontalVelocity.sqrMagnitude <= maximumSpeed * maximumSpeed)
+            {
+                return;
+            }
+
+            Vector3 verticalVelocity = velocity - horizontalVelocity;
+            m_rigidbody.linearVelocity = Vector3.ClampMagnitude(horizontalVelocity, maximumSpeed) +
+                                         verticalVelocity;
         }
 
         private void ClearDebugForces(int pointIndex)
@@ -601,16 +653,16 @@ namespace CouchGuys.Gameplay.Couch
                 Gizmos.DrawSphere(point.transform.position, 0.08f);
                 Gizmos.DrawLine(transform.position + Vector3.up * 0.4f, point.transform.position);
 
-                if (!m_showForceGizmos || point.PointIndex < 0 || point.PointIndex >= MaximumCarryPoints)
+                if (!ShowForceGizmos || point.PointIndex < 0 || point.PointIndex >= MaximumCarryPoints)
                 {
                     continue;
                 }
 
                 int index = point.PointIndex;
                 Gizmos.color = new Color(1f, 0.25f, 0.15f);
-                Gizmos.DrawRay(point.transform.position, m_debugHorizontalForces[index] * m_debugForceScale);
+                Gizmos.DrawRay(point.transform.position, m_debugHorizontalForces[index] * DebugForceScale);
                 Gizmos.color = Color.cyan;
-                Gizmos.DrawRay(point.transform.position, m_debugLiftForces[index] * m_debugForceScale);
+                Gizmos.DrawRay(point.transform.position, m_debugLiftForces[index] * DebugForceScale);
                 Gizmos.color = Color.yellow;
                 Gizmos.DrawRay(point.transform.position, m_debugMovementIntents[index] * 0.75f);
             }
@@ -619,11 +671,6 @@ namespace CouchGuys.Gameplay.Couch
         protected override void OnValidate()
         {
             base.OnValidate();
-            m_weight = Mathf.Max(1f, m_weight);
-            m_maximumCarrierEfficiency = Mathf.Max(m_singleCarrierEfficiency, m_maximumCarrierEfficiency);
-            m_carrierCountCurveExponent = Mathf.Max(0.1f, m_carrierCountCurveExponent);
-            m_maximumMovementSpeedMultiplier = Mathf.Max(1f, m_maximumMovementSpeedMultiplier);
-            m_maximumSlopeAngle = Mathf.Max(m_minimumSlopeAngle + 0.01f, m_maximumSlopeAngle);
             ApplyWeightAndStability();
         }
 #endif
