@@ -6,6 +6,7 @@ using CouchGuys.ProceduralGeneration;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace CouchGuys.Gameplay.Delivery
 {
@@ -26,6 +27,14 @@ namespace CouchGuys.Gameplay.Delivery
         [SerializeField, Min(0)] private int m_rewardPerDelivery = 100;
         [SerializeField, Min(0f)] private float m_markerGroundOffset = 0.035f;
 
+        [Header("Delivery Timer")]
+        [SerializeField, Min(0f)] private float m_baseDeliveryTime = 45f;
+        [SerializeField, Min(0.1f)] private float m_expectedCouchCarrySpeed = 2.5f;
+        [SerializeField, Min(0.1f)] private float m_deliveryTimeMultiplier = 1.25f;
+        [SerializeField, Min(1f)] private float m_minimumDeliveryTime = 60f;
+        [SerializeField, Min(1f)] private float m_maximumDeliveryTime = 600f;
+        [SerializeField, Min(0f)] private float m_uphillDistanceMultiplier = 2f;
+
         [Header("Debug/Test Teleport")]
         [SerializeField, Min(0.25f)] private float m_testTeleportOutsideRadius = 1.5f;
         [SerializeField, Min(1f)] private float m_groundProbeHeight = 40f;
@@ -39,6 +48,9 @@ namespace CouchGuys.Gameplay.Delivery
         private readonly SyncVar<int> m_activeStageIndex = new(-1);
         private readonly SyncVar<int> m_attemptNumber = new();
         private readonly SyncVar<int> m_lastReward = new();
+        private readonly SyncVar<uint> m_deliveryDeadlineTick = new();
+        private readonly SyncVar<float> m_deliveryDuration = new();
+        private readonly SyncVar<int> m_deliveryFailureSequence = new();
 
         private GameObject m_collectionMarker;
         private Material m_runtimeMarkerMaterial;
@@ -57,6 +69,21 @@ namespace CouchGuys.Gameplay.Delivery
         public int ActiveStageIndex => m_activeStageIndex.Value;
         public int AttemptNumber => m_attemptNumber.Value;
         public int LastReward => m_lastReward.Value;
+        public float DeliveryDuration => m_deliveryDuration.Value;
+        public int DeliveryFailureSequence => m_deliveryFailureSequence.Value;
+        public bool IsDeliveryTimerActive =>
+            m_state.Value == DeliveryState.Transport && m_deliveryDeadlineTick.Value != 0;
+        public float RemainingDeliveryTime
+        {
+            get
+            {
+                if (!IsDeliveryTimerActive || TimeManager == null) return 0f;
+                uint now = TimeManager.Tick;
+                return now >= m_deliveryDeadlineTick.Value
+                    ? 0f
+                    : (float)TimeManager.TicksToTime(m_deliveryDeadlineTick.Value - now);
+            }
+        }
         public bool HasActiveDelivery => m_destinationIndex.Value >= 0 && m_activeCouch.Value != null;
 
         public DeliveryDestination ActiveDestination
@@ -111,6 +138,13 @@ namespace CouchGuys.Gameplay.Delivery
             m_activeStageIndex.Value = -1;
             m_attemptNumber.Value = 0;
             m_lastReward.Value = 0;
+                    StopDeliveryTimerServer();
+        }
+
+        private void Update()
+        {
+            if (IsServerInitialized && IsDeliveryTimerActive && TimeManager.Tick >= m_deliveryDeadlineTick.Value)
+                FailAndResetActiveDeliveryServer();
         }
 
         private void FixedUpdate()
@@ -192,6 +226,7 @@ namespace CouchGuys.Gameplay.Delivery
             Spawn(couch);
             m_activeCouch.Value = couch;
             m_usedDestinationIndices.Add(destinationIndex);
+            StartDeliveryTimerServer(npc.CouchSpawnPosition, m_generator.DeliveryDestinations[destinationIndex]);
             DeliveryRouteMetrics selectedMetrics = m_generator.DeliveryDestinations[destinationIndex].RouteMetrics;
             if (selectedMetrics != null)
             {
@@ -283,6 +318,7 @@ namespace CouchGuys.Gameplay.Delivery
             }
 
             m_isCompletingDelivery = true;
+            StopDeliveryTimerServer();
             SetStateServer(DeliveryState.DestinationReached, DeliveryObjectiveStep.DeliverCouch);
             NetworkObject deliveredCouch = m_activeCouch.Value;
             DeliveryDestination destination = ActiveDestination;
@@ -331,6 +367,8 @@ namespace CouchGuys.Gameplay.Delivery
                 return false;
             }
 
+            StopDeliveryTimerServer();
+            m_deliveryFailureSequence.Value++;
             SetStateServer(DeliveryState.Failed, DeliveryObjectiveStep.None);
             NetworkObject failedCouch = m_activeCouch.Value;
             m_activeCouch.Value = null;
@@ -352,6 +390,43 @@ namespace CouchGuys.Gameplay.Delivery
             return true;
         }
 
+        [Server]
+        private void StartDeliveryTimerServer(Vector3 startPosition, DeliveryDestination destination)
+        {
+            float distance = CalculateTravelDistance(startPosition, destination);
+            float seconds = Mathf.Clamp(m_baseDeliveryTime +
+                distance / Mathf.Max(0.1f, m_expectedCouchCarrySpeed) * m_deliveryTimeMultiplier,
+                m_minimumDeliveryTime, m_maximumDeliveryTime);
+            m_deliveryDuration.Value = seconds;
+            uint ticks = TimeManager.TimeToTicks(seconds);
+            m_deliveryDeadlineTick.Value = TimeManager.Tick + (ticks == 0 ? 1u : ticks);
+        }
+
+        [Server]
+        private void StopDeliveryTimerServer()
+        {
+            m_deliveryDeadlineTick.Value = 0;
+            m_deliveryDuration.Value = 0f;
+        }
+
+        private float CalculateTravelDistance(Vector3 startPosition, DeliveryDestination destination)
+        {
+            if (destination == null) return 0f;
+            DeliveryRouteMetrics metrics = destination.RouteMetrics;
+            if (metrics != null && metrics.IsReachable)
+                return metrics.RouteLength + metrics.FinalCarryDistance +
+                    (metrics.CumulativeElevationGain + metrics.FinalCarryElevationGain) * m_uphillDistanceMultiplier;
+            NavMeshPath path = new NavMeshPath();
+            if (NavMesh.CalculatePath(startPosition, destination.DropPosition.position, NavMesh.AllAreas, path) &&
+                path.status == NavMeshPathStatus.PathComplete)
+            {
+                float distance = 0f;
+                for (int i = 1; i < path.corners.Length; i++)
+                    distance += Vector3.Distance(path.corners[i - 1], path.corners[i]);
+                return distance;
+            }
+            return Vector3.Distance(startPosition, destination.DropPosition.position);
+        }
         [Server]
         private void SetStateServer(DeliveryState state, DeliveryObjectiveStep objectiveStep)
         {
@@ -563,6 +638,10 @@ namespace CouchGuys.Gameplay.Delivery
             m_collectionRadius = Mathf.Max(0.25f, m_collectionRadius);
             m_rewardPerDelivery = Mathf.Max(0, m_rewardPerDelivery);
             m_testTeleportOutsideRadius = Mathf.Max(0.25f, m_testTeleportOutsideRadius);
+            m_expectedCouchCarrySpeed = Mathf.Max(0.1f, m_expectedCouchCarrySpeed);
+            m_deliveryTimeMultiplier = Mathf.Max(0.1f, m_deliveryTimeMultiplier);
+            m_minimumDeliveryTime = Mathf.Max(1f, m_minimumDeliveryTime);
+            m_maximumDeliveryTime = Mathf.Max(m_minimumDeliveryTime, m_maximumDeliveryTime);
         }
 #endif
     }

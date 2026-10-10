@@ -27,14 +27,19 @@ namespace CouchGuys.Gameplay.Weapons
         private DeliveryManager m_delivery;
         private SuburbsChapterManager m_chapter;
         private GameObject m_canvasRoot;
+        private bool m_hudBuilt;
         private Text m_healthText;
         private Text m_deliveryTitle;
         private Text m_deliveryDetail;
         private Text m_deliveryDistance;
         private Text m_currencyText;
+        private Text m_timerText;
+        private Text m_failureText;
         private Text m_ammoText;
         private Image m_healthFill;
         private Image m_staminaFill;
+        private Image m_timerFill;
+        private GameObject m_timerPanel;
         private Image[] m_slotBackgrounds;
         private Outline[] m_slotOutlines;
         private GameObject m_ammoPanel;
@@ -44,6 +49,9 @@ namespace CouchGuys.Gameplay.Weapons
         private float m_staminaDisplay = 1f;
         private float m_nextSlowRefresh;
         private int m_lastSelectedSlot = -1;
+        private int m_lastTimerSecond = -1;
+        private int m_seenFailureSequence;
+        private float m_failureVisibleUntil;
         private RenderTexture m_portraitTexture;
         private Camera m_portraitCamera;
         private Sprite m_roundedSprite;
@@ -60,10 +68,11 @@ namespace CouchGuys.Gameplay.Weapons
         private void Update()
         {
             if (m_networkObject == null || !m_networkObject.IsOwner) return;
-            if (m_canvasRoot == null)
+            if (!m_hudBuilt)
             {
                 BuildHud();
                 BindEvents();
+                m_hudBuilt = true;
             }
 
             m_healthDisplay = Mathf.MoveTowards(m_healthDisplay, m_healthTarget, Time.unscaledDeltaTime * 2.8f);
@@ -74,6 +83,7 @@ namespace CouchGuys.Gameplay.Weapons
             m_staminaFill.color = MeterColour(m_staminaDisplay);
 
             RefreshWeapons();
+            RefreshDeliveryTimer();
             if (Time.unscaledTime >= m_nextSlowRefresh)
             {
                 ResolveWorldReferences();
@@ -92,7 +102,11 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void ResolveWorldReferences()
         {
-            if (m_delivery == null) m_delivery = FindFirstObjectByType<DeliveryManager>();
+            if (m_delivery == null)
+            {
+                m_delivery = FindFirstObjectByType<DeliveryManager>();
+                if (m_delivery != null) m_seenFailureSequence = m_delivery.DeliveryFailureSequence;
+            }
             if (m_chapter == null) m_chapter = FindFirstObjectByType<SuburbsChapterManager>();
         }
 
@@ -154,8 +168,42 @@ namespace CouchGuys.Gameplay.Weapons
             }
         }
 
+        private void RefreshDeliveryTimer()
+        {
+            if (m_timerPanel == null) return;
+            bool active = m_delivery != null && m_delivery.IsDeliveryTimerActive;
+            if (m_timerPanel.activeSelf != active) m_timerPanel.SetActive(active);
+            if (active)
+            {
+                float remaining = m_delivery.RemainingDeliveryTime;
+                int second = Mathf.Max(0, Mathf.CeilToInt(remaining));
+                if (second != m_lastTimerSecond)
+                {
+                    m_timerText.text = $"{second / 60:00}:{second % 60:00}";
+                    m_lastTimerSecond = second;
+                }
+                float ratio = m_delivery.DeliveryDuration > 0f
+                    ? remaining / m_delivery.DeliveryDuration : 0f;
+                SetBar(m_timerFill, ratio);
+                Color urgency = remaining < 10f ? Red : remaining < 30f ? new Color(1f, 0.42f, 0.06f) : Gold;
+                m_timerFill.color = urgency;
+                m_timerText.color = urgency;
+                float pulse = remaining < 10f ? 1f + Mathf.Sin(Time.unscaledTime * 8f) * 0.035f : 1f;
+                m_timerText.rectTransform.localScale = Vector3.one * pulse;
+            }
+            else m_lastTimerSecond = -1;
+
+            if (m_delivery != null && m_seenFailureSequence != m_delivery.DeliveryFailureSequence)
+            {
+                m_seenFailureSequence = m_delivery.DeliveryFailureSequence;
+                m_failureVisibleUntil = Time.unscaledTime + 2.5f;
+            }
+            m_failureText.gameObject.SetActive(Time.unscaledTime < m_failureVisibleUntil);
+        }
+
         private void BuildHud()
         {
+            if (m_canvasRoot != null) Destroy(m_canvasRoot);
             BuildSprites();
             m_canvasRoot = new GameObject("CouchGuysHud", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             Canvas canvas = m_canvasRoot.GetComponent<Canvas>();
@@ -169,6 +217,7 @@ namespace CouchGuys.Gameplay.Weapons
 
             BuildHealthPanel();
             BuildDeliveryPanel();
+            BuildDeliveryTimerPanel();
             BuildCurrencyPanel();
             BuildStaminaPanel();
             BuildHotbar();
@@ -208,16 +257,47 @@ namespace CouchGuys.Gameplay.Weapons
             SetRect(m_deliveryDistance.rectTransform, Vector2.zero, Vector2.zero, new Vector2(24f, 13f), new Vector2(220f, 35f), Vector2.zero);
         }
 
+        private void BuildDeliveryTimerPanel()
+        {
+            RectTransform panel = Panel("DeliveryTimerPanel", m_canvasRoot.transform,
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -181f),
+                new Vector2(480f, 92f), Gold);
+            m_timerPanel = panel.gameObject;
+            Text label = Label("TimerLabel", panel, "DELIVERY TIME", 19,
+                TextAnchor.MiddleLeft, FontStyle.Bold);
+            SetRect(label.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(22f, -12f), new Vector2(260f, 34f), new Vector2(0f, 1f));
+            m_timerText = Label("TimerValue", panel, "00:00", 32,
+                TextAnchor.MiddleRight, FontStyle.Bold, Gold);
+            SetRect(m_timerText.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f),
+                new Vector2(-20f, -10f), new Vector2(150f, 38f), new Vector2(1f, 1f));
+            RectTransform track = Panel("TimerTrack", panel, Vector2.zero, Vector2.zero,
+                new Vector2(22f, 15f), new Vector2(436f, 14f), Inactive, false);
+            track.pivot = Vector2.zero;
+            m_timerFill = Fill(track, "TimerFill");
+            m_timerPanel.SetActive(false);
+
+            m_failureText = Label("DeliveryFailed", m_canvasRoot.transform, "DELIVERY FAILED!",
+                42, TextAnchor.MiddleCenter, FontStyle.Bold, Red);
+            SetRect(m_failureText.rectTransform, new Vector2(0.5f, 0.78f), new Vector2(0.5f, 0.78f),
+                Vector2.zero, new Vector2(520f, 70f));
+            Outline outline = m_failureText.gameObject.AddComponent<Outline>();
+            outline.effectColor = Color.black;
+            outline.effectDistance = new Vector2(3f, -3f);
+            m_failureText.gameObject.SetActive(false);
+        }
+
         private void BuildCurrencyPanel()
         {
             RectTransform panel = Panel("CurrencyPanel", m_canvasRoot.transform, Vector2.one, Vector2.one, new Vector2(-24f, -24f), new Vector2(260f, 76f), new Color(0.55f, 0.82f, 1f), true, new Vector2(1f, 1f));
-            Text icon = Label("CurrencyIcon", panel, "$", 31, TextAnchor.MiddleCenter, FontStyle.Bold, Color.white);
-            SetRect(icon.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(15f, 0f), new Vector2(52f, 52f), new Vector2(0f, 0.5f));
-            icon.transform.parent.GetComponent<Image>();
-            Image iconBackground = icon.gameObject.AddComponent<Image>();
-            iconBackground.sprite = m_circleSprite;
-            iconBackground.color = new Color(0.12f, 0.75f, 0.28f);
-            icon.transform.SetAsFirstSibling();
+            RectTransform iconBackground = Rect("CurrencyIconBackground", panel);
+            SetRect(iconBackground, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(15f, 0f), new Vector2(52f, 52f), new Vector2(0f, 0.5f));
+            Image backgroundImage = iconBackground.gameObject.AddComponent<Image>();
+            backgroundImage.sprite = m_circleSprite;
+            backgroundImage.color = new Color(0.12f, 0.75f, 0.28f);
+            backgroundImage.raycastTarget = false;
+            Text icon = Label("CurrencyIcon", iconBackground, "$", 31, TextAnchor.MiddleCenter, FontStyle.Bold, Color.white);
+            Stretch(icon.rectTransform, 0f);
             m_currencyText = Label("CurrencyText", panel, "$ 0", 34, TextAnchor.MiddleLeft, FontStyle.Bold);
             SetRect(m_currencyText.rectTransform, Vector2.zero, Vector2.one, new Vector2(82f, 8f), new Vector2(-10f, -8f));
         }
@@ -374,6 +454,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         private static void SetBar(Image fill, float value)
         {
+            if (fill == null) return;
             RectTransform rect = fill.rectTransform;
             rect.anchorMax = new Vector2(Mathf.Clamp01(value), 1f);
         }

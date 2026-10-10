@@ -249,6 +249,7 @@ namespace CouchGuys.Gameplay.Enemies
 
                 if (thief.TryGetComponent(out ThiefNavigator navigator))
                 {
+                    navigator.ConfigureTacticalSlotServer(index, m_groupPositions.Count);
                     navigator.SetTargetServer(targetHealth, preferredRange);
                 }
 

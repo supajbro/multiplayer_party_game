@@ -209,8 +209,16 @@ MonoBehaviour:
   _networkObjectCache: {fileID: 4702605854175706486}
   m_agent: {fileID: 6091760547220716315}
   m_pathRefreshInterval: 0.35
-  m_aimTurnSpeed: 540
+  m_tacticalRepositionInterval: 2.5
+  m_repositionIntervalVariation: 1
   m_targetNavMeshSampleRadius: 6
+  m_tacticalSampleRadius: 4
+  m_targetMovementThreshold: 2.5
+  m_tacticalPositionAttempts: 4
+  m_positionVariation: 1.25
+  m_supportRangeMultiplier: 1.45
+  m_minimumSlotSeparation: 1.75
+  m_aimTurnSpeed: 540
 --- !u!114 &2487758398986249954
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -238,6 +246,15 @@ MonoBehaviour:
   m_hitMask:
     serializedVersion: 2
     m_Bits: 4294967295
+  m_baseAccuracy: 0.72
+  m_movingAccuracyPenalty: 0.2
+  m_distanceAccuracyPenalty: 0.35
+  m_reactionTime: 0.65
+  m_aimRotationSpeed: 150
+  m_minBurstShots: 1
+  m_maxBurstShots: 3
+  m_burstCooldown: 1.1
+  m_requiredAimAngle: 16
   m_tracerDuration: 0.16
   m_tracerWidth: 0.035
   m_tracerColour: {r: 1, g: 0.72, b: 0.12, a: 1}
@@ -303,7 +320,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.3886316
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalPosition.z
@@ -311,11 +328,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: 0.7071068
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0.7071068
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalRotation.y
@@ -327,7 +344,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
+      value: -90
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: cc460fc7feeb2c24c8ea6ebe8b36ee1a, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
