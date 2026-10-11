@@ -33,7 +33,8 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] private WeaponDefinition[] m_weapons = new WeaponDefinition[WeaponCount];
         [SerializeField] private LayerMask m_hitMask = ~0;
         [SerializeField, Min(0f)] private float m_switchDuration = 0.18f;
-        [SerializeField, Min(0.5f)] private float m_maximumAimOriginDistance = 3.5f;
+        // Must cover the third-person camera's 4.5 m boom plus its shoulder offset.
+        [SerializeField, Min(0.5f)] private float m_maximumAimOriginDistance = 6f;
 
         private readonly SyncVar<int> m_equippedIndex = new(-1);
         private readonly SyncVar<int> m_selectedHotbarSlot = new();

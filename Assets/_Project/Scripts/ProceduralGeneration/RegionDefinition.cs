@@ -19,6 +19,8 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private RegionElevationSettings m_elevation = RegionElevationSettings.SuburbsDefault;
         [SerializeField] private RegionProgressionSettings m_progression = RegionProgressionSettings.SuburbsDefault;
         [SerializeField] private GeneratedTerrainSettings m_terrain = GeneratedTerrainSettings.SuburbsDefault;
+        [SerializeField] private NeighbourhoodBorderSettings m_border =
+            NeighbourhoodBorderSettings.SuburbsDefault;
 
         [Header("World Prefabs")]
         [SerializeField] private GameObject[] m_roadPrefabs = Array.Empty<GameObject>();
@@ -51,6 +53,7 @@ namespace CouchGuys.ProceduralGeneration
         public RegionElevationSettings Elevation => m_elevation;
         public RegionProgressionSettings Progression => m_progression;
         public GeneratedTerrainSettings Terrain => m_terrain;
+        public NeighbourhoodBorderSettings Border => m_border;
         public GameObject[] RoadPrefabs => m_roadPrefabs;
         public GameObject GroundPrefab => m_groundPrefab;
         public GameObject StartingAreaPrefab => m_startingAreaPrefab;
@@ -77,6 +80,7 @@ namespace CouchGuys.ProceduralGeneration
             m_elevation.Validate();
             m_progression.Validate();
             m_terrain.Validate();
+            m_border.Validate();
         }
 #endif
     }

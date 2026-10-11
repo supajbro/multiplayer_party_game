@@ -57,6 +57,21 @@ MonoBehaviour:
     RoadSurfaceOffset: 0.035
     TextureScale: 16
     SurfaceMaterial: {fileID: 0}
+  m_border:
+    Enabled: 1
+    BorderWidth: 18
+    EnabledTypes: 7
+    SceneryDensity: 0.65
+    MinimumSectionLength: 28
+    MaximumSectionLength: 65
+    ForestPrefabs: []
+    MountainPrefabs: []
+    ConstructionPrefabs: []
+    RoadClosurePrefabs: []
+    ColliderHeightAboveTerrain: 18
+    ColliderDepthBelowTerrain: 12
+    ColliderThickness: 2
+    FallRecoveryDepth: 18
   m_roadPrefabs:
   - {fileID: 5829771970680532857, guid: 177b5b5d1f130604fadd58a080d3a87b, type: 3}
   - {fileID: 7279090636439207543, guid: 117251c449fe5f04aaac8d409cd59b3a, type: 3}

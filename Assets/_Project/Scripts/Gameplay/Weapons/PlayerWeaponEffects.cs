@@ -40,6 +40,9 @@ namespace CouchGuys.Gameplay.Weapons
                 GameObject impactObject = new GameObject($"WeaponImpact_{index}");
                 impactObject.transform.SetParent(transform, false);
                 ParticleSystem particles = impactObject.AddComponent<ParticleSystem>();
+                // A ParticleSystem begins playing as soon as it is added. Stop and clear it
+                // before changing duration, otherwise Unity rejects the duration assignment.
+                particles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
                 ParticleSystem.MainModule main = particles.main;
                 main.loop = false;
                 main.playOnAwake = false;

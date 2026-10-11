@@ -461,7 +461,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   m_switchDuration: 0.18
-  m_maximumAimOriginDistance: 3.5
+  m_maximumAimOriginDistance: 6
 --- !u!114 &2114314630447923985
 MonoBehaviour:
   m_ObjectHideFlags: 0

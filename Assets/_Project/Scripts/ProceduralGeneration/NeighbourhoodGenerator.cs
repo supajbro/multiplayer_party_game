@@ -91,6 +91,10 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private GeneratedTerrainSettings m_terrainSettings =
             GeneratedTerrainSettings.SuburbsDefault;
 
+        [Header("Neighbourhood Border")]
+        [SerializeField] private NeighbourhoodBorderSettings m_borderSettings =
+            NeighbourhoodBorderSettings.SuburbsDefault;
+
         [Header("Delivery Difficulty")]
         [SerializeField] private DeliveryDifficultySettings m_deliveryDifficulty =
             DeliveryDifficultySettings.SuburbsDefault;
@@ -193,6 +197,7 @@ namespace CouchGuys.ProceduralGeneration
 
         public StartingArea GeneratedStartingArea { get; private set; }
         public GeneratedTerrainMesh GeneratedTerrain { get; private set; }
+        public NeighbourhoodBorderGenerator GeneratedBorder { get; private set; }
         public IReadOnlyList<GeneratedRoad> GeneratedRoads => m_generatedRoads;
         public IReadOnlyList<GeneratedProperty> GeneratedProperties => m_generatedProperties;
         public IReadOnlyList<GeneratedLot> GeneratedLots => m_generatedLots;
@@ -215,6 +220,7 @@ namespace CouchGuys.ProceduralGeneration
         public bool HasGeneratedNeighbourhood =>
             IsGenerationReady && GeneratedStartingArea != null && m_generatedRoads.Count > 0;
         public Bounds GeneratedWorldBounds { get; private set; }
+        public Bounds PlayableWorldBounds { get; private set; }
 
         private void Start()
         {
@@ -272,6 +278,7 @@ namespace CouchGuys.ProceduralGeneration
             ApplyRegionConfiguration(region);
             m_progression.Validate();
             m_terrainSettings.Validate();
+            m_borderSettings.Validate();
             EnsureDifficultySettings();
             if (!ValidateConfiguration())
             {
@@ -307,6 +314,7 @@ namespace CouchGuys.ProceduralGeneration
             GenerateProperties(new System.Random(DeriveSeed(seed, 0x61C88647)));
             CreateContinuousTerrain();
             CreateSidewalks();
+            CreateNeighbourhoodBorder();
             GenerateRegionObjects(
                 m_selectedRegion != null ? m_selectedRegion.Props : null,
                 m_propsRoot,
@@ -443,6 +451,7 @@ namespace CouchGuys.ProceduralGeneration
             m_maximumRoadSlope = elevation.MaximumRoadSlope;
             m_progression = region.Progression;
             m_terrainSettings = region.Terrain;
+            m_borderSettings = region.Border;
             m_roadPrefabs = region.RoadPrefabs ?? Array.Empty<GameObject>();
             m_residentialGroundPrefab = region.GroundPrefab;
             m_startingAreaPrefab = region.StartingAreaPrefab;
@@ -526,6 +535,7 @@ namespace CouchGuys.ProceduralGeneration
             m_hazardsRoot = null;
             GeneratedStartingArea = null;
             GeneratedTerrain = null;
+            GeneratedBorder = null;
             IsGenerationReady = false;
             IsNavMeshReady = false;
             IsDeliveryDifficultyReady = false;
@@ -546,6 +556,7 @@ namespace CouchGuys.ProceduralGeneration
             m_reservedDrivewayFootprints.Clear();
             m_blockElevations = null;
             GeneratedWorldBounds = new Bounds(transform.position, Vector3.zero);
+            PlayableWorldBounds = new Bounds(transform.position, Vector3.zero);
             m_warnedAboutRoadPlaceholders = false;
             m_warnedAboutHousePlaceholders = false;
             GeneratedLandmarkCount = 0;
@@ -573,6 +584,28 @@ namespace CouchGuys.ProceduralGeneration
             m_roadZones.TryGetValue(coordinate, out zone);
 
         public bool IsPrimaryRoad(GridCoordinate coordinate) => m_primaryRoadCells.Contains(coordinate);
+
+        public float SampleTerrainHeight(Vector3 worldPosition) =>
+            SamplePlacementTerrainHeight(worldPosition);
+
+        public Vector3 MapLocalToWorld(Vector3 mapLocalPosition) =>
+            LocalCoordinatesToWorld(
+                mapLocalPosition.x / m_roadTileSize,
+                mapLocalPosition.z / m_roadTileSize,
+                mapLocalPosition.y);
+
+        public Vector3 WorldToMapLocal(Vector3 worldPosition)
+        {
+            GridCoordinate rightOffset = DirectionOffset(TurnRight(m_startDirection));
+            GridCoordinate forwardOffset = DirectionOffset(m_startDirection);
+            Vector3 right = new Vector3(rightOffset.X, 0f, rightOffset.Y);
+            Vector3 forward = new Vector3(forwardOffset.X, 0f, forwardOffset.Y);
+            Vector3 offset = worldPosition - m_gridOrigin;
+            return new Vector3(
+                Vector3.Dot(offset, right),
+                offset.y,
+                Vector3.Dot(offset, forward));
+        }
 
         public SuburbZone GetProgressionZone(Vector3 worldPosition) =>
             CalculateZone(GridToLocal(WorldToGrid(worldPosition)).y);
@@ -822,6 +855,66 @@ namespace CouchGuys.ProceduralGeneration
 
             bounds.Expand(new Vector3(m_roadTileSize, 0f, m_roadTileSize));
             GeneratedWorldBounds = bounds;
+        }
+
+        private Rect CalculatePlayableLocalBounds()
+        {
+            float depotDepth = GeneratedStartingArea != null
+                ? GeneratedStartingArea.GridFootprint.y
+                : m_placeholderStartingAreaFootprint.y;
+            float minimumX = m_minimumLocalX * m_roadTileSize;
+            float maximumX = (m_minimumLocalX + m_gridWidth * (m_blockWidth + 1)) *
+                             m_roadTileSize;
+            float minimumZ = -depotDepth * m_roadTileSize;
+            float maximumZ = m_gridHeight * (m_blockHeight + 1) * m_roadTileSize;
+            return Rect.MinMaxRect(minimumX, minimumZ, maximumX, maximumZ);
+        }
+
+        private void CreateNeighbourhoodBorder()
+        {
+            Rect playableBounds = CalculatePlayableLocalBounds();
+            PlayableWorldBounds = CalculateWorldBounds(playableBounds);
+            if (!m_borderSettings.Enabled)
+            {
+                return;
+            }
+
+            GameObject borderRoot = new GameObject("NeighbourhoodBorder");
+            Vector3 mapForward = MapLocalToWorld(Vector3.forward) -
+                                 MapLocalToWorld(Vector3.zero);
+            borderRoot.transform.SetPositionAndRotation(
+                MapLocalToWorld(Vector3.zero),
+                Quaternion.LookRotation(mapForward, Vector3.up));
+            borderRoot.transform.SetParent(m_generatedRoot, true);
+            NeighbourhoodBorderGenerator border =
+                borderRoot.AddComponent<NeighbourhoodBorderGenerator>();
+            GeneratedBorder = border;
+            border.Generate(
+                this,
+                playableBounds,
+                m_terrainSettings.MapBorder,
+                m_borderSettings,
+                new System.Random(DeriveSeed(CurrentSeed, 0x36A9F17D)));
+        }
+
+        private Bounds CalculateWorldBounds(Rect localBounds)
+        {
+            Vector3[] corners =
+            {
+                MapLocalToWorld(new Vector3(localBounds.xMin, 0f, localBounds.yMin)),
+                MapLocalToWorld(new Vector3(localBounds.xMin, 0f, localBounds.yMax)),
+                MapLocalToWorld(new Vector3(localBounds.xMax, 0f, localBounds.yMin)),
+                MapLocalToWorld(new Vector3(localBounds.xMax, 0f, localBounds.yMax))
+            };
+            corners[0].y = SampleTerrainHeight(corners[0]);
+            Bounds bounds = new Bounds(corners[0], Vector3.zero);
+            for (int index = 1; index < corners.Length; index++)
+            {
+                corners[index].y = SampleTerrainHeight(corners[index]);
+                bounds.Encapsulate(corners[index]);
+            }
+
+            return bounds;
         }
 
         private static void EncapsulatePoint(ref Bounds bounds, ref bool hasPoint, Vector3 point)
@@ -1327,7 +1420,9 @@ namespace CouchGuys.ProceduralGeneration
 
         private void CreateContinuousTerrain()
         {
-            float borderTiles = m_terrainSettings.MapBorder / m_roadTileSize;
+            float extendedBorder = m_terrainSettings.MapBorder +
+                                   (m_borderSettings.Enabled ? m_borderSettings.BorderWidth : 0f);
+            float borderTiles = extendedBorder / m_roadTileSize;
             float minimumLocalX = m_minimumLocalX - borderTiles;
             float maximumLocalX = m_minimumLocalX +
                                   m_gridWidth * (m_blockWidth + 1) + borderTiles;
@@ -3742,6 +3837,16 @@ namespace CouchGuys.ProceduralGeneration
                 return false;
             }
 
+            if (m_borderSettings.Enabled &&
+                (GeneratedBorder == null || GeneratedBorder.PerimeterColliderCount != 4 ||
+                 GeneratedBorder.SceneryItemCount == 0))
+            {
+                Debug.LogError(
+                    "Generated neighbourhood border is missing scenery or a continuous four-wall perimeter.",
+                    this);
+                return false;
+            }
+
             if (m_roadCells.Count != m_logicalRoads.Count || m_roadCells.Count != m_roadHeights.Count)
             {
                 Debug.LogError("Generated neighbourhood road data is inconsistent.", this);
@@ -4143,6 +4248,7 @@ namespace CouchGuys.ProceduralGeneration
             m_maximumRoadSlope = Mathf.Clamp(m_maximumRoadSlope, 1f, 60f);
             m_progression.Validate();
             m_terrainSettings.Validate();
+            m_borderSettings.Validate();
             EnsureDifficultySettings();
             m_residentialGroundVerticalOffset = Mathf.Max(0f, m_residentialGroundVerticalOffset);
             m_standardPropertyFootprint.x = Mathf.Max(1, m_standardPropertyFootprint.x);
