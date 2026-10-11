@@ -41,6 +41,7 @@ namespace CouchGuys.Player
         private const float CarryHeight = 0.45f;
         private const float SoftConstraintStartRatio = 0.7f;
         private const float CarrierSpeedTransitionRate = 2.5f;
+        private const float CouchPushingSpeedMultiplier = 0.3f;
 
         private readonly SyncVar<NetworkObject> m_carriedCouch = new();
         private readonly SyncVar<int> m_carriedPointIndex = new(-1);
@@ -50,6 +51,8 @@ namespace CouchGuys.Player
         private float m_lastIntentChangeTime = float.NegativeInfinity;
         private float m_lastServerIntentTime = float.NegativeInfinity;
         private float m_appliedSpeedMultiplier = 1f;
+        private CharacterController m_carrierCollider;
+        private CouchCarryController m_collisionIgnoredCouch;
         private NetworkObject m_cachedMovementCouchObject;
         private CouchCarryController m_cachedMovementCouch;
         private Transform m_cachedMovementAnchor;
@@ -70,6 +73,8 @@ namespace CouchGuys.Player
         {
             m_input ??= GetComponent<PlayerInputReader>();
             m_playerController ??= GetComponent<ThirdPersonPlayerController>();
+            m_carrierCollider = GetComponent<CharacterController>();
+            m_carriedCouch.OnChange += OnCarriedCouchChanged;
         }
 
         private void Update()
@@ -106,7 +111,17 @@ namespace CouchGuys.Player
             }
         }
 
-        public override void OnStartServer() => base.OnStartServer();
+        public override void OnStartServer()
+        {
+            base.OnStartServer();
+            UpdateCarriedCouchCollision(m_carriedCouch.Value);
+        }
+
+        public override void OnStartClient()
+        {
+            base.OnStartClient();
+            UpdateCarriedCouchCollision(m_carriedCouch.Value);
+        }
 
         public override void OnStopClient()
         {
@@ -125,6 +140,12 @@ namespace CouchGuys.Player
             deliveryManager?.ReleaseDialogueLockServer(this);
             ReleaseCurrentCouchServer();
             base.OnStopServer();
+        }
+
+        private void OnDestroy()
+        {
+            m_carriedCouch.OnChange -= OnCarriedCouchChanged;
+            UpdateCarriedCouchCollision(null);
         }
 
         internal Vector3 CalculateDesiredCarryPosition(Vector3 couchCentre)
@@ -511,6 +532,7 @@ namespace CouchGuys.Player
             NetworkObject couchObject = m_carriedCouch.Value;
             int pointIndex = m_carriedPointIndex.Value;
             RefreshMovementCache(couchObject, pointIndex);
+            m_playerController.SetExternalRotationLocked(m_cachedMovementCouch != null);
             if (m_cachedMovementCouch != null)
             {
                 targetMultiplier = CalculateCarryingSpeedMultiplier(m_cachedMovementCouch);
@@ -518,11 +540,16 @@ namespace CouchGuys.Player
                 if (m_cachedMovementAnchor != null)
                 {
                     float maximumDistance = m_cachedMovementCouch.MaxCarryDistance;
-                    m_playerController.SetExternalFacingTarget(m_cachedMovementAnchor);
+                    Vector3 outwardDirection = Vector3.ProjectOnPlane(
+                        m_cachedMovementAnchor.position - m_cachedMovementCouch.transform.position,
+                        Vector3.up);
                     m_playerController.SetExternalMovementResistance(
                         m_cachedMovementAnchor,
+                        outwardDirection,
+                        CarryDistance,
                         maximumDistance * SoftConstraintStartRatio,
-                        maximumDistance);
+                        maximumDistance,
+                        CouchPushingSpeedMultiplier);
                 }
             }
             float nextMultiplier = Mathf.MoveTowards(
@@ -545,9 +572,40 @@ namespace CouchGuys.Player
                 m_playerController.SetExternalSpeedMultiplier(1f);
                 m_playerController.ClearExternalMovementResistance();
                 m_playerController.ClearExternalFacingTarget();
+                m_playerController.SetExternalRotationLocked(false);
             }
 
             m_appliedSpeedMultiplier = 1f;
+        }
+
+        private void OnCarriedCouchChanged(NetworkObject previous, NetworkObject next, bool asServer)
+        {
+            UpdateCarriedCouchCollision(next);
+        }
+
+        private void UpdateCarriedCouchCollision(NetworkObject couchObject)
+        {
+            CouchCarryController nextCouch = null;
+            if (couchObject != null)
+            {
+                couchObject.TryGetComponent(out nextCouch);
+            }
+
+            if (nextCouch == m_collisionIgnoredCouch)
+            {
+                return;
+            }
+
+            if (m_collisionIgnoredCouch != null)
+            {
+                m_collisionIgnoredCouch.SetCarrierCollisionIgnored(m_carrierCollider, false);
+            }
+
+            m_collisionIgnoredCouch = nextCouch;
+            if (m_collisionIgnoredCouch != null)
+            {
+                m_collisionIgnoredCouch.SetCarrierCollisionIgnored(m_carrierCollider, true);
+            }
         }
 
         private void RefreshMovementCache(NetworkObject couchObject, int pointIndex)

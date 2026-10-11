@@ -330,6 +330,27 @@ namespace CouchGuys.Gameplay.Couch
                 : null;
         }
 
+        /// <summary>
+        /// Prevents an attached carrier from being displaced by the couch it is
+        /// controlling. Other players and world objects continue to collide normally.
+        /// </summary>
+        internal void SetCarrierCollisionIgnored(Collider carrierCollider, bool ignored)
+        {
+            if (carrierCollider == null || m_colliders == null)
+            {
+                return;
+            }
+
+            for (int index = 0; index < m_colliders.Length; index++)
+            {
+                Collider couchCollider = m_colliders[index];
+                if (couchCollider != null && couchCollider != carrierCollider)
+                {
+                    Physics.IgnoreCollision(carrierCollider, couchCollider, ignored);
+                }
+            }
+        }
+
         public bool IsPointOccupied(int pointIndex)
         {
             return GetOccupantObjectId(pointIndex) >= 0;
@@ -822,6 +843,10 @@ namespace CouchGuys.Gameplay.Couch
 
             m_rigidbody.mass = CouchWeight;
             m_rigidbody.maxAngularVelocity = MaximumAngularVelocity;
+            // A couch may turn around the vertical axis, but carrier forces must not
+            // pitch or roll it into the players or lever it off the ground.
+            m_rigidbody.constraints |= RigidbodyConstraints.FreezeRotationX |
+                                       RigidbodyConstraints.FreezeRotationZ;
         }
 
         private void LimitHorizontalVelocity(float maximumSpeed)
