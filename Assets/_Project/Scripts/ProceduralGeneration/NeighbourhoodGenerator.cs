@@ -98,6 +98,8 @@ namespace CouchGuys.ProceduralGeneration
         [Header("Starting Area")]
         [SerializeField] private GameObject m_startingAreaPrefab;
         [SerializeField] private GameObject m_deliveryNpcPrefab;
+        [Tooltip("Allows decorative scenes to reuse neighbourhood generation without spawning gameplay NPCs.")]
+        [SerializeField] private bool m_createDeliveryNpc = true;
         [SerializeField] private Vector2Int m_placeholderStartingAreaFootprint = new Vector2Int(3, 3);
 
         [Header("Navigation")]
@@ -238,6 +240,17 @@ namespace CouchGuys.ProceduralGeneration
             GenerateInternal(region, seed, 0);
         }
 
+        /// <summary>Configures this generator for a non-gameplay showcase scene.</summary>
+        public void ConfigureDecorative(RegionDefinition region)
+        {
+            m_selectedRegion = region;
+            m_availableRegions = region != null ? new[] { region } : Array.Empty<RegionDefinition>();
+            m_generateOnStart = true;
+            m_useRandomSeed = true;
+            m_createDeliveryNpc = false;
+            m_navMeshSurface = null;
+        }
+
         private void EnsureDifficultySettings()
         {
             if (m_deliveryDifficulty.TotalWeight <= 0.001f ||
@@ -305,7 +318,10 @@ namespace CouchGuys.ProceduralGeneration
                 new System.Random(DeriveSeed(seed, 0x72AE91C3)),
                 true);
             AnalyseDeliveryDestinations();
-            CreateDeliveryNpc();
+            if (m_createDeliveryNpc)
+            {
+                CreateDeliveryNpc();
+            }
             CalculateWorldBounds();
             LastValidationSucceeded = ValidateLayout();
             if (!LastValidationSucceeded)

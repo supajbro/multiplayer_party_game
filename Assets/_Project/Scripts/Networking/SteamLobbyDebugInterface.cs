@@ -9,6 +9,8 @@ namespace CouchGuys.Networking
     [DisallowMultipleComponent]
     public sealed class SteamLobbyDebugInterface : MonoBehaviour
     {
+        public static bool IsVisible { get; set; } = true;
+
         [SerializeField] private SteamLobbyController m_lobbyController;
 
         private string m_lobbyIdText = string.Empty;
@@ -21,7 +23,7 @@ namespace CouchGuys.Networking
 
         private void OnGUI()
         {
-            if (m_lobbyController == null)
+            if (!IsVisible || m_lobbyController == null)
             {
                 return;
             }

@@ -1,0 +1,80 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c8aecb5a9f5a0fa4093c4ce2bc49d678, type: 3}
+  m_Name: Region_Suburbs_Menu
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.ProceduralGeneration.RegionDefinition
+  m_regionId: suburbs
+  m_displayName: Suburbs
+  m_description: Main menu decorative suburbs
+  m_unlockCost: 0
+  m_difficulty: 1
+  m_roadStrategy: {fileID: 11400000, guid: 41cedb1556ec4fb699342f8710a95dc6, type: 2}
+  m_grid:
+    GridWidth: 6
+    GridHeight: 6
+    BlockWidth: 6
+    BlockHeight: 6
+    RoadTileSize: 10
+    MinimumLotsPerBlock: 1
+    LotsPerBlock: 3
+    MinimumLotSpacing: 1
+  m_elevation:
+    Enabled: 1
+    MinimumStep: 2
+    MaximumStep: 4
+    MaximumElevation: 30
+    MaximumRoadSlope: 20
+  m_progression:
+    Enabled: 1
+    EasyEndNormalized: 0.28
+    MediumEndNormalized: 0.55
+    HillyEndNormalized: 0.8
+    DepotFlatRadiusTiles: 4
+    ElevationTrendExponent: 1.15
+    ElevationNoiseAmplitude: 7
+    ElevationNoiseFrequency: 0.075
+    OuterElevationMultiplier: 1.2
+    PrimaryRoadMaximumSlope: 10
+    ResidentialRoadMaximumSlope: 18
+    MinimumDestinationsPerZone: 2
+    MaximumGenerationAttempts: 3
+  m_terrain:
+    VertexSpacing: 2
+    MapBorder: 8
+    RoadHalfWidth: 4
+    RoadShoulderWidth: 4
+    DepotBlendWidth: 4
+    HousePadBlendWidth: 3
+    RoadSurfaceOffset: 0.035
+    TextureScale: 16
+    SurfaceMaterial: {fileID: 0}
+  m_roadPrefabs:
+  - {fileID: 5829771970680532857, guid: 177b5b5d1f130604fadd58a080d3a87b, type: 3}
+  - {fileID: 7279090636439207543, guid: 117251c449fe5f04aaac8d409cd59b3a, type: 3}
+  - {fileID: 390435489318421988, guid: ecd18de936dcdb34dbf16ab9deb43629, type: 3}
+  - {fileID: 2038927126481807055, guid: 71428dd5478758e488012140f51f73c0, type: 3}
+  - {fileID: 7446332652584344945, guid: fac88f3d511c80b429e881e1e72a2691, type: 3}
+  m_groundPrefab: {fileID: 0}
+  m_startingAreaPrefab: {fileID: 0}
+  m_deliveryNpcPrefab: {fileID: 0}
+  m_mansionPrefab: {fileID: 0}
+  m_lots:
+  - Definition: {fileID: 11400000, guid: 15aab6b7cac24f2499d3f3ef9c445f8b, type: 2}
+    Weight: 1
+  - Definition: {fileID: 11400000, guid: da535d9f3e6065e4cbeefe6818c04af9, type: 2}
+    Weight: 1
+  m_lotDensity: 1
+  m_minimumLandmarks: 0
+  m_maximumLandmarks: 0
+  m_props: []
+  m_hazards: []
+  m_buildNavMesh: 0
