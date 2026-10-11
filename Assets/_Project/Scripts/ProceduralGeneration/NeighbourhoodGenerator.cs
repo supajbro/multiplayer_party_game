@@ -134,6 +134,8 @@ namespace CouchGuys.ProceduralGeneration
             new Dictionary<GridCoordinate, float>();
         private readonly Dictionary<GridCoordinate, SuburbZone> m_roadZones =
             new Dictionary<GridCoordinate, SuburbZone>();
+        private readonly Dictionary<Vector2Int, float> m_roadSurfaceHeightCache =
+            new Dictionary<Vector2Int, float>();
         private readonly HashSet<GridCoordinate> m_primaryRoadCells = new HashSet<GridCoordinate>();
         private readonly List<OrientedFootprint> m_placedHouseFootprints =
             new List<OrientedFootprint>();
@@ -151,12 +153,15 @@ namespace CouchGuys.ProceduralGeneration
         private Transform m_landmarksRoot;
         private Transform m_propsRoot;
         private Transform m_hazardsRoot;
+        private GeneratedTerrainMesh m_generatedRoadCollider;
         private Vector3 m_gridOrigin;
         private CardinalDirection m_startDirection;
         private bool m_warnedAboutRoadPlaceholders;
         private bool m_warnedAboutHousePlaceholders;
         private float m_elevationNoiseOffsetX;
         private float m_elevationNoiseOffsetY;
+        private Material m_runtimeRoadMaterial;
+        private Material m_runtimeRoadMarkingMaterial;
 
         private readonly struct PropertyCandidate
         {
@@ -512,6 +517,9 @@ namespace CouchGuys.ProceduralGeneration
                 m_navMeshSurface.RemoveData();
             }
 
+            DestroyOwnedRuntimeMaterial(ref m_runtimeRoadMaterial);
+            DestroyOwnedRuntimeMaterial(ref m_runtimeRoadMarkingMaterial);
+
             GeneratedNeighbourhoodRoot existingRoot = GetComponentInChildren<GeneratedNeighbourhoodRoot>(true);
             if (existingRoot != null && existingRoot.transform.parent == transform)
             {
@@ -533,6 +541,7 @@ namespace CouchGuys.ProceduralGeneration
             m_landmarksRoot = null;
             m_propsRoot = null;
             m_hazardsRoot = null;
+            m_generatedRoadCollider = null;
             GeneratedStartingArea = null;
             GeneratedTerrain = null;
             GeneratedBorder = null;
@@ -551,6 +560,7 @@ namespace CouchGuys.ProceduralGeneration
             m_logicalRoads.Clear();
             m_roadHeights.Clear();
             m_roadZones.Clear();
+            m_roadSurfaceHeightCache.Clear();
             m_primaryRoadCells.Clear();
             m_placedHouseFootprints.Clear();
             m_reservedDrivewayFootprints.Clear();
@@ -563,6 +573,25 @@ namespace CouchGuys.ProceduralGeneration
             GeneratedPropCount = 0;
             GeneratedHazardCount = 0;
             LastValidationSucceeded = false;
+        }
+
+        private static void DestroyOwnedRuntimeMaterial(ref Material material)
+        {
+            if (material == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(material);
+            }
+            else
+            {
+                DestroyImmediate(material);
+            }
+
+            material = null;
         }
 
         public Vector3 GridToWorld(GridCoordinate coordinate)
@@ -1290,33 +1319,19 @@ namespace CouchGuys.ProceduralGeneration
 
         private void CreateRoadVisuals(System.Random random)
         {
+            List<MeshFilter> colliderSources = new List<MeshFilter>(m_roadOrder.Count);
             for (int index = 0; index < m_roadOrder.Count; index++)
             {
                 GridCoordinate coordinate = m_roadOrder[index];
                 RoadConnections connections = m_logicalRoads[coordinate];
-                Quaternion surfaceRotation = CalculateRoadSurfaceRotation(coordinate);
-                Vector3 roadPosition = GridToWorld(coordinate) +
-                                       Vector3.up * m_terrainSettings.RoadSurfaceOffset;
-                GameObject road = TryCreateRoadPrefab(
-                    connections, roadPosition, surfaceRotation, random);
-                if (road == null)
-                {
-                    road = GameObject.CreatePrimitive(PrimitiveType.Plane);
-                    road.transform.SetPositionAndRotation(roadPosition, surfaceRotation);
-                    road.transform.localScale = new Vector3(
-                        m_roadTileSize / 10f, 1f, m_roadTileSize / 10f);
-                    if (!m_warnedAboutRoadPlaceholders)
-                    {
-                        Debug.LogWarning("One or more matching Road prefabs are unavailable; Plane placeholders are being used.", this);
-                        m_warnedAboutRoadPlaceholders = true;
-                    }
-                }
-
-                road.name = road.GetComponent<RoadTile>() == null
-                    ? $"Placeholder_Road_{index:000}"
-                    : $"Road_{index:000}";
-                road.transform.SetParent(m_roadsRoot, true);
-                FitRoadVisualToTile(road.transform);
+                GameObject materialSource = TrySelectRoadPrefab(connections, random);
+                GameObject road = CreateProceduralRoad(
+                    coordinate,
+                    connections,
+                    materialSource,
+                    index,
+                    out Mesh surfaceMesh,
+                    out Mesh markingMesh);
                 GeneratedRoad generatedRoad = road.AddComponent<GeneratedRoad>();
                 generatedRoad.Initialise(
                     coordinate,
@@ -1327,40 +1342,16 @@ namespace CouchGuys.ProceduralGeneration
                         : GeneratedRoadRole.Residential,
                     m_roadHeights[coordinate],
                     GetMaximumConnectedGrade(coordinate));
+                generatedRoad.SetOwnedMeshes(surfaceMesh, markingMesh);
                 m_generatedRoads.Add(generatedRoad);
+                colliderSources.Add(road.GetComponent<MeshFilter>());
             }
+
+            CreateCombinedRoadCollider(colliderSources);
         }
 
-        private void FitRoadVisualToTile(Transform road)
-        {
-            Renderer[] renderers = road.GetComponentsInChildren<Renderer>(true);
-            if (!TryCalculateRendererBounds(renderers, out Bounds bounds))
-            {
-                return;
-            }
-
-            Vector3 localXDirection = Vector3.ProjectOnPlane(road.right, Vector3.up).normalized;
-            Vector3 localZDirection = Vector3.ProjectOnPlane(road.forward, Vector3.up).normalized;
-            float renderedX = ProjectBoundsSizeOntoAxis(bounds.size, localXDirection);
-            float renderedZ = ProjectBoundsSizeOntoAxis(bounds.size, localZDirection);
-            if (renderedX <= 0.001f || renderedZ <= 0.001f)
-            {
-                return;
-            }
-
-            // Stretch the inclined axis by the slope's secant so every road still has
-            // a full tile-sized horizontal footprint. Adjacent tiles then meet at their
-            // edges instead of shrinking into gaps or intersecting at the grade.
-            Vector3 scale = road.localScale;
-            scale.x *= m_roadTileSize / renderedX;
-            scale.z *= m_roadTileSize / renderedZ;
-            road.localScale = scale;
-        }
-
-        private GameObject TryCreateRoadPrefab(
+        private GameObject TrySelectRoadPrefab(
             RoadConnections requiredConnections,
-            Vector3 position,
-            Quaternion surfaceRotation,
             System.Random random)
         {
             if (m_roadPrefabs == null || m_roadPrefabs.Length == 0)
@@ -1381,11 +1372,7 @@ namespace CouchGuys.ProceduralGeneration
                 {
                     if (RoadTile.RotateClockwise(roadTile.Connections, quarterTurns) == requiredConnections)
                     {
-                        return Instantiate(
-                            prefab,
-                            position,
-                            surfaceRotation * Quaternion.Euler(0f, quarterTurns * 90f, 0f),
-                            m_roadsRoot);
+                        return prefab;
                     }
                 }
             }
@@ -1393,29 +1380,524 @@ namespace CouchGuys.ProceduralGeneration
             return null;
         }
 
-        private Quaternion CalculateRoadSurfaceRotation(GridCoordinate coordinate)
+        private GameObject CreateProceduralRoad(
+            GridCoordinate coordinate,
+            RoadConnections connections,
+            GameObject materialSource,
+            int roadIndex,
+            out Mesh surfaceMesh,
+            out Mesh markingMesh)
         {
-            float centre = m_roadHeights[coordinate];
-            float west = m_roadHeights.TryGetValue(
-                coordinate + new GridCoordinate(-1, 0), out float westHeight)
-                ? westHeight
-                : centre;
-            float east = m_roadHeights.TryGetValue(
-                coordinate + new GridCoordinate(1, 0), out float eastHeight)
-                ? eastHeight
-                : centre;
-            float south = m_roadHeights.TryGetValue(
-                coordinate + new GridCoordinate(0, -1), out float southHeight)
-                ? southHeight
-                : centre;
-            float north = m_roadHeights.TryGetValue(
-                coordinate + new GridCoordinate(0, 1), out float northHeight)
-                ? northHeight
-                : centre;
-            float gradientX = (east - west) / (2f * m_roadTileSize);
-            float gradientZ = (north - south) / (2f * m_roadTileSize);
-            Vector3 normal = new Vector3(-gradientX, 1f, -gradientZ).normalized;
-            return Quaternion.FromToRotation(Vector3.up, normal);
+            Vector3 roadPosition = GridToWorld(coordinate) +
+                                   Vector3.up * m_terrainSettings.RoadSurfaceOffset;
+            GameObject road = new GameObject(
+                materialSource != null ? $"Road_{roadIndex:000}" : $"Placeholder_Road_{roadIndex:000}");
+            road.transform.SetPositionAndRotation(roadPosition, Quaternion.identity);
+            road.transform.SetParent(m_roadsRoot, true);
+            RoadTile tile = road.AddComponent<RoadTile>();
+            tile.Initialise(connections);
+
+            Material asphaltMaterial = FindRoadMaterial(materialSource, false) ??
+                                        GetFallbackRoadMaterial(false);
+            Material markingMaterial = FindRoadMaterial(materialSource, true) ??
+                                        GetFallbackRoadMaterial(true);
+            if (materialSource == null && !m_warnedAboutRoadPlaceholders)
+            {
+                Debug.LogWarning(
+                    "One or more matching Road prefabs are unavailable; generated road materials are being used.",
+                    this);
+                m_warnedAboutRoadPlaceholders = true;
+            }
+
+            List<Vector3> surfaceVertices = new List<Vector3>(192);
+            List<Vector3> surfaceNormals = new List<Vector3>(192);
+            List<Vector2> surfaceUvs = new List<Vector2>(192);
+            List<int> surfaceTriangles = new List<int>(288);
+            AddRoadFootprintPatches(
+                road.transform,
+                connections,
+                0f,
+                surfaceVertices,
+                surfaceNormals,
+                surfaceUvs,
+                surfaceTriangles);
+            surfaceMesh = CreateGeneratedMesh(
+                $"RoadSurface_{coordinate.X}_{coordinate.Y}",
+                surfaceVertices,
+                surfaceNormals,
+                surfaceUvs,
+                surfaceTriangles);
+
+            MeshFilter surfaceFilter = road.AddComponent<MeshFilter>();
+            MeshRenderer surfaceRenderer = road.AddComponent<MeshRenderer>();
+            surfaceFilter.sharedMesh = surfaceMesh;
+            surfaceRenderer.sharedMaterial = asphaltMaterial;
+
+            GameObject markings = new GameObject("WhiteMarkings", typeof(MeshFilter), typeof(MeshRenderer));
+            markings.transform.SetParent(road.transform, false);
+            List<Vector3> markingVertices = new List<Vector3>(128);
+            List<Vector3> markingNormals = new List<Vector3>(128);
+            List<Vector2> markingUvs = new List<Vector2>(128);
+            List<int> markingTriangles = new List<int>(192);
+            AddRoadMarkings(
+                road.transform,
+                connections,
+                0.012f,
+                markingVertices,
+                markingNormals,
+                markingUvs,
+                markingTriangles);
+            markingMesh = CreateGeneratedMesh(
+                $"RoadMarkings_{coordinate.X}_{coordinate.Y}",
+                markingVertices,
+                markingNormals,
+                markingUvs,
+                markingTriangles);
+            markings.GetComponent<MeshFilter>().sharedMesh = markingMesh;
+            markings.GetComponent<MeshRenderer>().sharedMaterial = markingMaterial;
+            return road;
+        }
+
+        private void CreateCombinedRoadCollider(List<MeshFilter> sources)
+        {
+            List<CombineInstance> instances = new List<CombineInstance>(sources.Count);
+            Matrix4x4 roadsWorldToLocal = m_roadsRoot.worldToLocalMatrix;
+            for (int index = 0; index < sources.Count; index++)
+            {
+                MeshFilter source = sources[index];
+                if (source == null || source.sharedMesh == null || source.sharedMesh.vertexCount < 4)
+                {
+                    continue;
+                }
+
+                instances.Add(new CombineInstance
+                {
+                    mesh = source.sharedMesh,
+                    transform = roadsWorldToLocal * source.transform.localToWorldMatrix
+                });
+            }
+
+            if (instances.Count == 0)
+            {
+                Debug.LogError("Could not build the combined road collider because no valid road meshes were generated.", this);
+                return;
+            }
+
+            GameObject colliderObject = new GameObject(
+                "CombinedRoadCollider",
+                typeof(MeshCollider),
+                typeof(GeneratedTerrainMesh));
+            colliderObject.transform.SetParent(m_roadsRoot, false);
+
+            Mesh colliderMesh = new Mesh
+            {
+                name = $"CombinedRoadCollider_{CurrentSeed}",
+                indexFormat = UnityEngine.Rendering.IndexFormat.UInt32
+            };
+            colliderMesh.CombineMeshes(instances.ToArray(), true, true, false);
+            colliderMesh.RecalculateBounds();
+            MeshCollider meshCollider = colliderObject.GetComponent<MeshCollider>();
+            meshCollider.sharedMesh = colliderMesh;
+            m_generatedRoadCollider = colliderObject.GetComponent<GeneratedTerrainMesh>();
+            m_generatedRoadCollider.Initialise(colliderMesh, null);
+        }
+
+        private void AddRoadFootprintPatches(
+            Transform road,
+            RoadConnections connections,
+            float normalOffset,
+            List<Vector3> vertices,
+            List<Vector3> normals,
+            List<Vector2> uvs,
+            List<int> triangles)
+        {
+            float halfRoad = Mathf.Min(m_terrainSettings.RoadHalfWidth, m_roadTileSize * 0.5f);
+            AddRoadRectangle(
+                road, Vector2.zero, new Vector2(halfRoad, halfRoad), normalOffset,
+                vertices, normals, uvs, triangles);
+            float halfTile = m_roadTileSize * 0.5f;
+            float armHalfLength = Mathf.Max(0f, (halfTile - halfRoad) * 0.5f);
+            float armCentre = halfRoad + armHalfLength;
+            for (int directionIndex = 0; directionIndex < 4; directionIndex++)
+            {
+                CardinalDirection direction = (CardinalDirection)directionIndex;
+                if ((connections & DirectionConnection(direction)) == 0 || armHalfLength <= 0f)
+                {
+                    continue;
+                }
+
+                Vector3 directionVector = DirectionVector(direction);
+                Vector2 centre = new Vector2(directionVector.x, directionVector.z) * armCentre;
+                Vector2 halfSize = direction == CardinalDirection.North ||
+                                   direction == CardinalDirection.South
+                    ? new Vector2(halfRoad, armHalfLength)
+                    : new Vector2(armHalfLength, halfRoad);
+                AddRoadRectangle(
+                    road, centre, halfSize, normalOffset,
+                    vertices, normals, uvs, triangles);
+            }
+        }
+
+        private void AddRoadMarkings(
+            Transform road,
+            RoadConnections connections,
+            float normalOffset,
+            List<Vector3> vertices,
+            List<Vector3> normals,
+            List<Vector2> uvs,
+            List<int> triangles)
+        {
+            float visualScale = m_roadTileSize / 10f;
+            float markingWidth = 0.14f * visualScale;
+            float edgeInset = 0.45f * visualScale;
+            float intersectionClearance = 1.35f * visualScale;
+            bool northSouthStraight = connections ==
+                (RoadConnections.North | RoadConnections.South);
+            bool eastWestStraight = connections ==
+                (RoadConnections.East | RoadConnections.West);
+            if (northSouthStraight || eastWestStraight)
+            {
+                CardinalDirection direction = northSouthStraight
+                    ? CardinalDirection.North
+                    : CardinalDirection.East;
+                for (int dash = 0; dash < 4; dash++)
+                {
+                    float forward = (-3.75f + dash * 2.5f) * visualScale;
+                    AddOrientedRoadRectangle(
+                        road, direction, forward, 1.25f * visualScale, 0f, markingWidth,
+                        normalOffset, vertices, normals, uvs, triangles);
+                }
+
+                float lineOffset = m_terrainSettings.RoadHalfWidth - edgeInset;
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    AddOrientedRoadRectangle(
+                        road, direction, 0f, m_roadTileSize, side * lineOffset, markingWidth,
+                        normalOffset, vertices, normals, uvs, triangles);
+                }
+
+                return;
+            }
+
+            float dashStart = intersectionClearance + 0.35f * visualScale;
+            float dashEnd = m_roadTileSize * 0.5f - 0.35f * visualScale;
+            float dashLength = Mathf.Max(0f, dashEnd - dashStart);
+            float dashCentre = (dashStart + dashEnd) * 0.5f;
+            float armStart = intersectionClearance;
+            float armEnd = m_roadTileSize * 0.5f;
+            float armLength = Mathf.Max(0f, armEnd - armStart);
+            float armCentre = (armStart + armEnd) * 0.5f;
+            float edgeOffset = m_terrainSettings.RoadHalfWidth - edgeInset;
+            for (int directionIndex = 0; directionIndex < 4; directionIndex++)
+            {
+                CardinalDirection direction = (CardinalDirection)directionIndex;
+                if ((connections & DirectionConnection(direction)) == 0)
+                {
+                    continue;
+                }
+
+                AddOrientedRoadRectangle(
+                    road, direction, dashCentre, dashLength, 0f, markingWidth,
+                    normalOffset, vertices, normals, uvs, triangles);
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    AddOrientedRoadRectangle(
+                        road, direction, armCentre, armLength, side * edgeOffset, markingWidth,
+                        normalOffset, vertices, normals, uvs, triangles);
+                }
+            }
+
+            if (CountConnections(connections) == 1)
+            {
+                for (int directionIndex = 0; directionIndex < 4; directionIndex++)
+                {
+                    CardinalDirection direction = (CardinalDirection)directionIndex;
+                    if ((connections & DirectionConnection(direction)) == 0)
+                    {
+                        continue;
+                    }
+
+                    AddOrientedRoadRectangle(
+                        road,
+                        Opposite(direction),
+                        m_terrainSettings.RoadHalfWidth - edgeInset,
+                        markingWidth,
+                        0f,
+                        m_terrainSettings.RoadHalfWidth * 2f - edgeInset * 2f,
+                        normalOffset,
+                        vertices,
+                        normals,
+                        uvs,
+                        triangles);
+                    break;
+                }
+            }
+        }
+
+        private void AddOrientedRoadRectangle(
+            Transform road,
+            CardinalDirection direction,
+            float forwardCentre,
+            float forwardLength,
+            float sidewaysCentre,
+            float sidewaysWidth,
+            float normalOffset,
+            List<Vector3> vertices,
+            List<Vector3> normals,
+            List<Vector2> uvs,
+            List<int> triangles)
+        {
+            Vector3 forward = DirectionVector(direction);
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            Vector3 centre3 = forward * forwardCentre + right * sidewaysCentre;
+            Vector2 halfSize = Mathf.Abs(forward.z) > 0.5f
+                ? new Vector2(sidewaysWidth * 0.5f, forwardLength * 0.5f)
+                : new Vector2(forwardLength * 0.5f, sidewaysWidth * 0.5f);
+            AddRoadRectangle(
+                road,
+                new Vector2(centre3.x, centre3.z),
+                halfSize,
+                normalOffset,
+                vertices,
+                normals,
+                uvs,
+                triangles);
+        }
+
+        private void AddRoadRectangle(
+            Transform road,
+            Vector2 centre,
+            Vector2 halfSize,
+            float normalOffset,
+            List<Vector3> vertices,
+            List<Vector3> normals,
+            List<Vector2> uvs,
+            List<int> triangles)
+        {
+            float spacing = Mathf.Max(0.5f, m_terrainSettings.VertexSpacing);
+            int countX = Mathf.Max(1, Mathf.CeilToInt(halfSize.x * 2f / spacing));
+            int countZ = Mathf.Max(1, Mathf.CeilToInt(halfSize.y * 2f / spacing));
+            int firstVertex = vertices.Count;
+            for (int z = 0; z <= countZ; z++)
+            {
+                float localZ = Mathf.Lerp(centre.y - halfSize.y, centre.y + halfSize.y, z / (float)countZ);
+                for (int x = 0; x <= countX; x++)
+                {
+                    float localX = Mathf.Lerp(centre.x - halfSize.x, centre.x + halfSize.x, x / (float)countX);
+                    Vector3 flatWorld = road.TransformPoint(new Vector3(localX, 0f, localZ));
+                    float worldHeight = SampleRoadSurfaceHeight(flatWorld);
+                    Vector3 normal = SampleRoadSurfaceNormal(flatWorld);
+                    Vector3 world = new Vector3(flatWorld.x, worldHeight, flatWorld.z) + normal * normalOffset;
+                    vertices.Add(road.InverseTransformPoint(world));
+                    normals.Add(road.InverseTransformDirection(normal).normalized);
+                    uvs.Add(new Vector2(
+                        flatWorld.x / Mathf.Max(0.1f, m_terrainSettings.TextureScale),
+                        flatWorld.z / Mathf.Max(0.1f, m_terrainSettings.TextureScale)));
+                }
+            }
+
+            int row = countX + 1;
+            for (int z = 0; z < countZ; z++)
+            {
+                for (int x = 0; x < countX; x++)
+                {
+                    int bottomLeft = firstVertex + z * row + x;
+                    int bottomRight = bottomLeft + 1;
+                    int topLeft = bottomLeft + row;
+                    int topRight = topLeft + 1;
+                    triangles.Add(bottomLeft);
+                    triangles.Add(topLeft);
+                    triangles.Add(topRight);
+                    triangles.Add(bottomLeft);
+                    triangles.Add(topRight);
+                    triangles.Add(bottomRight);
+                }
+            }
+        }
+
+        private static Mesh CreateGeneratedMesh(
+            string meshName,
+            List<Vector3> vertices,
+            List<Vector3> normals,
+            List<Vector2> uvs,
+            List<int> triangles)
+        {
+            Mesh mesh = new Mesh
+            {
+                name = meshName,
+                indexFormat = vertices.Count > ushort.MaxValue
+                    ? UnityEngine.Rendering.IndexFormat.UInt32
+                    : UnityEngine.Rendering.IndexFormat.UInt16
+            };
+            mesh.SetVertices(vertices);
+            mesh.SetNormals(normals);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateTangents();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        private Material FindRoadMaterial(GameObject prefab, bool markings)
+        {
+            if (prefab == null)
+            {
+                return null;
+            }
+
+            Renderer[] renderers = prefab.GetComponentsInChildren<Renderer>(true);
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                Renderer renderer = renderers[index];
+                bool isMarking = renderer.name.IndexOf("mark", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                 renderer.name.IndexOf("white", StringComparison.OrdinalIgnoreCase) >= 0;
+                if (isMarking == markings && renderer.sharedMaterial != null)
+                {
+                    return renderer.sharedMaterial;
+                }
+            }
+
+            return null;
+        }
+
+        private Material GetFallbackRoadMaterial(bool markings)
+        {
+            ref Material material = ref (markings
+                ? ref m_runtimeRoadMarkingMaterial
+                : ref m_runtimeRoadMaterial);
+            if (material != null)
+            {
+                return material;
+            }
+
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            if (shader == null)
+            {
+                return null;
+            }
+
+            material = new Material(shader)
+            {
+                name = markings ? "Generated Road Markings" : "Generated Road Asphalt",
+                color = markings ? new Color(0.92f, 0.92f, 0.88f) : new Color(0.018f, 0.021f, 0.024f)
+            };
+            return material;
+        }
+
+        private Vector3 SampleRoadSurfaceNormal(Vector3 flatWorldPosition)
+        {
+            float epsilon = Mathf.Min(0.25f, m_roadTileSize * 0.025f);
+            float left = SampleRoadSurfaceHeight(flatWorldPosition - Vector3.right * epsilon);
+            float right = SampleRoadSurfaceHeight(flatWorldPosition + Vector3.right * epsilon);
+            float back = SampleRoadSurfaceHeight(flatWorldPosition - Vector3.forward * epsilon);
+            float front = SampleRoadSurfaceHeight(flatWorldPosition + Vector3.forward * epsilon);
+            return new Vector3(
+                -(right - left) / (epsilon * 2f),
+                1f,
+                -(front - back) / (epsilon * 2f)).normalized;
+        }
+
+        private float SampleRoadSurfaceHeight(Vector3 flatWorldPosition)
+        {
+            Vector2Int cacheKey = new Vector2Int(
+                Mathf.RoundToInt((flatWorldPosition.x - m_gridOrigin.x) * 1000f),
+                Mathf.RoundToInt((flatWorldPosition.z - m_gridOrigin.z) * 1000f));
+            if (m_roadSurfaceHeightCache.TryGetValue(cacheKey, out float cachedHeight))
+            {
+                return cachedHeight;
+            }
+
+            float height = CalculateRoadSurfaceHeight(flatWorldPosition);
+            m_roadSurfaceHeightCache[cacheKey] = height;
+            return height;
+        }
+
+        private float CalculateRoadSurfaceHeight(Vector3 flatWorldPosition)
+        {
+            GridCoordinate centre = WorldToGrid(flatWorldPosition);
+            float blendRadius = m_roadTileSize * 1.75f;
+            float weightedHeight = 0f;
+            float totalWeight = 0f;
+            float exactHeight = 0f;
+            int exactSamples = 0;
+            const int searchRadius = 3;
+            for (int y = centre.Y - searchRadius; y <= centre.Y + searchRadius; y++)
+            {
+                for (int x = centre.X - searchRadius; x <= centre.X + searchRadius; x++)
+                {
+                    GridCoordinate coordinate = new GridCoordinate(x, y);
+                    if (!m_logicalRoads.TryGetValue(coordinate, out RoadConnections connections))
+                    {
+                        continue;
+                    }
+
+                    Vector3 first = GridToWorld(coordinate);
+                    AccumulateRoadSurfaceSample(
+                        flatWorldPosition, first, first, blendRadius,
+                        ref weightedHeight, ref totalWeight, ref exactHeight, ref exactSamples);
+                    for (int directionIndex = 0; directionIndex < 4; directionIndex++)
+                    {
+                        CardinalDirection direction = (CardinalDirection)directionIndex;
+                        if ((connections & DirectionConnection(direction)) == 0)
+                        {
+                            continue;
+                        }
+
+                        GridCoordinate neighbour = coordinate + DirectionOffset(direction);
+                        Vector3 second = m_roadHeights.ContainsKey(neighbour)
+                            ? GridToWorld(neighbour)
+                            : first + DirectionVector(direction) * m_roadTileSize;
+                        AccumulateRoadSurfaceSample(
+                            flatWorldPosition, first, second, blendRadius,
+                            ref weightedHeight, ref totalWeight, ref exactHeight, ref exactSamples);
+                    }
+                }
+            }
+
+            float height = exactSamples > 0
+                ? exactHeight / exactSamples
+                : totalWeight > 0.000001f
+                    ? weightedHeight / totalWeight
+                    : flatWorldPosition.y;
+            return height + m_terrainSettings.RoadSurfaceOffset;
+        }
+
+        private static void AccumulateRoadSurfaceSample(
+            Vector3 sample,
+            Vector3 first,
+            Vector3 second,
+            float blendRadius,
+            ref float weightedHeight,
+            ref float totalWeight,
+            ref float exactHeight,
+            ref int exactSamples)
+        {
+            Vector3 firstFlat = new Vector3(first.x, 0f, first.z);
+            Vector3 secondFlat = new Vector3(second.x, 0f, second.z);
+            Vector3 sampleFlat = new Vector3(sample.x, 0f, sample.z);
+            Vector3 segment = secondFlat - firstFlat;
+            float t = segment.sqrMagnitude > 0.0001f
+                ? Mathf.Clamp01(Vector3.Dot(sampleFlat - firstFlat, segment) / segment.sqrMagnitude)
+                : 0f;
+            Vector3 closest = Vector3.Lerp(firstFlat, secondFlat, t);
+            float distance = Vector3.Distance(sampleFlat, closest);
+            if (distance >= blendRadius)
+            {
+                return;
+            }
+
+            float height = Mathf.Lerp(first.y, second.y, t);
+            if (distance <= 0.001f)
+            {
+                exactHeight += height;
+                exactSamples++;
+                return;
+            }
+
+            float normalized = 1f - distance / blendRadius;
+            float weight = normalized * normalized / (0.04f + distance * distance);
+            weightedHeight += height * weight;
+            totalWeight += weight;
         }
 
         private void CreateContinuousTerrain()
@@ -1431,16 +1913,10 @@ namespace CouchGuys.ProceduralGeneration
                 : m_placeholderStartingAreaFootprint.y;
             float minimumLocalY = -(depotDepth + borderTiles);
             float maximumLocalY = m_gridHeight * (m_blockHeight + 1) + borderTiles;
-            float widthMetres = (maximumLocalX - minimumLocalX) * m_roadTileSize;
-            float depthMetres = (maximumLocalY - minimumLocalY) * m_roadTileSize;
-            int vertexCountX = Mathf.Max(
-                2,
-                Mathf.CeilToInt(widthMetres / m_terrainSettings.VertexSpacing) + 1);
-            int vertexCountZ = Mathf.Max(
-                2,
-                Mathf.CeilToInt(depthMetres / m_terrainSettings.VertexSpacing) + 1);
-            float stepX = (maximumLocalX - minimumLocalX) / (vertexCountX - 1);
-            float stepZ = (maximumLocalY - minimumLocalY) / (vertexCountZ - 1);
+            List<float> xCoordinates = BuildTerrainAxis(minimumLocalX, maximumLocalX, true);
+            List<float> zCoordinates = BuildTerrainAxis(minimumLocalY, maximumLocalY, false);
+            int vertexCountX = xCoordinates.Count;
+            int vertexCountZ = zCoordinates.Count;
 
             GameObject terrainObject = new GameObject(
                 "ContinuousTerrain",
@@ -1453,10 +1929,10 @@ namespace CouchGuys.ProceduralGeneration
             Vector2[] uvs = new Vector2[vertices.Length];
             for (int z = 0; z < vertexCountZ; z++)
             {
-                float localY = minimumLocalY + z * stepZ;
+                float localY = zCoordinates[z];
                 for (int x = 0; x < vertexCountX; x++)
                 {
-                    float localX = minimumLocalX + x * stepX;
+                    float localX = xCoordinates[x];
                     Vector3 flatWorldPosition = LocalCoordinatesToWorld(localX, localY, 0f);
                     float height = SampleContinuousTerrainHeight(
                         localX,
@@ -1471,22 +1947,30 @@ namespace CouchGuys.ProceduralGeneration
                 }
             }
 
-            int[] triangles = new int[(vertexCountX - 1) * (vertexCountZ - 1) * 6];
-            int triangleIndex = 0;
+            List<int> triangles = new List<int>((vertexCountX - 1) * (vertexCountZ - 1) * 6);
             for (int z = 0; z < vertexCountZ - 1; z++)
             {
                 for (int x = 0; x < vertexCountX - 1; x++)
                 {
+                    float centreLocalX = (xCoordinates[x] + xCoordinates[x + 1]) * 0.5f;
+                    float centreLocalY = (zCoordinates[z] + zCoordinates[z + 1]) * 0.5f;
+                    Vector3 cellCentre = LocalCoordinatesToWorld(centreLocalX, centreLocalY, 0f);
+                    if (TrySampleRoadFootprint(cellCentre, out _, out float roadDistance) &&
+                        roadDistance <= 0.0001f)
+                    {
+                        continue;
+                    }
+
                     int bottomLeft = z * vertexCountX + x;
                     int bottomRight = bottomLeft + 1;
                     int topLeft = bottomLeft + vertexCountX;
                     int topRight = topLeft + 1;
-                    triangles[triangleIndex++] = bottomLeft;
-                    triangles[triangleIndex++] = topLeft;
-                    triangles[triangleIndex++] = topRight;
-                    triangles[triangleIndex++] = bottomLeft;
-                    triangles[triangleIndex++] = topRight;
-                    triangles[triangleIndex++] = bottomRight;
+                    triangles.Add(bottomLeft);
+                    triangles.Add(topLeft);
+                    triangles.Add(topRight);
+                    triangles.Add(bottomLeft);
+                    triangles.Add(topRight);
+                    triangles.Add(bottomRight);
                 }
             }
 
@@ -1498,7 +1982,7 @@ namespace CouchGuys.ProceduralGeneration
                     : UnityEngine.Rendering.IndexFormat.UInt16
             };
             mesh.vertices = vertices;
-            mesh.triangles = triangles;
+            mesh.SetTriangles(triangles, 0);
             mesh.uv = uvs;
             mesh.RecalculateNormals();
             mesh.RecalculateTangents();
@@ -1539,6 +2023,72 @@ namespace CouchGuys.ProceduralGeneration
             meshCollider.sharedMesh = mesh;
             GeneratedTerrain = terrainObject.GetComponent<GeneratedTerrainMesh>();
             GeneratedTerrain.Initialise(mesh, runtimeMaterial);
+        }
+
+        private List<float> BuildTerrainAxis(float minimum, float maximum, bool xAxis)
+        {
+            List<float> coordinates = new List<float>();
+            float spacingInTiles = m_terrainSettings.VertexSpacing / m_roadTileSize;
+            int regularSegments = Mathf.Max(1, Mathf.CeilToInt((maximum - minimum) / spacingInTiles));
+            for (int index = 0; index <= regularSegments; index++)
+            {
+                coordinates.Add(Mathf.Lerp(minimum, maximum, index / (float)regularSegments));
+            }
+
+            float halfRoad = Mathf.Min(
+                m_terrainSettings.RoadHalfWidth / m_roadTileSize,
+                0.5f);
+            float armHalfLength = Mathf.Max(0f, (0.5f - halfRoad) * 0.5f);
+            float armCentre = halfRoad + armHalfLength;
+            for (int roadIndex = 0; roadIndex < m_roadOrder.Count; roadIndex++)
+            {
+                GridCoordinate roadCoordinate = m_roadOrder[roadIndex];
+                Vector2Int local = GridToLocal(roadCoordinate);
+                AddAxisBoundary(coordinates, (xAxis ? local.x : local.y) - halfRoad, minimum, maximum);
+                AddAxisBoundary(coordinates, (xAxis ? local.x : local.y) + halfRoad, minimum, maximum);
+                RoadConnections connections = m_logicalRoads[roadCoordinate];
+                for (int directionIndex = 0; directionIndex < 4; directionIndex++)
+                {
+                    CardinalDirection direction = (CardinalDirection)directionIndex;
+                    if ((connections & DirectionConnection(direction)) == 0 || armHalfLength <= 0f)
+                    {
+                        continue;
+                    }
+
+                    Vector2Int localDirection = GridToLocal(DirectionOffset(direction));
+                    float directionComponent = xAxis ? localDirection.x : localDirection.y;
+                    float perpendicularHalfSize = halfRoad;
+                    float centre = (xAxis ? local.x : local.y) + directionComponent * armCentre;
+                    float halfSize = Mathf.Abs(directionComponent) > 0
+                        ? armHalfLength
+                        : perpendicularHalfSize;
+                    AddAxisBoundary(coordinates, centre - halfSize, minimum, maximum);
+                    AddAxisBoundary(coordinates, centre + halfSize, minimum, maximum);
+                }
+            }
+
+            coordinates.Sort();
+            for (int index = coordinates.Count - 1; index > 0; index--)
+            {
+                if (Mathf.Abs(coordinates[index] - coordinates[index - 1]) <= 0.0001f)
+                {
+                    coordinates.RemoveAt(index);
+                }
+            }
+
+            return coordinates;
+        }
+
+        private static void AddAxisBoundary(
+            List<float> coordinates,
+            float value,
+            float minimum,
+            float maximum)
+        {
+            if (value > minimum + 0.0001f && value < maximum - 0.0001f)
+            {
+                coordinates.Add(value);
+            }
         }
 
         private void CreateSidewalks()
@@ -1792,25 +2342,22 @@ namespace CouchGuys.ProceduralGeneration
             Vector3 flatWorldPosition)
         {
             height = BlendDepotPad(height, flatWorldPosition);
-            if (TrySampleRoadCorridor(
-                    localX,
-                    localY,
+            if (TrySampleRoadFootprint(
                     flatWorldPosition,
                     out float roadHeight,
                     out float distanceToRoad))
             {
-                float roadEdge = m_terrainSettings.RoadHalfWidth;
-                float shoulderEdge = roadEdge + m_terrainSettings.RoadShoulderWidth;
-                if (distanceToRoad <= roadEdge)
+                float shoulderEdge = m_terrainSettings.RoadShoulderWidth;
+                if (distanceToRoad <= 0.0001f)
                 {
                     height = roadHeight;
                 }
-                else if (distanceToRoad < shoulderEdge && shoulderEdge > roadEdge)
+                else if (distanceToRoad < shoulderEdge && shoulderEdge > 0.0001f)
                 {
                     float blend = Mathf.SmoothStep(
                         0f,
                         1f,
-                        Mathf.InverseLerp(roadEdge, shoulderEdge, distanceToRoad));
+                        distanceToRoad / shoulderEdge);
                     height = Mathf.Lerp(roadHeight, height, blend);
                 }
             }
@@ -1893,82 +2440,100 @@ namespace CouchGuys.ProceduralGeneration
             return Mathf.Lerp(terrainHeight, depotHeight, influence);
         }
 
-        private bool TrySampleRoadCorridor(
-            float localX,
-            float localY,
+        private bool TrySampleRoadFootprint(
             Vector3 flatWorldPosition,
             out float roadHeight,
             out float distanceToRoad)
         {
             roadHeight = 0f;
             distanceToRoad = float.PositiveInfinity;
-            float influenceDistance = m_terrainSettings.RoadHalfWidth +
-                                      m_terrainSettings.RoadShoulderWidth;
+            Vector3 closestRoadPoint = default;
+            float influenceDistance = m_terrainSettings.RoadShoulderWidth;
             int searchRadius = Mathf.CeilToInt(influenceDistance / m_roadTileSize) + 1;
-            int centreX = Mathf.RoundToInt(localX);
-            int centreY = Mathf.RoundToInt(localY);
-            for (int y = centreY - searchRadius; y <= centreY + searchRadius; y++)
+            GridCoordinate nearestCoordinate = WorldToGrid(flatWorldPosition);
+            float halfRoad = Mathf.Min(m_terrainSettings.RoadHalfWidth, m_roadTileSize * 0.5f);
+            float halfTile = m_roadTileSize * 0.5f;
+            float armHalfLength = Mathf.Max(0f, (halfTile - halfRoad) * 0.5f);
+            float armCentre = halfRoad + armHalfLength;
+            for (int y = nearestCoordinate.Y - searchRadius;
+                 y <= nearestCoordinate.Y + searchRadius;
+                 y++)
             {
-                for (int x = centreX - searchRadius; x <= centreX + searchRadius; x++)
+                for (int x = nearestCoordinate.X - searchRadius;
+                     x <= nearestCoordinate.X + searchRadius;
+                     x++)
                 {
-                    GridCoordinate coordinate = LocalToGrid(x, y);
+                    GridCoordinate coordinate = new GridCoordinate(x, y);
                     if (!m_logicalRoads.TryGetValue(coordinate, out RoadConnections connections))
                     {
                         continue;
                     }
 
-                    Vector3 first = GridToWorld(coordinate);
-                    TryUseRoadSample(flatWorldPosition, first, first, ref roadHeight, ref distanceToRoad);
-                    for (int directionIndex = 0; directionIndex < 2; directionIndex++)
+                    Vector3 centre = GridToWorld(coordinate);
+                    TryUseRoadRectangleSample(
+                        flatWorldPosition,
+                        centre,
+                        halfRoad,
+                        halfRoad,
+                        ref closestRoadPoint,
+                        ref distanceToRoad);
+                    for (int directionIndex = 0; directionIndex < 4; directionIndex++)
                     {
                         CardinalDirection direction = (CardinalDirection)directionIndex;
-                        if ((connections & DirectionConnection(direction)) == 0)
+                        if ((connections & DirectionConnection(direction)) == 0 || armHalfLength <= 0f)
                         {
                             continue;
                         }
 
-                        GridCoordinate neighbour = coordinate + DirectionOffset(direction);
-                        if (m_roadHeights.ContainsKey(neighbour))
-                        {
-                            TryUseRoadSample(
-                                flatWorldPosition,
-                                first,
-                                GridToWorld(neighbour),
-                                ref roadHeight,
-                                ref distanceToRoad);
-                        }
+                        Vector3 directionVector = DirectionVector(direction);
+                        Vector3 arm = centre + directionVector * armCentre;
+                        float halfX = Mathf.Abs(directionVector.x) > 0.5f
+                            ? armHalfLength
+                            : halfRoad;
+                        float halfZ = Mathf.Abs(directionVector.z) > 0.5f
+                            ? armHalfLength
+                            : halfRoad;
+                        TryUseRoadRectangleSample(
+                            flatWorldPosition,
+                            arm,
+                            halfX,
+                            halfZ,
+                            ref closestRoadPoint,
+                            ref distanceToRoad);
                     }
                 }
             }
 
-            return distanceToRoad <= influenceDistance;
+            if (distanceToRoad > influenceDistance)
+            {
+                return false;
+            }
+
+            roadHeight = SampleRoadSurfaceHeight(closestRoadPoint) - m_gridOrigin.y;
+            return true;
         }
 
-        private void TryUseRoadSample(
+        private void TryUseRoadRectangleSample(
             Vector3 sample,
-            Vector3 first,
-            Vector3 second,
-            ref float selectedHeight,
+            Vector3 rectangleCentre,
+            float halfX,
+            float halfZ,
+            ref Vector3 selectedPoint,
             ref float selectedDistance)
         {
-            Vector3 firstFlat = first;
-            Vector3 secondFlat = second;
-            firstFlat.y = 0f;
-            secondFlat.y = 0f;
-            sample.y = 0f;
-            Vector3 segment = secondFlat - firstFlat;
-            float t = segment.sqrMagnitude > 0.0001f
-                ? Mathf.Clamp01(Vector3.Dot(sample - firstFlat, segment) / segment.sqrMagnitude)
-                : 0f;
-            Vector3 closest = Vector3.Lerp(firstFlat, secondFlat, t);
-            float distance = Vector3.Distance(sample, closest);
+            Vector3 closest = new Vector3(
+                Mathf.Clamp(sample.x, rectangleCentre.x - halfX, rectangleCentre.x + halfX),
+                0f,
+                Mathf.Clamp(sample.z, rectangleCentre.z - halfZ, rectangleCentre.z + halfZ));
+            Vector3 flatSample = new Vector3(sample.x, 0f, sample.z);
+            float distance = Vector3.Distance(flatSample, closest);
             if (distance >= selectedDistance)
             {
                 return;
             }
 
             selectedDistance = distance;
-            selectedHeight = Mathf.Lerp(first.y, second.y, t) - m_gridOrigin.y;
+            selectedPoint = closest;
         }
 
         private Vector3 LocalCoordinatesToWorld(float localX, float localY, float height)
@@ -3850,6 +4415,44 @@ namespace CouchGuys.ProceduralGeneration
             if (m_roadCells.Count != m_logicalRoads.Count || m_roadCells.Count != m_roadHeights.Count)
             {
                 Debug.LogError("Generated neighbourhood road data is inconsistent.", this);
+                return false;
+            }
+
+            if (m_generatedRoads.Count != m_roadCells.Count)
+            {
+                Debug.LogError("Generated neighbourhood road meshes are incomplete.", this);
+                return false;
+            }
+
+            for (int roadIndex = 0; roadIndex < m_generatedRoads.Count; roadIndex++)
+            {
+                GeneratedRoad road = m_generatedRoads[roadIndex];
+                if (road == null || !road.TryGetComponent(out MeshFilter roadFilter) ||
+                    roadFilter.sharedMesh == null || roadFilter.sharedMesh.vertexCount < 4)
+                {
+                    string roadDescription = road == null
+                        ? $"index {roadIndex}"
+                        : $"index {roadIndex}, coordinate {road.Coordinate}, object '{road.name}'";
+                    Debug.LogError(
+                        $"Generated neighbourhood has an invalid road surface ({roadDescription}).",
+                        road != null ? road : this);
+                    return false;
+                }
+            }
+
+            MeshCollider combinedRoadCollider = null;
+            if (m_generatedRoadCollider == null ||
+                !m_generatedRoadCollider.TryGetComponent(out combinedRoadCollider) ||
+                combinedRoadCollider.sharedMesh == null ||
+                combinedRoadCollider.sharedMesh.vertexCount < 4)
+            {
+                int colliderVertexCount = combinedRoadCollider != null && combinedRoadCollider.sharedMesh != null
+                    ? combinedRoadCollider.sharedMesh.vertexCount
+                    : 0;
+                Debug.LogError(
+                    $"Generated neighbourhood has no valid combined road collider " +
+                    $"(road surfaces: {m_generatedRoads.Count}, collider vertices: {colliderVertexCount}).",
+                    this);
                 return false;
             }
 

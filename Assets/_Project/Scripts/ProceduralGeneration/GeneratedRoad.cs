@@ -12,6 +12,9 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private float m_elevation;
         [SerializeField] private float m_maximumConnectedGrade;
 
+        private Mesh m_surfaceMesh;
+        private Mesh m_markingMesh;
+
         public GridCoordinate Coordinate => m_coordinate;
         public RoadConnections Connections => m_connections;
         public SuburbZone Zone => m_zone;
@@ -44,6 +47,37 @@ namespace CouchGuys.ProceduralGeneration
             m_role = role;
             m_elevation = elevation;
             m_maximumConnectedGrade = maximumConnectedGrade;
+        }
+
+        public void SetOwnedMeshes(Mesh surfaceMesh, Mesh markingMesh)
+        {
+            m_surfaceMesh = surfaceMesh;
+            m_markingMesh = markingMesh;
+        }
+
+        private void OnDestroy()
+        {
+            DestroyOwnedMesh(m_surfaceMesh);
+            DestroyOwnedMesh(m_markingMesh);
+            m_surfaceMesh = null;
+            m_markingMesh = null;
+        }
+
+        private static void DestroyOwnedMesh(Mesh mesh)
+        {
+            if (mesh == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(mesh);
+            }
+            else
+            {
+                DestroyImmediate(mesh);
+            }
         }
     }
 }

@@ -6,7 +6,7 @@
 
 The generator owns only the `ProceduralNeighbourhood` child marked by `GeneratedNeighbourhoodRoot`. Clearing or regenerating never searches for or deletes unrelated scene objects.
 
-No delivery, buyer, money, shop, couch spawning, vehicle, traffic, terrain or interior systems are included.
+The generator also builds a continuous terrain mesh and elevation-conforming road and sidewalk surfaces. Delivery, buyer, money, shop, couch spawning, vehicle, traffic and interior systems remain separate.
 
 ## Quick Start With No Art
 
@@ -51,9 +51,9 @@ The main road length is chosen within Minimum/Maximum Road Length. It advances i
 
 After the main route, road cells are considered deterministically for limited branches. Branch Chance, Maximum Branches and the branch length range control their size. Every placement checks the road and Starting Area occupancy sets. Maximum Road Tiles is a hard budget shared by the main route and branches.
 
-Once all road coordinates exist, connection flags are calculated from neighbouring cells. The first tile also receives a logical connection back to the Starting Area. The resulting flag set selects a matching Road prefab and rotation. The supported sets naturally include dead ends, straights, corners, T-junctions and crossroads.
+Once all road coordinates exist, connection flags are calculated from neighbouring cells. The first tile also receives a logical connection back to the Starting Area. The resulting flag set selects the matching Road prefab materials. Runtime road geometry preserves the authored dead-end, straight, corner, T-junction and crossroads shapes while tessellating them against one shared elevation surface, so connected boundaries use identical heights.
 
-If no assigned `RoadTile` can match the exact final connection set, a Unity Plane is created at the same logical coordinate. Its scale is `Tile Size / 10`, because Unity's built-in Plane is 10 metres square. A warning is logged once per generation rather than once per tile.
+If no assigned `RoadTile` can match the exact final connection set, the same procedural geometry is created with fallback asphalt and marking materials. A warning is logged once per generation rather than once per tile.
 
 ## Creating Road Prefabs
 
@@ -164,7 +164,7 @@ The existing Player, couch, camera and Steam lobby controller code remains uncha
 
 ## Known Limitations
 
-- Roads are flat, one-cell modules on the generator's horizontal plane; slopes, bridges and terrain conformance are not supported.
+- Roads conform to the generated elevation surface and terrain is cut around their exact footprint. Bridges and overpasses are not supported.
 - The algorithm deliberately produces a small street network rather than blocks, zoning or a city simulation.
 - Property footprints are rectangular grid regions. Arbitrary polygonal bounds are not yet supported.
 - An even-width property has one deterministic centre bias because no single grid cell can be its exact centre.

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: CouchCarrySettings
   m_EditorClassIdentifier: 
   m_maxCarryDistance: 1
-  m_onePlayerMoveSpeed: 1.5
+  m_onePlayerMoveSpeed: 2.5
   m_twoPlayerMoveSpeed: 1
   m_threePlayerMoveSpeed: 1.5
   m_fourPlayerMoveSpeed: 2

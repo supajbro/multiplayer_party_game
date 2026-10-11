@@ -10,6 +10,11 @@ namespace CouchGuys.ProceduralGeneration
 
         public RoadConnections Connections => m_connections;
 
+        public void Initialise(RoadConnections connections)
+        {
+            m_connections = connections;
+        }
+
         public static RoadConnections RotateClockwise(RoadConnections connections, int quarterTurns)
         {
             quarterTurns = ((quarterTurns % 4) + 4) % 4;
