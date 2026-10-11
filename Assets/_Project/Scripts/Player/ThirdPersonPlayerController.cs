@@ -59,6 +59,7 @@ namespace CouchGuys.Player
         private Vector3 m_groundNormal = Vector3.up;
         private Vector3 m_externalVelocity;
         private bool m_movementLocked;
+        private bool m_externalControlPaused;
 
         public bool IsGrounded => m_characterController != null && m_characterController.isGrounded;
         public Vector3 MovementIntent { get; private set; }
@@ -69,6 +70,14 @@ namespace CouchGuys.Player
         {
             m_movementLocked = locked;
             m_currentSpeed = 0f;
+            MovementIntent = Vector3.zero;
+        }
+
+        public void SetExternalControlPaused(bool paused)
+        {
+            m_externalControlPaused = paused;
+            m_currentSpeed = 0f;
+            m_verticalVelocity = 0f;
             MovementIntent = Vector3.zero;
         }
 
@@ -149,6 +158,10 @@ namespace CouchGuys.Player
 
         private void Update()
         {
+            if (m_externalControlPaused)
+            {
+                return;
+            }
             UpdateVerticalMovement();
             if (m_movementLocked)
             {

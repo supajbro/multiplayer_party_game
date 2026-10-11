@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CouchGuys.Player;
+using CouchGuys.Gameplay.Vehicles;
 using FishNet.Object;
 using UnityEngine;
 using UnityEngine.AI;
@@ -38,6 +39,7 @@ namespace CouchGuys.Gameplay.Enemies
         [SerializeField] private Color m_tracerColour = new(1f, 0.72f, 0.12f, 1f);
 
         private readonly Dictionary<PlayerHealth, float> m_damageByPlayer = new();
+        private readonly Dictionary<VanController, float> m_damageByVan = new();
         private readonly List<Vector3> m_tracerEnds = new(12);
         private readonly RaycastHit[] m_hits = new RaycastHit[24];
         private PlayerHealth m_target;
@@ -106,7 +108,10 @@ namespace CouchGuys.Gameplay.Enemies
             for (int i = 0; i < count; i++)
             {
                 if (m_hits[i].collider.transform.root == transform.root) continue;
-                return m_hits[i].collider.GetComponentInParent<PlayerHealth>() == m_target;
+                PlayerHealth hitPlayer = m_hits[i].collider.GetComponentInParent<PlayerHealth>();
+                if (hitPlayer == m_target) return true;
+                VanController hitVan = m_hits[i].collider.GetComponentInParent<VanController>();
+                return hitVan != null && hitVan.Driver == m_target.NetworkObject;
             }
             return false;
         }
@@ -122,6 +127,7 @@ namespace CouchGuys.Gameplay.Enemies
             float spread = m_spreadAngle * Mathf.Lerp(1.8f, 0.25f, accuracy);
 
             m_damageByPlayer.Clear();
+            m_damageByVan.Clear();
             m_tracerEnds.Clear();
             for (int pellet = 0; pellet < m_pelletsPerShot; pellet++)
             {
@@ -140,6 +146,15 @@ namespace CouchGuys.Gameplay.Enemies
                         m_damageByPlayer.TryGetValue(health, out float damage);
                         m_damageByPlayer[health] = damage + m_damagePerPellet;
                     }
+                    else
+                    {
+                        VanController van = hit.collider.GetComponentInParent<VanController>();
+                        if (van != null)
+                        {
+                            m_damageByVan.TryGetValue(van, out float damage);
+                            m_damageByVan[van] = damage + m_damagePerPellet;
+                        }
+                    }
                     break;
                 }
                 m_tracerEnds.Add(end);
@@ -150,6 +165,8 @@ namespace CouchGuys.Gameplay.Enemies
                 Vector3 impact = Vector3.ProjectOnPlane(damage.Key.transform.position - transform.position, Vector3.up).normalized;
                 damage.Key.ApplyDamageServer(damage.Value, impact, m_knockbackForce);
             }
+            foreach (KeyValuePair<VanController, float> damage in m_damageByVan)
+                damage.Key.ApplyBulletDamageServer(damage.Value);
             ShowShotObserversRpc(origin, m_tracerEnds.ToArray());
         }
 

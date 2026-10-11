@@ -1,6 +1,7 @@
 using CouchGuys.CameraSystem;
 using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Gameplay.Weapons;
+using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Input;
 using CouchGuys.Networking;
 using CouchGuys.Player;
@@ -199,6 +200,15 @@ namespace CouchGuys.Editor
             PlayerWeaponController weaponController = player.GetComponent<PlayerWeaponController>();
             if (weaponController == null) weaponController = player.AddComponent<PlayerWeaponController>();
             if (player.GetComponent<PlayerWeaponHud>() == null) player.AddComponent<PlayerWeaponHud>();
+            PlayerVanInteractor vanInteractor = player.GetComponent<PlayerVanInteractor>();
+            if (vanInteractor == null) vanInteractor = player.AddComponent<PlayerVanInteractor>();
+            if (player.GetComponent<VehicleHud>() == null) player.AddComponent<VehicleHud>();
+            SetObjectReference(vanInteractor, "m_input", player.GetComponent<PlayerInputReader>());
+            SetObjectReference(vanInteractor, "m_controller", player.GetComponent<ThirdPersonPlayerController>());
+            SetObjectReference(vanInteractor, "m_characterController", player.GetComponent<CharacterController>());
+            SetObjectReference(vanInteractor, "m_visualRoot", player.transform.Find("Visual"));
+            SetObjectReference(vanInteractor, "m_cameraController", player.GetComponentInChildren<ThirdPersonCameraController>(true));
+            SetObjectReference(vanInteractor, "m_playerCamera", player.GetComponentInChildren<UnityEngine.Camera>(true));
 
             if (player.GetComponent<NeighbourhoodMap>() == null)
             {
@@ -230,13 +240,14 @@ namespace CouchGuys.Editor
                 throw new UnityException("FishNet NetworkObject behaviour list was not found.");
             }
 
-            behaviours.arraySize = 6;
+            behaviours.arraySize = 7;
             behaviours.GetArrayElementAtIndex(0).objectReferenceValue = networkTransform;
             behaviours.GetArrayElementAtIndex(1).objectReferenceValue = ownership;
             behaviours.GetArrayElementAtIndex(2).objectReferenceValue = couchCarrier;
             behaviours.GetArrayElementAtIndex(3).objectReferenceValue = playerHealth;
             behaviours.GetArrayElementAtIndex(4).objectReferenceValue = weaponController;
             behaviours.GetArrayElementAtIndex(5).objectReferenceValue = playerStamina;
+            behaviours.GetArrayElementAtIndex(6).objectReferenceValue = vanInteractor;
             serialisedNetworkObject.ApplyModifiedPropertiesWithoutUndo();
 
             SetNetworkBehaviourReferences(networkTransform, networkObject, 0);
@@ -245,6 +256,7 @@ namespace CouchGuys.Editor
             SetNetworkBehaviourReferences(playerHealth, networkObject, 3);
             SetNetworkBehaviourReferences(weaponController, networkObject, 4);
             SetNetworkBehaviourReferences(playerStamina, networkObject, 5);
+            SetNetworkBehaviourReferences(vanInteractor, networkObject, 6);
             EditorUtility.SetDirty(networkObject);
             EditorUtility.SetDirty(networkTransform);
             EditorUtility.SetDirty(ownership);
@@ -252,6 +264,7 @@ namespace CouchGuys.Editor
             EditorUtility.SetDirty(playerHealth);
             EditorUtility.SetDirty(weaponController);
             EditorUtility.SetDirty(playerStamina);
+            EditorUtility.SetDirty(vanInteractor);
         }
 
         private static void ConfigureBotNavMeshAgent(NavMeshAgent agent)

@@ -50,7 +50,16 @@ namespace CouchGuys.Player
         public bool IsKnockedDown => m_knockedDown.Value;
         public bool IsAiTeammate => m_aiTeammateIndex.Value >= 0;
         public int AiTeammateIndex => m_aiTeammateIndex.Value;
-        public Vector3 AimPoint => transform.position + Vector3.up * 0.9f;
+        public Vector3 AimPoint
+        {
+            get
+            {
+                PlayerVanInteractor interactor = GetComponent<PlayerVanInteractor>();
+                return interactor != null && interactor.CurrentVan != null
+                    ? interactor.CurrentVan.CameraTarget.position
+                    : transform.position + Vector3.up * 0.9f;
+            }
+        }
 
         private void Awake()
         {

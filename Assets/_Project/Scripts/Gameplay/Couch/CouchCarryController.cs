@@ -3,6 +3,8 @@ using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using FishNet.Component.Transforming;
 using UnityEngine;
+using System.Collections;
+using CouchGuys.Gameplay.Vehicles;
 
 namespace CouchGuys.Gameplay.Couch
 {
@@ -68,6 +70,8 @@ namespace CouchGuys.Gameplay.Couch
         private readonly SyncVar<int> m_movingCarrierCount = new();
         private readonly SyncVar<float> m_cooperationEfficiency = new(1f);
         private readonly SyncVar<int> m_modelVariantIndex = new(-1);
+        private readonly SyncVar<NetworkObject> m_loadedVan = new();
+        private readonly SyncVar<int> m_loadedCargoSlot = new(-1);
         private readonly ICouchCarrierServer[] m_serverOccupants = new ICouchCarrierServer[MaximumCarryPoints];
         private readonly Vector3[] m_debugHorizontalForces = new Vector3[MaximumCarryPoints];
         private readonly Vector3[] m_debugLiftForces = new Vector3[MaximumCarryPoints];
@@ -78,6 +82,8 @@ namespace CouchGuys.Gameplay.Couch
         private int m_previousCarrierCount;
         private GameObject m_modelInstance;
         private int m_appliedModelVariantIndex = -1;
+        private Collider[] m_colliders;
+        private Coroutine m_cargoTransition;
 
         public Rigidbody CouchRigidbody => m_rigidbody;
         public float Weight => CouchWeight;
@@ -89,6 +95,9 @@ namespace CouchGuys.Gameplay.Couch
         public float CurrentCooperationEfficiency => m_cooperationEfficiency.Value;
         public Vector3 CurrentVelocity => m_rigidbody != null ? m_rigidbody.linearVelocity : Vector3.zero;
         public int ModelVariantIndex => m_modelVariantIndex.Value;
+        public bool IsLoaded => m_loadedVan.Value != null;
+        public NetworkObject LoadedVanObject => m_loadedVan.Value;
+        public int LoadedCargoSlot => m_loadedCargoSlot.Value;
         // Delivery completion still requires a player carrier; thieves contribute to
         // physics but cannot accidentally complete the job for the party.
         internal int ServerCarrierCount => IsServerInitialized ? CountPlayerCarriers() : 0;
@@ -111,7 +120,9 @@ namespace CouchGuys.Gameplay.Couch
         private void Awake()
         {
             m_rigidbody ??= GetComponent<Rigidbody>();
+            m_colliders = GetComponentsInChildren<Collider>(true);
             m_modelVariantIndex.OnChange += OnModelVariantChanged;
+            m_loadedVan.OnChange += OnLoadedVanChanged;
             ApplyWeightAndStability();
             if (m_settings == null)
             {
@@ -133,6 +144,7 @@ namespace CouchGuys.Gameplay.Couch
         {
             base.OnStartClient();
             ApplyModelVariant(m_modelVariantIndex.Value);
+            ApplyLoadedStateImmediately();
             if (!IsServerInitialized)
             {
                 m_rigidbody.isKinematic = true;
@@ -142,6 +154,7 @@ namespace CouchGuys.Gameplay.Couch
         private void OnDestroy()
         {
             m_modelVariantIndex.OnChange -= OnModelVariantChanged;
+            m_loadedVan.OnChange -= OnLoadedVanChanged;
         }
 
         /// <summary>Selects the visual used by this couch. Carry points and physics stay on the shared root.</summary>
@@ -341,7 +354,7 @@ namespace CouchGuys.Gameplay.Couch
 
         internal bool TryGrabPointServer(ICouchCarrierServer carrier, int pointIndex)
         {
-            if (!IsServerInitialized || carrier == null || !carrier.IsCarrierAvailable ||
+            if (!IsServerInitialized || IsLoaded || carrier == null || !carrier.IsCarrierAvailable ||
                 !IsValidPointIndex(pointIndex) || GetPoint(pointIndex) == null || IsPointOccupied(pointIndex))
             {
                 return false;
@@ -431,6 +444,137 @@ namespace CouchGuys.Gameplay.Couch
                     occupant.ClearCarriedCouchServer(this, index);
                 }
             }
+        }
+
+        [Server]
+        internal bool LoadIntoVanServer(VanController van, int cargoSlot, float duration)
+        {
+            if (!IsServerInitialized || IsLoaded || van == null || van.GetCargoPoint(cargoSlot) == null)
+                return false;
+
+            ReleaseAllOccupantsServer();
+            // Start the transition before publishing the loaded SyncVars. On a host the
+            // SyncVar callback runs immediately; seeing an active transition keeps it
+            // from snapping the couch to the cargo point before the animation can play.
+            AnimateLoadObserversRpc(van.NetworkObject, cargoSlot, Mathf.Max(0.05f, duration));
+            m_loadedCargoSlot.Value = cargoSlot;
+            m_loadedVan.Value = van.NetworkObject;
+            return true;
+        }
+
+        [Server]
+        internal void UnloadFromVanServer(Vector3 position, Quaternion rotation, float duration)
+        {
+            if (!IsServerInitialized || !IsLoaded) return;
+            AnimateUnloadObserversRpc(position, rotation, Mathf.Max(0.05f, duration));
+            m_loadedVan.Value = null;
+            m_loadedCargoSlot.Value = -1;
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void AnimateLoadObserversRpc(NetworkObject vanObject, int cargoSlot, float duration)
+        {
+            if (vanObject == null || !vanObject.TryGetComponent(out VanController van)) return;
+            Transform point = van.GetCargoPoint(cargoSlot);
+            if (point == null) return;
+            BeginCargoTransition(AnimateIntoCargo(point, duration, van.Settings.AutoPositionLoadedCouches));
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void AnimateUnloadObserversRpc(Vector3 position, Quaternion rotation, float duration)
+        {
+            BeginCargoTransition(AnimateOutOfCargo(position, rotation, duration));
+        }
+
+        private void BeginCargoTransition(IEnumerator transition)
+        {
+            if (m_cargoTransition != null) StopCoroutine(m_cargoTransition);
+            m_cargoTransition = StartCoroutine(transition);
+        }
+
+        private IEnumerator AnimateIntoCargo(Transform cargoPoint, float duration, bool autoPosition)
+        {
+            SetCargoPhysics(true);
+            transform.SetParent(null, true);
+            Vector3 startPosition = transform.position;
+            Quaternion startRotation = transform.rotation;
+            float elapsed = 0f;
+            while (elapsed < duration && cargoPoint != null)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / duration));
+                transform.SetPositionAndRotation(
+                    Vector3.Lerp(startPosition, cargoPoint.position, t),
+                    autoPosition ? Quaternion.Slerp(startRotation, cargoPoint.rotation, t) : startRotation);
+                yield return null;
+            }
+            if (cargoPoint != null) AttachToCargoPoint(cargoPoint, autoPosition);
+            m_cargoTransition = null;
+        }
+
+        private IEnumerator AnimateOutOfCargo(Vector3 position, Quaternion rotation, float duration)
+        {
+            SetCargoPhysics(true);
+            transform.SetParent(null, true);
+            Vector3 startPosition = transform.position;
+            Quaternion startRotation = transform.rotation;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / duration));
+                transform.SetPositionAndRotation(
+                    Vector3.Lerp(startPosition, position, t),
+                    Quaternion.Slerp(startRotation, rotation, t));
+                yield return null;
+            }
+            transform.SetPositionAndRotation(position, rotation);
+            SetCargoPhysics(false);
+            if (IsServerInitialized) GetComponent<NetworkTransform>()?.Teleport();
+            m_cargoTransition = null;
+        }
+
+        private void OnLoadedVanChanged(NetworkObject previous, NetworkObject next, bool asServer)
+        {
+            if (m_cargoTransition == null) ApplyLoadedStateImmediately();
+        }
+
+        private void ApplyLoadedStateImmediately()
+        {
+            NetworkObject vanObject = m_loadedVan.Value;
+            if (vanObject != null && vanObject.TryGetComponent(out VanController van))
+            {
+                Transform point = van.GetCargoPoint(m_loadedCargoSlot.Value);
+                if (point != null)
+                {
+                    SetCargoPhysics(true);
+                    AttachToCargoPoint(point, van.Settings.AutoPositionLoadedCouches);
+                    return;
+                }
+            }
+            transform.SetParent(null, true);
+            SetCargoPhysics(false);
+        }
+
+        private void AttachToCargoPoint(Transform point, bool autoPosition)
+        {
+            Quaternion retainedRotation = transform.rotation;
+            transform.SetParent(point, true);
+            transform.position = point.position;
+            transform.rotation = autoPosition ? point.rotation : retainedRotation;
+        }
+
+        private void SetCargoPhysics(bool loaded)
+        {
+            if (m_rigidbody != null)
+            {
+                m_rigidbody.linearVelocity = Vector3.zero;
+                m_rigidbody.angularVelocity = Vector3.zero;
+                m_rigidbody.isKinematic = loaded || !IsServerInitialized;
+            }
+            if (m_colliders == null) return;
+            for (int index = 0; index < m_colliders.Length; index++)
+                if (m_colliders[index] != null) m_colliders[index].enabled = !loaded;
         }
 
         internal void TeleportServer(Vector3 position, Quaternion rotation)

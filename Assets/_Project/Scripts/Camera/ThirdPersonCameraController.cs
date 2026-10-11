@@ -42,6 +42,33 @@ namespace CouchGuys.CameraSystem
         private Vector3 m_previousPivotPosition;
         private bool m_hasPreviousPivotPosition;
         private readonly RaycastHit[] m_collisionHits = new RaycastHit[16];
+        private Transform m_vehicleTarget;
+        private Vector3 m_vehicleOffset;
+        private float m_vehicleFollowSmoothing;
+        private float m_vehicleRotationSmoothing;
+        private float m_vehicleCollisionRadius;
+
+        public void FollowVehicle(
+            Transform target,
+            Vector3 offset,
+            float followSmoothing,
+            float rotationSmoothing,
+            float collisionRadius)
+        {
+            m_vehicleTarget = target;
+            m_vehicleOffset = offset;
+            m_vehicleFollowSmoothing = Mathf.Max(0.01f, followSmoothing);
+            m_vehicleRotationSmoothing = Mathf.Max(0.01f, rotationSmoothing);
+            m_vehicleCollisionRadius = Mathf.Max(0.01f, collisionRadius);
+            m_hasPreviousPivotPosition = false;
+        }
+
+        public void FollowPlayer()
+        {
+            m_vehicleTarget = null;
+            m_previousPivotPosition = GetPivotPosition();
+            m_hasPreviousPivotPosition = true;
+        }
 
         private void Awake()
         {
@@ -74,6 +101,12 @@ namespace CouchGuys.CameraSystem
 
         private void LateUpdate()
         {
+            if (m_vehicleTarget != null)
+            {
+                UpdateVehicleCamera();
+                return;
+            }
+
             if (m_cameraTarget == null || m_input == null)
             {
                 return;
@@ -94,6 +127,34 @@ namespace CouchGuys.CameraSystem
 
             float positionBlend = 1f - Mathf.Exp(-m_followSmoothing * Time.deltaTime);
             float rotationBlend = 1f - Mathf.Exp(-m_rotationSmoothing * Time.deltaTime);
+            transform.position = Vector3.Lerp(transform.position, desiredPosition, positionBlend);
+            transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, rotationBlend);
+        }
+
+        private void UpdateVehicleCamera()
+        {
+            Vector3 pivot = m_vehicleTarget.position;
+            Vector3 desiredOffset = m_vehicleTarget.TransformDirection(m_vehicleOffset);
+            float distance = desiredOffset.magnitude;
+            Vector3 direction = distance > 0.001f ? desiredOffset / distance : -m_vehicleTarget.forward;
+            float clearDistance = distance;
+            int hitCount = Physics.SphereCastNonAlloc(
+                pivot, m_vehicleCollisionRadius, direction, m_collisionHits, distance,
+                m_collisionLayers, QueryTriggerInteraction.Ignore);
+            for (int index = 0; index < hitCount; index++)
+            {
+                Transform hit = m_collisionHits[index].transform;
+                if (hit != null && hit.IsChildOf(m_vehicleTarget.root)) continue;
+                clearDistance = Mathf.Min(clearDistance, m_collisionHits[index].distance);
+            }
+
+            Vector3 desiredPosition = pivot + direction * Mathf.Max(0f, clearDistance - m_collisionPadding);
+            Vector3 lookDirection = pivot - desiredPosition;
+            Quaternion desiredRotation = lookDirection.sqrMagnitude > 0.001f
+                ? Quaternion.LookRotation(lookDirection.normalized, Vector3.up)
+                : transform.rotation;
+            float positionBlend = 1f - Mathf.Exp(-m_vehicleFollowSmoothing * Time.deltaTime);
+            float rotationBlend = 1f - Mathf.Exp(-m_vehicleRotationSmoothing * Time.deltaTime);
             transform.position = Vector3.Lerp(transform.position, desiredPosition, positionBlend);
             transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, rotationBlend);
         }

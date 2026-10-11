@@ -1,0 +1,65 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d69b43e482dc7742ae7443bfe012dbc, type: 3}
+  m_Name: BestVanSettings
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Vehicles.VanSettings
+  m_quality: 2
+  m_displayName: Best Van
+  m_maxForwardSpeed: 90
+  m_maxReverseSpeed: 22
+  m_acceleration: 12
+  m_reverseAcceleration: 5
+  m_brakingForce: 16
+  m_naturalDeceleration: 1.2
+  m_steeringSensitivity: 108
+  m_steeringResponseSpeed: 5
+  m_highSpeedSteeringMultiplier: 0.55
+  m_vehicleMass: 1650
+  m_traction: 0.9
+  m_uphillPowerMultiplier: 0.65
+  m_antiRollStrength: 9
+  m_maxFuel: 130
+  m_fuelConsumptionIdle: 0.03
+  m_fuelConsumptionDriving: 0.16
+  m_accelerationFuelMultiplier: 0.3
+  m_lowFuelWarningThreshold: 0.2
+  m_maxHealth: 275
+  m_minimumCollisionDamageSpeed: 4
+  m_collisionDamageMultiplier: 2.3
+  m_maximumCollisionDamage: 32
+  m_collisionDamageCooldown: 0.4
+  m_bulletDamageMultiplier: 0.72
+  m_criticalHealthThreshold: 0.25
+  m_enterHoldDuration: 0.65
+  m_exitHoldDuration: 0.45
+  m_interactionRange: 2.8
+  m_exitClearanceRadius: 0.45
+  m_interactionCooldown: 0.6
+  m_doorInteractionRange: 2.4
+  m_doorOpenAngle: 120
+  m_doorAnimationDuration: 0.42
+  m_allowDrivingWithDoorsOpen: 0
+  m_cargoCapacity: 2
+  m_couchLoadingRange: 2.5
+  m_couchLoadingDuration: 0.5
+  m_couchUnloadingDuration: 0.48
+  m_autoPositionLoadedCouches: 1
+  m_cameraFollowOffset: {x: 0, y: 2.4, z: -6.5}
+  m_cameraFollowSmoothness: 9
+  m_cameraRotationSmoothness: 7
+  m_cameraFieldOfView: 70
+  m_cameraCollisionRadius: 0.3
+  m_wheelRotationMultiplier: 1
+  m_maxWheelSteeringAngle: 28
+  m_bodyTiltAmount: 5
+  m_bodyPitchAmount: 3
+  m_visualSmoothing: 8

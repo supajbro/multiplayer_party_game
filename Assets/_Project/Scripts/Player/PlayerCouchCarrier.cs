@@ -59,6 +59,8 @@ namespace CouchGuys.Player
         internal DebugCouchBotSettings DebugBotSettings => m_debugBot;
         internal int CarriedPointIndex => m_carriedPointIndex.Value;
         public bool IsCarrying => m_carriedCouch.Value != null;
+        public CouchCarryController CarriedCouch => m_carriedCouch.Value != null &&
+            m_carriedCouch.Value.TryGetComponent(out CouchCarryController couch) ? couch : null;
 
         NetworkObject ICouchCarrierServer.CarrierNetworkObject => NetworkObject;
         bool ICouchCarrierServer.IsCarrierAvailable => IsSpawned &&
@@ -89,7 +91,9 @@ namespace CouchGuys.Player
                 RequestTeleportToDeliveryServerRpc();
             }
 
-            if (m_input != null && m_input.InteractPressedThisFrame)
+            PlayerVanInteractor vanInteractor = GetComponent<PlayerVanInteractor>();
+            if (m_input != null && m_input.InteractPressedThisFrame &&
+                (vanInteractor == null || !vanInteractor.HasPriorityWorldInteraction()))
             {
                 if (IsCarrying)
                 {

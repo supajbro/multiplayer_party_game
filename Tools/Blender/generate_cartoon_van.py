@@ -14,6 +14,11 @@ Coordinates: 1 Blender unit = approximately 1 metre; van faces -Y,
 Z is up, and root origin is at ground level near the vehicle centre.
 Only an existing GeneratedVan hierarchy is replaced; houses remain intact.
 
+Cargo: Functional rear double-door pivots + an ACTUAL open cargo entrance,
+interior floor and Unity cargo/interaction markers. Door animation previews
+in Blender at frames 1(closed), 24(open), 48(closed). Unity gameplay must
+still implement holding E, loading the couch and vehicle storage behaviour.
+
 NOTE: Speed and fuel figures are sample GAMEPLAY METADATA stored on the
 root object. They do not implement driving physics in Unity by themselves.
 """
@@ -32,6 +37,10 @@ SEED = None                      # None = new random van on EVERY run
 
 GENERATE_BRANDING = True         # Painted Couch Guys lettering on van side
 GENERATE_INTERIOR = True         # Simple steering wheel, seats and dashboard
+GENERATE_CARGO_INTERIOR = True   # Loading floor, inner walls and cargo rails
+REAR_DOOR_OPEN_ANGLE = 110.0     # Swing angle in degrees (60-125 recommended)
+REAR_DOOR_PREVIEW_OPEN = False   # True = show doors open after generation
+ANIMATE_REAR_DOORS = True        # Keyframe closed -> open -> closed in Blender
 GENERATE_WHEEL_DETAILS = True
 GENERATE_ACCESSORIES = True
 GENERATE_WEAR_ON_LIGHT_VAN = True
@@ -301,8 +310,11 @@ def build_body(layout, mat, groups):
     # winding and +X is reversed. This makes surfaces face OUTWARD
     # when Unity/FBX performs backface culling.
     faces = [tuple(range(n)), tuple(reversed(range(n, n * 2)))]
+    # Rear-facing last upright outline segment is the CARGO ENTRANCE.
+    # Deliberately DO NOT generate the cross-body face here. Without
+    # this exclusion the rear doors would open onto a solid van wall!
     faces += [(i + n, (i + 1) % n + n, (i + 1) % n, i)
-              for i in range(n)]
+              for i in range(n) if i != n - 2]
     body = mesh_object('MainVanBody', vertices, faces, mat['body'], groups['Body'])
     bevel = body.modifiers.new('GentlyRoundedVanShell', 'BEVEL')
     bevel.width = .09 if layout['quality'] != 'LIGHT' else .055
@@ -482,22 +494,195 @@ def build_front_rear(layout, mat, groups, rng):
                 (side * w * .445, yr + .118, 1.13),
                 (.125, .018, .055), mat['headlight'], groups['Lights'], .009)
 
-    # Rear cargo doors, distinctive double vertical outline.
-    box('CargoDoorCentreSeam', (0, yr + .029, (h + .57) / 2),
-        (.042, .055, h - .67), mat['body_dark'], groups['Doors'], .008)
-    for side in (-1, 1):
-        box('RearDoorOutline_' + str(side),
-            (side * w * .446, yr + .035, (h + .63) / 2),
-            (.040, .065, h - .75), mat['body_dark'], groups['Doors'], .008)
-        box('RearDoorHandle_' + str(side),
-            (side * .15, yr + .091, 1.18),
-            (.135, .073, .062), mat['black'], groups['Doors'], .012)
-    box('LicensePlateMount', (0, yr + .12, .80),
-        (.47, .045, .155), mat['white'], groups['Trim'], .018)
+    # Rear leaf geometry is created later under hinged transform pivots
+    # (build_rear_cargo). Keeping it out of the fixed rear fascia means
+    # the door panels AND their handles move together when opened.
     # High-mounted third stop lamp on upper tiers.
     if quality != 'LIGHT':
         box('UpperBrakeLight', (0, yr + .07, h - .23),
             (.45, .055, .068), mat['taillight'], groups['Lights'], .012)
+
+
+
+# ============================================================
+# OPENABLE REAR DOORS + REAL COUCH CARGO BAY
+# ============================================================
+def build_rear_cargo(layout, mat, groups, rng):
+    """Build an unsealed load bay with genuinely pivoting rear double doors.
+
+    For Unity, rotate RearDoorHinge_L and RearDoorHinge_R around their LOCAL
+    Z axis (with Blender -Y as the forward direction). Both doors' meshes,
+    windows, handles and details are children of the correct hinge empty.
+
+    Positive Z opens left door, negative Z opens right door. The geometry is
+    CLOSED by default but can be previewed at the animated open frame.
+    """
+    w = layout['width']
+    yr = layout['rear']
+    yf = layout['front']
+    h = layout['height']
+    q = layout['quality']
+    doors = groups['Doors']
+    cargo = groups['Cargo']
+
+    # Rear body was left open by build_body(). Define fixed threshold, upper
+    # header and side pillars. They stay attached to the vehicle, not doors.
+    sill_z = .68
+    roof_z = h - .22
+    entrance_h = roof_z - sill_z
+    jamb_x = w / 2 - .07
+    box('CargoRearLowerThreshold', (0, yr - .04, .57),
+        (w * .88, .26, .13), mat['metal'] if q != 'LIGHT' else mat['black'],
+        cargo, .018)
+    box('CargoRearUpperHeader', (0, yr - .08, h - .16),
+        (w * .92, .20, .12), mat['body_dark'], cargo, .023)
+    for side, name in ((-1, 'L'), (1, 'R')):
+        box('CargoDoorJamb_' + name, (side * jamb_x, yr - .07, (roof_z + sill_z) / 2),
+            (.12, .18, entrance_h + .09), mat['body_dark'], cargo, .018)
+        box('CargoDoorRubberSeal_' + name,
+            (side * (jamb_x - .06), yr + .024, (roof_z + sill_z) / 2),
+            (.028, .035, entrance_h), mat['rubber'], cargo, .008)
+
+    # Actual cargo interior, leaving space behind front seats. The inner
+    # lining is separate from the exterior shell. No false solid rear panel.
+    cargo_front_y = yf + 2.05
+    cargo_rear_y = yr - .11
+    cargo_length = max(.65, cargo_rear_y - cargo_front_y)
+    cargo_center_y = (cargo_front_y + cargo_rear_y) / 2
+    cargo_floor_z = .69
+    cargo_top_z = h - .18
+    if GENERATE_CARGO_INTERIOR:
+        box('CargoFloor', (0, cargo_center_y, cargo_floor_z - .035),
+            (w - .22, cargo_length, .07), mat['interior'], cargo, .014)
+        box('CargoFrontBulkhead', (0, cargo_front_y, (cargo_top_z + cargo_floor_z) / 2),
+            (w - .17, .065, cargo_top_z - cargo_floor_z),
+            mat['seat'], cargo, .018)
+        for side, name in ((-1, 'L'), (1, 'R')):
+            x = side * (w / 2 - .067)
+            box('CargoInnerWall_' + name,
+                (x, cargo_center_y, (cargo_top_z + cargo_floor_z) / 2),
+                (.042, cargo_length, cargo_top_z - cargo_floor_z),
+                mat['interior'], cargo, .010)
+            box('CargoLowerTieDownRail_' + name,
+                (x - side * .055, cargo_center_y, cargo_floor_z + .24),
+                (.052, cargo_length * .74, .075),
+                mat['metal'] if q == 'BEST' else mat['black'], cargo, .010)
+        if q != 'LIGHT':
+            # Two chunky, stylised securing rails which don't block the couch.
+            for i in range(2):
+                y = cargo_front_y + cargo_length * (.28 + .40 * i)
+                box('CargoFloorTiedown_' + str(i), (0, y, cargo_floor_z + .008),
+                    (w * .63, .055, .018), mat['metal'], cargo, .006)
+
+    # Anchors are ordinary empties, not visible geometry or colliders.
+    markers = groups['Anchors']
+    empty('CargoLoadingAnchor', markers, (0, yr + .62, cargo_floor_z + .34))
+    empty('CargoStorageAnchor', markers,
+          (0, cargo_center_y, cargo_floor_z + .45))
+    empty('CargoBoundsMin', markers,
+          (-w / 2 + .15, cargo_front_y + .09, cargo_floor_z))
+    empty('CargoBoundsMax', markers,
+          (w / 2 - .15, cargo_rear_y - .06, cargo_top_z - .10))
+    empty('RearDoorInteractionAnchor', markers, (0, yr + .64, 1.13))
+
+    # Door leaves pivot at the OUTER rear edges, swing outward to the sides.
+    # Materials and all adornments live under the hinge, not under Doors.
+    door_width = jamb_x - .055
+    leaf_h = entrance_h - .020
+    leaf_centre_z = (roof_z + sill_z) / 2
+    hinge_y = yr + .075
+    pivots = []
+    for side, name in ((-1, 'L'), (1, 'R')):
+        hinge_x = side * jamb_x
+        pivot = empty('RearDoorHinge_' + name, doors,
+                      (hinge_x, hinge_y, 0))
+        pivot['door_side'] = name
+        pivot['open_degrees_z'] = -side * max(0.0, min(135.0, REAR_DOOR_OPEN_ANGLE))
+        pivot['closed_degrees_z'] = 0.0
+        pivot['preview_open'] = bool(REAR_DOOR_PREVIEW_OPEN)
+        pivots.append((pivot, side))
+
+        # Geometry is authored in HINGE-LOCAL space, so changing pivot Z
+        # rotation truly swings it open instead of rotating around van centre.
+        cx = -side * door_width * .5
+        box('RearDoorLeaf_' + name, (cx, .018, leaf_centre_z),
+            (door_width, .085, leaf_h), mat['body'], pivot, .035)
+        box('RearDoorInsetPanel_' + name, (cx, .071, leaf_centre_z),
+            (door_width * .83, .023, leaf_h * .82),
+            mat['body_light'] if q != 'LIGHT' else mat['patch'], pivot, .015)
+        # Coloured lower accent differentiates qualities at the back too.
+        if q != 'LIGHT':
+            box('RearDoorAccent_' + name, (cx, .098, sill_z + .21),
+                (door_width * .80, .023, .13 if q == 'GOOD' else .19),
+                mat['accent'], pivot, .012)
+        box('RearDoorInnerLip_' + name, (cx, -.039, leaf_centre_z),
+            (door_width * .94, .035, leaf_h * .90),
+            mat['body_dark'], pivot, .015)
+        box('RearDoorOuterEdge_' + name,
+            (-side * (door_width - .022), .078, leaf_centre_z),
+            (.033, .046, leaf_h * .97), mat['body_dark'], pivot, .006)
+        box('RearDoorHandle_' + name,
+            (-side * (door_width - .16), .134, 1.18),
+            (.13, .067, .074), mat['metal'] if q == 'BEST' else mat['black'],
+            pivot, .017)
+        box('RearDoorReflector_' + name,
+            (cx, .104, sill_z + .14),
+            (door_width * .27, .026, .06), mat['taillight'], pivot, .011)
+        if layout['windows_at_rear']:
+            box('RearDoorWindow_' + name,
+                (cx, .097, roof_z - .37),
+                (door_width * .69, .032, .42),
+                mat['glass_deep'], pivot, .022)
+            box('RearDoorWindowTrim_' + name,
+                (cx, .118, roof_z - .59),
+                (door_width * .73, .027, .03), mat['black'], pivot, .007)
+        if q == 'BEST':
+            box('RearDoorPremiumTrim_' + name,
+                (cx, .104, roof_z - .12),
+                (door_width * .78, .022, .039), mat['silver'], pivot, .008)
+        elif q == 'LIGHT' and GENERATE_WEAR_ON_LIGHT_VAN and rng.random() < .6:
+            box('RearDoorPaintChip_' + name,
+                (cx - side * .10, .106, 1.30),
+                (.19, .022, .052), mat['rust'], pivot, .007)
+
+        # Stationary, visible hinge knuckles; their rotations are separate
+        # from the moving door leaves, like on a real delivery van.
+        for i, z in enumerate((sill_z + .16, roof_z - .20)):
+            cylinder('RearHingePin_' + name + '_' + str(i),
+                     (hinge_x, hinge_y - .008, z),
+                     .059, .14, mat['metal'] if q != 'LIGHT'
+                     else mat['black'], doors, vertices=10)
+
+    # Number plate belongs to the LEFT leaf so it swings with the door.
+    left_pivot = pivots[0][0]
+    plate_x = door_width * .54
+    box('LicensePlateRear', (plate_x, .129, .93),
+        (.31, .026, .13), mat['white'], left_pivot, .015)
+
+    angle_rad = math.radians(max(0.0, min(135.0, REAR_DOOR_OPEN_ANGLE)))
+    if ANIMATE_REAR_DOORS:
+        for pivot, side in pivots:
+            for frame, angle in ((1, 0), (24, -side * angle_rad), (48, 0)):
+                pivot.rotation_euler.z = angle
+                pivot.keyframe_insert(data_path='rotation_euler', index=2,
+                                      frame=frame, group='RearCargoDoors')
+            # Linear, predictable open/close; Unity may choose to drive the
+            # pivots directly rather than play the baked Blender animation.
+            if pivot.animation_data and pivot.animation_data.action:
+                action = pivot.animation_data.action
+                if hasattr(action, 'fcurves'):
+                    for fc in action.fcurves:
+                        for kp in fc.keyframe_points:
+                            kp.interpolation = 'LINEAR'
+        bpy.context.scene.frame_set(24 if REAR_DOOR_PREVIEW_OPEN else 1)
+    elif REAR_DOOR_PREVIEW_OPEN:
+        for pivot, side in pivots:
+            pivot.rotation_euler.z = -side * angle_rad
+
+    layout['cargo_length'] = cargo_length
+    layout['cargo_width'] = w - .30
+    layout['cargo_height'] = cargo_top_z - cargo_floor_z
+    layout['rear_door_open_angle'] = math.degrees(angle_rad)
 
 
 def build_side_doors(layout, mat, groups, rng):
@@ -694,6 +879,8 @@ def build_unity_markers(layout, groups):
           (-layout['driver_side'] * layout['width'] * .23,
            layout['front'] + 1.60, 1.16))
     empty('CargoAnchor', root, (0, .66, 1.20))
+    # Kept for compatibility with previous van prefabs. Use
+    # RearDoorInteractionAnchor and CargoLoadingAnchor for new gameplay.
     empty('RearDoorAnchor', root, (0, layout['rear'] + .10, 1.0))
     empty('CameraFollowAnchor', root, (0, .0, layout['height'] + .95))
 
@@ -735,13 +922,14 @@ def generate_van(quality=VAN_QUALITY, seed=SEED):
     root = empty('GeneratedVan')
     group_names = (
         'Body', 'Windows', 'Wheels', 'Trim', 'Doors', 'Lights',
-        'Accessories', 'Interior', 'Branding', 'Damage', 'Anchors',
+        'Accessories', 'Interior', 'Cargo', 'Branding', 'Damage', 'Anchors',
     )
     groups = {name: empty(name, root) for name in group_names}
 
     build_body(layout, mats, groups)
     build_glass(layout, mats, groups, rng)
     build_front_rear(layout, mats, groups, rng)
+    build_rear_cargo(layout, mats, groups, rng)
     build_side_doors(layout, mats, groups, rng)
     build_decoration(layout, mats, groups, rng)
     build_accessories(layout, mats, groups, rng)
@@ -750,7 +938,7 @@ def generate_van(quality=VAN_QUALITY, seed=SEED):
     build_unity_markers(layout, groups)
 
     # Exportable authoring data for an eventual Unity van controller.
-    root['generator'] = 'Couch Guys Procedural Van v1'
+    root['generator'] = 'Couch Guys Procedural Van v2 (openable rear cargo)'
     root['quality'] = quality
     root['seed'] = seed
     root['forward_axis_blender'] = '-Y'
@@ -764,6 +952,13 @@ def generate_van(quality=VAN_QUALITY, seed=SEED):
     root['fuel_use_l_per_km'] = cfg['fuel_use_l_per_km']
     root['recommended_delivery'] = cfg['recommended_delivery']
     root['trim_level'] = cfg['trim_level']
+    root['cargo_length_m'] = round(layout['cargo_length'], 3)
+    root['cargo_width_m'] = round(layout['cargo_width'], 3)
+    root['cargo_height_m'] = round(layout['cargo_height'], 3)
+    root['rear_door_open_angle_deg'] = round(layout['rear_door_open_angle'], 2)
+    root['rear_doors_openable'] = True
+    root['cargo_loading_supported_by_geometry'] = True
+    root['couch_loading_requires_unity_script'] = True
     root['generated_utc'] = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
 
     if EXPORT_FBX:
@@ -781,7 +976,11 @@ def generate_van(quality=VAN_QUALITY, seed=SEED):
           'fuel use: %.2f L/km' %
           (cfg['max_speed_mps'], cfg['fuel_capacity_l'],
            cfg['fuel_use_l_per_km']))
-    print('Stats are metadata; wire them up inside Unity to affect driving.')
+    print('Openable rear doors: RearDoorHinge_L and RearDoorHinge_R')
+    print('Cargo bay: %.2f x %.2f x %.2f m' %
+          (layout['cargo_width'], layout['cargo_length'], layout['cargo_height']))
+    print('Unity anchors: CargoLoadingAnchor, CargoStorageAnchor, CargoBoundsMin/Max')
+    print('Van stats and couch loading are metadata; implement gameplay in Unity.')
     print('=' * 56 + '\n')
     return root
 

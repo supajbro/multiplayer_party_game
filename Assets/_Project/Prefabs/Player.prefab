@@ -16,15 +16,17 @@ GameObject:
   - component: {fileID: 4753475039817145927}
   - component: {fileID: 6842772898105403012}
   - component: {fileID: 7262616249922094815}
+  - component: {fileID: 8111111111111111111}
   - component: {fileID: 8315246159304729164}
   - component: {fileID: 2770509040782231261}
   - component: {fileID: 5385180417060675768}
-  - component: {fileID: 8111111111111111111}
+  - component: {fileID: 3016622510690859693}
   - component: {fileID: 7188027003381171713}
   - component: {fileID: 2634208340619463066}
   - component: {fileID: 2114314630447923985}
+  - component: {fileID: 1254133024385034755}
+  - component: {fileID: 2068327201966101243}
   - component: {fileID: 7619104973454978121}
-  - component: {fileID: 3016622510690859693}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -168,15 +170,15 @@ MonoBehaviour:
   _spectatorInterpolation: 2
   _enableTeleport: 0
   _teleportThreshold: 1
-  <PrefabId>k__BackingField: 0
+  <PrefabId>k__BackingField: 65535
   <SpawnableCollectionId>k__BackingField: 0
   <AssetPathHash>k__BackingField: 4436876244654009188
   SceneId: 0
   SerializedTransformProperties:
     Position: {x: 0, y: 0, z: 0}
-    Rotation: {x: 0, y: 0, z: 0, w: 1}
-    Scale: {x: 1, y: 1, z: 1}
-    IsValid: 1
+    Rotation: {x: 0, y: 0, z: 0, w: 0}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
   <IsNested>k__BackingField: 0
   WasActiveDuringEdit: 0
   WasActiveDuringEdit_Set1: 1
@@ -190,6 +192,7 @@ MonoBehaviour:
   - {fileID: 8111111111111111111}
   - {fileID: 2634208340619463066}
   - {fileID: 3016622510690859693}
+  - {fileID: 1254133024385034755}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -200,7 +203,7 @@ MonoBehaviour:
   _initializeOrder: 0
   _preventDespawnOnDisconnect: 0
   _defaultDespawnType: 0
-  _initializedTimestamp: -8584101635594882015
+  _initializedTimestamp: 0
 --- !u!114 &6842772898105403012
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -259,6 +262,31 @@ MonoBehaviour:
   m_fullMoveSpeed: 3.5
   m_movementDampTime: 0.12
   m_teleportSpeed: 15
+--- !u!114 &8111111111111111111
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7c9826403ae43f99d1e670c3843911a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.PlayerHealth
+  _componentIndexCache: 3
+  _addedNetworkObject: {fileID: 4753475039817145927}
+  _networkObjectCache: {fileID: 4753475039817145927}
+  m_maxHealth: 100
+  m_knockdownDamageFraction: 0.25
+  m_respawnDelay: 5
+  m_knockdownDuration: 2.25
+  m_upwardImpulse: 2.5
+  m_fallAngle: 78
+  m_fallDegreesPerSecond: 360
+  m_getUpDegreesPerSecond: 180
+  m_visualRoot: {fileID: 200001}
+  m_playerController: {fileID: 100004}
 --- !u!114 &8315246159304729164
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -344,7 +372,7 @@ MonoBehaviour:
     - {r: 1, g: 0.25, b: 0.2, a: 1}
     - {r: 0.2, g: 0.85, b: 0.35, a: 1}
     - {r: 1, g: 0.72, b: 0.12, a: 1}
---- !u!114 &8111111111111111111
+--- !u!114 &3016622510690859693
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -353,22 +381,63 @@ MonoBehaviour:
   m_GameObject: {fileID: 100000}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d7c9826403ae43f99d1e670c3843911a, type: 3}
+  m_Script: {fileID: 11500000, guid: 47c21e25554f452c8484fd395ac9b816, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.PlayerHealth
-  _componentIndexCache: 3
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.PlayerStamina
+  _componentIndexCache: 5
   _addedNetworkObject: {fileID: 4753475039817145927}
   _networkObjectCache: {fileID: 4753475039817145927}
-  m_maxHealth: 100
-  m_knockdownDamageFraction: 0.25
-  m_respawnDelay: 5
-  m_knockdownDuration: 2.25
-  m_upwardImpulse: 2.5
-  m_fallAngle: 78
-  m_fallDegreesPerSecond: 360
-  m_getUpDegreesPerSecond: 180
-  m_visualRoot: {fileID: 200001}
-  m_playerController: {fileID: 100004}
+  m_maximumStamina: 100
+  m_minimumStaminaToResume: 15
+  m_sprintDrain: 12
+  m_couchCarryDrain: 6
+  m_couchSprintAdditionalDrain: 12
+  m_recoveryRate: 15
+  m_recoveryDelay: 1.5
+  m_carrierDrainMultiplier:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 2
+      value: 0.75
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 3
+      value: 0.6
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 4
+      value: 0.5
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  m_replicationInterval: 0.1
+  m_intentSendInterval: 0.2
 --- !u!114 &7188027003381171713
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -474,6 +543,39 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: eac8ad8f08dc4596a71bb72533311852, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Weapons.PlayerWeaponHud
+--- !u!114 &1254133024385034755
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4cbb9d71891906448b2627abeae1a395, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.PlayerVanInteractor
+  _componentIndexCache: 6
+  _addedNetworkObject: {fileID: 4753475039817145927}
+  _networkObjectCache: {fileID: 4753475039817145927}
+  m_input: {fileID: 100003}
+  m_controller: {fileID: 100004}
+  m_characterController: {fileID: 100002}
+  m_visualRoot: {fileID: 200001}
+  m_cameraController: {fileID: 400002}
+  m_playerCamera: {fileID: 410002}
+--- !u!114 &2068327201966101243
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0eedf8625683f40408310fccccc4e353, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Vehicles.VehicleHud
 --- !u!114 &7619104973454978121
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -486,72 +588,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49b1e3edba294a9b92b972e39fdbcb7b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Delivery.NeighbourhoodMap
---- !u!114 &3016622510690859693
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 100000}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 47c21e25554f452c8484fd395ac9b816, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.PlayerStamina
-  _componentIndexCache: 5
-  _addedNetworkObject: {fileID: 4753475039817145927}
-  _networkObjectCache: {fileID: 4753475039817145927}
-  m_maximumStamina: 100
-  m_minimumStaminaToResume: 15
-  m_sprintDrain: 12
-  m_couchCarryDrain: 6
-  m_couchSprintAdditionalDrain: 12
-  m_recoveryRate: 15
-  m_recoveryDelay: 1.5
-  m_carrierDrainMultiplier:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 2
-      value: 0.75
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 3
-      value: 0.6
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 4
-      value: 0.5
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  m_replicationInterval: 0.1
-  m_intentSendInterval: 0.2
 --- !u!1 &200000
 GameObject:
   m_ObjectHideFlags: 0
@@ -868,10 +904,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 200001}
     m_Modifications:
-    - target: {fileID: -9132216562274044638, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 89.98021
-      objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
       propertyPath: m_LocalScale.x
       value: 50
@@ -890,7 +922,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.25
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
       propertyPath: m_LocalPosition.z
@@ -928,105 +960,9 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: -1778440678005120201, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: -34.095165
-      objectReference: {fileID: 0}
-    - target: {fileID: -1778440678005120201, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: -128.62708
-      objectReference: {fileID: 0}
-    - target: {fileID: -1778440678005120201, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: -128.40462
-      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
       propertyPath: m_Name
       value: CouchGuy
-      objectReference: {fileID: 0}
-    - target: {fileID: 1475704052132034492, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: -12.104154
-      objectReference: {fileID: 0}
-    - target: {fileID: 1475704052132034492, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 90.09905
-      objectReference: {fileID: 0}
-    - target: {fileID: 1475704052132034492, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: -23.283552
-      objectReference: {fileID: 0}
-    - target: {fileID: 1877960483454365629, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: -33.98934
-      objectReference: {fileID: 0}
-    - target: {fileID: 1877960483454365629, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 128.50476
-      objectReference: {fileID: 0}
-    - target: {fileID: 1877960483454365629, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 128.50061
-      objectReference: {fileID: 0}
-    - target: {fileID: 3622571092179356533, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: -30.302317
-      objectReference: {fileID: 0}
-    - target: {fileID: 3622571092179356533, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: -13.354975
-      objectReference: {fileID: 0}
-    - target: {fileID: 3622571092179356533, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: -17.532476
-      objectReference: {fileID: 0}
-    - target: {fileID: 5408518322925871603, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: -12.104154
-      objectReference: {fileID: 0}
-    - target: {fileID: 5408518322925871603, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: -90.09905
-      objectReference: {fileID: 0}
-    - target: {fileID: 5408518322925871603, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 23.283552
-      objectReference: {fileID: 0}
-    - target: {fileID: 5461446117034863049, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0.06717098
-      objectReference: {fileID: 0}
-    - target: {fileID: 5461446117034863049, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0.008725181
-      objectReference: {fileID: 0}
-    - target: {fileID: 5461446117034863049, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: -0.100661755
-      objectReference: {fileID: 0}
-    - target: {fileID: 6159516728511213365, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: -4.9272895
-      objectReference: {fileID: 0}
-    - target: {fileID: 6159516728511213365, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: -0.3476907
-      objectReference: {fileID: 0}
-    - target: {fileID: 6159516728511213365, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 3.9685233
-      objectReference: {fileID: 0}
-    - target: {fileID: 9066485297820291800, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: -30.302317
-      objectReference: {fileID: 0}
-    - target: {fileID: 9066485297820291800, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 13.354975
-      objectReference: {fileID: 0}
-    - target: {fileID: 9066485297820291800, guid: 73579fa6d1059054b9bf0bbb18a8ac21, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 17.532476
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

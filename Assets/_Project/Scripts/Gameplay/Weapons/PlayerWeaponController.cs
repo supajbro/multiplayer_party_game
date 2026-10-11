@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Enemies;
+using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Input;
 using CouchGuys.Player;
@@ -44,6 +45,7 @@ namespace CouchGuys.Gameplay.Weapons
         private readonly RaycastHit[] m_hits = new RaycastHit[RaycastBufferSize];
         private readonly Dictionary<PlayerHealth, float> m_playerDamage = new(8);
         private readonly Dictionary<ThiefHealth, float> m_thiefDamage = new(8);
+        private readonly Dictionary<VanController, float> m_vanDamage = new(4);
         private float m_switchCompleteAt;
         private float m_reloadCompleteAt;
         private int m_reloadingIndex = -1;
@@ -309,6 +311,7 @@ namespace CouchGuys.Gameplay.Weapons
         {
             m_playerDamage.Clear();
             m_thiefDamage.Clear();
+            m_vanDamage.Clear();
             Vector3[] ends = new Vector3[weapon.Pellets];
             for (int pellet = 0; pellet < weapon.Pellets; pellet++)
             {
@@ -329,6 +332,13 @@ namespace CouchGuys.Gameplay.Weapons
                 {
                     m_thiefDamage.TryGetValue(thief, out float total);
                     m_thiefDamage[thief] = total + damage;
+                    continue;
+                }
+                VanController van = nearest.collider.GetComponentInParent<VanController>();
+                if (van != null)
+                {
+                    m_vanDamage.TryGetValue(van, out float total);
+                    m_vanDamage[van] = total + damage;
                 }
             }
 
@@ -345,6 +355,8 @@ namespace CouchGuys.Gameplay.Weapons
                     Mathf.Clamp01(entry.Value / maximumShotDamage));
                 entry.Key.ApplyDamageServer(entry.Value, forward, force);
             }
+            foreach (KeyValuePair<VanController, float> entry in m_vanDamage)
+                entry.Key.ApplyBulletDamageServer(entry.Value);
             return ends;
         }
 
