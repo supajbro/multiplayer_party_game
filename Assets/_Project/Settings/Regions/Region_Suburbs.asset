@@ -31,8 +31,8 @@ MonoBehaviour:
     Enabled: 1
     MinimumStep: 2
     MaximumStep: 4
-    MaximumElevation: 45
-    MaximumRoadSlope: 30
+    MaximumElevation: 30
+    MaximumRoadSlope: 20
   m_progression:
     Enabled: 1
     EasyEndNormalized: 0.28

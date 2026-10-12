@@ -204,6 +204,16 @@ MonoBehaviour:
   _networkObjectCache: {fileID: 1004}
   m_agent: {fileID: 1003}
   m_pathRefreshInterval: 0.35
+  m_tacticalRepositionInterval: 2.5
+  m_repositionIntervalVariation: 1
+  m_targetNavMeshSampleRadius: 6
+  m_tacticalSampleRadius: 4
+  m_targetMovementThreshold: 2.5
+  m_tacticalPositionAttempts: 4
+  m_positionVariation: 1.25
+  m_supportRangeMultiplier: 1.45
+  m_minimumSlotSeparation: 1.75
+  m_aimTurnSpeed: 260
 --- !u!1 &2000
 GameObject:
   m_ObjectHideFlags: 0
@@ -270,7 +280,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10303, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 2100000, guid: d6cbc8efb63a96248ba0f202752f204c, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

@@ -342,7 +342,9 @@ namespace CouchGuys.ProceduralGeneration
         private Material GetMaterial(ref Material cached, string name, Color colour)
         {
             if (cached != null) return cached;
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            Shader shader = Shader.Find("Couch Guys/Toon Lit") ??
+                            Shader.Find("Universal Render Pipeline/Lit") ??
+                            Shader.Find("Standard");
             if (shader == null) return null;
             cached = new Material(shader) { name = name, color = colour };
             m_ownedMaterials.Add(cached);

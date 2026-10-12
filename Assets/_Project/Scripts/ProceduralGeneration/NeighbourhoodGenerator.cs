@@ -1770,7 +1770,9 @@ namespace CouchGuys.ProceduralGeneration
                 return material;
             }
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            Shader shader = Shader.Find("Couch Guys/Toon Lit") ??
+                            Shader.Find("Universal Render Pipeline/Lit") ??
+                            Shader.Find("Standard");
             if (shader == null)
             {
                 return null;
@@ -2006,7 +2008,8 @@ namespace CouchGuys.ProceduralGeneration
 
             if (surfaceMaterial == null)
             {
-                Shader shader = Shader.Find("Universal Render Pipeline/Lit") ??
+                Shader shader = Shader.Find("Couch Guys/Toon Lit") ??
+                                Shader.Find("Universal Render Pipeline/Lit") ??
                                 Shader.Find("Standard");
                 if (shader != null)
                 {
@@ -2196,7 +2199,8 @@ namespace CouchGuys.ProceduralGeneration
             Material material = m_sidewalkMaterial;
             if (material == null)
             {
-                Shader shader = Shader.Find("Universal Render Pipeline/Lit") ??
+                Shader shader = Shader.Find("Couch Guys/Toon Lit") ??
+                                Shader.Find("Universal Render Pipeline/Lit") ??
                                 Shader.Find("Standard");
                 if (shader != null)
                 {
