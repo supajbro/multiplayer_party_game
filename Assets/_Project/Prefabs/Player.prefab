@@ -27,6 +27,8 @@ GameObject:
   - component: {fileID: 1254133024385034755}
   - component: {fileID: 2068327201966101243}
   - component: {fileID: 7619104973454978121}
+  - component: {fileID: 7168290924105605430}
+  - component: {fileID: 1378019884586452510}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -450,6 +452,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e1745c87afc03e5499441abd5a07174d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Weapons.PlayerWeaponEffects
+  m_terrainImpactPrefab: {fileID: 4888292895678314909, guid: 9854b1f6f117ea44d8ae2fd4b8d21809, type: 3}
+  m_wallImpactPrefab: {fileID: 4213702281717234982, guid: c65d5072215e19c45995ce1f1ba5d0b0, type: 3}
+  m_metalImpactPrefab: {fileID: 4631034452001794509, guid: ea8431670ed92d24b96c7c4822f8eab1, type: 3}
+  m_enemyImpactPrefab: {fileID: 1010076065151148806, guid: 8f4988eecb814e94d958abfa53c903d7, type: 3}
+  m_effectLifetime: 1.5
+  m_ownerCamera: {fileID: 0}
+  m_shakeFrequency: 34
+  m_shakeRecovery: 14
 --- !u!114 &2634208340619463066
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -496,6 +506,19 @@ MonoBehaviour:
     m_startingReserve: 60
     m_reloadDuration: 1.25
     m_knockback: 2.5
+    m_reticleSettings: {fileID: 11400000, guid: c88b9d7048fe4874d9cf5c4b7578154c, type: 2}
+    m_bulletPrefab: {fileID: 7053223019108582829, guid: 7d6ed1a4199de8e48803919040627113, type: 3}
+    m_bulletSpeed: 75
+    m_bulletLifetime: 0.75
+    m_bulletSize: {x: 0.065, y: 0.065, z: 0.24}
+    m_bulletColour: {r: 1, g: 0.72, b: 0.12, a: 1}
+    m_trailWidth: 0.025
+    m_trailColour: {r: 1, g: 0.55, b: 0.08, a: 0.85}
+    m_muzzleFlashPrefab: {fileID: 6301096000011875867, guid: f0d8fc04360094146ae8ae6c9544e79d, type: 3}
+    m_shellEjectionPrefab: {fileID: 3209749533127654787, guid: e0e80639c49404643a16dbe218a8498e, type: 3}
+    m_recoilDistance: 0.035
+    m_cameraShake: 0.045
+    m_impactScale: 1
   - m_type: 1
     m_displayName: Assault Rifle
     m_automatic: 1
@@ -511,6 +534,19 @@ MonoBehaviour:
     m_startingReserve: 120
     m_reloadDuration: 1.8
     m_knockback: 1.5
+    m_reticleSettings: {fileID: 11400000, guid: 346508b230abac74fad5df41a467b1b9, type: 2}
+    m_bulletPrefab: {fileID: 4510290296513175856, guid: d266e9f1b53a51a42ba14c066c659f28, type: 3}
+    m_bulletSpeed: 105
+    m_bulletLifetime: 0.65
+    m_bulletSize: {x: 0.045, y: 0.045, z: 0.34}
+    m_bulletColour: {r: 1, g: 0.72, b: 0.12, a: 1}
+    m_trailWidth: 0.018
+    m_trailColour: {r: 1, g: 0.55, b: 0.08, a: 0.85}
+    m_muzzleFlashPrefab: {fileID: 5850378683262350347, guid: 4b194f7b64600f34f85f70ae86ee79eb, type: 3}
+    m_shellEjectionPrefab: {fileID: 2801223375394254809, guid: eb76f7bf6cbf1504aa11dea57db5b169, type: 3}
+    m_recoilDistance: 0.018
+    m_cameraShake: 0.022
+    m_impactScale: 0.8
   - m_type: 2
     m_displayName: Shotgun
     m_automatic: 0
@@ -526,6 +562,19 @@ MonoBehaviour:
     m_startingReserve: 36
     m_reloadDuration: 2.2
     m_knockback: 12
+    m_reticleSettings: {fileID: 11400000, guid: b5bd8a4c54dc5f04ca9d2869aface38d, type: 2}
+    m_bulletPrefab: {fileID: 3735381363240024366, guid: f59bac2ce39e9c34d8047a11bc3a447b, type: 3}
+    m_bulletSpeed: 62
+    m_bulletLifetime: 0.55
+    m_bulletSize: {x: 0.055, y: 0.055, z: 0.18}
+    m_bulletColour: {r: 1, g: 0.72, b: 0.12, a: 1}
+    m_trailWidth: 0.03
+    m_trailColour: {r: 1, g: 0.55, b: 0.08, a: 0.85}
+    m_muzzleFlashPrefab: {fileID: 5713113514080594420, guid: 7b9e7ec0e45af1d4083090950b83d5f7, type: 3}
+    m_shellEjectionPrefab: {fileID: 791735299363222671, guid: 35e12e48c2143fe4ab5dd36eb4459e6a, type: 3}
+    m_recoilDistance: 0.075
+    m_cameraShake: 0.1
+    m_impactScale: 1.5
   m_hitMask:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -588,6 +637,38 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49b1e3edba294a9b92b972e39fdbcb7b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Delivery.NeighbourhoodMap
+--- !u!114 &7168290924105605430
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 150e20dac8756a84cb85b682807e15ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Weapons.ReticleTargetDetector
+  m_aimCamera: {fileID: 0}
+  m_ownerHealth: {fileID: 0}
+  m_hitMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_fallbackRange: 60
+--- !u!114 &1378019884586452510
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47788181d944faa4c8d9fc9b09d0774d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Weapons.WeaponReticleController
+  m_reticlePrefab: {fileID: 9192650575228913080, guid: 535454293a243724f925de3dc0044d7a, type: 3}
+  m_colourResponse: 18
 --- !u!1 &200000
 GameObject:
   m_ObjectHideFlags: 0

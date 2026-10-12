@@ -199,6 +199,13 @@ namespace CouchGuys.Editor
             if (weaponEffects == null) weaponEffects = player.AddComponent<PlayerWeaponEffects>();
             PlayerWeaponController weaponController = player.GetComponent<PlayerWeaponController>();
             if (weaponController == null) weaponController = player.AddComponent<PlayerWeaponController>();
+            ReticleTargetDetector reticleTargetDetector = player.GetComponent<ReticleTargetDetector>();
+            if (reticleTargetDetector == null) reticleTargetDetector = player.AddComponent<ReticleTargetDetector>();
+            WeaponReticleController reticleController = player.GetComponent<WeaponReticleController>();
+            if (reticleController == null) reticleController = player.AddComponent<WeaponReticleController>();
+            WeaponReticleView reticlePrefab = AssetDatabase.LoadAssetAtPath<WeaponReticleView>(
+                WeaponReticleAssetBuilder.ReticlePrefabPath);
+            if (reticlePrefab != null) SetObjectReference(reticleController, "m_reticlePrefab", reticlePrefab);
             if (player.GetComponent<PlayerWeaponHud>() == null) player.AddComponent<PlayerWeaponHud>();
             PlayerVanInteractor vanInteractor = player.GetComponent<PlayerVanInteractor>();
             if (vanInteractor == null) vanInteractor = player.AddComponent<PlayerVanInteractor>();
@@ -435,6 +442,8 @@ namespace CouchGuys.Editor
                 prefab.GetComponent<PlayerHealth>() == null ||
                 prefab.GetComponent<PlayerStamina>() == null ||
                 prefab.GetComponent<PlayerWeaponController>() == null ||
+                prefab.GetComponent<ReticleTargetDetector>() == null ||
+                prefab.GetComponent<WeaponReticleController>() == null ||
                 prefab.GetComponent<PlayerWeaponEffects>() == null ||
                 prefab.GetComponent<PlayerWeaponHud>() == null ||
                 prefab.GetComponent<NeighbourhoodMap>() == null ||

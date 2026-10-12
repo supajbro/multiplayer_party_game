@@ -52,7 +52,13 @@ namespace CouchGuys.Gameplay.Weapons
         private float m_nextLocalRequestTime;
         private bool m_localReloading;
         private readonly Quaternion[] m_weaponBaseRotations = new Quaternion[WeaponCount];
+        private readonly Vector3[] m_weaponBasePositions = new Vector3[WeaponCount];
         private float m_visualRecoil;
+        private float m_visualRecoilDistance;
+
+        public event System.Action<PlayerWeaponType> LocalShotFired;
+        public event System.Action<bool> LocalHitConfirmed;
+        public event System.Action<ReticleSettings> LocalReticleChanged;
 
         public PlayerWeaponType EquippedWeapon => (PlayerWeaponType)Mathf.Clamp(m_equippedIndex.Value, 0, 2);
         public string EquippedWeaponName => GetWeapon(m_equippedIndex.Value)?.DisplayName ?? "None";
@@ -61,6 +67,8 @@ namespace CouchGuys.Gameplay.Weapons
         public bool IsReloading => m_localReloading || m_reloadingIndex >= 0;
         public bool HasEquippedWeapon => ValidIndex(m_equippedIndex.Value);
         public int SelectedHotbarSlot => Mathf.Clamp(m_selectedHotbarSlot.Value, 0, 4);
+        public ReticleSettings CurrentReticleSettings => GetWeapon(m_equippedIndex.Value)?.ReticleSettings;
+        public float CurrentWeaponRange => GetWeapon(m_equippedIndex.Value)?.Range ?? 60f;
 
         private void Awake()
         {
@@ -140,8 +148,11 @@ namespace CouchGuys.Gameplay.Weapons
             int index = m_equippedIndex.Value;
             if (!ValidIndex(index) || m_weaponModels[index] == null) return;
             m_visualRecoil = Mathf.MoveTowards(m_visualRecoil, 0f, 55f * Time.deltaTime);
+            m_visualRecoilDistance = Mathf.MoveTowards(m_visualRecoilDistance, 0f, 0.8f * Time.deltaTime);
             m_weaponModels[index].localRotation = m_weaponBaseRotations[index] *
                 Quaternion.Euler(-m_visualRecoil, 0f, 0f);
+            m_weaponModels[index].localPosition = m_weaponBasePositions[index] +
+                Vector3.back * m_visualRecoilDistance;
         }
 
         [ServerRpc]
@@ -291,8 +302,9 @@ namespace CouchGuys.Gameplay.Weapons
                 muzzleDirection = cameraDirection;
             }
 
-            Vector3[] ends = ResolveHitsServer(muzzle, muzzleDirection.normalized, weapon);
-            ShowShotObserversRpc(index, muzzle, ends);
+            Vector3[] ends = ResolveHitsServer(muzzle, muzzleDirection.normalized, weapon,
+                out Vector3[] normals, out byte[] surfaces);
+            ShowShotObserversRpc(index, muzzle, ends, normals, surfaces);
             if (Owner.IsValid)
             {
                 SendWeaponStateTargetRpc(
@@ -307,18 +319,29 @@ namespace CouchGuys.Gameplay.Weapons
         }
 
         [Server]
-        private Vector3[] ResolveHitsServer(Vector3 origin, Vector3 forward, WeaponDefinition weapon)
+        private Vector3[] ResolveHitsServer(Vector3 origin, Vector3 forward, WeaponDefinition weapon,
+            out Vector3[] normals, out byte[] surfaces)
         {
             m_playerDamage.Clear();
             m_thiefDamage.Clear();
             m_vanDamage.Clear();
             Vector3[] ends = new Vector3[weapon.Pellets];
+            normals = new Vector3[weapon.Pellets];
+            surfaces = new byte[weapon.Pellets];
             for (int pellet = 0; pellet < weapon.Pellets; pellet++)
             {
-                Vector3 direction = ApplySpread(forward, weapon.SpreadDegrees);
+                // The camera-centre ray is the gameplay promise made by the reticle.
+                // Single-projectile weapons therefore travel exactly through it. A
+                // shotgun keeps its spread, but always includes one centre pellet so
+                // the point under the reticle is represented by the shot pattern.
+                Vector3 direction = pellet == 0
+                    ? forward
+                    : ApplySpread(forward, weapon.SpreadDegrees);
                 ends[pellet] = origin + direction * weapon.Range;
                 if (!TryGetNearestNonSelfHit(origin, direction, weapon.Range, out RaycastHit nearest)) continue;
                 ends[pellet] = nearest.point;
+                normals[pellet] = nearest.normal;
+                surfaces[pellet] = (byte)ClassifySurface(nearest.collider);
                 float damage = weapon.DamageAtDistance(nearest.distance);
                 PlayerHealth player = nearest.collider.GetComponentInParent<PlayerHealth>();
                 if (player != null && player != m_health)
@@ -355,9 +378,36 @@ namespace CouchGuys.Gameplay.Weapons
                     Mathf.Clamp01(entry.Value / maximumShotDamage));
                 entry.Key.ApplyDamageServer(entry.Value, forward, force);
             }
+            if (m_thiefDamage.Count > 0 && Owner.IsValid)
+            {
+                bool elimination = false;
+                foreach (KeyValuePair<ThiefHealth, float> entry in m_thiefDamage)
+                    elimination |= entry.Key != null && !entry.Key.IsAlive;
+                ConfirmHostileHitTargetRpc(Owner, elimination);
+            }
             foreach (KeyValuePair<VanController, float> entry in m_vanDamage)
                 entry.Key.ApplyBulletDamageServer(entry.Value);
             return ends;
+        }
+
+        private static WeaponImpactSurface ClassifySurface(Collider collider)
+        {
+            if (collider == null) return WeaponImpactSurface.None;
+            if (collider.GetComponentInParent<PlayerHealth>() != null ||
+                collider.GetComponentInParent<ThiefHealth>() != null)
+                return WeaponImpactSurface.Enemy;
+            if (collider.GetComponentInParent<VanController>() != null)
+                return WeaponImpactSurface.Metal;
+            if (collider is TerrainCollider || collider.GetComponentInParent<Terrain>() != null)
+                return WeaponImpactSurface.Terrain;
+            string objectName = collider.name.ToLowerInvariant();
+            if (objectName.Contains("road") || objectName.Contains("ground") ||
+                objectName.Contains("grass") || objectName.Contains("terrain"))
+                return WeaponImpactSurface.Terrain;
+            if (objectName.Contains("metal") || objectName.Contains("vehicle") ||
+                objectName.Contains("car") || objectName.Contains("van"))
+                return WeaponImpactSurface.Metal;
+            return WeaponImpactSurface.Wall;
         }
 
         private bool TryGetNearestNonSelfHit(Vector3 origin, Vector3 direction, float range,
@@ -411,13 +461,26 @@ namespace CouchGuys.Gameplay.Weapons
             m_localReloading = reloading;
         }
 
-        [ObserversRpc(RunLocally = true)]
-        private void ShowShotObserversRpc(int weaponIndex, Vector3 muzzle, Vector3[] ends)
+        [TargetRpc]
+        private void ConfirmHostileHitTargetRpc(NetworkConnection connection, bool elimination)
         {
-            m_effects?.PlayShot(muzzle, ends);
-            m_animationDriver?.PlayWeaponShot((PlayerWeaponType)weaponIndex);
+            if (IsOwner) LocalHitConfirmed?.Invoke(elimination);
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void ShowShotObserversRpc(int weaponIndex, Vector3 muzzle, Vector3[] ends,
+            Vector3[] normals, byte[] surfaces)
+        {
             WeaponDefinition weapon = GetWeapon(weaponIndex);
-            if (weapon != null) m_visualRecoil = Mathf.Min(weapon.Recoil * 1.8f, m_visualRecoil + weapon.Recoil);
+            m_effects?.PlayShot(weapon, muzzle, ends, normals, surfaces, IsOwner);
+            m_animationDriver?.PlayWeaponShot((PlayerWeaponType)weaponIndex);
+            if (IsOwner) LocalShotFired?.Invoke((PlayerWeaponType)weaponIndex);
+            if (weapon != null)
+            {
+                m_visualRecoil = Mathf.Min(weapon.Recoil * 1.8f, m_visualRecoil + weapon.Recoil);
+                m_visualRecoilDistance = Mathf.Min(weapon.RecoilDistance * 1.8f,
+                    m_visualRecoilDistance + weapon.RecoilDistance);
+            }
         }
 
         private void OnEquippedChanged(int previous, int next, bool asServer) => ApplyEquippedWeapon(next);
@@ -426,6 +489,7 @@ namespace CouchGuys.Gameplay.Weapons
         {
             SetModelVisibility(index);
             m_animationDriver?.SetEquippedWeapon(ValidIndex(index) ? index + 1 : 0);
+            LocalReticleChanged?.Invoke(GetWeapon(index)?.ReticleSettings);
         }
 
         private void SetModelVisibility(int equippedIndex)
@@ -435,9 +499,11 @@ namespace CouchGuys.Gameplay.Weapons
                 if (m_weaponModels[i] != null)
                 {
                     m_weaponModels[i].localRotation = m_weaponBaseRotations[i];
+                    m_weaponModels[i].localPosition = m_weaponBasePositions[i];
                     m_weaponModels[i].gameObject.SetActive(i == equippedIndex);
                 }
             m_visualRecoil = 0f;
+            m_visualRecoilDistance = 0f;
         }
 
         private void ResolveModelReferences()
@@ -451,7 +517,11 @@ namespace CouchGuys.Gameplay.Weapons
             for (int i = 0; i < WeaponCount; i++)
             {
                 m_weaponModels[i] ??= FindDescendant(transform, names[i]);
-                if (m_weaponModels[i] != null) m_weaponBaseRotations[i] = m_weaponModels[i].localRotation;
+                if (m_weaponModels[i] != null)
+                {
+                    m_weaponBaseRotations[i] = m_weaponModels[i].localRotation;
+                    m_weaponBasePositions[i] = m_weaponModels[i].localPosition;
+                }
                 if (m_muzzles[i] == null && m_weaponModels[i] != null)
                     m_muzzles[i] = FindDescendant(m_weaponModels[i], "Muzzle");
             }
