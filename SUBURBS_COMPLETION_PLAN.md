@@ -3,7 +3,7 @@
 **Plan date:** 13 October 2026  
 **Required-work budget:** 38 hours across seven development days  
 **Milestone:** A polished, funny, replayable 20–30 minute Suburbs run for one human with AI teammates or up to four human players  
-**Status:** Day 1 in progress; SUB-01 code and focused automated coverage implemented, manual physics/multiplayer validation pending
+**Status:** Day 2 implementation in progress; SUB-01 and SUB-04 code/assets implemented, manual physics/multiplayer validation pending
 
 ## Instructions for Future Codex Sessions
 
@@ -20,13 +20,13 @@ If a task exceeds its estimate by more than 25%, stop and record why. Prefer cut
 
 ## Current Development Handoff
 
-- **Current development day:** Day 1 — SUB-01 validation.
-- **Next recommended task:** Complete the `SUB-01` manual matrix in `Assets/Scenes/CouchPhysicsTest.unity`, beginning with one-player front/back/left/right/corner grabs while correctly facing the couch.
-- **Progress:** 0 of 14 required tasks complete; SUB-01 implementation and focused test code are complete, but its Unity/Steam acceptance tests remain open.
-- **Completed tasks:** Audit and roadmap creation. SUB-01 code changes compile, including direction-independent movement intent, intent-relative point damping, explicit horizontal torque, grab-facing validation, and carry auto-facing.
-- **Known blockers:** The Unity project was already open and not exposed to the automation session, so the batch Edit Mode runner could not acquire the project. Physical feel and two-machine Steam behaviour still require the open Editor/hardware session. The repository contains no gameplay audio clips.
-- **Relevant starting files:** `CouchCarryController.cs`, `CouchCarrySettings.asset`, `PlayerCouchCarrier.cs`, `CouchPhysicsTest.unity`, `DeliveryManager.cs`, `SuburbsChapterManager.cs`, `Region_Suburbs.asset`, and `SampleScene.unity`.
-- **Outstanding testing:** Run the focused Edit Mode tests in the open Unity Editor, then complete every SUB-01 Play Mode direction/terrain/impact check and the two-client latency/release check. All later roadmap runtime checks also remain outstanding.
+- **Current development day:** Day 2 — SUB-04 validation.
+- **Next recommended task:** Complete the `SUB-04` manual matrix in `Assets/Scenes/CouchPhysicsTest.unity`: all four anchors, 1–4 carriers/AI, loose couch loading, slopes, kerbs, spills, and remote-client occupancy/release.
+- **Progress:** 0 of 14 required tasks complete; SUB-01 and SUB-04 implementations compile and the SUB-04 host scene starts, but their physics/Steam acceptance tests remain open.
+- **Completed tasks:** Audit and roadmap creation. SUB-01 code changes compile. SUB-04 now has an authored `sled_01` network prefab, four server-validated grips, count-specific speeds, physical steering/sliding, AI assistance, out-of-bounds recovery, a repeatable $150 shop item, spawn registration, tests, prompt, and test-scene spawn.
+- **Known blockers:** Physical feel, two-machine Steam behaviour, shop purchase edge cases, and late-join state still require manual Editor/hardware validation. The repository contains no gameplay audio clips.
+- **Relevant starting files:** `SledController.cs`, `SledSettings.cs`, `Sled.prefab`, `PlayerCouchCarrier.cs`, `DebugCouchBotController.cs`, `CouchPhysicsTest.unity`, `DeliveryManagerShop.asset`, and `NeighbourhoodOutOfBoundsRecovery.cs`.
+- **Outstanding testing:** Run the focused Edit Mode tests in the open Unity Editor, complete the SUB-01 manual matrix, then complete every SUB-04/SUB-05 slope/collision/cargo/shop/two-client check. The host smoke test reached FishNet server/client startup without sled exceptions.
 - **Time-budget concern:** The plan has no spare feature capacity. Day 7's eight hours are the required test/fix reserve, not a source of time for new content. If the sled exceeds six hours, cut its shop polish or cosmetic variants—not networking, recovery, or couch-physics work.
 
 ## Concise Current-Game Assessment
@@ -202,7 +202,7 @@ Automated/compile checks already completed:
 **Day:** 2  
 **Relevant Files:** `CouchCarryController.cs`, `CouchCarryPoint.cs`, `PlayerCouchCarrier.cs`, `NetworkSpawnablePrefabs.asset`, `Couch.prefab`; new `SledController.cs`, `SledSettings.asset`, `Sled.prefab`.
 
-**Current State:** No sled, trolley, dolly, or generic small transport exists. The couch is already a physical Rigidbody and does not need a second cargo mode for a loose sled.
+**Current State:** Implementation exists: `sled_01` is used by a dynamic, server-authoritative prefab with four synchronized grips, physical loose cargo, AI assistance, tuning settings, shop integration, spawn registration, recovery, and test-scene coverage. Manual feel and remote-client validation remain outstanding, so this task is intentionally not marked complete.
 
 **Objective:** Add a simple sled players manually place the couch onto, then push/pull through server-authoritative physics.
 
@@ -224,6 +224,8 @@ Automated/compile checks already completed:
 **Dependencies:** `SUB-01`.  
 **Testing:** Flat road, sidewalk, grass, 10/20-degree slopes, kerb impact, van impact, couch spill, one/two pullers, and a 150 ms remote client.  
 **Expected Player Experience:** The sled is an immediately legible gamble: gloriously fast downhill, manageable with teamwork, and capable of turning a shortcut into a rescue mission.
+
+**Implementation/validation note (13 October 2026):** Unity generated the prefab/settings/shop assets from `SledSystemBuilder`; the full solution builds with 0 errors and 0 warnings, required serialized references were created, and the test scene reached local FishNet host/client startup without sled exceptions. `SledPhysicsTests` and the extended catalogue test are compiled but still need to be run in Unity's Test Runner. No acceptance checkbox above is marked until hands-on physics and remote-client tests are observed.
 
 ### [ ] SUB-05 Integrate Sled Purchase, Objectives, AI Clearance, and Recovery
 

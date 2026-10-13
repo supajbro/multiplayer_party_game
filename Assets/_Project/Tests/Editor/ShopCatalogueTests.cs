@@ -17,6 +17,11 @@ namespace CouchGuys.Tests.Editor
             AssertItem(catalogue, "van_light", 250);
             AssertItem(catalogue, "van_good", 500);
             AssertItem(catalogue, "van_best", 1000);
+            ShopItemDefinition sled = catalogue.Find("sled");
+            Assert.That(sled, Is.Not.Null, "Missing sled");
+            Assert.That(sled.Price, Is.EqualTo(150));
+            Assert.That(sled.PurchaseBehaviour, Is.TypeOf<SledPurchaseBehaviour>());
+            Assert.That(((SledPurchaseBehaviour)sled.PurchaseBehaviour).SledPrefab, Is.Not.Null);
         }
 
         private static void AssertItem(ShopCatalogue catalogue, string itemId, int price)

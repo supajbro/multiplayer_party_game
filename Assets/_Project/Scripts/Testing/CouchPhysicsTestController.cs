@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Couch;
+using CouchGuys.Gameplay.Sled;
 using CouchGuys.Networking;
 using CouchGuys.Player;
 using FishNet.Connection;
@@ -28,6 +29,7 @@ namespace CouchGuys.Testing
         [SerializeField] private GameObject m_soloNetworkBootstrap;
         [SerializeField] private NetworkObject m_playerPrefab;
         [SerializeField] private NetworkObject m_couchPrefab;
+        [SerializeField] private NetworkObject m_sledPrefab;
 
         private readonly List<NetworkObject> m_spawnedTeammates = new();
         private NetworkManager m_networkManager;
@@ -68,7 +70,8 @@ namespace CouchGuys.Testing
                 m_networkManager = FishNet.InstanceFinder.NetworkManager;
             }
 
-            if (m_networkManager == null || m_playerPrefab == null || m_couchPrefab == null)
+            if (m_networkManager == null || m_playerPrefab == null || m_couchPrefab == null ||
+                m_sledPrefab == null)
             {
                 Debug.LogError("Couch physics test scene is missing its network or prefab references.", this);
                 yield break;
@@ -105,6 +108,13 @@ namespace CouchGuys.Testing
             {
                 m_player = Instantiate(m_playerPrefab, PlayerStart, Quaternion.identity);
                 m_networkManager.ServerManager.Spawn(m_player, connection);
+                NetworkObject sled = Instantiate(m_sledPrefab, new Vector3(4f, 0.3f, -2f),
+                    Quaternion.identity);
+                m_networkManager.ServerManager.Spawn(sled);
+                NetworkObject couch = Instantiate(m_couchPrefab, new Vector3(-2f, 0.52f, -2f),
+                    Quaternion.identity);
+                m_networkManager.ServerManager.Spawn(couch);
+                couch.GetComponent<CouchCarryController>().SelectRandomModelVariantServer();
                 yield break;
             }
 

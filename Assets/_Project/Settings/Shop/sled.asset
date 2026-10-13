@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47a9d384fe104a878d888afc5a20adf1, type: 3}
+  m_Name: sled
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Shop.ShopItemDefinition
+  m_itemId: sled
+  m_displayName: Sled
+  m_description: A physical couch hauler that shines downhill. Hold on tight.
+  m_price: 150
+  m_category: 0
+  m_icon: {fileID: 0}
+  m_purchaseBehaviour: {fileID: 11400000, guid: e4e81a7f786527c4e94e774e6ada6042, type: 2}

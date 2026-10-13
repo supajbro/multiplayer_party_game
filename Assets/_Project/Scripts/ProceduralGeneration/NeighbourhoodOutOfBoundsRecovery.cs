@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Couch;
+using CouchGuys.Gameplay.Sled;
 using CouchGuys.Player;
 using FishNet;
 using UnityEngine;
@@ -15,6 +16,7 @@ namespace CouchGuys.ProceduralGeneration
     {
         private readonly Dictionary<int, Pose> m_playerSafePoses = new Dictionary<int, Pose>();
         private readonly Dictionary<int, Pose> m_couchSafePoses = new Dictionary<int, Pose>();
+        private readonly Dictionary<int, Pose> m_sledSafePoses = new Dictionary<int, Pose>();
         private NeighbourhoodGenerator m_generator;
         private Rect m_localBounds;
         private float m_fallHeight;
@@ -22,6 +24,7 @@ namespace CouchGuys.ProceduralGeneration
         private float m_nextObjectRefreshTime;
         private PlayerCouchCarrier[] m_players = System.Array.Empty<PlayerCouchCarrier>();
         private CouchCarryController[] m_couches = System.Array.Empty<CouchCarryController>();
+        private SledController[] m_sleds = System.Array.Empty<SledController>();
 
         public void Initialise(
             NeighbourhoodGenerator generator,
@@ -48,6 +51,7 @@ namespace CouchGuys.ProceduralGeneration
 
             m_nextScanTime = Time.unscaledTime + 0.1f;
             RefreshTrackedObjects();
+            RecoverSleds();
             RecoverCouches();
             RecoverPlayers();
         }
@@ -62,6 +66,45 @@ namespace CouchGuys.ProceduralGeneration
             m_players = FindObjectsByType<PlayerCouchCarrier>(
                 FindObjectsInactive.Exclude,
                 FindObjectsSortMode.None);
+            m_sleds = FindObjectsByType<SledController>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None);
+        }
+
+        private void RecoverSleds()
+        {
+            for (int index = 0; index < m_sleds.Length; index++)
+            {
+                SledController sled = m_sleds[index];
+                if (sled == null || !sled.IsSpawned) continue;
+                int id = sled.GetInstanceID();
+                bool inBounds = IsInBounds(sled.transform.position);
+                if (inBounds && IsGrounded(sled.transform.position, 2.5f))
+                    m_sledSafePoses[id] = new Pose(sled.transform.position, sled.transform.rotation);
+                if (inBounds && sled.transform.position.y >= m_fallHeight) continue;
+
+                Pose safePose = m_sledSafePoses.TryGetValue(id, out Pose saved)
+                    ? saved
+                    : GetFallbackPose(0.45f);
+                PlayerCouchCarrier[] carriers = new PlayerCouchCarrier[SledController.MaximumGrabPoints];
+                Vector3[] offsets = new Vector3[SledController.MaximumGrabPoints];
+                for (int point = 0; point < carriers.Length; point++)
+                {
+                    carriers[point] = sled.GetServerCarrier(point);
+                    if (carriers[point] != null)
+                        offsets[point] = carriers[point].transform.position - sled.transform.position;
+                }
+                sled.TeleportServer(safePose.position, safePose.rotation);
+                for (int point = 0; point < carriers.Length; point++)
+                {
+                    if (carriers[point] == null) continue;
+                    Vector3 offset = Vector3.ClampMagnitude(
+                        Vector3.ProjectOnPlane(offsets[point], Vector3.up), 2.5f);
+                    carriers[point].TeleportWithCouchServer(
+                        safePose.position + offset + Vector3.up * 0.1f,
+                        carriers[point].transform.rotation);
+                }
+            }
         }
 
         private void RecoverCouches()

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Couch;
+using CouchGuys.Gameplay.Sled;
 using CouchGuys.Gameplay.Enemies;
 using CouchGuys.Gameplay.Weapons;
 using FishNet.Object;
@@ -25,12 +26,16 @@ namespace CouchGuys.Player
             FollowPlayer,
             MoveToCouch,
             CarryCouch,
+            MoveToSled,
+            CarrySled,
             Combat,
             Dead
         }
 
         private static readonly Dictionary<CouchCarryPoint, DebugCouchBotController>
             s_carryPointReservations = new();
+        private static readonly Dictionary<SledGrabPoint, DebugCouchBotController>
+            s_sledPointReservations = new();
         private static ThiefHealth[] s_cachedThieves;
         private static float s_nextThiefCacheRefreshTime;
 
@@ -43,6 +48,8 @@ namespace CouchGuys.Player
         private PlayerHealth m_leader;
         private CouchCarryController m_targetCouch;
         private CouchCarryPoint m_targetPoint;
+        private SledController m_targetSled;
+        private SledGrabPoint m_targetSledPoint;
         private ThiefHealth m_combatTarget;
         private Vector3 m_externalVelocity;
         private float m_nextDestinationTime;
@@ -67,6 +74,7 @@ namespace CouchGuys.Player
         private static void ResetSharedCache()
         {
             s_carryPointReservations.Clear();
+            s_sledPointReservations.Clear();
             s_cachedThieves = null;
             s_nextThiefCacheRefreshTime = 0f;
         }
@@ -128,9 +136,26 @@ namespace CouchGuys.Player
             }
 
             ResolveLivingLeader();
+            SledController leaderSled = GetLeaderSled();
             CouchCarryController leaderCouch = GetLeaderCouch();
-            if (leaderCouch != null)
+            if (leaderSled != null)
             {
+                m_combatTarget = null;
+                m_targetCouch = null;
+                ReleaseTargetPointReservation();
+                m_targetPoint = null;
+                if (m_carrier.IsCarrying && m_carrier.GetCarriedSledServer() != leaderSled)
+                    m_carrier.ReleaseForAiServer();
+                m_targetSled = leaderSled;
+                State = m_carrier.GetCarriedSledServer() == leaderSled
+                    ? AiState.CarrySled
+                    : AiState.MoveToSled;
+            }
+            else if (leaderCouch != null)
+            {
+                m_targetSled = null;
+                ReleaseTargetSledPointReservation();
+                m_targetSledPoint = null;
                 m_combatTarget = null;
                 if (m_carrier.IsCarrying)
                 {
@@ -154,8 +179,11 @@ namespace CouchGuys.Player
             else
             {
                 m_targetCouch = null;
+                m_targetSled = null;
                 ReleaseTargetPointReservation();
+                ReleaseTargetSledPointReservation();
                 m_targetPoint = null;
+                m_targetSledPoint = null;
                 if (m_carrier.IsCarrying)
                 {
                     m_carrier.ReleaseForAiServer();
@@ -172,6 +200,12 @@ namespace CouchGuys.Player
                     break;
                 case AiState.CarryCouch:
                     TickCarryCouch();
+                    break;
+                case AiState.MoveToSled:
+                    TickMoveToSled();
+                    break;
+                case AiState.CarrySled:
+                    TickCarrySled();
                     break;
                 case AiState.Combat:
                     TickCombat();
@@ -295,6 +329,76 @@ namespace CouchGuys.Player
             SetDestination(CalculateStandPosition(point), speed, 0.08f);
         }
 
+        private void TickMoveToSled()
+        {
+            if (m_targetSled == null || !m_targetSled.IsSpawned)
+            {
+                m_targetSledPoint = null;
+                StopAgent();
+                return;
+            }
+            if (m_targetSledPoint == null || m_targetSledPoint.Sled != m_targetSled ||
+                !m_targetSledPoint.IsAvailable)
+            {
+                ReleaseTargetSledPointReservation();
+                m_targetSledPoint = FindAvailableSledPoint(m_targetSled);
+            }
+            if (m_targetSledPoint == null)
+            {
+                SetDestination(m_targetSled.transform.position - m_targetSled.transform.forward * 2f,
+                    m_settings.ApproachSpeed, 0.75f);
+                return;
+            }
+
+            Vector3 standPosition = CalculateSledStandPosition(m_targetSledPoint);
+            SetDestination(standPosition, m_settings.ApproachSpeed, 0.15f);
+            float grabDistance = Mathf.Max(0.7f, m_settings.PointStandOff + 0.45f);
+            if ((transform.position - standPosition).sqrMagnitude <= grabDistance * grabDistance &&
+                Time.unscaledTime >= m_nextGrabAttemptTime)
+            {
+                bool grabbed = m_carrier.TryGrabSledPointForDebugBotServer(
+                    m_targetSled, m_targetSledPoint.PointIndex);
+                m_nextGrabAttemptTime = Time.unscaledTime + m_settings.RetryDelay;
+                if (grabbed)
+                {
+                    ReleaseTargetSledPointReservation();
+                    State = AiState.CarrySled;
+                }
+                else
+                {
+                    ReleaseTargetSledPointReservation();
+                    m_targetSledPoint = null;
+                }
+            }
+        }
+
+        private void TickCarrySled()
+        {
+            SledController sled = m_carrier.GetCarriedSledServer();
+            if (sled == null || sled != GetLeaderSled())
+            {
+                m_carrier.ReleaseForAiServer();
+                m_targetSledPoint = null;
+                State = AiState.FollowPlayer;
+                return;
+            }
+            PlayerCouchCarrier humanCarrier = sled.GetFirstHumanCarrierServer(m_carrier);
+            Vector3 movementIntent = humanCarrier != null
+                ? humanCarrier.GetServerMovementIntent()
+                : Vector3.zero;
+            m_carrier.SetDebugBotMovementIntentServer(Vector3.ClampMagnitude(
+                Vector3.ProjectOnPlane(movementIntent, Vector3.up), 1f));
+            SledGrabPoint point = sled.GetPoint(m_carrier.CarriedPointIndex);
+            if (point == null)
+            {
+                m_carrier.ReleaseForAiServer();
+                return;
+            }
+            m_targetSledPoint = point;
+            SetDestination(CalculateSledStandPosition(point),
+                m_settings.CarryingSpeed * sled.CalculateCarrierMovementSpeedMultiplier(), 0.08f);
+        }
+
         private void TickCombat()
         {
             if (!IsCombatTargetValid(m_combatTarget))
@@ -404,6 +508,22 @@ namespace CouchGuys.Player
             return null;
         }
 
+        private SledGrabPoint FindAvailableSledPoint(SledController sled)
+        {
+            for (int offset = 0; offset < SledController.MaximumGrabPoints; offset++)
+            {
+                int pointIndex = (m_botIndex + 1 + offset) % SledController.MaximumGrabPoints;
+                SledGrabPoint point = sled.GetPoint(pointIndex);
+                if (point == null || !point.IsAvailable) continue;
+                if (s_sledPointReservations.TryGetValue(point, out DebugCouchBotController owner) &&
+                    owner != null && owner != this && owner.m_health != null && owner.m_health.IsAlive)
+                    continue;
+                s_sledPointReservations[point] = this;
+                return point;
+            }
+            return null;
+        }
+
         private void ReleaseTargetPointReservation()
         {
             if (m_targetPoint != null &&
@@ -414,6 +534,14 @@ namespace CouchGuys.Player
             {
                 s_carryPointReservations.Remove(m_targetPoint);
             }
+        }
+
+        private void ReleaseTargetSledPointReservation()
+        {
+            if (m_targetSledPoint != null &&
+                s_sledPointReservations.TryGetValue(m_targetSledPoint, out DebugCouchBotController owner) &&
+                owner == this)
+                s_sledPointReservations.Remove(m_targetSledPoint);
         }
 
         private bool IsTargetPointValid()
@@ -436,6 +564,15 @@ namespace CouchGuys.Player
                 m_settings.PointStandOff,
                 point.Couch.MaxCarryDistance);
             return point.transform.position + awayFromCouch.normalized * standOff;
+        }
+
+        private Vector3 CalculateSledStandPosition(SledGrabPoint point)
+        {
+            Vector3 away = Vector3.ProjectOnPlane(
+                point.transform.position - point.Sled.SledRigidbody.worldCenterOfMass, Vector3.up);
+            if (away.sqrMagnitude < 0.001f) away = -point.Sled.transform.forward;
+            float standOff = Mathf.Min(m_settings.PointStandOff, point.Sled.MaxGrabDistance);
+            return point.transform.position + away.normalized * standOff;
         }
 
         private void SetDestination(Vector3 destination, float speed, float stoppingDistance)
@@ -544,6 +681,13 @@ namespace CouchGuys.Player
             return carrier.GetCarriedCouchServer();
         }
 
+        private SledController GetLeaderSled()
+        {
+            if (m_leader == null || !m_leader.IsAlive ||
+                !m_leader.TryGetComponent(out PlayerCouchCarrier carrier)) return null;
+            return carrier.GetCarriedSledServer();
+        }
+
         private void ResolveLivingLeader()
         {
             if (m_leader != null && m_leader.IsAlive && !m_leader.IsAiTeammate)
@@ -594,8 +738,11 @@ namespace CouchGuys.Player
             m_carrier.ReleaseForAiServer();
             m_combatTarget = null;
             m_targetCouch = null;
+            m_targetSled = null;
             ReleaseTargetPointReservation();
+            ReleaseTargetSledPointReservation();
             m_targetPoint = null;
+            m_targetSledPoint = null;
             StopAgent();
             if (m_agent != null)
             {
@@ -606,6 +753,7 @@ namespace CouchGuys.Player
         private void OnDestroy()
         {
             ReleaseTargetPointReservation();
+            ReleaseTargetSledPointReservation();
         }
 
         private void ConfigureAgent()

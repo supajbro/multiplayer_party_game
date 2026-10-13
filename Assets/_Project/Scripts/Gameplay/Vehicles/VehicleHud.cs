@@ -11,9 +11,10 @@ namespace CouchGuys.Gameplay.Vehicles
     {
         private NetworkObject m_networkObject;
         private PlayerVanInteractor m_interactor;
+        private PlayerCouchCarrier m_carrier;
         private GUIStyle m_title, m_label, m_warning, m_prompt;
 
-        private void Awake() { m_networkObject = GetComponent<NetworkObject>(); m_interactor = GetComponent<PlayerVanInteractor>(); }
+        private void Awake() { m_networkObject = GetComponent<NetworkObject>(); m_interactor = GetComponent<PlayerVanInteractor>(); m_carrier = GetComponent<PlayerCouchCarrier>(); }
 
         private void OnGUI()
         {
@@ -23,6 +24,8 @@ namespace CouchGuys.Gameplay.Vehicles
             if (van != null) DrawVehicleHud(van);
             else if (!string.IsNullOrEmpty(m_interactor.WorldInteractionPrompt))
                 DrawPrompt(m_interactor.WorldInteractionPrompt, 0f, 1f);
+            else if (m_carrier != null && !string.IsNullOrEmpty(m_carrier.SledInteractionPrompt))
+                DrawPrompt(m_carrier.SledInteractionPrompt, 0f, 1f);
             else if (m_interactor.NearbyVan != null)
                 DrawPrompt($"Hold E to Drive {m_interactor.NearbyVan.Settings.DisplayName}", m_interactor.HoldProgress,
                     m_interactor.NearbyVan.Settings.EnterHoldDuration);
