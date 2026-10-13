@@ -263,6 +263,7 @@ namespace CouchGuys.Gameplay.Couch
                 MinimumConflictEfficiency,
                 1f,
                 cooperationEfficiency);
+            float configuredSpeed = carrierCount > 0 ? GetConfiguredMoveSpeed(carrierCount) : 0f;
             float weightForce = CouchWeight * Mathf.Abs(Physics.gravity.y);
             // Static support remains below gravity so the couch cannot float without
             // a positive grip-height error contributing spring lift.
@@ -299,10 +300,13 @@ namespace CouchGuys.Gameplay.Couch
 
                 Vector3 horizontalError = Vector3.ProjectOnPlane(targetPosition - pointPosition, Vector3.up);
                 Vector3 horizontalVelocity = Vector3.ProjectOnPlane(pointVelocity, Vector3.up);
-                Vector3 horizontalForce =
-                    (horizontalError * CarryForce - horizontalVelocity * CarryDamping) *
-                    perCarrierEfficiency * cooperationForceScale;
-                horizontalForce = Vector3.ClampMagnitude(horizontalForce, MaximumHorizontalForce);
+                Vector3 horizontalForce = CalculateHorizontalCarryForce(
+                    horizontalError,
+                    horizontalVelocity,
+                    movementIntent,
+                    configuredSpeed,
+                    perCarrierEfficiency,
+                    cooperationForceScale);
 
                 float heightError = targetPosition.y - pointPosition.y;
                 float liftForce = supportPerCarrier + Mathf.Max(0f, heightError) * LiftForce -
@@ -313,11 +317,15 @@ namespace CouchGuys.Gameplay.Couch
                     MaximumLiftForce);
                 Vector3 verticalForce = Vector3.up * liftForce;
 
-                Vector3 applicationPoint = Vector3.Lerp(
+                // Translation and rotation are applied explicitly. This preserves the
+                // physical torque of an off-centre grip while ensuring that the same
+                // world-space movement intent always contributes the same translation,
+                // regardless of which corner is occupied or how the couch is rotated.
+                m_rigidbody.AddForce(horizontalForce, ForceMode.Force);
+                m_rigidbody.AddTorque(CalculateHorizontalCarryTorque(
                     m_rigidbody.worldCenterOfMass,
                     pointPosition,
-                    RotationInfluence);
-                m_rigidbody.AddForceAtPosition(horizontalForce, applicationPoint, ForceMode.Force);
+                    horizontalForce), ForceMode.Force);
                 m_rigidbody.AddForceAtPosition(verticalForce, pointPosition, ForceMode.Force);
 
                 m_debugHorizontalForces[index] = horizontalForce;
@@ -325,7 +333,6 @@ namespace CouchGuys.Gameplay.Couch
                 m_debugMovementIntents[index] = movementIntent;
             }
 
-            float configuredSpeed = carrierCount > 0 ? GetConfiguredMoveSpeed(carrierCount) : 0f;
             if (m_previousCarrierCount == 0 && carrierCount > 0)
             {
                 // Acceleration still starts from the current Rigidbody velocity; only
@@ -342,8 +349,10 @@ namespace CouchGuys.Gameplay.Couch
             Vector3 averageIntent = movingCarrierCount > 0
                 ? combinedMovementIntent / movingCarrierCount
                 : Vector3.zero;
-            Vector3 targetCarryVelocity = Vector3.ClampMagnitude(averageIntent, 1f) *
-                                          m_currentMaximumMovementSpeed;
+            Vector3 targetCarryVelocity = CalculateDesiredCarryVelocity(
+                combinedMovementIntent,
+                movingCarrierCount,
+                m_currentMaximumMovementSpeed);
             float velocityResponse = targetCarryVelocity.sqrMagnitude > 0.01f ? 7f : 3.5f;
             m_smoothedCarryVelocity = Vector3.Lerp(
                 m_smoothedCarryVelocity,
@@ -874,6 +883,53 @@ namespace CouchGuys.Gameplay.Couch
             return movingCarrierCount <= 1 || totalIntentMagnitude <= 0.001f
                 ? 1f
                 : Mathf.Clamp01(combinedMovementIntent.magnitude / totalIntentMagnitude);
+        }
+
+        private static Vector3 CalculateDesiredCarryVelocity(
+            Vector3 combinedMovementIntent,
+            int movingCarrierCount,
+            float maximumSpeed)
+        {
+            if (movingCarrierCount <= 0 || maximumSpeed <= 0f)
+            {
+                return Vector3.zero;
+            }
+
+            Vector3 averageIntent = combinedMovementIntent / movingCarrierCount;
+            return Vector3.ClampMagnitude(
+                Vector3.ProjectOnPlane(averageIntent, Vector3.up),
+                1f) * maximumSpeed;
+        }
+
+        private static Vector3 CalculateHorizontalCarryForce(
+            Vector3 horizontalGripError,
+            Vector3 horizontalPointVelocity,
+            Vector3 movementIntent,
+            float configuredSpeed,
+            float carrierEfficiency,
+            float cooperationForceScale)
+        {
+            Vector3 targetPointVelocity = Vector3.ClampMagnitude(
+                Vector3.ProjectOnPlane(movementIntent, Vector3.up),
+                1f) * Mathf.Max(0f, configuredSpeed);
+            Vector3 relativePointVelocity =
+                Vector3.ProjectOnPlane(horizontalPointVelocity, Vector3.up) - targetPointVelocity;
+            Vector3 force =
+                (Vector3.ProjectOnPlane(horizontalGripError, Vector3.up) * CarryForce -
+                 relativePointVelocity * CarryDamping) *
+                Mathf.Max(0f, carrierEfficiency) * Mathf.Clamp01(cooperationForceScale);
+            return Vector3.ClampMagnitude(force, MaximumHorizontalForce);
+        }
+
+        private static Vector3 CalculateHorizontalCarryTorque(
+            Vector3 centreOfMass,
+            Vector3 carryPoint,
+            Vector3 horizontalForce)
+        {
+            Vector3 lever = (carryPoint - centreOfMass) * RotationInfluence;
+            return Vector3.Cross(
+                lever,
+                Vector3.ProjectOnPlane(horizontalForce, Vector3.up));
         }
 
         private float GetConfiguredMoveSpeed(int carrierCount)

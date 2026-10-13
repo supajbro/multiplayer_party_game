@@ -85,6 +85,8 @@ On Interact, an owner who is not carrying searches active `CouchCarryPoint` comp
 
 If carrying, Interact sends a release request instead. Distance never releases an active carrier. The server clears the grab only after an explicit Interact release or when that Player despawns/disconnects.
 
+A Player must also face the couch before a grab is offered. The local check requires a horizontal facing dot of at least `0.35` (roughly a 69-degree half-angle); the server independently validates against `0.20` to tolerate normal transform replication delay. Once attached, the movement controller smoothly faces the occupied grip point while still allowing camera-relative forward, backward, and lateral movement.
+
 ## Physics
 
 ### Couch Weight
@@ -93,17 +95,20 @@ Weight defaults to `35 kg` and is assigned directly to the Rigidbody mass. Unity
 
 ### Per-Player Horizontal Forces
 
-Every occupied point independently calculates a desired grip position from that Player, the current couch centre, Carry Distance, and Carry Height. Horizontal force contains three terms:
+Every occupied point independently calculates a desired grip position from that Player, the current couch centre, Carry Distance, and Carry Height. Point damping is relative to the velocity requested by that carrier, rather than relative to a stationary world point:
 
 ```text
+target point velocity = player world movement intent × configured carrier-count speed
+relative point velocity = horizontal point velocity - target point velocity
 horizontal force = horizontal grip error × Carry Force
-                 - horizontal point velocity × Carry Damping
-                 + player world movement intent × Movement Force
+                 - relative point velocity × Carry Damping
 ```
 
-The force is scaled by player-count efficiency and cooperation before being clamped. Each Player retains a distinct direction; the system never averages their directions into one generic couch direction.
+The force is scaled by player-count efficiency and cooperation before being clamped. Its translation is applied at the centre of mass, while `lever arm × force × Rotation Influence` is applied explicitly as torque. This is physically equivalent to an off-centre force but makes the two responsibilities testable: grab position changes torque, not the meaning or magnitude of the shared world-space translation request.
 
-The local Player sends movement intent at most every `0.1 s`, with a `0.5 s` heartbeat. The server discards intent older than `0.4 s`. This gives the authoritative simulation responsive intent without adding reliable per-frame traffic.
+The server separately averages active world-space movement intentions and accelerates the couch centre towards the configured speed for the current carrier count. This makes front, back, side, and corner grabs respond consistently. Each point force still retains its carrier's distinct direction, so uneven or opposing input produces physical rotation and resistance.
+
+The local Player sends movement intent at most every `0.1 s`, with a `0.5 s` heartbeat. The server timeout is clamped to at least the heartbeat plus send interval (`0.6 s` with the current defaults). This gives the authoritative simulation responsive intent without adding reliable per-frame traffic.
 
 ### Vertical Lifting
 
@@ -119,39 +124,39 @@ Lift is never allowed to become a downward carrier force and is clamped per poin
 
 ### Player-Count Scaling
 
-Total carrier efficiency uses diminishing returns:
+Total point-force/support efficiency uses a capped curve:
 
 ```text
-total efficiency = Single Carrier Efficiency
-                 + Additional Carrier Efficiency × (carrier count - 1)^0.75
+progress = (carrier count - 1) / 3
+total efficiency = lerp(0.35, 1.0, progress ^ 1.55)
 ```
 
-The result is capped and divided among the active points. Defaults produce approximately `0.45`, `0.80`, `1.04`, and `1.25` total efficiency for one through four carriers. This makes two cooperating Players substantially more capable than one without allowing four Players to generate four times the acceleration. Vertical static support follows the same curve but caps at `90%` of couch weight, so gravity always wins unless positive grip-height error contributes spring lift; the couch cannot passively float.
+The result is divided among active points. Defaults produce approximately `0.35`, `0.47`, `0.70`, and `1.00` total point efficiency for one through four carriers. Configured centre speeds remain `2`, `2.5`, `3`, and `4 m/s`. Vertical static support follows the same curve but caps at `90%` of couch weight, so gravity always wins unless positive grip-height error contributes spring lift; the couch cannot passively float.
 
 ### Cooperation Calculation
 
-The server compares every carrier pair. Moving pairs use the dot product of their normalised world-space movement intentions:
+The server compares the magnitude of combined world-space intent with the sum of individual intent magnitudes:
 
-- same direction: dot `1`, agreement `1`;
-- perpendicular: dot `0`, agreement `0.5`;
-- opposite: dot `-1`, agreement `0`;
-- either Player stationary: neutral agreement `0.5`.
+- same direction: ratio `1`;
+- perpendicular equal inputs: ratio approximately `0.71`;
+- opposite equal inputs: ratio `0`;
+- one moving carrier plus stationary carriers: ratio `1` for the active input, while stationary grip springs still provide physical resistance.
 
-Pair agreements are averaged into `CurrentCooperationEfficiency`. It scales carrying assistance between Minimum Conflict Efficiency and full strength. Opposing forces are still independently applied at their own points, so they primarily cancel translation while retaining enough force to rotate or twist the couch.
+The ratio is exposed as `CurrentCooperationEfficiency`. It scales point-force assistance between Minimum Conflict Efficiency and full strength. The centre-velocity request uses the vector average, so opposing inputs cancel translation while the distinct point forces retain enough torque to rotate or twist the couch.
 
 ### Rotation and Torque
 
-Horizontal forces use `Rigidbody.AddForceAtPosition` at a point blended towards the CarryPoint by Rotation Influence. Vertical forces are always applied at the exact CarryPoint. Off-centre forces therefore create real torque, and players can rotate the couch by moving different ends in suitable directions. The Transform rotation is never assigned by gameplay code.
+Horizontal translation uses `Rigidbody.AddForce` at the centre of mass and the matching off-centre moment uses `Rigidbody.AddTorque`. Vertical forces remain applied at the exact CarryPoint. Off-centre forces therefore create real torque, and players can rotate the couch by moving different ends in suitable directions. The Transform rotation is never assigned by gameplay code.
 
 ### Carrying Movement Restrictions
 
 Player speed changes continuously with couch weight, diminishing player-count assistance, and cooperation. The configured Single Carrier Speed Multiplier is the slow baseline, while Maximum Cooperative Speed Multiplier is approached only when additional carriers cooperate. Effective weight per unit of carrier efficiency adds a further penalty.
 
-The existing weight/count/cooperation speed multiplier remains active. Separation resistance is directional: below Comfortable Carry Distance it makes no further change; between Comfortable and Maximum Carry Distance a smooth curve progressively removes only the component of desired movement pointing away from the occupied CarryPoint; at Maximum Carry Distance that outward component is removed completely. Movement towards the CarryPoint and movement tangent to it remain available. The same allocation-free distance/dot-product calculation is used by debug bots. Separation never causes release and does not fade the carrier's couch force.
+The existing count-based player speed multiplier remains active. Separation resistance changes only Player locomotion: it slows inward body movement at minimum spacing and removes outward body movement near maximum spacing. The original camera-relative input is still sent to the authoritative couch. Consequently pushing, pulling, and lateral movement retain equal translational meaning even when the Player body is being kept inside its attachment band. Separation never causes release or silently removes couch intent.
 
 ### Stability
 
-Horizontal and vertical forces have separate limits. Lift damping removes upward oscillation, Rigidbody damping remains active, linear velocity is capped at `7 m/s`, and Rigidbody maximum angular velocity is `7 rad/s`. These limits prevent launches and unbounded spinning while preserving collisions, tilting, torque, and deliberate physical awkwardness.
+Horizontal and vertical forces have separate limits. Lift damping removes upward oscillation, Rigidbody damping remains active, carried horizontal speed is capped to the configured `2/2.5/3/4 m/s`, free speed is safety-capped at `22 m/s`, and Rigidbody maximum angular velocity is `9 rad/s`. These limits prevent unbounded motion while preserving collisions, tilting, torque, and deliberate physical awkwardness.
 
 ## Inspector Tuning
 
@@ -159,28 +164,28 @@ Horizontal and vertical forces have separate limits. Lift damping removes upward
 | --- | --- | ---: |
 | Weight | Weight | 35 kg |
 | Horizontal Carrying | Carry Force | 500 N/m |
-| Horizontal Carrying | Movement Force | 320 N |
 | Horizontal Carrying | Damping | 65 |
 | Horizontal Carrying | Maximum Horizontal Force | 700 N per point |
 | Horizontal Carrying | Rotation Influence | 0.85 |
 | Vertical Support | Lift Force | 450 N/m |
 | Vertical Support | Lift Damping | 55 |
 | Vertical Support | Maximum Lift Force | 350 N per point |
-| Carrier Scaling | Single Carrier Efficiency | 0.45 |
-| Carrier Scaling | Additional Carrier Efficiency | 0.35 |
-| Carrier Scaling | Maximum Carrier Efficiency | 1.25 |
+| Carrier Scaling | Single Carrier Efficiency | 0.35 |
+| Carrier Scaling | Curve Exponent | 1.55 |
+| Carrier Scaling | Maximum Carrier Efficiency | 1.0 |
 | Carrier Scaling | Minimum Conflict Efficiency | 0.45 |
-| Stability | Maximum Linear Velocity | 7 m/s |
-| Stability | Maximum Angular Velocity | 7 rad/s |
+| Stability | Carried Horizontal Speeds | 2 / 2.5 / 3 / 4 m/s |
+| Stability | Free Maximum Speed | 22 m/s |
+| Stability | Maximum Angular Velocity | 9 rad/s |
 | Player Carrying | Carry Distance | 0.45 m |
 | Player Carrying | Carry Height | 0.45 m |
-| Player Carrying | Single Carrier Speed Multiplier | 0.52 |
-| Player Carrying | Maximum Cooperative Speed Multiplier | 0.82 |
-| Player Carrying | Comfortable Carry Distance | 1.6 m |
-| Player Carrying | Maximum Carry Separation | 3 m |
+| Player Carrying | Speed Multiplier | 0.65–0.95 by carrier count |
+| Player Carrying | Soft Constraint Start | 70% of maximum separation |
+| Player Carrying | Maximum Carry Separation | 1 m |
+| Player Carrying | Minimum Grab Facing Dot | 0.35 local / 0.20 server |
 | Networked Intent | Send Interval | 0.1 s |
 | Networked Intent | Heartbeat Interval | 0.5 s |
-| Networked Intent | Timeout | 0.4 s |
+| Networked Intent | Effective Timeout | 0.6 s minimum with current defaults |
 
 ## Debug Visualisation
 
@@ -372,12 +377,16 @@ Code and asset inspection completed:
 - [x] Every occupied point applies an independent horizontal force and lift force.
 - [x] Lift is applied at the actual CarryPoint rather than the centre of mass.
 - [x] Player-count assistance uses a capped diminishing-returns curve.
-- [x] Cooperation uses pairwise movement-intent dot products.
+- [x] Cooperation uses the ratio of combined to total world-space movement intent.
 - [x] Opposing intent remains as separate off-centre force contributions.
+- [x] Horizontal translation and off-centre torque are calculated and applied separately.
+- [x] Point damping is relative to each carrier's requested point velocity rather than world zero.
 - [x] Movement intent is owner-submitted, throttled, unreliable, and server-timeout protected.
-- [x] Outward Player movement progressively weakens between comfortable and maximum separation.
-- [x] Outward movement is blocked at maximum separation while inward and sideways movement remain available.
+- [x] Attachment resistance constrains outward Player locomotion near maximum separation without reducing couch intent.
+- [x] Inward Player locomotion is constrained at minimum spacing without weakening couch push intent.
 - [x] Carry separation never automatically releases a Player or fades their couch force.
+- [x] Local and server grab validation require the Player to face the couch.
+- [x] Attached Players smoothly face their occupied grip point.
 - [x] Force, lift, linear-velocity, and angular-velocity stability limits are configured.
 - [x] Optional Gizmos expose CarryPoints, horizontal force, lift, and movement intent.
 - [x] Couch is never parented to a Player.
@@ -391,11 +400,14 @@ Code and asset inspection completed:
 - [x] Bot intent enters the existing per-carrier couch-force calculation without an extra physics path.
 - [x] Client bot copies do not run AI or local input.
 - [x] Bot point discovery is throttled and no per-frame bot network RPC is sent.
-- [x] The runtime and editor C# assemblies compile with zero warnings and zero errors after the carrying-resistance and multi-bot changes.
+- [x] The runtime and editor C# assemblies compile with zero warnings and zero errors after the SUB-01 direction and facing changes.
 
 Runtime checks still requiring Play Mode/hardware:
 
 - [ ] One corner visibly lifts while the unsupported side stays lower.
+- [ ] One carrier pushes, pulls, and strafes consistently from the front, back, left, right, and all four corners while facing the couch.
+- [ ] A grab is rejected while the Player faces sideways or away, then accepted after turning towards the couch.
+- [ ] An attached Player continues facing the occupied grip as the couch rotates.
 - [ ] One carrier can move the couch slowly without effortless acceleration.
 - [ ] Two cooperating carriers move and support the couch more effectively.
 - [ ] Two opposing carriers substantially reduce translation while retaining physical torque.

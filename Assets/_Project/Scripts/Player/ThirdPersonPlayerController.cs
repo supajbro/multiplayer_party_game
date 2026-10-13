@@ -249,7 +249,7 @@ namespace CouchGuys.Player
             m_currentSpeed = Mathf.MoveTowards(m_currentSpeed, targetSpeed, m_speedChangeRate * Time.deltaTime);
 
             Vector3 moveDirection = intendedMoveDirection;
-            Vector3 resistedMovementIntent = intendedMoveDirection;
+            Vector3 carryingMovementIntent = intendedMoveDirection;
             if (m_resistanceAnchor != null)
             {
                 moveDirection = ApplyDirectionalResistance(
@@ -261,12 +261,14 @@ namespace CouchGuys.Player
                     m_comfortableResistanceDistance,
                     m_maximumResistanceDistance,
                     m_inwardResistanceSpeedMultiplier,
-                    out resistedMovementIntent);
+                    out carryingMovementIntent);
             }
 
-            // Report the movement after carry resistance so the couch receives the
-            // same reduced pushing intent that is applied to the player.
-            MovementIntent = resistedMovementIntent * inputMagnitude;
+            // Attachment resistance constrains only the Player's locomotion around
+            // the grip point. The couch must receive the original world-space intent;
+            // otherwise pushing inward is weakened and pulling at maximum separation
+            // can lose all translational input purely because of grab geometry.
+            MovementIntent = carryingMovementIntent * inputMagnitude;
             // Facing is independent from locomotion so backward and lateral input
             // backpedals/strafes instead of turning the player away from their aim.
             // External interactions may lock rotation while retaining free movement.
@@ -399,6 +401,8 @@ namespace CouchGuys.Player
             float inwardSpeedMultiplier,
             out Vector3 movementIntent)
         {
+            // The caller sends this unmodified world-space intent to the authoritative
+            // couch simulation. Only the returned Player locomotion is constrained.
             movementIntent = movement;
             Vector3 horizontalOutward = Vector3.ProjectOnPlane(outwardDirection, Vector3.up);
             Vector3 awayFromAnchor = Vector3.ProjectOnPlane(
@@ -414,12 +418,12 @@ namespace CouchGuys.Player
             float inwardAmount = Vector3.Dot(movement, horizontalOutward);
             if (inwardAmount < 0f)
             {
-                movementIntent = movement - horizontalOutward * inwardAmount *
+                Vector3 resistedInwardMovement = movement - horizontalOutward * inwardAmount *
                     (1f - Mathf.Clamp01(inwardSpeedMultiplier));
                 float outwardSeparation = Vector3.Dot(awayFromAnchor, horizontalOutward);
                 movement = outwardSeparation <= minimumDistance
                     ? movement - horizontalOutward * inwardAmount
-                    : movementIntent;
+                    : resistedInwardMovement;
             }
 
             if (separation <= comfortableDistance || separation < 0.0001f)
@@ -441,11 +445,6 @@ namespace CouchGuys.Player
                     Mathf.InverseLerp(comfortableDistance, maximumDistance, separation))
                 : 1f;
             Vector3 resistedMovement = movement - awayDirection * radialAmount * resistance;
-            float intentRadialAmount = Vector3.Dot(movementIntent, awayDirection);
-            if (intentRadialAmount > 0f)
-            {
-                movementIntent -= awayDirection * intentRadialAmount * resistance;
-            }
             return resistedMovement;
         }
 

@@ -43,6 +43,8 @@ namespace CouchGuys.Player
         private const float SoftConstraintStartRatio = 0.7f;
         private const float CarrierSpeedTransitionRate = 2.5f;
         private const float CouchPushingSpeedMultiplier = 0.3f;
+        private const float MinimumGrabFacingDot = 0.35f;
+        private const float ServerGrabFacingTolerance = 0.15f;
 
         private readonly SyncVar<NetworkObject> m_carriedCouch = new();
         private readonly SyncVar<int> m_carriedPointIndex = new(-1);
@@ -162,6 +164,30 @@ namespace CouchGuys.Player
             return transform.position + directionToCouch.normalized * CarryDistance + Vector3.up * CarryHeight;
         }
 
+        private static bool IsFacingTarget(
+            Vector3 playerPosition,
+            Vector3 playerForward,
+            Vector3 targetPosition,
+            float minimumFacingDot)
+        {
+            Vector3 directionToTarget = Vector3.ProjectOnPlane(
+                targetPosition - playerPosition,
+                Vector3.up);
+            Vector3 horizontalForward = Vector3.ProjectOnPlane(playerForward, Vector3.up);
+            if (directionToTarget.sqrMagnitude < 0.0001f)
+            {
+                return true;
+            }
+            if (horizontalForward.sqrMagnitude < 0.0001f)
+            {
+                return false;
+            }
+
+            return Vector3.Dot(
+                horizontalForward.normalized,
+                directionToTarget.normalized) >= Mathf.Clamp(minimumFacingDot, -1f, 1f);
+        }
+
         Vector3 ICouchCarrierServer.CalculateDesiredCarryPosition(Vector3 couchCentre) =>
             CalculateDesiredCarryPosition(couchCentre);
 
@@ -195,7 +221,13 @@ namespace CouchGuys.Player
 
             CouchCarryPoint point = couch.GetPoint(pointIndex);
             float allowedRange = m_interactionRange + m_serverRangeTolerance;
+            float serverFacingDot = MinimumGrabFacingDot - ServerGrabFacingTolerance;
             return point != null && Vector3.Distance(transform.position, point.transform.position) <= allowedRange &&
+                IsFacingTarget(
+                    transform.position,
+                    transform.forward,
+                    couch.CouchRigidbody.worldCenterOfMass,
+                    serverFacingDot) &&
                 couch.TryGrabPointServer(this, pointIndex);
         }
 
@@ -260,6 +292,15 @@ namespace CouchGuys.Player
             foreach (CouchCarryPoint point in points)
             {
                 if (point == null || !point.IsAvailable || point.Couch == null || !point.Couch.IsSpawned)
+                {
+                    continue;
+                }
+
+                if (!IsFacingTarget(
+                        transform.position,
+                        transform.forward,
+                        point.Couch.CouchRigidbody.worldCenterOfMass,
+                        MinimumGrabFacingDot))
                 {
                     continue;
                 }
@@ -442,7 +483,13 @@ namespace CouchGuys.Player
 
             CouchCarryPoint point = couch.GetPoint(pointIndex);
             float allowedRange = m_interactionRange + m_serverRangeTolerance;
-            if (point == null || Vector3.Distance(transform.position, point.transform.position) > allowedRange)
+            float serverFacingDot = MinimumGrabFacingDot - ServerGrabFacingTolerance;
+            if (point == null || Vector3.Distance(transform.position, point.transform.position) > allowedRange ||
+                !IsFacingTarget(
+                    transform.position,
+                    transform.forward,
+                    couch.CouchRigidbody.worldCenterOfMass,
+                    serverFacingDot))
             {
                 return;
             }
@@ -624,13 +671,17 @@ namespace CouchGuys.Player
             float targetMultiplier = 1f;
             m_playerController.ClearExternalMovementResistance();
             m_playerController.ClearExternalFacingTarget();
+            m_playerController.SetExternalRotationLocked(false);
             NetworkObject couchObject = m_carriedCouch.Value;
             int pointIndex = m_carriedPointIndex.Value;
             RefreshMovementCache(couchObject, pointIndex);
-            m_playerController.SetExternalRotationLocked(m_cachedMovementCouch != null);
             if (m_cachedMovementCouch != null)
             {
                 targetMultiplier = CalculateCarryingSpeedMultiplier(m_cachedMovementCouch);
+                m_playerController.SetExternalFacingTarget(
+                    m_cachedMovementAnchor != null
+                        ? m_cachedMovementAnchor
+                        : m_cachedMovementCouch.transform);
 
                 if (m_cachedMovementAnchor != null)
                 {
