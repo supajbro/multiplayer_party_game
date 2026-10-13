@@ -9,9 +9,13 @@ namespace CouchGuys.Gameplay.Delivery
     {
         [SerializeField] private DeliveryManager m_deliveryManager;
         [SerializeField] private Vector3 m_couchSpawnOffset = new Vector3(0f, 0.5f, 2.5f);
+        [SerializeField, Tooltip("Primary local-space location used for purchased vehicles.")]
+        private Vector3 m_vehicleSpawnOffset = new Vector3(6f, 0f, 1.5f);
 
         public Vector3 CouchSpawnPosition => transform.TransformPoint(m_couchSpawnOffset);
         public Quaternion CouchSpawnRotation => transform.rotation;
+        public Vector3 VehicleSpawnPosition => transform.TransformPoint(m_vehicleSpawnOffset);
+        public Quaternion VehicleSpawnRotation => transform.rotation;
 
         public void SetDeliveryManager(DeliveryManager deliveryManager)
         {

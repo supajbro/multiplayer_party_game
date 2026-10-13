@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Couch;
+using CouchGuys.Gameplay.Shop;
+using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Player;
 using CouchGuys.ProceduralGeneration;
 using FishNet.Object;
@@ -23,7 +25,19 @@ namespace CouchGuys.Gameplay.Delivery
 
         [Header("Delivery Shop")]
         [SerializeField] private DeliveryTierConfig[] m_deliveryTiers = new DeliveryTierConfig[3];
+        [SerializeField] private ShopCatalogue m_shopCatalogue;
         [SerializeField, Min(1f)] private float m_dialogueMaximumDistance = 4f;
+
+        [Header("Vehicle Shop Spawning")]
+        [SerializeField] private LayerMask m_vehicleGroundMask = ~0;
+        [SerializeField] private LayerMask m_vehicleObstructionMask = ~0;
+        [SerializeField] private Vector3 m_vehicleClearanceSize = new Vector3(3.4f, 2.8f, 7f);
+        [SerializeField, Min(1)] private int m_vehicleSpawnAttempts = 12;
+        [SerializeField, Min(0.5f)] private float m_vehicleSpawnSearchStep = 4.5f;
+        [SerializeField, Min(1f)] private float m_vehicleGroundProbeHeight = 20f;
+        [SerializeField, Min(1f)] private float m_vehicleGroundProbeDistance = 50f;
+        [SerializeField, Range(0f, 45f)] private float m_vehicleMaximumSlope = 18f;
+        [SerializeField, Min(0f)] private float m_vehicleGroundOffset = 0.12f;
 
         [Header("Delivery Completion")]
         [SerializeField, Min(0.25f)] private float m_collectionRadius = 2.5f;
@@ -57,7 +71,9 @@ namespace CouchGuys.Gameplay.Delivery
         };
         private PlayerCouchCarrier m_dialoguePlayer;
         private DeliveryNPC m_dialogueNpc;
+        private uint m_lastShopPurchaseRequestId;
         private bool m_candidatesReady;
+        private readonly Collider[] m_vehicleClearanceHits = new Collider[64];
 
         public event Action<int> CurrencyChanged;
         public event Action<DeliveryState> StateChanged;
@@ -88,6 +104,7 @@ namespace CouchGuys.Gameplay.Delivery
             }
         }
         public bool HasActiveDelivery => m_destinationIndex.Value >= 0 && m_activeCouch.Value != null;
+        public ShopCatalogue ShopCatalogue => m_shopCatalogue;
 
         public DeliveryDestination ActiveDestination
         {
@@ -104,6 +121,7 @@ namespace CouchGuys.Gameplay.Delivery
         {
             m_generator ??= GetComponent<NeighbourhoodGenerator>();
             m_chapterManager ??= GetComponent<SuburbsChapterManager>();
+            m_shopCatalogue ??= Resources.Load<ShopCatalogue>("Shop/DeliveryManagerShop");
             m_destinationIndex.OnChange += OnDestinationIndexChanged;
             m_currency.OnChange += OnCurrencyChanged;
             m_state.OnChange += OnStateChanged;
@@ -208,6 +226,16 @@ namespace CouchGuys.Gameplay.Delivery
             m_candidatesReady = false;
         }
 
+        public void SetShopCatalogue(ShopCatalogue catalogue)
+        {
+            m_shopCatalogue = catalogue;
+        }
+
+        public ShopItemDefinition GetShopItem(int index) =>
+            m_shopCatalogue != null && index >= 0 && index < m_shopCatalogue.Items.Count
+                ? m_shopCatalogue.Items[index]
+                : null;
+
         [Server]
         public bool TryBeginDialogueServer(DeliveryNPC npc, PlayerCouchCarrier player)
         {
@@ -221,6 +249,7 @@ namespace CouchGuys.Gameplay.Delivery
             if (player.TryGetComponent(out PlayerHealth health) && !health.IsAlive) return false;
             m_dialoguePlayer = player;
             m_dialogueNpc = npc;
+            m_lastShopPurchaseRequestId = 0;
             SendDialogueState(player);
             return true;
         }
@@ -333,6 +362,196 @@ namespace CouchGuys.Gameplay.Delivery
             SetStateServer(DeliveryState.Transport, DeliveryObjectiveStep.DeliverCouch);
             ReleaseDialogueLockServer(player, true, $"{tier.DisplayName} started.");
             return true;
+        }
+
+        [Server]
+        public bool TryPurchaseShopItemServer(
+            PlayerCouchCarrier player,
+            string itemId,
+            uint requestId)
+        {
+            DeliveryNPC npc = m_dialogueNpc;
+            if (!IsServerInitialized || player == null || player != m_dialoguePlayer || npc == null)
+                return false;
+
+            // A monotonically increasing client request ID makes retransmitted or
+            // duplicated button input harmless while the dialogue remains open.
+            if (requestId == 0 || requestId <= m_lastShopPurchaseRequestId)
+                return false;
+            m_lastShopPurchaseRequestId = requestId;
+
+            if (Vector3.Distance(player.transform.position, npc.transform.position) >
+                m_dialogueMaximumDistance)
+            {
+                ReleaseDialogueLockServer(player, true, "You moved too far from the Delivery Manager.");
+                return false;
+            }
+
+            ShopItemDefinition item = m_shopCatalogue != null ? m_shopCatalogue.Find(itemId) : null;
+            if (item == null || item.PurchaseBehaviour == null)
+            {
+                SendDialogueState(player, "That item is not available.", true);
+                return false;
+            }
+
+            if (player.TryGetComponent(out PlayerHealth health) && !health.IsAlive)
+            {
+                SendDialogueState(player, "You cannot shop right now.", true);
+                return false;
+            }
+
+            if (m_currency.Value < item.Price)
+            {
+                SendDialogueState(player, $"You need ${item.Price - m_currency.Value:N0} more.", true);
+                return false;
+            }
+
+            if (!item.PurchaseBehaviour.CanPurchase(this, npc, player, out string reason) ||
+                !item.PurchaseBehaviour.TryFulfil(this, npc, player, out reason))
+            {
+                SendDialogueState(player, string.IsNullOrWhiteSpace(reason)
+                    ? "The purchase could not be completed."
+                    : reason, true);
+                return false;
+            }
+
+            // Fulfilment has succeeded on the authoritative server. Charging here
+            // ensures a blocked spawn can never consume the player's money.
+            m_currency.Value -= item.Price;
+            SendDialogueState(player, $"Purchased {item.DisplayName}!", true);
+            return true;
+        }
+
+        [Server]
+        public bool CanSpawnPurchasedVehicleServer(
+            NetworkObject vehiclePrefab,
+            DeliveryNPC npc,
+            out string failureReason)
+        {
+            if (vehiclePrefab == null || npc == null)
+            {
+                failureReason = "Vehicle is not configured";
+                return false;
+            }
+
+            bool found = TryFindVehicleSpawnPose(npc, out _, out _);
+            failureReason = found ? string.Empty : "No clear vehicle spawn location nearby";
+            return found;
+        }
+
+        [Server]
+        public bool TrySpawnPurchasedVehicleServer(
+            NetworkObject vehiclePrefab,
+            DeliveryNPC npc,
+            out string failureReason)
+        {
+            if (vehiclePrefab == null || !TryFindVehicleSpawnPose(npc, out Vector3 position, out Quaternion rotation))
+            {
+                failureReason = "No clear vehicle spawn location nearby";
+                return false;
+            }
+
+            NetworkObject vehicle = Instantiate(vehiclePrefab, position, rotation);
+            if (vehicle == null)
+            {
+                failureReason = "Vehicle could not be created";
+                return false;
+            }
+
+            Spawn(vehicle);
+            failureReason = string.Empty;
+            return true;
+        }
+
+        private bool TryFindVehicleSpawnPose(
+            DeliveryNPC npc,
+            out Vector3 position,
+            out Quaternion rotation)
+        {
+            position = default;
+            rotation = default;
+            if (npc == null) return false;
+
+            Vector3 primary = npc.VehicleSpawnPosition;
+            Vector3 right = Vector3.ProjectOnPlane(npc.transform.right, Vector3.up).normalized;
+            Vector3 forward = Vector3.ProjectOnPlane(npc.transform.forward, Vector3.up).normalized;
+            Quaternion heading = Quaternion.Euler(0f, npc.VehicleSpawnRotation.eulerAngles.y, 0f);
+            int attempts = Mathf.Max(1, m_vehicleSpawnAttempts);
+            for (int index = 0; index < attempts; index++)
+            {
+                Vector3 offset = Vector3.zero;
+                if (index > 0)
+                {
+                    int ring = ((index - 1) / 8) + 1;
+                    float angle = ((index - 1) % 8) * 45f * Mathf.Deg2Rad;
+                    offset = (right * Mathf.Cos(angle) + forward * Mathf.Sin(angle)) *
+                             (ring * m_vehicleSpawnSearchStep);
+                }
+
+                Vector3 probeOrigin = primary + offset + Vector3.up * m_vehicleGroundProbeHeight;
+                if (!TryFindVehicleGround(probeOrigin, npc, out RaycastHit ground) ||
+                    Vector3.Angle(ground.normal, Vector3.up) > m_vehicleMaximumSlope)
+                {
+                    continue;
+                }
+
+                Quaternion candidateRotation = Quaternion.FromToRotation(Vector3.up, ground.normal) * heading;
+                Vector3 candidatePosition = ground.point + ground.normal * m_vehicleGroundOffset;
+                Vector3 halfExtents = Vector3.Max(m_vehicleClearanceSize * 0.5f, Vector3.one * 0.1f);
+                Vector3 centre = candidatePosition + candidateRotation * (Vector3.up * halfExtents.y);
+                int hitCount = Physics.OverlapBoxNonAlloc(
+                    centre,
+                    new Vector3(halfExtents.x, Mathf.Max(0.05f, halfExtents.y - 0.08f), halfExtents.z),
+                    m_vehicleClearanceHits,
+                    candidateRotation,
+                    m_vehicleObstructionMask,
+                    QueryTriggerInteraction.Ignore);
+                bool blocked = hitCount >= m_vehicleClearanceHits.Length;
+                for (int hitIndex = 0; hitIndex < hitCount; hitIndex++)
+                {
+                    Collider hit = m_vehicleClearanceHits[hitIndex];
+                    if (hit == null) continue;
+                    blocked = true;
+                    break;
+                }
+
+                if (blocked) continue;
+                position = candidatePosition;
+                rotation = candidateRotation;
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool TryFindVehicleGround(
+            Vector3 probeOrigin,
+            DeliveryNPC npc,
+            out RaycastHit ground)
+        {
+            RaycastHit[] hits = Physics.RaycastAll(
+                probeOrigin,
+                Vector3.down,
+                m_vehicleGroundProbeDistance,
+                m_vehicleGroundMask,
+                QueryTriggerInteraction.Ignore);
+            Array.Sort(hits, (left, right) => left.distance.CompareTo(right.distance));
+            for (int index = 0; index < hits.Length; index++)
+            {
+                Collider collider = hits[index].collider;
+                if (collider == null || collider.transform.IsChildOf(npc.transform) ||
+                    collider.GetComponentInParent<VanController>() != null ||
+                    collider.GetComponentInParent<PlayerCouchCarrier>() != null)
+                {
+                    continue;
+                }
+
+                ground = hits[index];
+                return true;
+            }
+
+            ground = default;
+            return false;
         }
 
         /// <summary>Server-validated temporary test shortcut used by the T input.</summary>
@@ -569,7 +788,10 @@ namespace CouchGuys.Gameplay.Delivery
         }
 
         [Server]
-        private void SendDialogueState(PlayerCouchCarrier player)
+        private void SendDialogueState(
+            PlayerCouchCarrier player,
+            string notice = "",
+            bool openShop = false)
         {
             if (player == null || !player.Owner.IsValid) return;
             EnsureCandidateCache();
@@ -585,8 +807,25 @@ namespace CouchGuys.Gameplay.Delivery
                 else if (m_currency.Value < tier.PurchasePrice) reasons[index] = $"Need ${tier.PurchasePrice - m_currency.Value:N0} more";
                 else available[index] = true;
             }
+
+            int shopCount = m_shopCatalogue != null ? m_shopCatalogue.Items.Count : 0;
+            bool[] shopAvailable = new bool[shopCount];
+            string[] shopReasons = new string[shopCount];
+            for (int index = 0; index < shopCount; index++)
+            {
+                ShopItemDefinition item = m_shopCatalogue.Items[index];
+                if (item == null) shopReasons[index] = "Not configured";
+                else if (item.PurchaseBehaviour == null) shopReasons[index] = "Purchase behaviour is missing";
+                else if (m_currency.Value < item.Price)
+                    shopReasons[index] = $"Need ${item.Price - m_currency.Value:N0} more";
+                else if (!item.PurchaseBehaviour.CanPurchase(this, m_dialogueNpc, player, out string reason))
+                    shopReasons[index] = string.IsNullOrWhiteSpace(reason) ? "Currently unavailable" : reason;
+                else shopAvailable[index] = true;
+            }
+
             player.OpenDeliveryDialogueTargetRpc(player.Owner,
-                available[0], reasons[0], available[1], reasons[1], available[2], reasons[2]);
+                available[0], reasons[0], available[1], reasons[1], available[2], reasons[2],
+                shopAvailable, shopReasons, m_currency.Value, notice, openShop);
         }
 
         private void OnDestinationIndexChanged(int previous, int next, bool asServer)

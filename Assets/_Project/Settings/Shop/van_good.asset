@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47a9d384fe104a878d888afc5a20adf1, type: 3}
+  m_Name: van_good
+  m_EditorClassIdentifier: 
+  m_itemId: van_good
+  m_displayName: Good Van
+  m_description: A sturdier all-round delivery van.
+  m_price: 500
+  m_category: 0
+  m_icon: {fileID: 0}
+  m_purchaseBehaviour: {fileID: 11400000, guid: 24a92c2af03843e8b9ae5479ea7d454e, type: 2}

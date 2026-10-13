@@ -16,10 +16,11 @@ namespace CouchGuys.UI
         public readonly Color Colour;
         public readonly bool Available;
         public readonly string UnavailableReason;
+        public readonly Sprite Icon;
         public readonly Action Selected;
 
         public DialogueShopOption(string title, string description, string price, string reward,
-            Color colour, bool available, string unavailableReason, Action selected)
+            Color colour, bool available, string unavailableReason, Action selected, Sprite icon = null)
         {
             Title = title;
             Description = description;
@@ -29,6 +30,19 @@ namespace CouchGuys.UI
             Available = available;
             UnavailableReason = unavailableReason;
             Selected = selected;
+            Icon = icon;
+        }
+    }
+
+    public readonly struct DialogueShopCategory
+    {
+        public readonly string Title;
+        public readonly IReadOnlyList<DialogueShopOption> Options;
+
+        public DialogueShopCategory(string title, IReadOnlyList<DialogueShopOption> options)
+        {
+            Title = title;
+            Options = options;
         }
     }
 
@@ -38,12 +52,16 @@ namespace CouchGuys.UI
         private static DialogueShopUI s_instance;
         private GameObject m_canvasRoot;
         private RectTransform m_optionsRoot;
+        private RectTransform m_tabsRoot;
         private Text m_greeting;
         private Action m_closed;
         private GameObject m_dialogueEventSystemObject;
         private EventSystem m_dialogueEventSystem;
         private readonly List<GameObject> m_optionObjects = new();
+        private readonly List<GameObject> m_tabObjects = new();
         private readonly List<EventSystem> m_suspendedEventSystems = new();
+        private IReadOnlyList<DialogueShopCategory> m_categories;
+        private int m_selectedCategory;
 
         public static DialogueShopUI Instance
         {
@@ -71,14 +89,27 @@ namespace CouchGuys.UI
 
         public void Open(string greeting, IReadOnlyList<DialogueShopOption> options, Action closed)
         {
+            Open(greeting, new[] { new DialogueShopCategory("Deliveries", options) }, closed);
+        }
+
+        public void Open(
+            string greeting,
+            IReadOnlyList<DialogueShopCategory> categories,
+            Action closed,
+            int selectedCategory = 0)
+        {
             Build();
-            ActivateDialogueInput();
+            bool alreadyOpen = IsOpen;
+            if (!alreadyOpen) ActivateDialogueInput();
             CancelInvoke(nameof(HideNotice));
             m_closed = closed;
             m_greeting.text = greeting;
-            foreach (GameObject optionObject in m_optionObjects) Destroy(optionObject);
-            m_optionObjects.Clear();
-            for (int i = 0; i < options.Count; i++) AddOption(options[i]);
+            m_categories = categories;
+            m_selectedCategory = categories != null && categories.Count > 0
+                ? Mathf.Clamp(selectedCategory, 0, categories.Count - 1)
+                : 0;
+            RebuildTabs();
+            ShowCategory(m_selectedCategory);
             m_canvasRoot.SetActive(true);
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
@@ -142,17 +173,50 @@ namespace CouchGuys.UI
             SetRect(m_greeting.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(46f, -142f), new Vector2(-92f, 54f));
             m_greeting.alignment = TextAnchor.MiddleCenter;
 
-            GameObject options = new GameObject("Options", typeof(RectTransform), typeof(VerticalLayoutGroup));
-            options.transform.SetParent(card.transform, false);
+            GameObject tabs = new GameObject("Tabs", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+            tabs.transform.SetParent(card.transform, false);
+            m_tabsRoot = tabs.GetComponent<RectTransform>();
+            SetRect(m_tabsRoot, new Vector2(0f, 1f), new Vector2(1f, 1f),
+                new Vector2(46f, -160f), new Vector2(-92f, 56f));
+            HorizontalLayoutGroup tabLayout = tabs.GetComponent<HorizontalLayoutGroup>();
+            tabLayout.spacing = 12f;
+            tabLayout.childControlWidth = true;
+            tabLayout.childForceExpandWidth = true;
+            tabLayout.childControlHeight = true;
+            tabLayout.childForceExpandHeight = true;
+
+            GameObject viewport = Panel("OptionsViewport", card.transform, new Color(0.06f, 0.08f, 0.13f, 0.45f));
+            RectTransform viewportRect = viewport.GetComponent<RectTransform>();
+            viewportRect.anchorMin = new Vector2(0f, 0f);
+            viewportRect.anchorMax = new Vector2(1f, 1f);
+            viewportRect.offsetMin = new Vector2(46f, 96f);
+            viewportRect.offsetMax = new Vector2(-46f, -232f);
+            viewport.AddComponent<RectMask2D>();
+            ScrollRect scroll = viewport.AddComponent<ScrollRect>();
+            scroll.horizontal = false;
+            scroll.vertical = true;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+
+            GameObject options = new GameObject(
+                "Options",
+                typeof(RectTransform),
+                typeof(VerticalLayoutGroup),
+                typeof(ContentSizeFitter));
+            options.transform.SetParent(viewport.transform, false);
             m_optionsRoot = options.GetComponent<RectTransform>();
-            m_optionsRoot.anchorMin = new Vector2(0f, 0f);
+            m_optionsRoot.anchorMin = new Vector2(0f, 1f);
             m_optionsRoot.anchorMax = new Vector2(1f, 1f);
-            m_optionsRoot.offsetMin = new Vector2(46f, 96f);
-            m_optionsRoot.offsetMax = new Vector2(-46f, -176f);
+            m_optionsRoot.pivot = new Vector2(0.5f, 1f);
+            m_optionsRoot.anchoredPosition = Vector2.zero;
+            m_optionsRoot.sizeDelta = Vector2.zero;
+            scroll.viewport = viewportRect;
+            scroll.content = m_optionsRoot;
             VerticalLayoutGroup layout = options.GetComponent<VerticalLayoutGroup>();
             layout.spacing = 14f;
             layout.childControlHeight = true;
-            layout.childForceExpandHeight = true;
+            layout.childForceExpandHeight = false;
+            ContentSizeFitter fitter = options.GetComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             Button close = Button("Close", card.transform, "CLOSE", new Color(0.75f, 0.19f, 0.22f));
             RectTransform closeRect = close.GetComponent<RectTransform>();
@@ -212,16 +276,67 @@ namespace CouchGuys.UI
         {
             Color background = option.Available ? option.Colour : new Color(0.24f, 0.25f, 0.29f);
             Button button = Button(option.Title, m_optionsRoot, string.Empty, background);
+            LayoutElement element = button.gameObject.AddComponent<LayoutElement>();
+            element.preferredHeight = 126f;
             m_optionObjects.Add(button.gameObject);
             Text text = button.GetComponentInChildren<Text>();
             text.fontSize = 23;
             text.alignment = TextAnchor.MiddleLeft;
             text.rectTransform.offsetMin = new Vector2(26f, 10f);
             text.rectTransform.offsetMax = new Vector2(-26f, -10f);
-            string status = option.Available ? $"Cost: {option.Price}     Payout: {option.Reward}" : option.UnavailableReason;
+            string reward = string.IsNullOrWhiteSpace(option.Reward)
+                ? string.Empty
+                : $"     Payout: {option.Reward}";
+            string status = option.Available ? $"Cost: {option.Price}{reward}" : option.UnavailableReason;
             text.text = $"{option.Title}\n<size=19>{option.Description}\n{status}</size>";
             button.interactable = option.Available;
-            if (option.Available) button.onClick.AddListener(() => option.Selected?.Invoke());
+            if (option.Available)
+            {
+                button.onClick.AddListener(() =>
+                {
+                    button.interactable = false;
+                    option.Selected?.Invoke();
+                });
+            }
+        }
+
+        private void RebuildTabs()
+        {
+            foreach (GameObject tabObject in m_tabObjects) Destroy(tabObject);
+            m_tabObjects.Clear();
+            if (m_categories == null) return;
+            for (int index = 0; index < m_categories.Count; index++)
+            {
+                int capturedIndex = index;
+                Color colour = index == m_selectedCategory
+                    ? new Color(1f, 0.55f, 0.1f)
+                    : new Color(0.22f, 0.31f, 0.45f);
+                Button tab = Button($"{m_categories[index].Title}Tab", m_tabsRoot,
+                    m_categories[index].Title.ToUpperInvariant(), colour);
+                m_tabObjects.Add(tab.gameObject);
+                tab.onClick.AddListener(() => ShowCategory(capturedIndex));
+            }
+        }
+
+        private void ShowCategory(int categoryIndex)
+        {
+            if (m_categories == null || categoryIndex < 0 || categoryIndex >= m_categories.Count)
+                return;
+            m_selectedCategory = categoryIndex;
+            foreach (GameObject optionObject in m_optionObjects) Destroy(optionObject);
+            m_optionObjects.Clear();
+            IReadOnlyList<DialogueShopOption> options = m_categories[categoryIndex].Options;
+            if (options != null)
+                for (int index = 0; index < options.Count; index++) AddOption(options[index]);
+
+            for (int index = 0; index < m_tabObjects.Count; index++)
+            {
+                Image image = m_tabObjects[index] != null ? m_tabObjects[index].GetComponent<Image>() : null;
+                if (image != null)
+                    image.color = index == categoryIndex
+                        ? new Color(1f, 0.55f, 0.1f)
+                        : new Color(0.22f, 0.31f, 0.45f);
+            }
         }
 
         private static GameObject Panel(string name, Transform parent, Color colour)

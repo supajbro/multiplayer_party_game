@@ -1,6 +1,7 @@
 using CouchGuys.ProceduralGeneration;
 using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Gameplay.Enemies;
+using CouchGuys.Gameplay.Shop;
 using FishNet.Object;
 using Unity.AI.Navigation;
 using UnityEditor;
@@ -54,6 +55,7 @@ namespace CouchGuys.Editor
             SuburbsChapterDefinition suburbsChapterDefinition =
                 SuburbsProgressionAssetBuilder.EnsureDefinition();
             DeliveryTierConfig[] deliveryTiers = DeliveryTierAssetBuilder.EnsureDeliveryTiers();
+            ShopCatalogue shopCatalogue = ShopAssetBuilder.EnsureDefaultCatalogue();
 
             Scene scene = SceneManager.GetSceneByPath(GameplayScenePath);
             bool openedTemporarily = !scene.IsValid() || !scene.isLoaded;
@@ -118,6 +120,8 @@ namespace CouchGuys.Editor
                                          deliveryManager.GetTierConfig(1) != deliveryTiers[1] ||
                                          deliveryManager.GetTierConfig(2) != deliveryTiers[2];
             deliveryManager.SetDeliveryTiers(deliveryTiers);
+            bool assignedShopCatalogue = deliveryManager.ShopCatalogue != shopCatalogue;
+            deliveryManager.SetShopCatalogue(shopCatalogue);
 
             SuburbsChapterManager chapterManager = generator.GetComponent<SuburbsChapterManager>();
             bool addedChapterManager = chapterManager == null;
@@ -132,7 +136,7 @@ namespace CouchGuys.Editor
             if (IsConfigured(scene))
             {
                 if (assignedDefaultHouses || addedEnemySpawnManager || addedChapterManager ||
-                    assignedChapterDefinition || assignedDeliveryTiers)
+                    assignedChapterDefinition || assignedDeliveryTiers || assignedShopCatalogue)
                 {
                     generator.Generate(12345);
                     EditorUtility.SetDirty(generator);

@@ -1,5 +1,6 @@
 using CouchGuys.Gameplay.Couch;
 using CouchGuys.Gameplay.Delivery;
+using CouchGuys.Gameplay.Shop;
 using CouchGuys.Input;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
@@ -58,6 +59,7 @@ namespace CouchGuys.Player
         private CouchCarryController m_cachedMovementCouch;
         private Transform m_cachedMovementAnchor;
         private int m_cachedMovementPointIndex = int.MinValue;
+        private uint m_shopPurchaseRequestId;
 
 
         internal DebugCouchBotSettings DebugBotSettings => m_debugBot;
@@ -321,6 +323,13 @@ namespace CouchGuys.Player
         }
 
         [ServerRpc]
+        private void RequestShopPurchaseServerRpc(string itemId, uint requestId)
+        {
+            DeliveryManager deliveryManager = FindFirstObjectByType<DeliveryManager>();
+            deliveryManager?.TryPurchaseShopItemServer(this, itemId, requestId);
+        }
+
+        [ServerRpc]
         private void RequestCloseDialogueServerRpc()
         {
             DeliveryManager deliveryManager = FindFirstObjectByType<DeliveryManager>();
@@ -330,11 +339,13 @@ namespace CouchGuys.Player
         [TargetRpc]
         public void OpenDeliveryDialogueTargetRpc(NetworkConnection connection,
             bool easyAvailable, string easyReason, bool mediumAvailable, string mediumReason,
-            bool hardAvailable, string hardReason)
+            bool hardAvailable, string hardReason,
+            bool[] shopAvailable, string[] shopReasons, int currentCurrency,
+            string notice, bool openShop)
         {
             if (!IsOwner) return;
             DeliveryManager manager = FindFirstObjectByType<DeliveryManager>();
-            List<DialogueShopOption> options = new();
+            List<DialogueShopOption> deliveryOptions = new();
             bool[] available = { easyAvailable, mediumAvailable, hardAvailable };
             string[] reasons = { easyReason, mediumReason, hardReason };
             for (int index = 0; index < 3; index++)
@@ -342,7 +353,7 @@ namespace CouchGuys.Player
                 int capturedTier = index;
                 DeliveryTierConfig config = manager != null ? manager.GetTierConfig(index) : null;
                 if (config == null) continue;
-                options.Add(new DialogueShopOption(
+                deliveryOptions.Add(new DialogueShopOption(
                     config.DisplayName,
                     config.Description,
                     config.PurchasePrice == 0 ? "FREE" : $"${config.PurchasePrice:N0}",
@@ -353,15 +364,54 @@ namespace CouchGuys.Player
                     () => RequestDeliveryPurchaseServerRpc(capturedTier)));
             }
 
+            List<DialogueShopOption> shopOptions = new();
+            int shopCount = manager != null && manager.ShopCatalogue != null
+                ? manager.ShopCatalogue.Items.Count
+                : 0;
+            for (int index = 0; index < shopCount; index++)
+            {
+                ShopItemDefinition item = manager.GetShopItem(index);
+                if (item == null) continue;
+                string capturedItemId = item.ItemId;
+                bool itemAvailable = shopAvailable != null && index < shopAvailable.Length &&
+                                     shopAvailable[index];
+                string reason = shopReasons != null && index < shopReasons.Length
+                    ? shopReasons[index]
+                    : "Currently unavailable";
+                shopOptions.Add(new DialogueShopOption(
+                    item.DisplayName,
+                    item.Description,
+                    item.Price == 0 ? "FREE" : $"${item.Price:N0}",
+                    string.Empty,
+                    new Color(0.18f, 0.52f, 0.72f),
+                    itemAvailable,
+                    reason,
+                    () =>
+                    {
+                        m_shopPurchaseRequestId++;
+                        if (m_shopPurchaseRequestId == 0) m_shopPurchaseRequestId++;
+                        RequestShopPurchaseServerRpc(capturedItemId, m_shopPurchaseRequestId);
+                    },
+                    item.Icon));
+            }
+
+            List<DialogueShopCategory> categories = new()
+            {
+                new DialogueShopCategory("Deliveries", deliveryOptions),
+                new DialogueShopCategory("Shop", shopOptions)
+            };
+
             m_input?.SetGameplaySuppressed(true);
+            string feedback = string.IsNullOrWhiteSpace(notice) ? string.Empty : $"  •  {notice}";
             DialogueShopUI.Instance.Open(
-                "Hey! Pick a run and we'll get that couch moving.",
-                options,
+                $"Team funds: ${currentCurrency:N0}{feedback}",
+                categories,
                 () =>
                 {
                     m_input?.SetGameplaySuppressed(false);
                     RequestCloseDialogueServerRpc();
-                });
+                },
+                openShop ? 1 : 0);
         }
 
         [TargetRpc]
