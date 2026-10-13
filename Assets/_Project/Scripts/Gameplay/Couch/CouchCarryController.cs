@@ -56,8 +56,23 @@ namespace CouchGuys.Gameplay.Couch
         private const float CarrierCountCurveExponent = 1.55f;
         private const float MinimumConflictEfficiency = 0.45f;
         private const float MaximumMovementAcceleration = 14f;
+        private const float MaximumBrakingAcceleration = 8f;
+        private const float MaximumReverseAcceleration = 18f;
         private const float SpeedLimitTransitionRate = 5f;
-        private const float MaximumAngularVelocity = 7f;
+        private const float MaximumAngularVelocity = 9f;
+        private const float CarriedUprightStrength = 18f;
+        private const float CarriedUprightDamping = 5f;
+        private const float MaximumCarriedLeanAngle = 12f;
+        private const float MaximumStepHeight = 0.38f;
+        private const float StepProbeDistance = 0.42f;
+        private const float StepClearance = 0.08f;
+        private const float StepLiftAcceleration = 22f;
+        private const float MaximumStepUpSpeed = 2.4f;
+        private const float FreeMaximumSpeed = 22f;
+        private const float MaximumImpactReactionSpeed = 16f;
+        private const float ImpactTorqueMultiplier = 0.22f;
+        private const float VisualPositionFrequency = 7f;
+        private const float VisualRotationFrequency = 5f;
         private const bool ShowForceGizmos = false;
         private const float DebugForceScale = 0.002f;
         private const float DefaultMaxCarryDistance = 1f;
@@ -83,7 +98,22 @@ namespace CouchGuys.Gameplay.Couch
         private GameObject m_modelInstance;
         private int m_appliedModelVariantIndex = -1;
         private Collider[] m_colliders;
+        private readonly RaycastHit[] m_stepHits = new RaycastHit[12];
         private Coroutine m_cargoTransition;
+        private PhysicsMaterial m_runtimePhysicsMaterial;
+        private Vector3 m_smoothedCarryVelocity;
+        private Vector3 m_visualScale = Vector3.one;
+        private Vector3 m_visualScaleVelocity;
+        private Vector3 m_visualEuler;
+        private Vector3 m_visualEulerVelocity;
+        private Vector3 m_visualImpulseEuler;
+        private Vector3 m_lastVisualPosition;
+        private Vector3 m_visualWorldVelocity;
+        private bool m_visualPositionInitialized;
+        private bool m_wasCarried;
+        private bool m_visualWasCarried;
+        private Quaternion m_modelBaseRotation;
+        private Vector3 m_modelBaseScale = Vector3.one;
 
         public Rigidbody CouchRigidbody => m_rigidbody;
         public float Weight => CouchWeight;
@@ -93,7 +123,9 @@ namespace CouchGuys.Gameplay.Couch
         public int ActiveCarrierCount => CountActiveCarriers();
         public int MovingCarrierCount => m_movingCarrierCount.Value;
         public float CurrentCooperationEfficiency => m_cooperationEfficiency.Value;
-        public Vector3 CurrentVelocity => m_rigidbody != null ? m_rigidbody.linearVelocity : Vector3.zero;
+        public Vector3 CurrentVelocity => IsServerInitialized && m_rigidbody != null
+            ? m_rigidbody.linearVelocity
+            : m_visualWorldVelocity;
         public int ModelVariantIndex => m_modelVariantIndex.Value;
         public bool IsLoaded => m_loadedVan.Value != null;
         public NetworkObject LoadedVanObject => m_loadedVan.Value;
@@ -121,9 +153,17 @@ namespace CouchGuys.Gameplay.Couch
         {
             m_rigidbody ??= GetComponent<Rigidbody>();
             m_colliders = GetComponentsInChildren<Collider>(true);
+            if (m_modelRoot != null)
+            {
+                m_modelBaseRotation = m_modelRoot.localRotation;
+                m_modelBaseScale = m_modelRoot.localScale;
+                m_visualScale = m_modelBaseScale;
+            }
             m_modelVariantIndex.OnChange += OnModelVariantChanged;
             m_loadedVan.OnChange += OnLoadedVanChanged;
             ApplyWeightAndStability();
+            ApplyRuntimePhysicsConfiguration();
+            ConfigureColliderMaterials();
             if (m_settings == null)
             {
                 Debug.LogError("CouchCarryController requires one CouchCarrySettings asset.", this);
@@ -155,6 +195,10 @@ namespace CouchGuys.Gameplay.Couch
         {
             m_modelVariantIndex.OnChange -= OnModelVariantChanged;
             m_loadedVan.OnChange -= OnLoadedVanChanged;
+            if (m_runtimePhysicsMaterial != null)
+            {
+                Destroy(m_runtimePhysicsMaterial);
+            }
         }
 
         /// <summary>Selects the visual used by this couch. Carry points and physics stay on the shared root.</summary>
@@ -203,6 +247,7 @@ namespace CouchGuys.Gameplay.Couch
             }
 
             int carrierCount = CountServerCarriers();
+            UpdateCarriedPhysicsState(carrierCount > 0);
             Vector3 combinedMovementIntent = CalculateCombinedMovementIntent(
                 out float totalIntentMagnitude,
                 out int movingCarrierCount);
@@ -297,24 +342,81 @@ namespace CouchGuys.Gameplay.Couch
             Vector3 averageIntent = movingCarrierCount > 0
                 ? combinedMovementIntent / movingCarrierCount
                 : Vector3.zero;
-            Vector3 desiredVelocity = Vector3.ClampMagnitude(averageIntent, 1f) *
-                                      m_currentMaximumMovementSpeed;
+            Vector3 targetCarryVelocity = Vector3.ClampMagnitude(averageIntent, 1f) *
+                                          m_currentMaximumMovementSpeed;
+            float velocityResponse = targetCarryVelocity.sqrMagnitude > 0.01f ? 7f : 3.5f;
+            m_smoothedCarryVelocity = Vector3.Lerp(
+                m_smoothedCarryVelocity,
+                targetCarryVelocity,
+                1f - Mathf.Exp(-velocityResponse * Time.fixedDeltaTime));
+            Vector3 desiredVelocity = m_smoothedCarryVelocity;
             Vector3 horizontalCouchVelocity = Vector3.ProjectOnPlane(
                 m_rigidbody.linearVelocity,
                 Vector3.up);
+            float accelerationLimit = SelectAccelerationLimit(horizontalCouchVelocity, desiredVelocity);
             Vector3 velocityChange = Vector3.MoveTowards(
                 horizontalCouchVelocity,
                 desiredVelocity,
-                MaximumMovementAcceleration * Time.fixedDeltaTime) - horizontalCouchVelocity;
+                accelerationLimit * Time.fixedDeltaTime) - horizontalCouchVelocity;
             Vector3 movementAcceleration = velocityChange / Time.fixedDeltaTime;
             if (carrierCount > 0)
             {
                 m_rigidbody.AddForce(movementAcceleration, ForceMode.Acceleration);
+                ApplyStepAssistance(averageIntent);
+                ApplyCarriedUprightTorque();
             }
 
             ApplySlopeForces();
 
             LimitHorizontalVelocity(carrierCount > 0 ? m_currentMaximumMovementSpeed : 0f);
+            LimitExtremeFreeMotion(carrierCount == 0);
+        }
+
+        private void LateUpdate()
+        {
+            if (m_modelRoot == null || IsLoaded)
+            {
+                return;
+            }
+
+            float dt = Mathf.Max(Time.deltaTime, 0.0001f);
+            bool visuallyCarried = ActiveCarrierCount > 0;
+            if (visuallyCarried != m_visualWasCarried)
+            {
+                m_visualWasCarried = visuallyCarried;
+                m_visualImpulseEuler += new Vector3(
+                    visuallyCarried ? -4f : 5f,
+                    0f,
+                    Random.Range(-4f, 4f));
+            }
+            if (!m_visualPositionInitialized)
+            {
+                m_lastVisualPosition = transform.position;
+                m_visualPositionInitialized = true;
+            }
+
+            Vector3 measuredVelocity = (transform.position - m_lastVisualPosition) / dt;
+            m_lastVisualPosition = transform.position;
+            Vector3 acceleration = (measuredVelocity - m_visualWorldVelocity) / dt;
+            m_visualWorldVelocity = Vector3.Lerp(m_visualWorldVelocity, measuredVelocity,
+                1f - Mathf.Exp(-8f * dt));
+
+            Vector3 localVelocity = transform.InverseTransformDirection(m_visualWorldVelocity);
+            Vector3 localAcceleration = transform.InverseTransformDirection(acceleration);
+            Vector3 targetEuler = new Vector3(
+                Mathf.Clamp(-localVelocity.z * 1.1f - localAcceleration.z * 0.08f, -8f, 8f),
+                0f,
+                Mathf.Clamp(localVelocity.x * 1.25f + localAcceleration.x * 0.09f, -10f, 10f));
+            targetEuler += m_visualImpulseEuler;
+            m_visualImpulseEuler = Vector3.MoveTowards(m_visualImpulseEuler, Vector3.zero, 45f * dt);
+            m_visualEuler = Vector3.SmoothDamp(
+                m_visualEuler, targetEuler, ref m_visualEulerVelocity,
+                1f / VisualRotationFrequency, Mathf.Infinity, dt);
+            m_visualScale = Vector3.SmoothDamp(
+                m_visualScale, m_modelBaseScale, ref m_visualScaleVelocity,
+                1f / VisualPositionFrequency, Mathf.Infinity, dt);
+            m_modelRoot.localRotation = m_modelBaseRotation * Quaternion.Euler(m_visualEuler);
+            m_modelRoot.localScale = m_visualScale;
         }
 
         public float CalculateCarrierMovementSpeedMultiplier()
@@ -593,6 +695,18 @@ namespace CouchGuys.Gameplay.Couch
                 m_rigidbody.angularVelocity = Vector3.zero;
                 m_rigidbody.isKinematic = loaded || !IsServerInitialized;
             }
+            if (loaded && m_modelRoot != null)
+            {
+                m_visualEuler = Vector3.zero;
+                m_visualEulerVelocity = Vector3.zero;
+                m_visualScale = m_modelBaseScale;
+                m_visualScaleVelocity = Vector3.zero;
+                m_visualImpulseEuler = Vector3.zero;
+                m_modelRoot.localRotation = m_modelBaseRotation;
+                m_modelRoot.localScale = m_modelBaseScale;
+            }
+            m_visualPositionInitialized = false;
+            m_visualWorldVelocity = Vector3.zero;
             if (m_colliders == null) return;
             for (int index = 0; index < m_colliders.Length; index++)
                 if (m_colliders[index] != null) m_colliders[index].enabled = !loaded;
@@ -770,6 +884,160 @@ namespace CouchGuys.Gameplay.Couch
                 : s_defaultMoveSpeeds[clampedCount - 1];
         }
 
+        private static float SelectAccelerationLimit(Vector3 currentVelocity, Vector3 desiredVelocity)
+        {
+            if (desiredVelocity.sqrMagnitude < 0.01f)
+            {
+                return MaximumBrakingAcceleration;
+            }
+
+            bool reversing = currentVelocity.sqrMagnitude > 0.25f &&
+                Vector3.Dot(currentVelocity.normalized, desiredVelocity.normalized) < -0.2f;
+            return reversing ? MaximumReverseAcceleration : MaximumMovementAcceleration;
+        }
+
+        private void UpdateCarriedPhysicsState(bool carried)
+        {
+            if (carried == m_wasCarried)
+            {
+                return;
+            }
+
+            m_wasCarried = carried;
+            m_rigidbody.linearDamping = carried ? 0.65f : 0.28f;
+            m_rigidbody.angularDamping = carried ? 2.2f : 0.8f;
+            // Visual pickup/drop reactions are driven from synchronized occupancy in
+            // LateUpdate so every peer sees the same state transition.
+            if (!carried)
+            {
+                m_smoothedCarryVelocity = Vector3.ProjectOnPlane(m_rigidbody.linearVelocity, Vector3.up);
+            }
+        }
+
+        private void ApplyCarriedUprightTorque()
+        {
+            Vector3 currentUp = m_rigidbody.rotation * Vector3.up;
+            float tilt = Vector3.Angle(currentUp, Vector3.up);
+            if (tilt <= MaximumCarriedLeanAngle)
+            {
+                return;
+            }
+
+            Vector3 correctionAxis = Vector3.Cross(currentUp, Vector3.up);
+            Vector3 localAngularVelocity = Vector3.ProjectOnPlane(m_rigidbody.angularVelocity, Vector3.up);
+            float excessTilt = Mathf.InverseLerp(MaximumCarriedLeanAngle, 50f, tilt);
+            m_rigidbody.AddTorque(
+                correctionAxis * (CarriedUprightStrength * excessTilt) -
+                localAngularVelocity * CarriedUprightDamping,
+                ForceMode.Acceleration);
+        }
+
+        private void ApplyStepAssistance(Vector3 movementIntent)
+        {
+            Vector3 direction = Vector3.ProjectOnPlane(movementIntent, Vector3.up);
+            if (direction.sqrMagnitude < 0.04f || m_rigidbody.linearVelocity.y > MaximumStepUpSpeed)
+            {
+                return;
+            }
+
+            direction.Normalize();
+            if (!TryGetColliderBounds(out Bounds bounds))
+            {
+                return;
+            }
+
+            float lowerProbeHeight = bounds.min.y + 0.06f;
+            float horizontalExtent = Mathf.Abs(direction.x) * bounds.extents.x +
+                                     Mathf.Abs(direction.z) * bounds.extents.z;
+            Vector3 lowerOrigin = new(bounds.center.x, lowerProbeHeight, bounds.center.z);
+            lowerOrigin += direction * (horizontalExtent + 0.02f);
+            if (!TryGetExternalRayHit(lowerOrigin, direction, StepProbeDistance, out RaycastHit lowerHit) ||
+                lowerHit.normal.y > 0.35f)
+            {
+                return;
+            }
+
+            Vector3 upperOrigin = lowerOrigin + Vector3.up * (MaximumStepHeight + StepClearance);
+            if (TryGetExternalRayHit(upperOrigin, direction, StepProbeDistance, out _))
+            {
+                return;
+            }
+
+            Vector3 ledgeProbe = lowerHit.point + direction * 0.08f +
+                                 Vector3.up * (MaximumStepHeight + StepClearance);
+            if (!TryGetExternalRayHit(ledgeProbe, Vector3.down,
+                    MaximumStepHeight + StepClearance, out RaycastHit topHit))
+            {
+                return;
+            }
+
+            float stepHeight = topHit.point.y - bounds.min.y;
+            if (stepHeight < -0.02f || stepHeight > MaximumStepHeight)
+            {
+                return;
+            }
+
+            float liftScale = Mathf.InverseLerp(MaximumStepHeight, 0f, stepHeight) * 0.35f + 0.65f;
+            m_rigidbody.AddForce(Vector3.up * (StepLiftAcceleration * liftScale), ForceMode.Acceleration);
+        }
+
+        private bool TryGetExternalRayHit(
+            Vector3 origin,
+            Vector3 direction,
+            float distance,
+            out RaycastHit nearestHit)
+        {
+            int count = Physics.RaycastNonAlloc(
+                origin, direction, m_stepHits, distance, ~0, QueryTriggerInteraction.Ignore);
+            float nearestDistance = float.PositiveInfinity;
+            nearestHit = default;
+            bool found = false;
+            for (int index = 0; index < count; index++)
+            {
+                RaycastHit hit = m_stepHits[index];
+                if (hit.collider == null || hit.collider.transform.IsChildOf(transform) ||
+                    hit.distance >= nearestDistance)
+                {
+                    continue;
+                }
+
+                nearestDistance = hit.distance;
+                nearestHit = hit;
+                found = true;
+            }
+            return found;
+        }
+
+        private bool TryGetColliderBounds(out Bounds bounds)
+        {
+            bounds = default;
+            bool found = false;
+            if (m_colliders == null)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < m_colliders.Length; index++)
+            {
+                Collider collider = m_colliders[index];
+                if (collider == null || !collider.enabled || collider.isTrigger)
+                {
+                    continue;
+                }
+
+                if (!found)
+                {
+                    bounds = collider.bounds;
+                    found = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(collider.bounds);
+                }
+            }
+            return found;
+        }
+
         private void ApplySlopeForces()
         {
             // OnCollisionStay is populated by the preceding physics step. This keeps
@@ -834,6 +1102,94 @@ namespace CouchGuys.Gameplay.Couch
             }
         }
 
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (!IsServerInitialized || m_rigidbody == null || m_rigidbody.isKinematic ||
+                collision.contactCount == 0)
+            {
+                return;
+            }
+
+            float impactSpeed = Mathf.Min(collision.relativeVelocity.magnitude, MaximumImpactReactionSpeed);
+            if (impactSpeed < 2.25f)
+            {
+                return;
+            }
+
+            ContactPoint contact = collision.GetContact(0);
+            Vector3 lever = contact.point - m_rigidbody.worldCenterOfMass;
+            Vector3 impactDirection = collision.relativeVelocity.sqrMagnitude > 0.001f
+                ? collision.relativeVelocity.normalized
+                : -contact.normal;
+            Vector3 torque = Vector3.Cross(lever, impactDirection) *
+                             (impactSpeed * ImpactTorqueMultiplier);
+            m_rigidbody.AddTorque(torque, ForceMode.VelocityChange);
+            PlayImpactReactionObserversRpc(impactSpeed, contact.normal);
+        }
+
+        [Server]
+        internal void ApplyPlayerBounceServer(float landingSpeed, Vector3 playerVelocity)
+        {
+            if (!IsServerInitialized || IsLoaded || m_rigidbody == null || m_rigidbody.isKinematic)
+            {
+                return;
+            }
+
+            float strength = Mathf.Clamp(landingSpeed, 2f, 12f);
+            Vector3 inheritedPlanarVelocity = Vector3.ClampMagnitude(
+                Vector3.ProjectOnPlane(playerVelocity, Vector3.up), 8f);
+            m_rigidbody.AddForce(
+                Vector3.down * (0.55f + strength * 0.1f) + inheritedPlanarVelocity * 0.05f,
+                ForceMode.VelocityChange);
+            PlayBounceReactionObserversRpc(strength);
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void PlayBounceReactionObserversRpc(float strength)
+        {
+            float squash = Mathf.Lerp(0.08f, 0.18f, Mathf.InverseLerp(2f, 12f, strength));
+            m_visualScaleVelocity += new Vector3(m_modelBaseScale.x * squash,
+                -m_modelBaseScale.y * squash * 1.8f, m_modelBaseScale.z * squash);
+            m_visualImpulseEuler += new Vector3(Random.Range(-2.5f, 2.5f), 0f,
+                Random.Range(-3.5f, 3.5f));
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void PlayImpactReactionObserversRpc(float speed, Vector3 normal)
+        {
+            float amount = Mathf.InverseLerp(2.25f, MaximumImpactReactionSpeed, speed);
+            Vector3 localNormal = transform.InverseTransformDirection(normal);
+            m_visualImpulseEuler += new Vector3(
+                -localNormal.z * Mathf.Lerp(2f, 10f, amount),
+                0f,
+                localNormal.x * Mathf.Lerp(2f, 12f, amount));
+        }
+
+        private void ConfigureColliderMaterials()
+        {
+            m_runtimePhysicsMaterial = new PhysicsMaterial($"{name} Cartoon Couch Physics")
+            {
+                dynamicFriction = 0.18f,
+                staticFriction = 0.22f,
+                bounciness = 0.16f,
+                frictionCombine = PhysicsMaterialCombine.Minimum,
+                bounceCombine = PhysicsMaterialCombine.Maximum
+            };
+
+            if (m_colliders == null)
+            {
+                return;
+            }
+
+            for (int index = 0; index < m_colliders.Length; index++)
+            {
+                if (m_colliders[index] != null && !m_colliders[index].isTrigger)
+                {
+                    m_colliders[index].sharedMaterial = m_runtimePhysicsMaterial;
+                }
+            }
+        }
+
         private void ApplyWeightAndStability()
         {
             if (m_rigidbody == null)
@@ -843,10 +1199,26 @@ namespace CouchGuys.Gameplay.Couch
 
             m_rigidbody.mass = CouchWeight;
             m_rigidbody.maxAngularVelocity = MaximumAngularVelocity;
-            // A couch may turn around the vertical axis, but carrier forces must not
-            // pitch or roll it into the players or lever it off the ground.
-            m_rigidbody.constraints |= RigidbodyConstraints.FreezeRotationX |
-                                       RigidbodyConstraints.FreezeRotationZ;
+            // Preserve positional/designer constraints but allow the couch to lean,
+            // tip and tumble. Carry-time torque provides soft stability instead.
+            m_rigidbody.constraints &= ~(RigidbodyConstraints.FreezeRotationX |
+                                         RigidbodyConstraints.FreezeRotationZ);
+        }
+
+        private void ApplyRuntimePhysicsConfiguration()
+        {
+            if (m_rigidbody == null)
+            {
+                return;
+            }
+
+            // These native Rigidbody properties are unsafe to mutate from OnValidate
+            // while Unity is integrating a prefab during asset import. Configure them
+            // only after the live component has reached Awake.
+            m_rigidbody.linearDamping = 0.28f;
+            m_rigidbody.angularDamping = 0.8f;
+            m_rigidbody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            m_rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
         }
 
         private void LimitHorizontalVelocity(float maximumSpeed)
@@ -866,6 +1238,19 @@ namespace CouchGuys.Gameplay.Couch
             Vector3 verticalVelocity = velocity - horizontalVelocity;
             m_rigidbody.linearVelocity = Vector3.ClampMagnitude(horizontalVelocity, maximumSpeed) +
                                          verticalVelocity;
+        }
+
+        private void LimitExtremeFreeMotion(bool isFree)
+        {
+            if (!isFree)
+            {
+                return;
+            }
+
+            m_rigidbody.linearVelocity = Vector3.ClampMagnitude(
+                m_rigidbody.linearVelocity, FreeMaximumSpeed);
+            m_rigidbody.angularVelocity = Vector3.ClampMagnitude(
+                m_rigidbody.angularVelocity, MaximumAngularVelocity);
         }
 
         private void ClearDebugForces(int pointIndex)

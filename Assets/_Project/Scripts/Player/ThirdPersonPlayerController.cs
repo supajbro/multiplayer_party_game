@@ -1,4 +1,5 @@
 using CouchGuys.Input;
+using CouchGuys.Gameplay.Couch;
 using UnityEngine;
 
 namespace CouchGuys.Player
@@ -45,6 +46,11 @@ namespace CouchGuys.Player
         [Header("External Impacts")]
         [SerializeField, Min(0f)] private float m_knockbackDamping = 8f;
 
+        private const float CouchBounceHeight = 2.7f;
+        private const float MinimumCouchLandingSpeed = 1.5f;
+        private const float CouchBounceCooldown = 0.22f;
+        private const float MaximumBounceUpwardSpeed = 13f;
+
         private CharacterController m_characterController;
         private float m_currentSpeed;
         private float m_verticalVelocity;
@@ -64,6 +70,7 @@ namespace CouchGuys.Player
         private bool m_movementLocked;
         private bool m_externalControlPaused;
         private bool m_externalRotationLocked;
+        private float m_nextCouchBounceTime;
 
         public bool IsGrounded => m_characterController != null && m_characterController.isGrounded;
         public Vector3 MovementIntent { get; private set; }
@@ -344,6 +351,40 @@ namespace CouchGuys.Player
             if (hit.normal.y > m_groundNormal.y)
             {
                 m_groundNormal = hit.normal;
+            }
+
+            TryBounceFromCouch(hit);
+        }
+
+        private void TryBounceFromCouch(ControllerColliderHit hit)
+        {
+            if (Time.time < m_nextCouchBounceTime || m_externalControlPaused ||
+                hit.normal.y < 0.65f || m_verticalVelocity > -MinimumCouchLandingSpeed ||
+                hit.collider == null)
+            {
+                return;
+            }
+
+            CouchCarryController couch = hit.collider.GetComponentInParent<CouchCarryController>();
+            if (couch == null || couch.IsLoaded)
+            {
+                return;
+            }
+
+            float landingSpeed = -m_verticalVelocity;
+            float bounceSpeed = Mathf.Sqrt(CouchBounceHeight * -2f * m_gravity);
+            // Preserve a modest amount of upward couch motion without allowing a fast
+            // tumbling couch to create an extreme player launch.
+            float inheritedUpwardSpeed = Mathf.Clamp(couch.CurrentVelocity.y, 0f, 3f);
+            m_verticalVelocity = Mathf.Min(
+                Mathf.Max(m_verticalVelocity, bounceSpeed + inheritedUpwardSpeed),
+                MaximumBounceUpwardSpeed);
+            m_nextCouchBounceTime = Time.time + CouchBounceCooldown;
+
+            if (TryGetComponent(out PlayerCouchCarrier carrier))
+            {
+                Vector3 playerVelocity = MovementIntent * m_currentSpeed + Vector3.down * landingSpeed;
+                carrier.NotifyCouchBounce(couch, landingSpeed, playerVelocity);
             }
         }
 

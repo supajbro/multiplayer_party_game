@@ -51,6 +51,7 @@ namespace CouchGuys.Player
         private float m_lastIntentChangeTime = float.NegativeInfinity;
         private float m_lastServerIntentTime = float.NegativeInfinity;
         private float m_appliedSpeedMultiplier = 1f;
+        private float m_nextServerBounceTime;
         private CharacterController m_carrierCollider;
         private CouchCarryController m_collisionIgnoredCouch;
         private NetworkObject m_cachedMovementCouchObject;
@@ -477,6 +478,50 @@ namespace CouchGuys.Player
             {
                 ReleaseCurrentCouchServer();
             }
+        }
+
+        internal void NotifyCouchBounce(
+            CouchCarryController couch,
+            float landingSpeed,
+            Vector3 playerVelocity)
+        {
+            if (!IsOwner || couch == null || couch.IsLoaded)
+            {
+                return;
+            }
+
+            RequestCouchBounceServerRpc(
+                couch.NetworkObject,
+                Mathf.Clamp(landingSpeed, 0f, 15f),
+                Vector3.ClampMagnitude(playerVelocity, 15f));
+        }
+
+        [ServerRpc]
+        private void RequestCouchBounceServerRpc(
+            NetworkObject couchObject,
+            float landingSpeed,
+            Vector3 playerVelocity)
+        {
+            if (Time.unscaledTime < m_nextServerBounceTime || couchObject == null ||
+                !couchObject.IsSpawned ||
+                !couchObject.TryGetComponent(out CouchCarryController couch) || couch.IsLoaded ||
+                landingSpeed < 1.5f)
+            {
+                return;
+            }
+
+            Vector3 couchToPlayer = transform.position - couch.transform.position;
+            Vector3 horizontalOffset = Vector3.ProjectOnPlane(couchToPlayer, Vector3.up);
+            if (horizontalOffset.sqrMagnitude > 1.8f * 1.8f ||
+                couchToPlayer.y < 0.25f || couchToPlayer.y > 2.4f)
+            {
+                return;
+            }
+
+            m_nextServerBounceTime = Time.unscaledTime + 0.18f;
+            couch.ApplyPlayerBounceServer(
+                Mathf.Clamp(landingSpeed, 0f, 15f),
+                Vector3.ClampMagnitude(playerVelocity, 15f));
         }
 
         private void UpdateMovementIntent()
