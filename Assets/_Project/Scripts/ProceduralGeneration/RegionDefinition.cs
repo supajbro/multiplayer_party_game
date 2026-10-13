@@ -37,6 +37,8 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField, Min(0)] private int m_maximumLandmarks;
 
         [Header("Environment")]
+        [SerializeField] private RegionEnvironmentSettings m_environment =
+            RegionEnvironmentSettings.SuburbsDefault;
         [SerializeField] private RegionSpawnRule[] m_props = Array.Empty<RegionSpawnRule>();
         [SerializeField] private RegionSpawnRule[] m_hazards = Array.Empty<RegionSpawnRule>();
 
@@ -64,6 +66,7 @@ namespace CouchGuys.ProceduralGeneration
         public int MinimumLandmarks => m_minimumLandmarks;
         public int MaximumLandmarks => Mathf.Max(m_minimumLandmarks, m_maximumLandmarks);
         public RegionSpawnRule[] Props => m_props;
+        public RegionEnvironmentSettings Environment => m_environment;
         public RegionSpawnRule[] Hazards => m_hazards;
         public bool BuildNavMesh => m_buildNavMesh;
 
@@ -81,6 +84,13 @@ namespace CouchGuys.ProceduralGeneration
             m_progression.Validate();
             m_terrain.Validate();
             m_border.Validate();
+            m_environment.Validate();
+        }
+
+        public void ConfigureEnvironment(RegionEnvironmentSettings settings)
+        {
+            settings.Validate();
+            m_environment = settings;
         }
 #endif
     }

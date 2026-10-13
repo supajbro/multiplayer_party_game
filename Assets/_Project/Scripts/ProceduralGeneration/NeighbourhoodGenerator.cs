@@ -15,7 +15,7 @@ namespace CouchGuys.ProceduralGeneration
     /// modular prefabs or lightweight development placeholders.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class NeighbourhoodGenerator : MonoBehaviour
+    public sealed partial class NeighbourhoodGenerator : MonoBehaviour
     {
         public event Action<NeighbourhoodGenerator> RegionGenerated;
         public event Action<NeighbourhoodGenerator> RegionClearing;
@@ -281,6 +281,7 @@ namespace CouchGuys.ProceduralGeneration
         private void GenerateInternal(RegionDefinition region, int seed, int attemptIndex)
         {
             ApplyRegionConfiguration(region);
+            ApplyEnvironmentAtmosphere();
             m_progression.Validate();
             m_terrainSettings.Validate();
             m_borderSettings.Validate();
@@ -315,10 +316,15 @@ namespace CouchGuys.ProceduralGeneration
             // Visual selection has its own stream so adding art cannot perturb the
             // logical road/property decisions made for a given seed.
             CreateRoadVisuals(new System.Random(DeriveSeed(seed, 0x2D31A7B5)));
+            GenerateParksAndMajorLandmarks(new System.Random(DeriveSeed(seed, 0x3A71C4E9)));
             GenerateLandmarks(new System.Random(DeriveSeed(seed, 0x4F1BBCDC)));
             GenerateProperties(new System.Random(DeriveSeed(seed, 0x61C88647)));
             CreateContinuousTerrain();
             CreateSidewalks();
+            GenerateStreetlights(new System.Random(DeriveSeed(seed, 0x0F4A7C15)));
+            PopulateGeneratedParks(new System.Random(DeriveSeed(seed, 0x6D2B79F3)));
+            GenerateResidentialDecorations(new System.Random(DeriveSeed(seed, 0x24C18E6B)));
+            GenerateRoadsideDecorations(new System.Random(DeriveSeed(seed, 0x7B531D29)));
             CreateNeighbourhoodBorder();
             GenerateRegionObjects(
                 m_selectedRegion != null ? m_selectedRegion.Props : null,
@@ -462,6 +468,7 @@ namespace CouchGuys.ProceduralGeneration
             m_startingAreaPrefab = region.StartingAreaPrefab;
             m_deliveryNpcPrefab = region.DeliveryNpcPrefab;
             m_mansionPrefab = region.MansionPrefab;
+            m_environmentSettings = region.Environment;
         }
 
         private int FindRegionIndex(RegionDefinition region)
@@ -541,6 +548,10 @@ namespace CouchGuys.ProceduralGeneration
             m_landmarksRoot = null;
             m_propsRoot = null;
             m_hazardsRoot = null;
+            m_streetlightsRoot = null;
+            m_parksRoot = null;
+            m_residentialDecorationsRoot = null;
+            m_roadsideDecorationsRoot = null;
             m_generatedRoadCollider = null;
             GeneratedStartingArea = null;
             GeneratedTerrain = null;
@@ -564,6 +575,8 @@ namespace CouchGuys.ProceduralGeneration
             m_primaryRoadCells.Clear();
             m_placedHouseFootprints.Clear();
             m_reservedDrivewayFootprints.Clear();
+            m_environmentFootprints.Clear();
+            m_generatedParks.Clear();
             m_blockElevations = null;
             GeneratedWorldBounds = new Bounds(transform.position, Vector3.zero);
             PlayableWorldBounds = new Bounds(transform.position, Vector3.zero);
@@ -736,6 +749,14 @@ namespace CouchGuys.ProceduralGeneration
             m_housesRoot.SetParent(m_generatedRoot, false);
             m_landmarksRoot = new GameObject("Landmarks").transform;
             m_landmarksRoot.SetParent(m_generatedRoot, false);
+            m_parksRoot = new GameObject("Parks").transform;
+            m_parksRoot.SetParent(m_landmarksRoot, false);
+            m_streetlightsRoot = new GameObject("Streetlights").transform;
+            m_streetlightsRoot.SetParent(m_generatedRoot, false);
+            m_residentialDecorationsRoot = new GameObject("ResidentialDecorations").transform;
+            m_residentialDecorationsRoot.SetParent(m_generatedRoot, false);
+            m_roadsideDecorationsRoot = new GameObject("RoadsideDecorations").transform;
+            m_roadsideDecorationsRoot.SetParent(m_generatedRoot, false);
             m_propsRoot = new GameObject("Props").transform;
             m_propsRoot.SetParent(m_generatedRoot, false);
             m_hazardsRoot = new GameObject("Hazards").transform;
@@ -2016,7 +2037,7 @@ namespace CouchGuys.ProceduralGeneration
                     runtimeMaterial = new Material(shader)
                     {
                         name = "Generated Suburbs Terrain Material",
-                        color = new Color(0.32f, 0.56f, 0.24f)
+                        color = new Color(0.24f, 0.68f, 0.24f)
                     };
                     surfaceMaterial = runtimeMaterial;
                 }
@@ -2207,7 +2228,7 @@ namespace CouchGuys.ProceduralGeneration
                     runtimeMaterial = new Material(shader)
                     {
                         name = "Generated Sidewalk Material",
-                        color = new Color(0.56f, 0.57f, 0.55f)
+                        color = new Color(0.66f, 0.68f, 0.70f)
                     };
                     material = runtimeMaterial;
                 }

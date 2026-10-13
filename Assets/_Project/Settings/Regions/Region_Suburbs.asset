@@ -90,6 +90,121 @@ MonoBehaviour:
   m_lotDensity: 1
   m_minimumLandmarks: 0
   m_maximumLandmarks: 0
+  m_environment:
+    Lighting:
+      Enabled: 1
+      SunColour: {r: 1, g: 0.91, b: 0.76, a: 1}
+      SunIntensity: 1.25
+      SunEulerAngles: {x: 48, y: -32, z: 0}
+      AmbientSkyColour: {r: 0.46, g: 0.72, b: 1, a: 1}
+      AmbientEquatorColour: {r: 0.55, g: 0.72, b: 0.82, a: 1}
+      AmbientGroundColour: {r: 0.28, g: 0.36, b: 0.29, a: 1}
+      AmbientIntensity: 1.05
+      FogEnabled: 1
+      FogColour: {r: 0.62, g: 0.82, b: 0.96, a: 1}
+      FogStartDistance: 180
+      FogEndDistance: 520
+      SkyboxMaterial: {fileID: 2100000, guid: e60effc5f4fed0148b0227f6ad608afb, type: 2}
+      PostProcessingProfile: {fileID: 11400000, guid: ecef0f2599bb0c34db79514a416cba63, type: 2}
+    Streetlights:
+      Enabled: 1
+      Prefab: {fileID: 7914762818287219891, guid: dd01c544d4fdf9b43acc71200fbed86d, type: 3}
+      AverageSpacing: 24
+      SpacingVariation: 4
+      SidewalkOffset: 0.7
+      MinimumDistanceFromIntersections: 10
+      MinimumClearanceFromDriveways: 3.5
+      MaximumCount: 96
+      LightingEnabled: 0
+      LightColour: {r: 1, g: 0.68, b: 0.28, a: 1}
+      LightIntensity: 2.2
+      LightRange: 11
+    Parks:
+      Enabled: 1
+      MinimumParks: 2
+      MaximumParks: 4
+      SmallProbability: 0.45
+      MediumProbability: 0.4
+      LargeProbability: 0.15
+      SmallFootprint: {x: 2, y: 2}
+      MediumFootprint: {x: 4, y: 4}
+      LargeFootprint: {x: 6, y: 6}
+      MaximumTerrainSlope: 12
+      DecorationDensity: 0.8
+      BoundaryClearance: 1
+    Landmarks:
+      Enabled: 1
+      MinimumCount: 1
+      MaximumCount: 3
+      MinimumSpacing: 35
+      Clearance: 2
+      MaximumTerrainSlope: 14
+      Prefabs:
+      - Prefab: {fileID: 7539993096332369416, guid: 5f073b482531af8439406b2a846e3004, type: 3}
+        Weight: 1.2
+        AllowedInParks: 1
+        AllowedRoadside: 0
+      - Prefab: {fileID: 7611975954099184691, guid: f5211013f5d4a484f92be819e122e4b7, type: 3}
+        Weight: 0.8
+        AllowedInParks: 1
+        AllowedRoadside: 0
+      - Prefab: {fileID: 6479280250502734365, guid: b2e6e2822fa5a3043b0b6ca32475bc26, type: 3}
+        Weight: 0.75
+        AllowedInParks: 1
+        AllowedRoadside: 0
+      - Prefab: {fileID: 3096068039576058628, guid: 89c535e1c3bf0bf4d87266b0b81a2a43, type: 3}
+        Weight: 0.9
+        AllowedInParks: 1
+        AllowedRoadside: 0
+      - Prefab: {fileID: 6983059004955542910, guid: 61a870414c8cf084baad7e64a8865b4a, type: 3}
+        Weight: 0.7
+        AllowedInParks: 0
+        AllowedRoadside: 1
+      - Prefab: {fileID: 8504114683684851983, guid: 7aa0eb70acc483a418fda28d1ff75823, type: 3}
+        Weight: 0.5
+        AllowedInParks: 0
+        AllowedRoadside: 1
+      - Prefab: {fileID: 7593145894090393864, guid: 3046a035345daf849820a0a627f7cc12, type: 3}
+        Weight: 0.35
+        AllowedInParks: 1
+        AllowedRoadside: 0
+    ResidentialDecorations:
+      Enabled: 1
+      BinProbability: 0.7
+      SecondBinProbability: 0.2
+      MailboxProbability: 0.8
+      FlowerBedProbability: 0.72
+      BushProbability: 0.68
+      OrnamentalTreeProbability: 0.18
+      GardenDensity: 0.85
+      DoorClearance: 2.5
+      DrivewayClearance: 1.25
+    Prefabs:
+      SmallPark: {fileID: 2519029726287221801, guid: 7d6d51777551537499ffdfb59c062f70, type: 3}
+      MediumPark: {fileID: 7676956951616722985, guid: 218f5360217fb19489cdd559f160a8dc, type: 3}
+      LargePark: {fileID: 3969060068999570681, guid: a3cc6ea8b200a2a40b1ddfe5c8f1d5ef, type: 3}
+      Tree: {fileID: 2434878322216428374, guid: 08e366ff13ab27b4f9671159a0b8eb5e, type: 3}
+      Bench: {fileID: 4910921757220290626, guid: bea4b1ee7af8c9648ac0a649b7bac297, type: 3}
+      Bin: {fileID: 4903883153855092555, guid: 6c9ef0645a455124aa614fec96b02fac, type: 3}
+      PublicBin: {fileID: 2397117203645329998, guid: 9d4d3c2a06d328b4dacac146800c2366, type: 3}
+      Mailbox: {fileID: 672857168569710017, guid: ded04ad9419d0594a9ed872bf19983de, type: 3}
+      FlowerCluster: {fileID: 2554265449759307080, guid: 8b7ce3d1fb733954986ac1bde39cc435, type: 3}
+      Bush: {fileID: 8793972095355824061, guid: 0dc3a5d33ba888b4c9d31ccd00910f2d, type: 3}
+      Fountain: {fileID: 7539993096332369416, guid: 5f073b482531af8439406b2a846e3004, type: 3}
+      Statue: {fileID: 7611975954099184691, guid: f5211013f5d4a484f92be819e122e4b7, type: 3}
+      Playground: {fileID: 3096068039576058628, guid: 89c535e1c3bf0bf4d87266b0b81a2a43, type: 3}
+      Gazebo: {fileID: 6479280250502734365, guid: b2e6e2822fa5a3043b0b6ca32475bc26, type: 3}
+      BusStop: {fileID: 6983059004955542910, guid: 61a870414c8cf084baad7e64a8865b4a, type: 3}
+      ParkSign: {fileID: 3481702279890179335, guid: 271ce85012773244083f886731aa8639, type: 3}
+      ParkPath: {fileID: 2339326659669230358, guid: b2ec6dbd325637b4d82606220c728e5a, type: 3}
+      ParkBoundary: {fileID: 8168994977871789672, guid: 246fbd308f21a454dac9263eb764dfe9, type: 3}
+      NoticeBoard: {fileID: 8504114683684851983, guid: 7aa0eb70acc483a418fda28d1ff75823, type: 3}
+      PicnicArea: {fileID: 8223794025572331755, guid: a27426b64db352943a9285f75f6ad2d4, type: 3}
+      Plaza: {fileID: 7593145894090393864, guid: 3046a035345daf849820a0a627f7cc12, type: 3}
+      FireHydrant: {fileID: 581633271307692041, guid: d12163fb4cabbb24c90b53c82780be11, type: 3}
+      StreetSign: {fileID: 4978699380169544079, guid: a978c1747a741884f8b84a0db8e1a81d, type: 3}
+      UtilityBox: {fileID: 4583614624074251791, guid: edc14cfd608e1d3448248bf28f8cfe25, type: 3}
+      PlantingBed: {fileID: 7345769390577267960, guid: b2576165791529e4ab62d8b6974d33d5, type: 3}
   m_props: []
   m_hazards: []
   m_buildNavMesh: 1
