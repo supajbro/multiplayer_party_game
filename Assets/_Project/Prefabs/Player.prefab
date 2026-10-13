@@ -457,7 +457,7 @@ MonoBehaviour:
   m_metalImpactPrefab: {fileID: 4631034452001794509, guid: ea8431670ed92d24b96c7c4822f8eab1, type: 3}
   m_enemyImpactPrefab: {fileID: 1010076065151148806, guid: 8f4988eecb814e94d958abfa53c903d7, type: 3}
   m_effectLifetime: 1.5
-  m_ownerCamera: {fileID: 0}
+  m_ownerCamera: {fileID: 410002}
   m_shakeFrequency: 34
   m_shakeRecovery: 14
 --- !u!114 &2634208340619463066
@@ -479,7 +479,7 @@ MonoBehaviour:
   m_health: {fileID: 0}
   m_couchCarrier: {fileID: 0}
   m_animationDriver: {fileID: 0}
-  m_aimCamera: {fileID: 0}
+  m_aimCamera: {fileID: 410002}
   m_weaponModels:
   - {fileID: 649590994020720611}
   - {fileID: 15239812611621516}
@@ -649,7 +649,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 150e20dac8756a84cb85b682807e15ba, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Weapons.ReticleTargetDetector
-  m_aimCamera: {fileID: 0}
+  m_aimCamera: {fileID: 410002}
   m_ownerHealth: {fileID: 0}
   m_hitMask:
     serializedVersion: 2

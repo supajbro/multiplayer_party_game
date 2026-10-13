@@ -12,6 +12,9 @@ using UnityEngine;
 namespace CouchGuys.Gameplay.Weapons
 {
     /// <summary>Owner input with server-authoritative ammo, hitscan damage, and knockback.</summary>
+    // The orbit camera finalises its pose in LateUpdate. Run afterwards so a shot
+    // uses the same camera orientation that renders the centre-screen reticle.
+    [DefaultExecutionOrder(100)]
     [RequireComponent(typeof(PlayerInputReader), typeof(PlayerHealth), typeof(PlayerCouchCarrier))]
     [DisallowMultipleComponent]
     public sealed class PlayerWeaponController : NetworkBehaviour
@@ -130,21 +133,12 @@ namespace CouchGuys.Gameplay.Weapons
             if (m_input.ReloadPressedThisFrame && !m_localReloading)
                 RequestReloadServerRpc();
 
-            WeaponDefinition weapon = GetWeapon(m_equippedIndex.Value);
-            bool wantsFire = weapon != null && (weapon.Automatic ? m_input.ShootHeld : m_input.ShootPressedThisFrame);
-            if (wantsFire && !m_localReloading && Time.time >= m_nextLocalRequestTime &&
-                (m_couchCarrier == null || !m_couchCarrier.IsCarrying) && (m_map == null || !m_map.IsOpen))
-            {
-                Ray ray = m_aimCamera != null
-                    ? m_aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f))
-                    : new Ray(transform.position + Vector3.up * 1.2f, transform.forward);
-                RequestFireServerRpc(ray.origin, ray.direction);
-                m_nextLocalRequestTime = Time.time + weapon.FireInterval;
-            }
         }
 
         private void LateUpdate()
         {
+            TryRequestFireFromCurrentCamera();
+
             int index = m_equippedIndex.Value;
             if (!ValidIndex(index) || m_weaponModels[index] == null) return;
             m_visualRecoil = Mathf.MoveTowards(m_visualRecoil, 0f, 55f * Time.deltaTime);
@@ -153,6 +147,31 @@ namespace CouchGuys.Gameplay.Weapons
                 Quaternion.Euler(-m_visualRecoil, 0f, 0f);
             m_weaponModels[index].localPosition = m_weaponBasePositions[index] +
                 Vector3.back * m_visualRecoilDistance;
+        }
+
+        private void TryRequestFireFromCurrentCamera()
+        {
+            if (!IsOwner || m_input == null || !m_input.isActiveAndEnabled || m_health == null ||
+                !m_health.IsAlive || m_health.IsKnockedDown)
+            {
+                return;
+            }
+
+            WeaponDefinition weapon = GetWeapon(m_equippedIndex.Value);
+            bool wantsFire = weapon != null &&
+                (weapon.Automatic ? m_input.ShootHeld : m_input.ShootPressedThisFrame);
+            if (!wantsFire || m_localReloading || Time.time < m_nextLocalRequestTime ||
+                (m_couchCarrier != null && m_couchCarrier.IsCarrying) ||
+                (m_map != null && m_map.IsOpen))
+            {
+                return;
+            }
+
+            Ray ray = m_aimCamera != null
+                ? m_aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f))
+                : new Ray(transform.position + Vector3.up * 1.2f, transform.forward);
+            RequestFireServerRpc(ray.origin, ray.direction);
+            m_nextLocalRequestTime = Time.time + weapon.FireInterval;
         }
 
         [ServerRpc]
@@ -284,7 +303,7 @@ namespace CouchGuys.Gameplay.Weapons
 
             m_nextServerFireTime[index] = Time.time + weapon.FireInterval;
             m_magazine[index]--;
-            Vector3 muzzle = GetMuzzlePosition(index, aimOrigin);
+            Vector3 muzzle = GetMuzzlePosition(index, m_health.AimPoint);
             Vector3 cameraDirection = aimDirection.normalized;
             Vector3 aimPoint = aimOrigin + cameraDirection * weapon.Range;
             if (TryGetNearestNonSelfHit(
@@ -523,12 +542,18 @@ namespace CouchGuys.Gameplay.Weapons
                     m_weaponBasePositions[i] = m_weaponModels[i].localPosition;
                 }
                 if (m_muzzles[i] == null && m_weaponModels[i] != null)
-                    m_muzzles[i] = FindDescendant(m_weaponModels[i], "Muzzle");
+                    m_muzzles[i] = FindMuzzleDescendant(m_weaponModels[i]);
             }
         }
 
-        private Vector3 GetMuzzlePosition(int index, Vector3 fallback) =>
-            ValidIndex(index) && m_muzzles[index] != null ? m_muzzles[index].position : fallback;
+        private Vector3 GetMuzzlePosition(int index, Vector3 fallback)
+        {
+            if (!ValidIndex(index)) return fallback;
+            if (m_muzzles[index] != null) return m_muzzles[index].position;
+            // Never make a player projectile appear at the centre-screen camera
+            // just because an imported model is missing its muzzle socket.
+            return m_weaponModels[index] != null ? m_weaponModels[index].position : fallback;
+        }
 
         private WeaponDefinition GetWeapon(int index) =>
             ValidIndex(index) && m_weapons != null && index < m_weapons.Length ? m_weapons[index] : null;
@@ -539,6 +564,23 @@ namespace CouchGuys.Gameplay.Weapons
         {
             foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
                 if (child.name == name) return child;
+            return null;
+        }
+
+        private static Transform FindMuzzleDescendant(Transform weaponModel)
+        {
+            foreach (Transform child in weaponModel.GetComponentsInChildren<Transform>(true))
+            {
+                // Blender gives duplicate object names numeric suffixes on FBX import
+                // (Muzzle, Muzzle.001, Muzzle.002). Each search is scoped to one
+                // weapon model, so the suffixed socket is still unambiguous.
+                if (child.name == "Muzzle" ||
+                    child.name.StartsWith("Muzzle.", System.StringComparison.Ordinal))
+                {
+                    return child;
+                }
+            }
+
             return null;
         }
 

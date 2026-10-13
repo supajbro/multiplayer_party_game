@@ -201,6 +201,10 @@ namespace CouchGuys.Editor
             if (weaponController == null) weaponController = player.AddComponent<PlayerWeaponController>();
             ReticleTargetDetector reticleTargetDetector = player.GetComponent<ReticleTargetDetector>();
             if (reticleTargetDetector == null) reticleTargetDetector = player.AddComponent<ReticleTargetDetector>();
+            UnityEngine.Camera gameplayCamera = player.GetComponentInChildren<UnityEngine.Camera>(true);
+            SetObjectReference(weaponEffects, "m_ownerCamera", gameplayCamera);
+            SetObjectReference(weaponController, "m_aimCamera", gameplayCamera);
+            SetObjectReference(reticleTargetDetector, "m_aimCamera", gameplayCamera);
             WeaponReticleController reticleController = player.GetComponent<WeaponReticleController>();
             if (reticleController == null) reticleController = player.AddComponent<WeaponReticleController>();
             WeaponReticleView reticlePrefab = AssetDatabase.LoadAssetAtPath<WeaponReticleView>(

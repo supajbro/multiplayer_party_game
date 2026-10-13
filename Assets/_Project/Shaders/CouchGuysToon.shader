@@ -112,7 +112,9 @@ Shader "Couch Guys/Toon Lit"
                 float3 positionWS : TEXCOORD0;
                 half3 normalWS : TEXCOORD1;
                 float2 uv : TEXCOORD2;
-                float4 shadowCoord : TEXCOORD3;
+                #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
+                    float4 shadowCoord : TEXCOORD3;
+                #endif
                 half fogFactor : TEXCOORD4;
                 DECLARE_LIGHTMAP_OR_SH(lightmapUV, vertexSH, 5);
                 UNITY_VERTEX_INPUT_INSTANCE_ID
@@ -132,7 +134,9 @@ Shader "Couch Guys/Toon Lit"
                 output.positionWS = positions.positionWS;
                 output.normalWS = normals.normalWS;
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-                output.shadowCoord = GetShadowCoord(positions);
+                #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
+                    output.shadowCoord = GetShadowCoord(positions);
+                #endif
                 output.fogFactor = ComputeFogFactor(positions.positionCS.z);
                 OUTPUT_LIGHTMAP_UV(input.staticLightmapUV, unity_LightmapST, output.lightmapUV);
                 OUTPUT_SH(output.normalWS, output.vertexSH);
@@ -159,7 +163,18 @@ Shader "Couch Guys/Toon Lit"
 
                 half3 normalWS = normalize(input.normalWS);
                 half3 viewDirectionWS = SafeNormalize(GetWorldSpaceViewDir(input.positionWS));
-                Light mainLight = GetMainLight(input.shadowCoord);
+                float4 shadowCoord;
+                #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
+                    shadowCoord = input.shadowCoord;
+                #elif defined(MAIN_LIGHT_CALCULATE_SHADOWS)
+                    // Cascades must be selected per pixel. Selecting them in the vertex
+                    // shader interpolates coordinates from different atlas tiles across
+                    // large procedural terrain triangles, creating camera-moving bands.
+                    shadowCoord = TransformWorldToShadowCoord(input.positionWS);
+                #else
+                    shadowCoord = float4(0.0, 0.0, 0.0, 0.0);
+                #endif
+                Light mainLight = GetMainLight(shadowCoord);
                 half mainNdotL = saturate(dot(normalWS, mainLight.direction));
                 half mainBand = ToonBand(mainNdotL * mainLight.shadowAttenuation);
                 half3 shadowTone = lerp(1.0h.xxx, _ShadowColor.rgb, _ShadowStrength);
