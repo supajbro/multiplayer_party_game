@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8f7b3ad4694d49d5a327d7a5cab48a5c, type: 3}
+  m_Name: SuburbsGrassSettings
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.ProceduralGeneration.SuburbsGrassSettings
+  m_baseGrassColour: {r: 0.33333334, g: 0.7254902, b: 0.41568628, a: 1}
+  m_lightStripeColour: {r: 0.4509804, g: 0.8, b: 0.4745098, a: 1}
+  m_darkStripeColour: {r: 0.25882354, g: 0.6039216, b: 0.33333334, a: 1}
+  m_stripeWidth: 3.5
+  m_stripeContrast: 0.42
+  m_grassDetailStrength: 0.32
+  m_windEnabled: 1
+  m_windStrength: 0.22
+  m_windSpeed: 0.65
+  m_enableGrassTufts: 1
+  m_grassTuftDensity: 0.045
+  m_grassTuftDrawDistance: 42

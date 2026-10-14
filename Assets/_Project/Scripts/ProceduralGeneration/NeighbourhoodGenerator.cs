@@ -92,6 +92,7 @@ namespace CouchGuys.ProceduralGeneration
         [Header("Continuous Terrain")]
         [SerializeField] private GeneratedTerrainSettings m_terrainSettings =
             GeneratedTerrainSettings.SuburbsDefault;
+        [SerializeField] private SuburbsGrassSettings m_grassSettings;
 
         [Header("Neighbourhood Border")]
         [SerializeField] private NeighbourhoodBorderSettings m_borderSettings =
@@ -327,6 +328,7 @@ namespace CouchGuys.ProceduralGeneration
             CreateContinuousTerrain();
             CreateSidewalks();
             CreateDriveways();
+            CreateGrassTufts();
             GenerateStreetlights(new System.Random(DeriveSeed(seed, 0x0F4A7C15)));
             PopulateGeneratedParks(new System.Random(DeriveSeed(seed, 0x6D2B79F3)));
             GenerateResidentialDecorations(new System.Random(DeriveSeed(seed, 0x24C18E6B)));
@@ -468,6 +470,7 @@ namespace CouchGuys.ProceduralGeneration
             m_maximumRoadSlope = elevation.MaximumRoadSlope;
             m_progression = region.Progression;
             m_terrainSettings = region.Terrain;
+            m_grassSettings = region.Grass;
             m_borderSettings = region.Border;
             m_roadPrefabs = region.RoadPrefabs ?? Array.Empty<GameObject>();
             m_residentialGroundPrefab = region.GroundPrefab;
@@ -2003,6 +2006,11 @@ namespace CouchGuys.ProceduralGeneration
                             terrainObject.transform.TransformPoint(vertices[bottomLeft]),
                             terrainObject.transform.TransformPoint(vertices[bottomRight]),
                             terrainObject.transform.TransformPoint(vertices[topLeft]),
+                            terrainObject.transform.TransformPoint(vertices[topRight])) ||
+                        IsTerrainQuadCoveredByHouse(
+                            terrainObject.transform.TransformPoint(vertices[bottomLeft]),
+                            terrainObject.transform.TransformPoint(vertices[bottomRight]),
+                            terrainObject.transform.TransformPoint(vertices[topLeft]),
                             terrainObject.transform.TransformPoint(vertices[topRight])))
                     {
                         continue;
@@ -2035,8 +2043,10 @@ namespace CouchGuys.ProceduralGeneration
             MeshRenderer meshRenderer = terrainObject.GetComponent<MeshRenderer>();
             MeshCollider meshCollider = terrainObject.GetComponent<MeshCollider>();
             meshFilter.sharedMesh = mesh;
-            Material runtimeMaterial = null;
-            Material surfaceMaterial = m_terrainSettings.SurfaceMaterial;
+            Material runtimeMaterial = CreateLawnMaterial();
+            Material surfaceMaterial = runtimeMaterial != null
+                ? runtimeMaterial
+                : m_terrainSettings.SurfaceMaterial;
             if (surfaceMaterial == null && m_residentialGroundPrefab != null)
             {
                 Renderer prefabRenderer =
@@ -2111,6 +2121,7 @@ namespace CouchGuys.ProceduralGeneration
                 }
             }
 
+            AddGrassExclusionAxisBoundaries(coordinates, minimum, maximum, xAxis);
             coordinates.Sort();
             for (int index = coordinates.Count - 1; index > 0; index--)
             {

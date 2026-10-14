@@ -57,6 +57,7 @@ MonoBehaviour:
     RoadSurfaceOffset: 0.035
     TextureScale: 16
     SurfaceMaterial: {fileID: 0}
+  m_grass: {fileID: 11400000, guid: f41c147eab304a879a1ac24be761cb79, type: 2}
   m_border:
     Enabled: 1
     BorderWidth: 18

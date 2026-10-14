@@ -10,7 +10,7 @@ namespace CouchGuys.Editor
     public static class NeighbourhoodEnvironmentValidationRunner
     {
         private const string RegionPath = "Assets/_Project/Settings/Regions/Region_Suburbs.asset";
-        private const string SessionKey = "CouchGuys.EnvironmentValidation.2026-10-14.Driveways";
+        private const string SessionKey = "CouchGuys.EnvironmentValidation.2026-10-14.GrassV1";
         private static readonly int[] ValidationSeeds = { 12345, 24680, 97531 };
 
         [InitializeOnLoadMethod]
@@ -59,6 +59,7 @@ namespace CouchGuys.Editor
                 if (generator.GeneratedResidentialDecorationCount == 0)
                     throw new InvalidOperationException($"Seed {seed} generated no residential decorations.");
                 ValidateDriveways(generator, seed);
+                ValidateGrass(generator, seed);
                 Debug.Log($"Environment seed {seed}: {generator.GeneratedRoads.Count} roads, " +
                           $"{generator.GeneratedProperties.Count} properties, {generator.GeneratedParkCount} parks, " +
                           $"{generator.GeneratedStreetlightCount} streetlights, " +
@@ -102,6 +103,28 @@ namespace CouchGuys.Editor
                         $"Seed {seed} driveway '{property.name}' misses the road terrain by " +
                         $"{startHeightError:F3}m.");
                 }
+            }
+        }
+
+        private static void ValidateGrass(NeighbourhoodGenerator generator, int seed)
+        {
+            if (!generator.GeneratedTerrain.TryGetComponent(out MeshRenderer terrainRenderer) ||
+                terrainRenderer.sharedMaterial == null ||
+                terrainRenderer.sharedMaterial.shader == null ||
+                terrainRenderer.sharedMaterial.shader.name != "Couch Guys/Suburbs Mowed Lawn")
+            {
+                throw new InvalidOperationException(
+                    $"Seed {seed} did not apply the generated mowed-lawn material.");
+            }
+
+            GeneratedGrassTufts grass = generator.GetComponentInChildren<GeneratedGrassTufts>(true);
+            if (grass == null || grass.TuftCount <= 0 ||
+                !grass.TryGetComponent(out MeshFilter filter) || filter.sharedMesh == null ||
+                filter.sharedMesh.vertexCount != grass.TuftCount * 8 ||
+                grass.TryGetComponent(out Collider _))
+            {
+                throw new InvalidOperationException(
+                    $"Seed {seed} generated invalid or colliding decorative grass tufts.");
             }
         }
     }
