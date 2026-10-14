@@ -71,6 +71,8 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField, Min(0f)] private float m_sidewalkSurfaceOffset = 0.06f;
         [SerializeField, Min(0f)] private float m_houseSetbackFromSidewalk = 3f;
         [SerializeField, Min(0f)] private float m_houseSetbackVariation = 1.5f;
+        [Tooltip("Optional material for the generated driveway surface. A light-grey runtime material is used when empty.")]
+        [SerializeField] private Material m_drivewayMaterial;
         [SerializeField, Min(0.5f)] private float m_drivewayWidth = 3.5f;
         [SerializeField, Min(0f)] private float m_drivewayClearance = 0.75f;
         [SerializeField, Range(1f, 30f)] private float m_maximumDrivewaySlope = 16f;
@@ -148,6 +150,7 @@ namespace CouchGuys.ProceduralGeneration
         private Transform m_generatedRoot;
         private Transform m_roadsRoot;
         private Transform m_sidewalksRoot;
+        private Transform m_drivewaysRoot;
         private Transform m_residentialGroundRoot;
         private Transform m_housesRoot;
         private Transform m_landmarksRoot;
@@ -162,6 +165,7 @@ namespace CouchGuys.ProceduralGeneration
         private float m_elevationNoiseOffsetY;
         private Material m_runtimeRoadMaterial;
         private Material m_runtimeRoadMarkingMaterial;
+        private Material m_runtimeDrivewayMaterial;
 
         private readonly struct PropertyCandidate
         {
@@ -202,6 +206,7 @@ namespace CouchGuys.ProceduralGeneration
 
         public StartingArea GeneratedStartingArea { get; private set; }
         public GeneratedTerrainMesh GeneratedTerrain { get; private set; }
+        public GeneratedTerrainMesh GeneratedDrivewaySurface { get; private set; }
         public NeighbourhoodBorderGenerator GeneratedBorder { get; private set; }
         public IReadOnlyList<GeneratedRoad> GeneratedRoads => m_generatedRoads;
         public IReadOnlyList<GeneratedProperty> GeneratedProperties => m_generatedProperties;
@@ -321,6 +326,7 @@ namespace CouchGuys.ProceduralGeneration
             GenerateProperties(new System.Random(DeriveSeed(seed, 0x61C88647)));
             CreateContinuousTerrain();
             CreateSidewalks();
+            CreateDriveways();
             GenerateStreetlights(new System.Random(DeriveSeed(seed, 0x0F4A7C15)));
             PopulateGeneratedParks(new System.Random(DeriveSeed(seed, 0x6D2B79F3)));
             GenerateResidentialDecorations(new System.Random(DeriveSeed(seed, 0x24C18E6B)));
@@ -526,6 +532,7 @@ namespace CouchGuys.ProceduralGeneration
 
             DestroyOwnedRuntimeMaterial(ref m_runtimeRoadMaterial);
             DestroyOwnedRuntimeMaterial(ref m_runtimeRoadMarkingMaterial);
+            DestroyOwnedRuntimeMaterial(ref m_runtimeDrivewayMaterial);
 
             GeneratedNeighbourhoodRoot existingRoot = GetComponentInChildren<GeneratedNeighbourhoodRoot>(true);
             if (existingRoot != null && existingRoot.transform.parent == transform)
@@ -543,6 +550,7 @@ namespace CouchGuys.ProceduralGeneration
             m_generatedRoot = null;
             m_roadsRoot = null;
             m_sidewalksRoot = null;
+            m_drivewaysRoot = null;
             m_residentialGroundRoot = null;
             m_housesRoot = null;
             m_landmarksRoot = null;
@@ -555,6 +563,7 @@ namespace CouchGuys.ProceduralGeneration
             m_generatedRoadCollider = null;
             GeneratedStartingArea = null;
             GeneratedTerrain = null;
+            GeneratedDrivewaySurface = null;
             GeneratedBorder = null;
             IsGenerationReady = false;
             IsNavMeshReady = false;
@@ -743,6 +752,8 @@ namespace CouchGuys.ProceduralGeneration
             m_roadsRoot.SetParent(m_generatedRoot, false);
             m_sidewalksRoot = new GameObject("Sidewalks").transform;
             m_sidewalksRoot.SetParent(m_generatedRoot, false);
+            m_drivewaysRoot = new GameObject("Driveways").transform;
+            m_drivewaysRoot.SetParent(m_generatedRoot, false);
             m_residentialGroundRoot = new GameObject("ResidentialGround").transform;
             m_residentialGroundRoot.SetParent(m_generatedRoot, false);
             m_housesRoot = new GameObject("Houses").transform;
@@ -1988,6 +1999,15 @@ namespace CouchGuys.ProceduralGeneration
                     int bottomRight = bottomLeft + 1;
                     int topLeft = bottomLeft + vertexCountX;
                     int topRight = topLeft + 1;
+                    if (IsTerrainQuadCoveredByDriveway(
+                            terrainObject.transform.TransformPoint(vertices[bottomLeft]),
+                            terrainObject.transform.TransformPoint(vertices[bottomRight]),
+                            terrainObject.transform.TransformPoint(vertices[topLeft]),
+                            terrainObject.transform.TransformPoint(vertices[topRight])))
+                    {
+                        continue;
+                    }
+
                     triangles.Add(bottomLeft);
                     triangles.Add(topLeft);
                     triangles.Add(topRight);
@@ -2152,11 +2172,14 @@ namespace CouchGuys.ProceduralGeneration
                     float inner = m_roadTileSize * 0.5f;
                     float outer = inner + m_sidewalkWidth;
                     float along = m_roadTileSize * 0.5f;
-                    AddSidewalkPiece(
-                        centre + outward * inner - tangent * along,
-                        centre + outward * inner + tangent * along,
-                        centre + outward * outer + tangent * along,
-                        centre + outward * outer - tangent * along,
+                    AddSidewalkSidePieces(
+                        roadCell,
+                        centre,
+                        outward,
+                        tangent,
+                        inner,
+                        outer,
+                        along,
                         vertices,
                         triangles,
                         uvs,
@@ -2332,7 +2355,9 @@ namespace CouchGuys.ProceduralGeneration
 
         private void SetSidewalkHeight(ref Vector3 position)
         {
-            position.y = SamplePlacementTerrainHeight(position) + m_sidewalkSurfaceOffset;
+            position.y = TrySampleDrivewaySurface(position, out float drivewayHeight)
+                ? drivewayHeight
+                : SamplePlacementTerrainHeight(position) + m_sidewalkSurfaceOffset;
         }
 
         private static Vector3 DirectionVector(CardinalDirection direction)
@@ -2348,6 +2373,7 @@ namespace CouchGuys.ProceduralGeneration
         {
             float height = CalculateProgressiveElevation(localX, localY);
             height = BlendHousePads(height, flatWorldPosition);
+            height = BlendDrivewayGrades(height, flatWorldPosition);
             return ApplyDepotAndRoadHeights(height, localX, localY, flatWorldPosition);
         }
 
@@ -3004,6 +3030,12 @@ namespace CouchGuys.ProceduralGeneration
             if (generatedProperty == null)
             {
                 generatedProperty = property.AddComponent<GeneratedProperty>();
+            }
+
+            if (generatedProperty.DrivewayAnchor == null)
+            {
+                generatedProperty.SetDrivewayAnchor(
+                    FindNamedDescendant(property.transform, "DrivewayAnchor"));
             }
 
             Transform deliveryPoint = generatedProperty.DeliveryPoint;
@@ -4015,11 +4047,73 @@ namespace CouchGuys.ProceduralGeneration
         {
             Vector3 roadPosition = GridToWorld(property.RoadCoordinate);
             Vector2 towardRoad = houseFootprint.Forward;
-            Vector2 awayFromRoad = -towardRoad;
             Vector2 roadCentre = new Vector2(roadPosition.x, roadPosition.z);
-            Vector2 start = roadCentre + awayFromRoad *
-                (m_roadTileSize * 0.5f + m_sidewalkWidth);
-            Vector2 end = houseFootprint.Centre + towardRoad * houseFootprint.HalfSize.y;
+            Vector2 end;
+            Vector2 directionToRoad;
+            Vector2 start;
+            if (property.DrivewayAnchor != null)
+            {
+                Vector3 anchorPosition = property.DrivewayAnchor.position;
+                end = new Vector2(anchorPosition.x, anchorPosition.z);
+                Vector3 anchorForward3 = Vector3.ProjectOnPlane(
+                    property.DrivewayAnchor.forward,
+                    Vector3.up);
+                if (anchorForward3.sqrMagnitude < 0.001f)
+                {
+                    Debug.LogWarning(
+                        $"DrivewayAnchor on '{property.name}' has no usable horizontal forward direction; its driveway was skipped.",
+                        property);
+                    drivewayFootprint = default;
+                    drivewayStart = default;
+                    drivewayEnd = default;
+                    return false;
+                }
+
+                anchorForward3.Normalize();
+                directionToRoad = new Vector2(anchorForward3.x, anchorForward3.z);
+                if (Vector2.Dot(directionToRoad, towardRoad) < 0.2f)
+                {
+                    Debug.LogWarning(
+                        $"DrivewayAnchor on '{property.name}' does not face its assigned road; its driveway was skipped.",
+                        property);
+                    drivewayFootprint = default;
+                    drivewayStart = default;
+                    drivewayEnd = default;
+                    return false;
+                }
+
+                if (!TryIntersectRoadSurface(
+                        end,
+                        directionToRoad,
+                        roadCentre,
+                        out start))
+                {
+                    Debug.LogWarning(
+                        $"Could not project DrivewayAnchor on '{property.name}' to its assigned road; the driveway was skipped.",
+                        property);
+                    drivewayFootprint = default;
+                    drivewayStart = default;
+                    drivewayEnd = default;
+                    return false;
+                }
+            }
+            else
+            {
+                end = houseFootprint.Centre + towardRoad * houseFootprint.HalfSize.y;
+                directionToRoad = (roadCentre - end).normalized;
+                if (!TryIntersectRoadSurface(
+                        end,
+                        directionToRoad,
+                        roadCentre,
+                        out start))
+                {
+                    drivewayFootprint = default;
+                    drivewayStart = default;
+                    drivewayEnd = default;
+                    return false;
+                }
+            }
+
             Vector2 segment = end - start;
             float length = segment.magnitude;
             if (length < 0.1f)
@@ -4065,27 +4159,31 @@ namespace CouchGuys.ProceduralGeneration
                 }
             }
 
-            drivewayStart = new Vector3(
-                start.x,
-                SamplePlacementTerrainHeight(new Vector3(start.x, 0f, start.y)),
-                start.y);
-            drivewayEnd = new Vector3(
-                end.x,
-                property.transform.position.y,
-                end.y);
-            Vector3 propertyNormal = property.transform.up;
-            Vector3 propertyOffset = drivewayEnd - property.transform.position;
-            if (Mathf.Abs(propertyNormal.y) > 0.001f)
+            Vector3 flatStart = new Vector3(start.x, 0f, start.y);
+            drivewayStart = new Vector3(start.x, SampleRoadSurfaceHeight(flatStart), start.y);
+            drivewayEnd = new Vector3(end.x, property.transform.position.y, end.y);
+            if (property.DrivewayAnchor != null)
             {
-                drivewayEnd.y = property.transform.position.y -
-                    (propertyNormal.x * propertyOffset.x +
-                     propertyNormal.z * propertyOffset.z) / propertyNormal.y;
+                drivewayEnd.y = property.DrivewayAnchor.position.y;
+            }
+            else
+            {
+                Vector3 propertyNormal = property.transform.up;
+                Vector3 propertyOffset = drivewayEnd - property.transform.position;
+                if (Mathf.Abs(propertyNormal.y) > 0.001f)
+                {
+                    drivewayEnd.y = property.transform.position.y -
+                        (propertyNormal.x * propertyOffset.x +
+                         propertyNormal.z * propertyOffset.z) / propertyNormal.y;
+                }
             }
 
             float grade = Mathf.Atan2(
                 Mathf.Abs(drivewayEnd.y - drivewayStart.y),
                 length) * Mathf.Rad2Deg;
-            return grade <= m_maximumDrivewaySlope;
+            // SmoothStep removes hard pitch changes at the road and garage, but its
+            // steepest derivative is 1.5 times the average grade.
+            return grade * 1.5f <= m_maximumDrivewaySlope;
         }
 
         private static void ConfigurePropertyConnectionPoints(

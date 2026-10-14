@@ -10,7 +10,7 @@ namespace CouchGuys.Editor
     public static class NeighbourhoodEnvironmentValidationRunner
     {
         private const string RegionPath = "Assets/_Project/Settings/Regions/Region_Suburbs.asset";
-        private const string SessionKey = "CouchGuys.EnvironmentValidation.2026-10-13";
+        private const string SessionKey = "CouchGuys.EnvironmentValidation.2026-10-14.Driveways";
         private static readonly int[] ValidationSeeds = { 12345, 24680, 97531 };
 
         [InitializeOnLoadMethod]
@@ -58,6 +58,7 @@ namespace CouchGuys.Editor
                     throw new InvalidOperationException($"Seed {seed} generated no streetlights.");
                 if (generator.GeneratedResidentialDecorationCount == 0)
                     throw new InvalidOperationException($"Seed {seed} generated no residential decorations.");
+                ValidateDriveways(generator, seed);
                 Debug.Log($"Environment seed {seed}: {generator.GeneratedRoads.Count} roads, " +
                           $"{generator.GeneratedProperties.Count} properties, {generator.GeneratedParkCount} parks, " +
                           $"{generator.GeneratedStreetlightCount} streetlights, " +
@@ -67,6 +68,40 @@ namespace CouchGuys.Editor
             finally
             {
                 EditorSceneManager.ClosePreviewScene(preview);
+            }
+        }
+
+        private static void ValidateDriveways(NeighbourhoodGenerator generator, int seed)
+        {
+            GeneratedTerrainMesh surface = generator.GeneratedDrivewaySurface;
+            if (surface == null || surface.VertexCount <= 0 || surface.TriangleCount <= 0 ||
+                !surface.TryGetComponent(out MeshFilter filter) || filter.sharedMesh == null ||
+                !surface.TryGetComponent(out MeshCollider collider) ||
+                collider.sharedMesh != filter.sharedMesh)
+            {
+                throw new InvalidOperationException(
+                    $"Seed {seed} generated no valid combined driveway mesh/collider.");
+            }
+
+            foreach (GeneratedProperty property in generator.GeneratedProperties)
+            {
+                Vector3 flatSegment = property.DrivewayEnd - property.DrivewayStart;
+                flatSegment.y = 0f;
+                if (property.ReservedDrivewayWidth <= 0f || flatSegment.sqrMagnitude <= 0.01f ||
+                    property.DrivewayGrade > 30f)
+                {
+                    throw new InvalidOperationException(
+                        $"Seed {seed} has invalid driveway metadata on '{property.name}'.");
+                }
+
+                float startHeightError = Mathf.Abs(
+                    property.DrivewayStart.y - generator.SampleTerrainHeight(property.DrivewayStart));
+                if (startHeightError > 0.15f)
+                {
+                    throw new InvalidOperationException(
+                        $"Seed {seed} driveway '{property.name}' misses the road terrain by " +
+                        $"{startHeightError:F3}m.");
+                }
             }
         }
     }

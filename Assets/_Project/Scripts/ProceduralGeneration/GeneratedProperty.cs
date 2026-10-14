@@ -8,6 +8,8 @@ namespace CouchGuys.ProceduralGeneration
     {
         [SerializeField] private Transform m_roadConnection;
         [SerializeField] private Transform m_deliveryPoint;
+        [Tooltip("Optional point immediately outside the garage or parking entrance. Its forward axis should point out toward the road.")]
+        [SerializeField] private Transform m_drivewayAnchor;
         [SerializeField] private Vector2Int m_gridFootprint = Vector2Int.one;
         [SerializeField] private Transform m_visualRoot;
         [SerializeField] private bool m_fitVisualToFootprint;
@@ -27,6 +29,7 @@ namespace CouchGuys.ProceduralGeneration
 
         public Transform RoadConnection => m_roadConnection;
         public Transform DeliveryPoint => m_deliveryPoint;
+        public Transform DrivewayAnchor => m_drivewayAnchor;
         public Vector2Int GridFootprint => m_gridFootprint;
         public Transform VisualRoot => m_visualRoot;
         public bool FitVisualToFootprint => m_fitVisualToFootprint;
@@ -104,13 +107,18 @@ namespace CouchGuys.ProceduralGeneration
             Transform roadConnection,
             Transform deliveryPoint,
             Transform visualRoot,
-            bool fitVisualToFootprint)
+            bool fitVisualToFootprint,
+            Transform drivewayAnchor = null)
         {
             m_gridFootprint = gridFootprint;
             m_roadConnection = roadConnection;
             m_deliveryPoint = deliveryPoint;
             m_visualRoot = visualRoot;
             m_fitVisualToFootprint = fitVisualToFootprint;
+            m_drivewayAnchor = drivewayAnchor;
         }
+
+        public void SetDrivewayAnchor(Transform drivewayAnchor) =>
+            m_drivewayAnchor = drivewayAnchor;
     }
 }
