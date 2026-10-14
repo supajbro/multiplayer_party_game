@@ -64,6 +64,83 @@ namespace CouchGuys.Tests.Editor
             Assert.That(velocity.z, Is.EqualTo(2f).Within(0.0001f));
         }
 
+        [TestCase(-1f, -1f)]
+        [TestCase(1f, -1f)]
+        [TestCase(-1f, 1f)]
+        [TestCase(1f, 1f)]
+        public void CarryFacingDirection_AlwaysPointsFromCarrierToAnchor(
+            float anchorX,
+            float anchorZ)
+        {
+            MethodInfo method = typeof(PlayerCouchCarrier).GetMethod(
+                "CalculateCarryFacingDirection",
+                StaticPrivate | BindingFlags.NonPublic);
+            Assert.That(method, Is.Not.Null);
+
+            Vector3 carrier = new Vector3(anchorX * 2f, 3f, anchorZ * 2f);
+            Vector3 anchor = new Vector3(anchorX, 0.5f, anchorZ);
+            Vector3 actual = (Vector3)method.Invoke(null, new object[] { carrier, anchor });
+            Vector3 expected = Vector3.ProjectOnPlane(anchor - carrier, Vector3.up);
+
+            Assert.That(actual.y, Is.EqualTo(0f).Within(0.0001f));
+            Assert.That(Vector3.Angle(actual, expected), Is.LessThan(0.01f));
+        }
+
+        [Test]
+        public void DebugCarryBehaviours_OnlyChangeTheSharedMovementIntentSource()
+        {
+            MethodInfo method = typeof(DebugCouchBotController).GetMethod(
+                "ResolveCarryMovementIntent", StaticPrivate);
+            Assert.That(method, Is.Not.Null);
+
+            Vector3 leaderIntent = new Vector3(0.25f, 0f, 0.5f);
+            Vector3 cooperative = (Vector3)method.Invoke(null, new object[]
+            {
+                DebugCouchBotController.DebugCarryBehaviour.Cooperative,
+                leaderIntent,
+                Vector3.right
+            });
+            Vector3 opposing = (Vector3)method.Invoke(null, new object[]
+            {
+                DebugCouchBotController.DebugCarryBehaviour.Opposing,
+                leaderIntent,
+                Vector3.right
+            });
+            Vector3 fixedDirection = (Vector3)method.Invoke(null, new object[]
+            {
+                DebugCouchBotController.DebugCarryBehaviour.FixedDirection,
+                leaderIntent,
+                Vector3.right * 3f + Vector3.up
+            });
+
+            Assert.That(cooperative, Is.EqualTo(leaderIntent));
+            Assert.That(opposing, Is.EqualTo(-leaderIntent));
+            Assert.That(fixedDirection, Is.EqualTo(Vector3.right));
+        }
+
+        [Test]
+        public void AttachmentCorrection_PreventsCarrierEscapingItsGrabPoint()
+        {
+            MethodInfo method = typeof(ThirdPersonPlayerController).GetMethod(
+                "CalculateAttachmentCorrection", StaticPrivate);
+            Assert.That(method, Is.Not.Null);
+
+            Vector3 attemptedPosition = new Vector3(1.5f, 3f, 0f);
+            Vector3 correction = (Vector3)method.Invoke(null, new object[]
+            {
+                attemptedPosition,
+                Vector3.zero,
+                Vector3.right,
+                0.45f,
+                1f
+            });
+            Vector3 correctedPosition = attemptedPosition + correction;
+
+            Assert.That(correctedPosition.y, Is.EqualTo(attemptedPosition.y));
+            Assert.That(Vector3.ProjectOnPlane(correctedPosition, Vector3.up).magnitude,
+                Is.EqualTo(1f).Within(0.0001f));
+        }
+
         [Test]
         public void DirectionalResistance_ConstrainsPlayerButPreservesCouchIntent()
         {

@@ -219,6 +219,104 @@ namespace CouchGuys.Player
 
         Vector3 ICouchCarrierServer.GetServerMovementIntent() => GetServerMovementIntent();
 
+        /// <summary>
+        /// Returns the same inward-facing direction used by an owner-controlled carrier.
+        /// Server-driven teammates use this instead of facing their NavMesh velocity.
+        /// </summary>
+        internal bool TryGetCarryFacingDirection(out Vector3 facingDirection)
+        {
+            Transform anchor = GetCurrentCarryAnchor();
+            if (anchor == null)
+            {
+                facingDirection = Vector3.zero;
+                return false;
+            }
+
+            facingDirection = CalculateCarryFacingDirection(
+                transform.position,
+                anchor.position);
+            return facingDirection.sqrMagnitude > 0.0001f;
+        }
+
+        internal static Vector3 CalculateCarryFacingDirection(
+            Vector3 carrierPosition,
+            Vector3 anchorPosition) =>
+            Vector3.ProjectOnPlane(anchorPosition - carrierPosition, Vector3.up);
+
+        /// <summary>
+        /// Exposes the same attachment band used by the local player so server-driven
+        /// teammates cannot bypass it with their navigation movement.
+        /// </summary>
+        internal bool TryGetCarryMovementConstraint(
+            out Transform anchor,
+            out Vector3 outwardDirection,
+            out float minimumDistance,
+            out float comfortableDistance,
+            out float maximumDistance,
+            out float inwardSpeedMultiplier,
+            out float speedMultiplier)
+        {
+            NetworkObject carryable = m_carriedCouch.Value != null
+                ? m_carriedCouch.Value
+                : m_carriedSled.Value;
+            RefreshMovementCache(carryable, m_carriedPointIndex.Value);
+
+            anchor = m_cachedMovementAnchor;
+            minimumDistance = CarryDistance;
+            inwardSpeedMultiplier = CouchPushingSpeedMultiplier;
+            if (m_cachedMovementCouch != null)
+            {
+                maximumDistance = m_cachedMovementCouch.MaxCarryDistance;
+                speedMultiplier = CalculateCarryingSpeedMultiplier(m_cachedMovementCouch);
+                outwardDirection = anchor != null
+                    ? Vector3.ProjectOnPlane(
+                        anchor.position - m_cachedMovementCouch.transform.position,
+                        Vector3.up)
+                    : Vector3.zero;
+            }
+            else if (m_cachedMovementSled != null)
+            {
+                maximumDistance = m_cachedMovementSled.MaxGrabDistance;
+                speedMultiplier = m_cachedMovementSled.CalculateCarrierMovementSpeedMultiplier();
+                outwardDirection = anchor != null
+                    ? Vector3.ProjectOnPlane(
+                        anchor.position - m_cachedMovementSled.transform.position,
+                        Vector3.up)
+                    : Vector3.zero;
+            }
+            else
+            {
+                outwardDirection = Vector3.zero;
+                comfortableDistance = 0f;
+                maximumDistance = 0f;
+                speedMultiplier = 1f;
+                return false;
+            }
+
+            comfortableDistance = maximumDistance * SoftConstraintStartRatio;
+            return anchor != null;
+        }
+
+        private Transform GetCurrentCarryAnchor()
+        {
+            int pointIndex = m_carriedPointIndex.Value;
+            if (m_carriedCouch.Value != null &&
+                m_carriedCouch.Value.TryGetComponent(out CouchCarryController couch))
+            {
+                CouchCarryPoint point = couch.GetPoint(pointIndex);
+                return point != null ? point.transform : null;
+            }
+
+            if (m_carriedSled.Value != null &&
+                m_carriedSled.Value.TryGetComponent(out SledController sled))
+            {
+                SledGrabPoint point = sled.GetPoint(pointIndex);
+                return point != null ? point.transform : null;
+            }
+
+            return null;
+        }
+
         internal CouchCarryController GetCarriedCouchServer()
         {
             NetworkObject couchObject = m_carriedCouch.Value;
@@ -799,49 +897,24 @@ namespace CouchGuys.Player
             m_playerController.ClearExternalMovementResistance();
             m_playerController.ClearExternalFacingTarget();
             m_playerController.SetExternalRotationLocked(false);
-            NetworkObject couchObject = m_carriedCouch.Value;
-            NetworkObject sledObject = m_carriedSled.Value;
-            int pointIndex = m_carriedPointIndex.Value;
-            RefreshMovementCache(couchObject != null ? couchObject : sledObject, pointIndex);
-            if (m_cachedMovementCouch != null)
+            if (TryGetCarryMovementConstraint(
+                    out Transform anchor,
+                    out Vector3 outwardDirection,
+                    out float minimumDistance,
+                    out float comfortableDistance,
+                    out float maximumDistance,
+                    out float inwardSpeedMultiplier,
+                    out float carrySpeedMultiplier))
             {
-                targetMultiplier = CalculateCarryingSpeedMultiplier(m_cachedMovementCouch);
-                m_playerController.SetExternalFacingTarget(
-                    m_cachedMovementAnchor != null
-                        ? m_cachedMovementAnchor
-                        : m_cachedMovementCouch.transform);
-
-                if (m_cachedMovementAnchor != null)
-                {
-                    float maximumDistance = m_cachedMovementCouch.MaxCarryDistance;
-                    Vector3 outwardDirection = Vector3.ProjectOnPlane(
-                        m_cachedMovementAnchor.position - m_cachedMovementCouch.transform.position,
-                        Vector3.up);
-                    m_playerController.SetExternalMovementResistance(
-                        m_cachedMovementAnchor,
-                        outwardDirection,
-                        CarryDistance,
-                        maximumDistance * SoftConstraintStartRatio,
-                        maximumDistance,
-                        CouchPushingSpeedMultiplier);
-                }
-            }
-            else if (m_cachedMovementSled != null)
-            {
-                targetMultiplier = m_cachedMovementSled.CalculateCarrierMovementSpeedMultiplier();
-                m_playerController.SetExternalFacingTarget(
-                    m_cachedMovementAnchor != null ? m_cachedMovementAnchor : m_cachedMovementSled.transform);
-                if (m_cachedMovementAnchor != null)
-                {
-                    float maximumDistance = m_cachedMovementSled.MaxGrabDistance;
-                    Vector3 outwardDirection = Vector3.ProjectOnPlane(
-                        m_cachedMovementAnchor.position - m_cachedMovementSled.transform.position,
-                        Vector3.up);
-                    m_playerController.SetExternalMovementResistance(
-                        m_cachedMovementAnchor, outwardDirection, CarryDistance,
-                        maximumDistance * SoftConstraintStartRatio, maximumDistance,
-                        CouchPushingSpeedMultiplier);
-                }
+                targetMultiplier = carrySpeedMultiplier;
+                m_playerController.SetExternalFacingTarget(anchor);
+                m_playerController.SetExternalMovementResistance(
+                    anchor,
+                    outwardDirection,
+                    minimumDistance,
+                    comfortableDistance,
+                    maximumDistance,
+                    inwardSpeedMultiplier);
             }
             float nextMultiplier = Mathf.MoveTowards(
                 m_appliedSpeedMultiplier,

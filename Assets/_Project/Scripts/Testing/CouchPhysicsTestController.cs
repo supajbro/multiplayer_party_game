@@ -136,9 +136,17 @@ namespace CouchGuys.Testing
             }
             if (Pressed(keyboard.digit9Key, keyboard.numpad9Key))
             {
-                SpawnTeammate();
+                SpawnTeammate(DebugCouchBotController.DebugCarryBehaviour.Cooperative);
             }
             if (Pressed(keyboard.digit8Key, keyboard.numpad8Key))
+            {
+                SpawnTeammate(DebugCouchBotController.DebugCarryBehaviour.Opposing);
+            }
+            if (Pressed(keyboard.digit7Key, keyboard.numpad7Key))
+            {
+                SpawnTeammate(DebugCouchBotController.DebugCarryBehaviour.FixedDirection);
+            }
+            if (Pressed(keyboard.digit6Key, keyboard.numpad6Key))
             {
                 RemoveTeammate();
             }
@@ -165,7 +173,7 @@ namespace CouchGuys.Testing
             couch.GetComponent<CouchCarryController>().SelectRandomModelVariantServer();
         }
 
-        private void SpawnTeammate()
+        private void SpawnTeammate(DebugCouchBotController.DebugCarryBehaviour carryBehaviour)
         {
             if (!m_player.TryGetComponent(out PlayerHealth leaderHealth) ||
                 !m_player.TryGetComponent(out PlayerCouchCarrier leaderCarrier))
@@ -187,7 +195,11 @@ namespace CouchGuys.Testing
                 return;
             }
 
-            bot.Initialise(leaderCarrier.DebugBotSettings, m_nextTeammateIndex++, leaderHealth);
+            bot.Initialise(
+                leaderCarrier.DebugBotSettings,
+                m_nextTeammateIndex++,
+                leaderHealth,
+                carryBehaviour);
             m_networkManager.ServerManager.Spawn(teammate);
             m_spawnedTeammates.Add(teammate);
         }
@@ -201,6 +213,7 @@ namespace CouchGuys.Testing
                 m_spawnedTeammates.RemoveAt(last);
                 if (teammate != null && teammate.IsSpawned)
                 {
+                    teammate.GetComponent<DebugCouchBotController>()?.PrepareForDebugDespawnServer();
                     m_networkManager.ServerManager.Despawn(teammate);
                     return;
                 }

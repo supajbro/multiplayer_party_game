@@ -21,6 +21,13 @@ namespace CouchGuys.Player
     [DisallowMultipleComponent]
     public sealed class DebugCouchBotController : MonoBehaviour
     {
+        public enum DebugCarryBehaviour
+        {
+            Cooperative,
+            Opposing,
+            FixedDirection
+        }
+
         public enum AiState
         {
             FollowPlayer,
@@ -40,6 +47,7 @@ namespace CouchGuys.Player
         private static float s_nextThiefCacheRefreshTime;
 
         private NavMeshAgent m_agent;
+        private CharacterController m_characterController;
         private PlayerCouchCarrier m_carrier;
         private PlayerHealth m_health;
         private PlayerWeaponController m_weapon;
@@ -60,6 +68,9 @@ namespace CouchGuys.Player
         private bool m_isInitialised;
         private bool m_weaponConfigured;
         private bool m_deadStateApplied;
+        private bool m_usingConstrainedCarryMovement;
+        private DebugCarryBehaviour m_carryBehaviour;
+        private float m_verticalVelocity;
 
         public bool IsAiTeammate => m_isInitialised;
         public int BotIndex => m_botIndex;
@@ -82,7 +93,8 @@ namespace CouchGuys.Player
         internal void Initialise(
             DebugCouchBotSettings settings,
             int botIndex,
-            PlayerHealth leader)
+            PlayerHealth leader,
+            DebugCarryBehaviour carryBehaviour = DebugCarryBehaviour.Cooperative)
         {
             if (settings == null)
             {
@@ -93,6 +105,7 @@ namespace CouchGuys.Player
             m_settings = settings;
             m_botIndex = Mathf.Max(0, botIndex);
             m_leader = leader;
+            m_carryBehaviour = carryBehaviour;
             m_isInitialised = true;
             enabled = true;
             ConfigureAgent();
@@ -131,6 +144,7 @@ namespace CouchGuys.Player
                 State = AiState.FollowPlayer;
                 m_carrier.SetDebugBotMovementIntentServer(Vector3.zero);
                 StopAgent();
+                SetConstrainedCarryMovement(false);
                 ApplyKnockback();
                 return;
             }
@@ -228,6 +242,7 @@ namespace CouchGuys.Player
 
         private void TickFollowPlayer()
         {
+            SetConstrainedCarryMovement(false);
             m_carrier.SetDebugBotMovementIntentServer(Vector3.zero);
             if (m_leader == null)
             {
@@ -249,6 +264,7 @@ namespace CouchGuys.Player
 
         private void TickMoveToCouch()
         {
+            SetConstrainedCarryMovement(false);
             if (m_targetCouch == null || !m_targetCouch.IsSpawned)
             {
                 m_targetPoint = null;
@@ -304,33 +320,33 @@ namespace CouchGuys.Player
                 m_carrier.ReleaseForAiServer();
                 m_targetPoint = null;
                 State = AiState.FollowPlayer;
+                SetConstrainedCarryMovement(false);
                 return;
             }
 
-            PlayerCouchCarrier humanCarrier = couch.GetFirstHumanCarrierServer(m_carrier);
-            Vector3 movementIntent = humanCarrier != null
-                ? humanCarrier.GetServerMovementIntent()
-                : Vector3.zero;
-            movementIntent = Vector3.ClampMagnitude(
-                Vector3.ProjectOnPlane(movementIntent, Vector3.up),
-                1f);
+            Vector3 movementIntent = ResolveCarryMovementIntent(
+                m_carryBehaviour,
+                GetLeaderMovementIntent(),
+                m_settings.ConfiguredDirection);
             m_carrier.SetDebugBotMovementIntentServer(movementIntent);
 
             CouchCarryPoint point = couch.GetPoint(m_carrier.CarriedPointIndex);
             if (point == null)
             {
                 m_carrier.ReleaseForAiServer();
+                SetConstrainedCarryMovement(false);
                 return;
             }
 
             m_targetPoint = point;
             float speed = m_settings.CarryingSpeed *
                           m_carrier.CalculateCarryingSpeedMultiplier(couch);
-            SetDestination(CalculateStandPosition(point), speed, 0.08f);
+            ApplyConstrainedCarryMovement(movementIntent, speed);
         }
 
         private void TickMoveToSled()
         {
+            SetConstrainedCarryMovement(false);
             if (m_targetSled == null || !m_targetSled.IsSpawned)
             {
                 m_targetSledPoint = null;
@@ -380,27 +396,30 @@ namespace CouchGuys.Player
                 m_carrier.ReleaseForAiServer();
                 m_targetSledPoint = null;
                 State = AiState.FollowPlayer;
+                SetConstrainedCarryMovement(false);
                 return;
             }
-            PlayerCouchCarrier humanCarrier = sled.GetFirstHumanCarrierServer(m_carrier);
-            Vector3 movementIntent = humanCarrier != null
-                ? humanCarrier.GetServerMovementIntent()
-                : Vector3.zero;
-            m_carrier.SetDebugBotMovementIntentServer(Vector3.ClampMagnitude(
-                Vector3.ProjectOnPlane(movementIntent, Vector3.up), 1f));
+            Vector3 movementIntent = ResolveCarryMovementIntent(
+                m_carryBehaviour,
+                GetLeaderMovementIntent(),
+                m_settings.ConfiguredDirection);
+            m_carrier.SetDebugBotMovementIntentServer(movementIntent);
             SledGrabPoint point = sled.GetPoint(m_carrier.CarriedPointIndex);
             if (point == null)
             {
                 m_carrier.ReleaseForAiServer();
+                SetConstrainedCarryMovement(false);
                 return;
             }
             m_targetSledPoint = point;
-            SetDestination(CalculateSledStandPosition(point),
-                m_settings.CarryingSpeed * sled.CalculateCarrierMovementSpeedMultiplier(), 0.08f);
+            ApplyConstrainedCarryMovement(
+                movementIntent,
+                m_settings.CarryingSpeed * sled.CalculateCarrierMovementSpeedMultiplier());
         }
 
         private void TickCombat()
         {
+            SetConstrainedCarryMovement(false);
             if (!IsCombatTargetValid(m_combatTarget))
             {
                 m_combatTarget = null;
@@ -622,15 +641,122 @@ namespace CouchGuys.Player
             }
         }
 
+        internal static Vector3 ResolveCarryMovementIntent(
+            DebugCarryBehaviour behaviour,
+            Vector3 leaderIntent,
+            Vector3 fixedDirection)
+        {
+            Vector3 intent = behaviour switch
+            {
+                DebugCarryBehaviour.Opposing => -leaderIntent,
+                DebugCarryBehaviour.FixedDirection => fixedDirection,
+                _ => leaderIntent
+            };
+            return Vector3.ClampMagnitude(Vector3.ProjectOnPlane(intent, Vector3.up), 1f);
+        }
+
+        private Vector3 GetLeaderMovementIntent()
+        {
+            return m_leader != null &&
+                   m_leader.TryGetComponent(out PlayerCouchCarrier leaderCarrier)
+                ? leaderCarrier.GetServerMovementIntent()
+                : Vector3.zero;
+        }
+
+        private void ApplyConstrainedCarryMovement(Vector3 movementIntent, float speed)
+        {
+            SetConstrainedCarryMovement(true);
+            if (m_characterController == null ||
+                !m_carrier.TryGetCarryMovementConstraint(
+                    out Transform anchor,
+                    out Vector3 outwardDirection,
+                    out float minimumDistance,
+                    out float comfortableDistance,
+                    out float maximumDistance,
+                    out float inwardSpeedMultiplier,
+                    out _))
+            {
+                return;
+            }
+
+            Vector3 constrainedMovement = ThirdPersonPlayerController.ApplyDirectionalResistance(
+                movementIntent,
+                transform.position,
+                anchor.position,
+                outwardDirection,
+                minimumDistance,
+                comfortableDistance,
+                maximumDistance,
+                inwardSpeedMultiplier,
+                out _);
+
+            if (m_characterController.isGrounded && m_verticalVelocity < 0f)
+            {
+                m_verticalVelocity = -2f;
+            }
+            else
+            {
+                m_verticalVelocity = Mathf.Max(
+                    m_verticalVelocity + Physics.gravity.y * Time.deltaTime,
+                    -50f);
+            }
+
+            Vector3 displacement = constrainedMovement * Mathf.Max(0f, speed) * Time.deltaTime;
+            displacement.y = m_verticalVelocity * Time.deltaTime;
+            Vector3 attachmentCorrection = ThirdPersonPlayerController.CalculateAttachmentCorrection(
+                transform.position + displacement,
+                anchor.position,
+                outwardDirection,
+                minimumDistance,
+                maximumDistance);
+            m_characterController.Move(displacement + attachmentCorrection);
+            if (m_agent != null && m_agent.enabled)
+            {
+                m_agent.nextPosition = transform.position;
+            }
+        }
+
+        private void SetConstrainedCarryMovement(bool constrained)
+        {
+            if (m_agent == null || !m_agent.enabled || m_usingConstrainedCarryMovement == constrained)
+            {
+                return;
+            }
+
+            m_usingConstrainedCarryMovement = constrained;
+            if (constrained)
+            {
+                StopAgent();
+                m_agent.updatePosition = false;
+                m_agent.nextPosition = transform.position;
+                return;
+            }
+
+            m_agent.nextPosition = transform.position;
+            m_agent.updatePosition = true;
+            m_verticalVelocity = 0f;
+        }
+
         private void UpdateFacing()
         {
+            // Carry orientation always wins over navigation/combat facing. Human
+            // carriers face their current anchor through ThirdPersonPlayerController;
+            // server-driven teammates resolve that exact same anchor here.
+            if (m_carrier != null && m_carrier.IsCarrying)
+            {
+                if (m_carrier.TryGetCarryFacingDirection(out Vector3 carryFacing))
+                {
+                    FaceDirection(carryFacing);
+                }
+
+                // Never fall through to desiredVelocity while attached, even during
+                // a one-frame point/state transition. That fallback caused free spins.
+                return;
+            }
+
             if (State == AiState.Combat && m_combatTarget != null)
             {
                 FaceDirection(m_combatTarget.transform.position - transform.position);
-            }
-            else if (State == AiState.CarryCouch && m_targetPoint != null)
-            {
-                FaceDirection(m_targetPoint.transform.position - transform.position);
             }
             else if (m_agent != null && m_agent.enabled)
             {
@@ -659,7 +785,15 @@ namespace CouchGuys.Player
                 return;
             }
 
-            if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh)
+            if (m_usingConstrainedCarryMovement && m_characterController != null)
+            {
+                m_characterController.Move(m_externalVelocity * Time.deltaTime);
+                if (m_agent != null && m_agent.enabled)
+                {
+                    m_agent.nextPosition = transform.position;
+                }
+            }
+            else if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh)
             {
                 m_agent.Move(m_externalVelocity * Time.deltaTime);
             }
@@ -744,6 +878,7 @@ namespace CouchGuys.Player
             m_targetPoint = null;
             m_targetSledPoint = null;
             StopAgent();
+            SetConstrainedCarryMovement(false);
             if (m_agent != null)
             {
                 m_agent.enabled = false;
@@ -752,8 +887,22 @@ namespace CouchGuys.Player
 
         private void OnDestroy()
         {
+            if (m_isInitialised)
+            {
+                m_carrier?.ReleaseForAiServer();
+            }
             ReleaseTargetPointReservation();
             ReleaseTargetSledPointReservation();
+        }
+
+        internal void PrepareForDebugDespawnServer()
+        {
+            m_carrier?.SetDebugBotMovementIntentServer(Vector3.zero);
+            m_carrier?.ReleaseForAiServer();
+            ReleaseTargetPointReservation();
+            ReleaseTargetSledPointReservation();
+            StopAgent();
+            SetConstrainedCarryMovement(false);
         }
 
         private void ConfigureAgent()
@@ -771,12 +920,12 @@ namespace CouchGuys.Player
                 return;
             }
 
-            CharacterController characterController = GetComponent<CharacterController>();
-            m_agent.radius = characterController != null
-                ? Mathf.Max(0.1f, characterController.radius)
+            m_characterController = GetComponent<CharacterController>();
+            m_agent.radius = m_characterController != null
+                ? Mathf.Max(0.1f, m_characterController.radius)
                 : 0.4f;
-            m_agent.height = characterController != null
-                ? Mathf.Max(0.5f, characterController.height)
+            m_agent.height = m_characterController != null
+                ? Mathf.Max(0.5f, m_characterController.height)
                 : 1.8f;
             m_agent.baseOffset = 0f;
             m_agent.speed = m_settings.ApproachSpeed;
@@ -784,6 +933,7 @@ namespace CouchGuys.Player
             m_agent.acceleration = 18f;
             m_agent.autoBraking = true;
             m_agent.updateRotation = false;
+            m_agent.updatePosition = true;
             m_agent.enabled = true;
             if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 4f, NavMesh.AllAreas))
             {
