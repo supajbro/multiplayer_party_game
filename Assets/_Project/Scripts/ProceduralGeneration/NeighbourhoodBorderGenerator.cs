@@ -6,7 +6,7 @@ using Object = UnityEngine.Object;
 namespace CouchGuys.ProceduralGeneration
 {
     /// <summary>
-    /// Builds seeded border scenery and a simple, gap-free collision perimeter.
+    /// Builds seeded border scenery and a collision perimeter with intentional traffic gateways.
     /// Optional region prefabs replace the deliberately cheap fallback art.
     /// </summary>
     [DisallowMultipleComponent]
@@ -20,6 +20,7 @@ namespace CouchGuys.ProceduralGeneration
         private Material m_warningMaterial;
 
         public int PerimeterColliderCount { get; private set; }
+        public int ProtectedPerimeterEdgeCount { get; private set; }
         public int SceneryItemCount { get; private set; }
         public int RoadClosureCount { get; private set; }
 
@@ -96,20 +97,82 @@ namespace CouchGuys.ProceduralGeneration
             for (int index = 0; index < edges.Length; index++)
             {
                 Edge edge = edges[index];
-                GameObject wall = new GameObject($"BoundaryWall_{index + 1:00}");
-                wall.transform.SetParent(colliderRoot, false);
-                wall.transform.localPosition = edge.Start + edge.Tangent * (edge.Length * 0.5f);
-                Vector3 wallWorld = wall.transform.position;
-                wallWorld.y = worldMidpoint.y;
-                wall.transform.position = wallWorld;
-                wall.transform.localRotation = Quaternion.LookRotation(edge.Outward, Vector3.up);
-                BoxCollider collider = wall.AddComponent<BoxCollider>();
-                collider.size = new Vector3(
-                    edge.Length + settings.ColliderThickness * 2f,
-                    height / Mathf.Max(0.001f, wall.transform.lossyScale.y),
-                    settings.ColliderThickness);
-                PerimeterColliderCount++;
+                int colliderCountBeforeEdge = PerimeterColliderCount;
+                List<float> gaps = GetPortalDistances(generator, edge);
+                float cursor = 0f;
+                float halfGap = generator.TileSize * 0.7f;
+                for (int gapIndex = 0; gapIndex < gaps.Count; gapIndex++)
+                {
+                    float gapStart = Mathf.Clamp(gaps[gapIndex] - halfGap, 0f, edge.Length);
+                    float gapEnd = Mathf.Clamp(gaps[gapIndex] + halfGap, 0f, edge.Length);
+                    CreateWallSegment(colliderRoot, edge, index, gapIndex, cursor, gapStart,
+                        settings, height, worldMidpoint.y);
+                    cursor = Mathf.Max(cursor, gapEnd);
+                }
+
+                CreateWallSegment(colliderRoot, edge, index, gaps.Count, cursor, edge.Length,
+                    settings, height, worldMidpoint.y);
+                if (PerimeterColliderCount > colliderCountBeforeEdge)
+                {
+                    ProtectedPerimeterEdgeCount++;
+                }
             }
+        }
+
+        private void CreateWallSegment(
+            Transform colliderRoot,
+            Edge edge,
+            int edgeIndex,
+            int segmentIndex,
+            float start,
+            float end,
+            NeighbourhoodBorderSettings settings,
+            float height,
+            float worldMidpointY)
+        {
+            float length = end - start;
+            if (length <= settings.ColliderThickness)
+            {
+                return;
+            }
+
+            GameObject wall = new GameObject($"BoundaryWall_{edgeIndex + 1:00}_{segmentIndex + 1:00}");
+            wall.transform.SetParent(colliderRoot, false);
+            wall.transform.localPosition = edge.Start + edge.Tangent * (start + length * 0.5f);
+            Vector3 wallWorld = wall.transform.position;
+            wallWorld.y = worldMidpointY;
+            wall.transform.position = wallWorld;
+            wall.transform.localRotation = Quaternion.LookRotation(edge.Outward, Vector3.up);
+            BoxCollider collider = wall.AddComponent<BoxCollider>();
+            collider.size = new Vector3(
+                length,
+                height / Mathf.Max(0.001f, wall.transform.lossyScale.y),
+                settings.ColliderThickness);
+            PerimeterColliderCount++;
+        }
+
+        private List<float> GetPortalDistances(NeighbourhoodGenerator generator, Edge edge)
+        {
+            List<float> distances = new List<float>(2);
+            for (int index = 0; index < generator.TrafficRoadPortals.Count; index++)
+            {
+                TrafficRoadPortal portal = generator.TrafficRoadPortals[index];
+                Vector3 localOutward = transform.InverseTransformDirection(portal.WorldOutward);
+                if (Vector3.Dot(localOutward, edge.Outward) < 0.8f)
+                {
+                    continue;
+                }
+
+                Vector3 local = transform.InverseTransformPoint(portal.WorldPosition);
+                float distance = Vector3.Dot(local - edge.Start, edge.Tangent);
+                if (distance >= 0f && distance <= edge.Length)
+                {
+                    distances.Add(distance);
+                }
+            }
+
+            distances.Sort();
+            return distances;
         }
 
         private void CreateScenery(
@@ -124,6 +187,7 @@ namespace CouchGuys.ProceduralGeneration
             for (int edgeIndex = 0; edgeIndex < edges.Length; edgeIndex++)
             {
                 Edge edge = edges[edgeIndex];
+                List<float> portalDistances = GetPortalDistances(generator, edge);
                 float distance = spacing * 0.5f;
                 float sectionRemaining = 0f;
                 NeighbourhoodBorderType type = NeighbourhoodBorderType.None;
@@ -139,6 +203,21 @@ namespace CouchGuys.ProceduralGeneration
                     }
 
                     float jitter = RandomRange(random, -spacing * 0.25f, spacing * 0.25f);
+                    bool blocksPortal = false;
+                    for (int portalIndex = 0; portalIndex < portalDistances.Count; portalIndex++)
+                    {
+                        if (Mathf.Abs(distance + jitter - portalDistances[portalIndex]) < generator.TileSize)
+                        {
+                            blocksPortal = true;
+                            break;
+                        }
+                    }
+                    if (blocksPortal)
+                    {
+                        distance += spacing;
+                        sectionRemaining -= spacing;
+                        continue;
+                    }
                     float inset = RandomRange(random, 0.5f, settings.BorderWidth * 0.55f);
                     Vector3 localPosition = edge.Start + edge.Tangent * (distance + jitter) -
                                             edge.Outward * inset;
@@ -205,6 +284,7 @@ namespace CouchGuys.ProceduralGeneration
             for (int index = 0; index < generator.GeneratedRoads.Count; index++)
             {
                 GeneratedRoad road = generator.GeneratedRoads[index];
+                if (generator.IsTrafficGatewayRoad(road.Coordinate)) continue;
                 Vector3 local = transform.InverseTransformPoint(road.transform.position);
                 Vector3 outward;
                 if (Mathf.Abs(local.x - playableBounds.xMin) <= edgeTolerance) outward = Vector3.left;

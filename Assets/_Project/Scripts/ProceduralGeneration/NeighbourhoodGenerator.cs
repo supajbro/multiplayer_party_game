@@ -316,8 +316,10 @@ namespace CouchGuys.ProceduralGeneration
             m_minimumLocalX = -(m_gridWidth / 2) * (m_blockWidth + 1);
             AssignBlockElevations(layoutRandom);
             GenerateRoadLayout(new System.Random(DeriveSeed(seed, 0x1874A2B1)));
+            CreateTrafficBoundaryExtensions();
             CalculateRoadConnections();
             ResolveRoadElevations();
+            FinaliseTrafficBoundaryConnections();
             RefreshBlockElevationsFromRoads();
             // Visual selection has its own stream so adding art cannot perturb the
             // logical road/property decisions made for a given seed.
@@ -394,6 +396,10 @@ namespace CouchGuys.ProceduralGeneration
                 $"{GetStrictDestinationCountForStage(6)}] in " +
                 $"{LastGenerationMilliseconds:F1} ms.",
                 this);
+            if (m_createDeliveryNpc && GetComponent<CouchGuys.Gameplay.Traffic.TrafficManager>() == null)
+            {
+                gameObject.AddComponent<CouchGuys.Gameplay.Traffic.TrafficManager>();
+            }
             RegionGenerated?.Invoke(this);
         }
 
@@ -588,6 +594,7 @@ namespace CouchGuys.ProceduralGeneration
             m_primaryRoadCells.Clear();
             m_placedHouseFootprints.Clear();
             m_reservedDrivewayFootprints.Clear();
+            ClearTrafficBoundaryData();
             m_environmentFootprints.Clear();
             m_generatedParks.Clear();
             m_parkBlocks.Clear();
@@ -4636,11 +4643,12 @@ namespace CouchGuys.ProceduralGeneration
             }
 
             if (m_borderSettings.Enabled &&
-                (GeneratedBorder == null || GeneratedBorder.PerimeterColliderCount != 4 ||
+                (GeneratedBorder == null || GeneratedBorder.ProtectedPerimeterEdgeCount != 4 ||
+                 GeneratedBorder.PerimeterColliderCount < 4 ||
                  GeneratedBorder.SceneryItemCount == 0))
             {
                 Debug.LogError(
-                    "Generated neighbourhood border is missing scenery or a continuous four-wall perimeter.",
+                    "Generated neighbourhood border is missing scenery or protection on one or more perimeter edges.",
                     this);
                 return false;
             }

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Enemies;
 using CouchGuys.Gameplay.Vehicles;
+using CouchGuys.Gameplay.Traffic;
 using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Input;
 using CouchGuys.Player;
@@ -49,6 +50,7 @@ namespace CouchGuys.Gameplay.Weapons
         private readonly Dictionary<PlayerHealth, float> m_playerDamage = new(8);
         private readonly Dictionary<ThiefHealth, float> m_thiefDamage = new(8);
         private readonly Dictionary<VanController, float> m_vanDamage = new(4);
+        private readonly Dictionary<TrafficVehicleController, float> m_trafficVehicleDamage = new(4);
         private float m_switchCompleteAt;
         private float m_reloadCompleteAt;
         private int m_reloadingIndex = -1;
@@ -344,6 +346,7 @@ namespace CouchGuys.Gameplay.Weapons
             m_playerDamage.Clear();
             m_thiefDamage.Clear();
             m_vanDamage.Clear();
+            m_trafficVehicleDamage.Clear();
             Vector3[] ends = new Vector3[weapon.Pellets];
             normals = new Vector3[weapon.Pellets];
             surfaces = new byte[weapon.Pellets];
@@ -381,6 +384,14 @@ namespace CouchGuys.Gameplay.Weapons
                 {
                     m_vanDamage.TryGetValue(van, out float total);
                     m_vanDamage[van] = total + damage;
+                    continue;
+                }
+                TrafficVehicleController trafficVehicle =
+                    nearest.collider.GetComponentInParent<TrafficVehicleController>();
+                if (trafficVehicle != null)
+                {
+                    m_trafficVehicleDamage.TryGetValue(trafficVehicle, out float total);
+                    m_trafficVehicleDamage[trafficVehicle] = total + damage;
                 }
             }
 
@@ -406,6 +417,8 @@ namespace CouchGuys.Gameplay.Weapons
             }
             foreach (KeyValuePair<VanController, float> entry in m_vanDamage)
                 entry.Key.ApplyBulletDamageServer(entry.Value);
+            foreach (KeyValuePair<TrafficVehicleController, float> entry in m_trafficVehicleDamage)
+                entry.Key.ApplyBulletDamageServer(entry.Value);
             return ends;
         }
 
@@ -416,6 +429,8 @@ namespace CouchGuys.Gameplay.Weapons
                 collider.GetComponentInParent<ThiefHealth>() != null)
                 return WeaponImpactSurface.Enemy;
             if (collider.GetComponentInParent<VanController>() != null)
+                return WeaponImpactSurface.Metal;
+            if (collider.GetComponentInParent<TrafficVehicleController>() != null)
                 return WeaponImpactSurface.Metal;
             if (collider is TerrainCollider || collider.GetComponentInParent<Terrain>() != null)
                 return WeaponImpactSurface.Terrain;

@@ -115,6 +115,25 @@ namespace CouchGuys.Player
         [Server]
         public void ApplyDamageServer(float damage, Vector3 impactDirection, float knockbackForce)
         {
+            ApplyDamageInternal(damage, impactDirection, knockbackForce, false);
+        }
+
+        /// <summary>Applies damage while preserving the complete supplied horizontal impact force.</summary>
+        [Server]
+        public void ApplyDamageWithFullKnockbackServer(
+            float damage,
+            Vector3 impactDirection,
+            float knockbackForce)
+        {
+            ApplyDamageInternal(damage, impactDirection, knockbackForce, true);
+        }
+
+        private void ApplyDamageInternal(
+            float damage,
+            Vector3 impactDirection,
+            float knockbackForce,
+            bool useFullKnockback)
+        {
             if (damage <= 0f || !IsAlive)
             {
                 return;
@@ -131,7 +150,9 @@ namespace CouchGuys.Player
 
             horizontalDirection.Normalize();
             bool severeHit = appliedDamage >= m_maxHealth * m_knockdownDamageFraction || died;
-            float appliedForce = severeHit ? knockbackForce : knockbackForce * 0.3f;
+            float appliedForce = severeHit || useFullKnockback
+                ? knockbackForce
+                : knockbackForce * 0.3f;
             Vector3 impulse = horizontalDirection * appliedForce;
             if (severeHit)
             {
