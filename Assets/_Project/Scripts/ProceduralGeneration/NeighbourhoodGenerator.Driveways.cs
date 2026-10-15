@@ -344,52 +344,25 @@ namespace CouchGuys.ProceduralGeneration
             Vector2 roadCentre,
             out Vector2 intersection)
         {
-            float halfRoad = Mathf.Min(
-                m_terrainSettings.RoadHalfWidth,
-                m_roadTileSize * 0.5f);
-            float minimumT = 0f;
-            float maximumT = float.PositiveInfinity;
-            for (int axis = 0; axis < 2; axis++)
-            {
-                float originValue = axis == 0 ? origin.x : origin.y;
-                float directionValue = axis == 0 ? direction.x : direction.y;
-                float centreValue = axis == 0 ? roadCentre.x : roadCentre.y;
-                float minimum = centreValue - halfRoad;
-                float maximum = centreValue + halfRoad;
-                if (Mathf.Abs(directionValue) <= 0.0001f)
-                {
-                    if (originValue < minimum || originValue > maximum)
-                    {
-                        intersection = default;
-                        return false;
-                    }
-
-                    continue;
-                }
-
-                float first = (minimum - originValue) / directionValue;
-                float second = (maximum - originValue) / directionValue;
-                if (first > second)
-                {
-                    (first, second) = (second, first);
-                }
-
-                minimumT = Mathf.Max(minimumT, first);
-                maximumT = Mathf.Min(maximumT, second);
-                if (minimumT > maximumT)
-                {
-                    intersection = default;
-                    return false;
-                }
-            }
-
-            if (minimumT <= 0.05f || float.IsInfinity(minimumT))
+            if (direction.sqrMagnitude <= 0.0001f)
             {
                 intersection = default;
                 return false;
             }
 
-            intersection = origin + direction * minimumT;
+            direction.Normalize();
+            float halfRoad = Mathf.Min(
+                m_terrainSettings.RoadHalfWidth,
+                m_roadTileSize * 0.5f);
+            float distanceToRoadCentre = Vector2.Dot(roadCentre - origin, direction);
+            float distanceToNearEdge = distanceToRoadCentre - halfRoad;
+            if (distanceToNearEdge <= 0.05f)
+            {
+                intersection = default;
+                return false;
+            }
+
+            intersection = origin + direction * distanceToNearEdge;
             return true;
         }
 

@@ -122,8 +122,8 @@ MonoBehaviour:
       LightRange: 11
     Parks:
       Enabled: 1
-      MinimumParks: 2
-      MaximumParks: 4
+      MinimumParks: 1
+      MaximumParks: 2
       SmallProbability: 0.45
       MediumProbability: 0.4
       LargeProbability: 0.15
@@ -180,6 +180,7 @@ MonoBehaviour:
       GardenDensity: 0.85
       DoorClearance: 2.5
       DrivewayClearance: 1.25
+    DrivewayMaterial: {fileID: 2100000, guid: 51cd20bb51f348b98e913ef10c33d5ab, type: 2}
     Prefabs:
       SmallPark: {fileID: 2519029726287221801, guid: 7d6d51777551537499ffdfb59c062f70, type: 3}
       MediumPark: {fileID: 7676956951616722985, guid: 218f5360217fb19489cdd559f160a8dc, type: 3}

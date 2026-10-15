@@ -289,6 +289,8 @@ namespace CouchGuys.Editor
             RegionDefinition region = AssetDatabase.LoadAssetAtPath<RegionDefinition>(RegionPath);
             if (region == null) throw new InvalidOperationException($"Missing region asset at {RegionPath}.");
             RegionEnvironmentSettings settings = RegionEnvironmentSettings.SuburbsDefault;
+            settings.DrivewayMaterial = AssetDatabase.LoadAssetAtPath<Material>(
+                $"{MaterialFolder}/Driveway_Pebbles.mat");
             settings.Prefabs = library;
             settings.Lighting.SkyboxMaterial = CreateOrUpdateSkybox();
             settings.Lighting.PostProcessingProfile = CreateOrUpdatePostProfile();

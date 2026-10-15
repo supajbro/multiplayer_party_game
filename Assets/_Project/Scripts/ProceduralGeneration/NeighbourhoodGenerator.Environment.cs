@@ -10,17 +10,37 @@ namespace CouchGuys.ProceduralGeneration
         private RegionEnvironmentSettings m_environmentSettings = RegionEnvironmentSettings.SuburbsDefault;
         private readonly List<OrientedFootprint> m_environmentFootprints = new List<OrientedFootprint>();
         private readonly List<GeneratedParkRecord> m_generatedParks = new List<GeneratedParkRecord>();
+        private readonly HashSet<Vector2Int> m_parkBlocks = new HashSet<Vector2Int>();
         private Transform m_streetlightsRoot;
         private Transform m_parksRoot;
         private Transform m_residentialDecorationsRoot;
         private Transform m_roadsideDecorationsRoot;
 
         public int GeneratedParkCount => m_generatedParks.Count;
+        public int GeneratedParkBlockCount => m_parkBlocks.Count;
         public int GeneratedStreetlightCount => m_streetlightsRoot != null ? m_streetlightsRoot.childCount : 0;
         public int GeneratedResidentialDecorationCount =>
             m_residentialDecorationsRoot != null ? m_residentialDecorationsRoot.childCount : 0;
         public int GeneratedRoadsideDecorationCount =>
             m_roadsideDecorationsRoot != null ? m_roadsideDecorationsRoot.childCount : 0;
+
+        public bool IsCoordinateInParkBlock(GridCoordinate coordinate)
+        {
+            Vector2Int local = GridToLocal(coordinate);
+            int horizontalSpan = m_blockWidth + 1;
+            int verticalSpan = m_blockHeight + 1;
+            int relativeX = local.x - m_minimumLocalX;
+            if (relativeX < 0 || local.y < 0)
+            {
+                return false;
+            }
+
+            int blockX = relativeX / horizontalSpan;
+            int blockY = local.y / verticalSpan;
+            return blockX >= 0 && blockX < m_gridWidth &&
+                   blockY >= 0 && blockY < m_gridHeight &&
+                   m_parkBlocks.Contains(new Vector2Int(blockX, blockY));
+        }
 
         private sealed class GeneratedParkRecord
         {
@@ -118,6 +138,17 @@ namespace CouchGuys.ProceduralGeneration
                 if (requestedSize != ParkSize.Small) TryCreatePark(blocks[index], ParkSize.Small, settings, random);
             }
 
+            // A park is a hard generation rule. If terrain-slope filtering rejected
+            // every normal candidate, reserve the first otherwise valid block and
+            // conform a small park to its sampled average height.
+            for (int index = 0;
+                 index < blocks.Count && m_generatedParks.Count < settings.MinimumParks;
+                 index++)
+            {
+                if (!m_parkBlocks.Contains(blocks[index]))
+                    TryCreatePark(blocks[index], ParkSize.Small, settings, random, false);
+            }
+
             GenerateConfiguredLandmarkZones(blocks, random);
         }
 
@@ -198,7 +229,8 @@ namespace CouchGuys.ProceduralGeneration
             Vector2Int block,
             ParkSize parkSize,
             ParkGenerationSettings settings,
-            System.Random random)
+            System.Random random,
+            bool enforceTerrainSlope = true)
         {
             Vector2Int footprint = parkSize switch
             {
@@ -217,15 +249,30 @@ namespace CouchGuys.ProceduralGeneration
             int blockMaximumY = blockMinimumY + m_blockHeight - 1;
             int startX = blockMinimumX + (m_blockWidth - footprint.x) / 2;
             int startY = blockMinimumY + (m_blockHeight - footprint.y) / 2;
+            List<GridCoordinate> blockCells = new List<GridCoordinate>(m_blockWidth * m_blockHeight);
+            for (int y = blockMinimumY; y <= blockMaximumY; y++)
+                for (int x = blockMinimumX; x <= blockMaximumX; x++)
+                    blockCells.Add(LocalToGrid(x, y));
+            if (!CanPlaceProperty(
+                    blockCells,
+                    blockMinimumX,
+                    blockMaximumX,
+                    blockMinimumY,
+                    blockMaximumY))
+                return false;
+
             List<GridCoordinate> cells = new List<GridCoordinate>(footprint.x * footprint.y);
             for (int y = 0; y < footprint.y; y++)
                 for (int x = 0; x < footprint.x; x++)
                     cells.Add(LocalToGrid(startX + x, startY + y));
-            if (!CanPlaceProperty(cells, blockMinimumX, blockMaximumX, blockMinimumY, blockMaximumY)) return false;
-
             Vector3 centre = CalculateCellCentre(cells);
             Vector2 worldSize = new Vector2(footprint.x * m_roadTileSize, footprint.y * m_roadTileSize);
-            if (!IsAreaSlopeValid(centre, worldSize, settings.MaximumTerrainSlope, out float centreHeight)) return false;
+            bool slopeIsValid = IsAreaSlopeValid(
+                centre,
+                worldSize,
+                settings.MaximumTerrainSlope,
+                out float centreHeight);
+            if (enforceTerrainSlope && !slopeIsValid) return false;
             centre.y = centreHeight + 0.025f;
             GameObject prefab = parkSize switch
             {
@@ -255,7 +302,9 @@ namespace CouchGuys.ProceduralGeneration
                 WorldSize = worldSize,
                 Entrance = entrance
             });
-            for (int cellIndex = 0; cellIndex < cells.Count; cellIndex++) m_propertyCells.Add(cells[cellIndex]);
+            m_parkBlocks.Add(block);
+            for (int cellIndex = 0; cellIndex < blockCells.Count; cellIndex++)
+                m_propertyCells.Add(blockCells[cellIndex]);
             GeneratedLandmarkCount++;
             return true;
         }

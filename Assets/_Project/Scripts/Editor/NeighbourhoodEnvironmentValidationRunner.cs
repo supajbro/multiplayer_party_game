@@ -10,7 +10,7 @@ namespace CouchGuys.Editor
     public static class NeighbourhoodEnvironmentValidationRunner
     {
         private const string RegionPath = "Assets/_Project/Settings/Regions/Region_Suburbs.asset";
-        private const string SessionKey = "CouchGuys.EnvironmentValidation.2026-10-14.GrassV1";
+        private const string SessionKey = "CouchGuys.EnvironmentValidation.2026-10-14.CardinalFrontageV4";
         private static readonly int[] ValidationSeeds = { 12345, 24680, 97531 };
 
         [InitializeOnLoadMethod]
@@ -52,8 +52,16 @@ namespace CouchGuys.Editor
                 if (generator.GeneratedRoads.Count == 0 || generator.GeneratedProperties.Count == 0 ||
                     generator.DeliveryDestinations.Count == 0)
                     throw new InvalidOperationException($"Seed {seed} lost core roads/properties/destinations.");
-                if (generator.GeneratedParkCount < region.Environment.Parks.MinimumParks)
-                    throw new InvalidOperationException($"Seed {seed} generated only {generator.GeneratedParkCount} parks.");
+                if (generator.GeneratedParkCount < 1 || generator.GeneratedParkCount > 2 ||
+                    generator.GeneratedParkBlockCount != generator.GeneratedParkCount)
+                    throw new InvalidOperationException(
+                        $"Seed {seed} generated an invalid park allocation: " +
+                        $"{generator.GeneratedParkCount} parks across " +
+                        $"{generator.GeneratedParkBlockCount} reserved blocks.");
+                foreach (GeneratedProperty property in generator.GeneratedProperties)
+                    if (generator.IsCoordinateInParkBlock(property.AnchorCoordinate))
+                        throw new InvalidOperationException(
+                            $"Seed {seed} placed house '{property.name}' inside a park block.");
                 if (generator.GeneratedStreetlightCount == 0)
                     throw new InvalidOperationException($"Seed {seed} generated no streetlights.");
                 if (generator.GeneratedResidentialDecorationCount == 0)
@@ -84,6 +92,17 @@ namespace CouchGuys.Editor
                     $"Seed {seed} generated no valid combined driveway mesh/collider.");
             }
 
+            Material drivewayMaterial = surface.GetComponent<MeshRenderer>().sharedMaterial;
+            if (drivewayMaterial == null ||
+                drivewayMaterial.GetTexture("_BaseMap") == null ||
+                drivewayMaterial.GetTexture("_BumpMap") == null ||
+                drivewayMaterial.GetFloat("_BumpScale") <= 0f)
+            {
+                throw new InvalidOperationException(
+                    $"Seed {seed} did not apply the pebble albedo and normal-mapped driveway material.");
+            }
+
+            int garageConnections = 0;
             foreach (GeneratedProperty property in generator.GeneratedProperties)
             {
                 Vector3 flatSegment = property.DrivewayEnd - property.DrivewayStart;
@@ -95,6 +114,11 @@ namespace CouchGuys.Editor
                         $"Seed {seed} has invalid driveway metadata on '{property.name}'.");
                 }
 
+                Vector3 roadToGarage = flatSegment.normalized;
+                if (Vector3.Dot(roadToGarage, -property.FrontageDirection) < 0.995f)
+                    throw new InvalidOperationException(
+                        $"Seed {seed} driveway '{property.name}' bends instead of running straight to the road.");
+
                 float startHeightError = Mathf.Abs(
                     property.DrivewayStart.y - generator.SampleTerrainHeight(property.DrivewayStart));
                 if (startHeightError > 0.15f)
@@ -103,8 +127,65 @@ namespace CouchGuys.Editor
                         $"Seed {seed} driveway '{property.name}' misses the road terrain by " +
                         $"{startHeightError:F3}m.");
                 }
+
+                Renderer garageDoor = FindGarageDoorRenderer(property);
+                if (property.DrivewayAnchor == null && garageDoor != null)
+                {
+                    Vector3 endAtGarageHeight = property.DrivewayEnd;
+                    endAtGarageHeight.y = garageDoor.bounds.center.y;
+                    if (garageDoor.bounds.SqrDistance(endAtGarageHeight) > 0.04f)
+                        throw new InvalidOperationException(
+                            $"Seed {seed} driveway '{property.name}' does not finish at its garage door.");
+                    garageConnections++;
+                }
             }
+
+            if (garageConnections == 0)
+                throw new InvalidOperationException(
+                    $"Seed {seed} did not validate any automatic garage-door driveway connections.");
         }
+
+        private static Renderer FindGarageDoorRenderer(GeneratedProperty property)
+        {
+            Renderer[] renderers = property.GetComponentsInChildren<Renderer>(true);
+            Renderer largestGarageDoor = null;
+            float largestArea = 0f;
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                Renderer renderer = renderers[index];
+                bool isGarageDoor = ContainsGarageDoor(renderer.name);
+                Transform current = renderer.transform.parent;
+                while (current != null && current != property.transform)
+                {
+                    isGarageDoor |= ContainsGarageDoor(current.name);
+                    current = current.parent;
+                }
+
+                Material[] materials = renderer.sharedMaterials;
+                for (int materialIndex = 0; materialIndex < materials.Length; materialIndex++)
+                    if (materials[materialIndex] != null &&
+                        ContainsGarageDoor(materials[materialIndex].name))
+                        isGarageDoor = true;
+
+                if (!isGarageDoor) continue;
+                Bounds bounds = renderer.bounds;
+                float area = Mathf.Max(
+                    bounds.size.x * bounds.size.y,
+                    Mathf.Max(
+                        bounds.size.x * bounds.size.z,
+                        bounds.size.y * bounds.size.z));
+                if (area <= largestArea) continue;
+                largestGarageDoor = renderer;
+                largestArea = area;
+            }
+
+            return largestGarageDoor;
+        }
+
+        private static bool ContainsGarageDoor(string value) =>
+            !string.IsNullOrEmpty(value) &&
+            value.IndexOf("garage", StringComparison.OrdinalIgnoreCase) >= 0 &&
+            value.IndexOf("door", StringComparison.OrdinalIgnoreCase) >= 0;
 
         private static void ValidateGrass(NeighbourhoodGenerator generator, int seed)
         {

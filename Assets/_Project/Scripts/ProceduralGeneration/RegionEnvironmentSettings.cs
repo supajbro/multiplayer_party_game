@@ -17,6 +17,8 @@ namespace CouchGuys.ProceduralGeneration
         public LandmarkGenerationSettings Landmarks;
         [Header("Residential Decorations")]
         public ResidentialDecorationSettings ResidentialDecorations;
+        [Header("Driveways")]
+        public Material DrivewayMaterial;
         [Header("Shared Placeholder Prefabs")]
         public EnvironmentPrefabLibrary Prefabs;
 
@@ -149,8 +151,8 @@ namespace CouchGuys.ProceduralGeneration
         public static ParkGenerationSettings Default => new ParkGenerationSettings
         {
             Enabled = true,
-            MinimumParks = 2,
-            MaximumParks = 4,
+            MinimumParks = 1,
+            MaximumParks = 2,
             SmallProbability = 0.45f,
             MediumProbability = 0.4f,
             LargeProbability = 0.15f,
@@ -164,8 +166,8 @@ namespace CouchGuys.ProceduralGeneration
 
         public void Validate()
         {
-            MinimumParks = Mathf.Max(0, MinimumParks);
-            MaximumParks = Mathf.Max(MinimumParks, MaximumParks);
+            MinimumParks = Mathf.Clamp(MinimumParks, 1, 2);
+            MaximumParks = Mathf.Clamp(MaximumParks, MinimumParks, 2);
             SmallProbability = Mathf.Clamp01(SmallProbability);
             MediumProbability = Mathf.Clamp01(MediumProbability);
             LargeProbability = Mathf.Clamp01(LargeProbability);

@@ -478,6 +478,7 @@ namespace CouchGuys.ProceduralGeneration
             m_deliveryNpcPrefab = region.DeliveryNpcPrefab;
             m_mansionPrefab = region.MansionPrefab;
             m_environmentSettings = region.Environment;
+            m_drivewayMaterial = m_environmentSettings.DrivewayMaterial;
         }
 
         private int FindRegionIndex(RegionDefinition region)
@@ -589,6 +590,7 @@ namespace CouchGuys.ProceduralGeneration
             m_reservedDrivewayFootprints.Clear();
             m_environmentFootprints.Clear();
             m_generatedParks.Clear();
+            m_parkBlocks.Clear();
             m_blockElevations = null;
             GeneratedWorldBounds = new Bounds(transform.position, Vector3.zero);
             PlayableWorldBounds = new Bounds(transform.position, Vector3.zero);
@@ -2730,6 +2732,11 @@ namespace CouchGuys.ProceduralGeneration
                 int maximumY = minimumY + m_blockHeight - 1;
                 for (int blockX = 0; blockX < m_gridWidth; blockX++)
                 {
+                    if (m_parkBlocks.Contains(new Vector2Int(blockX, blockY)))
+                    {
+                        continue;
+                    }
+
                     int minimumX = m_minimumLocalX + blockX * horizontalSpan + 1;
                     int maximumX = minimumX + m_blockWidth - 1;
                     int targetLots = CalculateLotsForBlock(
@@ -3073,7 +3080,7 @@ namespace CouchGuys.ProceduralGeneration
                 deliveryPoint,
                 zone,
                 roadElevation);
-            FacePropertyTowardsRoad(property.transform, candidate.Road);
+            FacePropertyTowardsRoad(property.transform, candidate.PropertyToRoad);
             Renderer[] renderers = property.GetComponentsInChildren<Renderer>(true);
             Vector2Int visualFootprint = centreInLot && prefab != m_mansionPrefab
                 ? GetLotFootprint(definition, prefab)
@@ -3081,7 +3088,6 @@ namespace CouchGuys.ProceduralGeneration
             FitPropertyVisualToFootprint(generatedProperty, visualFootprint, renderers);
             if (!TryApplyHouseSetback(
                     generatedProperty,
-                    footprint,
                     candidate,
                     renderers,
                     centreInLot))
@@ -3093,7 +3099,7 @@ namespace CouchGuys.ProceduralGeneration
             if (!TryAlignPropertyToTerrain(
                     generatedProperty,
                     footprint,
-                    candidate.Road,
+                    candidate.PropertyToRoad,
                     renderers) ||
                 !TryCreateRenderedFootprint(
                     generatedProperty,
@@ -3103,6 +3109,7 @@ namespace CouchGuys.ProceduralGeneration
                 !TryCreateDrivewayReservation(
                     generatedProperty,
                     renderedFootprint,
+                    renderers,
                     out OrientedFootprint drivewayFootprint,
                     out Vector3 drivewayStart,
                     out Vector3 drivewayEnd))
@@ -3852,16 +3859,12 @@ namespace CouchGuys.ProceduralGeneration
             return root;
         }
 
-        private void FacePropertyTowardsRoad(Transform property, GridCoordinate roadCoordinate)
+        private void FacePropertyTowardsRoad(
+            Transform property,
+            CardinalDirection propertyToRoad)
         {
-            Vector3 directionToRoad = GridToWorld(roadCoordinate) - property.position;
-            directionToRoad.y = 0f;
-            if (directionToRoad.sqrMagnitude < 0.001f)
-            {
-                return;
-            }
-
-            property.rotation = Quaternion.LookRotation(directionToRoad.normalized, Vector3.up);
+            Vector3 directionToRoad = DirectionVector(propertyToRoad);
+            property.rotation = Quaternion.LookRotation(directionToRoad, Vector3.up);
             GeneratedProperty metadata = property.GetComponent<GeneratedProperty>();
             if (metadata != null && metadata.FitVisualToFootprint && metadata.VisualRoot != null)
             {
@@ -3981,22 +3984,17 @@ namespace CouchGuys.ProceduralGeneration
 
         private bool TryApplyHouseSetback(
             GeneratedProperty property,
-            Vector2Int gridFootprint,
             PropertyCandidate candidate,
             Renderer[] renderers,
             bool centreInLot)
         {
             Vector3 roadPosition = GridToWorld(candidate.Road);
-            Vector3 awayFromRoad = property.transform.position - roadPosition;
-            awayFromRoad.y = 0f;
-            if (awayFromRoad.sqrMagnitude < 0.001f)
-            {
-                return false;
-            }
-
-            awayFromRoad.Normalize();
-            Vector3 towardRoad = -awayFromRoad;
+            Vector3 towardRoad = DirectionVector(candidate.PropertyToRoad);
+            Vector3 awayFromRoad = -towardRoad;
             Vector3 right = Vector3.Cross(Vector3.up, towardRoad).normalized;
+            float lateralOffset = Vector3.Dot(
+                property.transform.position - roadPosition,
+                right);
             if (!TryCalculateProjectedRendererFootprint(
                     renderers,
                     right,
@@ -4014,7 +4012,7 @@ namespace CouchGuys.ProceduralGeneration
                 renderedHalfSize.y;
             float maximumDistance =
                 m_roadTileSize * 0.5f +
-                gridFootprint.y * m_roadTileSize -
+                GetBlockDepthFromRoad(candidate.PropertyToRoad) * m_roadTileSize -
                 m_minimumHouseClearance -
                 renderedHalfSize.y;
             if (minimumDistance > maximumDistance + 0.001f)
@@ -4039,11 +4037,17 @@ namespace CouchGuys.ProceduralGeneration
                     CurrentSeed,
                     candidate.Anchor.X * 73856093 ^ candidate.Anchor.Y * 19349663);
                 float variation = (hash & 0x7fffffff) / (float)int.MaxValue;
-                distance = minimumDistance + Mathf.Min(
-                    m_houseSetbackVariation * variation,
-                    maximumDistance - minimumDistance);
+                float blockCentreDistance =
+                    m_roadTileSize * 0.5f +
+                    GetBlockDepthFromRoad(candidate.PropertyToRoad) * m_roadTileSize * 0.5f;
+                float centredVariation = (variation - 0.5f) * m_houseSetbackVariation;
+                distance = Mathf.Clamp(
+                    blockCentreDistance + centredVariation,
+                    minimumDistance,
+                    maximumDistance);
             }
-            Vector3 position = roadPosition + awayFromRoad * distance;
+            Vector3 position =
+                roadPosition + awayFromRoad * distance + right * lateralOffset;
             position.y = property.transform.position.y;
             property.transform.position = position;
             return true;
@@ -4052,6 +4056,7 @@ namespace CouchGuys.ProceduralGeneration
         private bool TryCreateDrivewayReservation(
             GeneratedProperty property,
             OrientedFootprint houseFootprint,
+            Renderer[] renderers,
             out OrientedFootprint drivewayFootprint,
             out Vector3 drivewayStart,
             out Vector3 drivewayEnd)
@@ -4110,8 +4115,12 @@ namespace CouchGuys.ProceduralGeneration
             }
             else
             {
-                end = houseFootprint.Centre + towardRoad * houseFootprint.HalfSize.y;
-                directionToRoad = (roadCentre - end).normalized;
+                end = TryFindGarageDrivewayEnd(renderers, towardRoad, out Vector2 garageEnd)
+                    ? garageEnd
+                    : houseFootprint.Centre +
+                      houseFootprint.Right * (houseFootprint.HalfSize.x * 0.45f) +
+                      towardRoad * houseFootprint.HalfSize.y;
+                directionToRoad = towardRoad;
                 if (!TryIntersectRoadSurface(
                         end,
                         directionToRoad,
@@ -4197,6 +4206,102 @@ namespace CouchGuys.ProceduralGeneration
             return grade * 1.5f <= m_maximumDrivewaySlope;
         }
 
+        private int GetBlockDepthFromRoad(CardinalDirection propertyToRoad)
+        {
+            GridCoordinate awayFromRoad = DirectionOffset(Opposite(propertyToRoad));
+            GridCoordinate blockForward = DirectionOffset(m_startDirection);
+            int alongForward = Mathf.Abs(
+                awayFromRoad.X * blockForward.X + awayFromRoad.Y * blockForward.Y);
+            return alongForward > 0 ? m_blockHeight : m_blockWidth;
+        }
+
+        private static bool TryFindGarageDrivewayEnd(
+            Renderer[] renderers,
+            Vector2 towardRoad,
+            out Vector2 drivewayEnd)
+        {
+            Renderer best = null;
+            int bestScore = 0;
+            float bestArea = 0f;
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                Renderer candidate = renderers[index];
+                if (candidate == null || !candidate.enabled)
+                {
+                    continue;
+                }
+
+                int score = ScoreGarageRenderer(candidate);
+                if (score <= 0)
+                {
+                    continue;
+                }
+
+                Bounds candidateBounds = candidate.bounds;
+                float candidateArea = Mathf.Max(
+                    candidateBounds.size.x * candidateBounds.size.y,
+                    Mathf.Max(
+                        candidateBounds.size.x * candidateBounds.size.z,
+                        candidateBounds.size.y * candidateBounds.size.z));
+                if (score < bestScore ||
+                    (score == bestScore && candidateArea <= bestArea))
+                {
+                    continue;
+                }
+
+                best = candidate;
+                bestScore = score;
+                bestArea = candidateArea;
+            }
+
+            if (best == null)
+            {
+                drivewayEnd = default;
+                return false;
+            }
+
+            Bounds bounds = best.bounds;
+            Vector2 centre = new Vector2(bounds.center.x, bounds.center.z);
+            float frontExtent = ProjectBoundsSizeOntoAxis(
+                bounds.size,
+                new Vector3(towardRoad.x, 0f, towardRoad.y)) * 0.5f;
+            drivewayEnd = centre + towardRoad * frontExtent;
+            return true;
+        }
+
+        private static int ScoreGarageRenderer(Renderer renderer)
+        {
+            int score = ScoreGarageName(renderer.name);
+            Transform current = renderer.transform.parent;
+            while (current != null)
+            {
+                score = Mathf.Max(score, ScoreGarageName(current.name) - 10);
+                current = current.parent;
+            }
+
+            Material[] materials = renderer.sharedMaterials;
+            for (int index = 0; index < materials.Length; index++)
+            {
+                if (materials[index] != null)
+                {
+                    score = Mathf.Max(score, ScoreGarageName(materials[index].name) - 5);
+                }
+            }
+
+            return score;
+        }
+
+        private static int ScoreGarageName(string value)
+        {
+            if (string.IsNullOrEmpty(value) ||
+                value.IndexOf("garage", StringComparison.OrdinalIgnoreCase) < 0)
+            {
+                return 0;
+            }
+
+            return value.IndexOf("door", StringComparison.OrdinalIgnoreCase) >= 0 ? 100 : 50;
+        }
+
         private static void ConfigurePropertyConnectionPoints(
             GeneratedProperty property,
             Vector3 drivewayStart,
@@ -4222,18 +4327,11 @@ namespace CouchGuys.ProceduralGeneration
         private bool TryAlignPropertyToTerrain(
             GeneratedProperty property,
             Vector2Int gridFootprint,
-            GridCoordinate roadCoordinate,
+            CardinalDirection propertyToRoad,
             Renderer[] renderers)
         {
             Transform propertyTransform = property.transform;
-            Vector3 forward = GridToWorld(roadCoordinate) - propertyTransform.position;
-            forward.y = 0f;
-            if (forward.sqrMagnitude < 0.001f)
-            {
-                return false;
-            }
-
-            forward.Normalize();
+            Vector3 forward = DirectionVector(propertyToRoad);
             Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
             float halfWidth = gridFootprint.x * m_roadTileSize * 0.5f;
             float halfDepth = gridFootprint.y * m_roadTileSize * 0.5f;
@@ -4297,8 +4395,9 @@ namespace CouchGuys.ProceduralGeneration
             Renderer[] renderers,
             out OrientedFootprint footprint)
         {
-            Vector3 forward3 = GridToWorld(property.RoadCoordinate) - property.transform.position;
-            forward3.y = 0f;
+            GridCoordinate frontageOffset =
+                property.RoadCoordinate - property.AnchorCoordinate;
+            Vector3 forward3 = new Vector3(frontageOffset.X, 0f, frontageOffset.Y);
             if (forward3.sqrMagnitude < 0.001f)
             {
                 footprint = default;
