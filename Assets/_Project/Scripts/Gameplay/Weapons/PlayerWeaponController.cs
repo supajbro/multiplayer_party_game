@@ -32,6 +32,7 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] private Transform[] m_weaponModels = new Transform[WeaponCount];
         [SerializeField] private Transform[] m_muzzles = new Transform[WeaponCount];
         [SerializeField] private PlayerWeaponEffects m_effects;
+        [SerializeField] private WeaponAudioEmitter m_audio;
         [SerializeField] private NeighbourhoodMap m_map;
 
         [Header("Weapons")]
@@ -45,6 +46,7 @@ namespace CouchGuys.Gameplay.Weapons
         private readonly SyncVar<int> m_selectedHotbarSlot = new();
         private readonly int[] m_magazine = new int[WeaponCount];
         private readonly int[] m_reserve = new int[WeaponCount];
+        private readonly int[] m_pendingLocalShots = new int[WeaponCount];
         private readonly float[] m_nextServerFireTime = new float[WeaponCount];
         private readonly RaycastHit[] m_hits = new RaycastHit[RaycastBufferSize];
         private readonly Dictionary<PlayerHealth, float> m_playerDamage = new(8);
@@ -60,6 +62,9 @@ namespace CouchGuys.Gameplay.Weapons
         private readonly Vector3[] m_weaponBasePositions = new Vector3[WeaponCount];
         private float m_visualRecoil;
         private float m_visualRecoilDistance;
+        private float m_lastServerRifleShotTime;
+        private bool m_localRifleBurstActive;
+        private bool m_serverRifleBurstActive;
 
         public event System.Action<PlayerWeaponType> LocalShotFired;
         public event System.Action<bool> LocalHitConfirmed;
@@ -67,7 +72,9 @@ namespace CouchGuys.Gameplay.Weapons
 
         public PlayerWeaponType EquippedWeapon => (PlayerWeaponType)Mathf.Clamp(m_equippedIndex.Value, 0, 2);
         public string EquippedWeaponName => GetWeapon(m_equippedIndex.Value)?.DisplayName ?? "None";
-        public int CurrentMagazine => ValidIndex(m_equippedIndex.Value) ? m_magazine[m_equippedIndex.Value] : 0;
+        public int CurrentMagazine => ValidIndex(m_equippedIndex.Value)
+            ? Mathf.Max(0, m_magazine[m_equippedIndex.Value] - m_pendingLocalShots[m_equippedIndex.Value])
+            : 0;
         public int CurrentReserve => ValidIndex(m_equippedIndex.Value) ? m_reserve[m_equippedIndex.Value] : 0;
         public bool IsReloading => m_localReloading || m_reloadingIndex >= 0;
         public bool HasEquippedWeapon => ValidIndex(m_equippedIndex.Value);
@@ -83,8 +90,10 @@ namespace CouchGuys.Gameplay.Weapons
             m_animationDriver ??= GetComponent<CouchGuyAnimationDriver>();
             m_aimCamera ??= GetComponentInChildren<Camera>(true);
             m_effects ??= GetComponent<PlayerWeaponEffects>();
+            m_audio ??= GetComponent<WeaponAudioEmitter>();
             m_map ??= GetComponent<NeighbourhoodMap>();
             if (m_effects == null) m_effects = gameObject.AddComponent<PlayerWeaponEffects>();
+            if (m_audio == null) m_audio = gameObject.AddComponent<WeaponAudioEmitter>();
             if (m_weapons == null || m_weapons.Length != WeaponCount || m_weapons[0] == null)
                 m_weapons = WeaponDefinition.CreateDefaults();
             ResolveModelReferences();
@@ -120,6 +129,19 @@ namespace CouchGuys.Gameplay.Weapons
             if (IsServerInitialized && m_reloadingIndex >= 0 && Time.time >= m_reloadCompleteAt)
                 FinishReloadServer();
 
+            if (IsServerInitialized && m_serverRifleBurstActive)
+            {
+                WeaponDefinition rifle = GetWeapon((int)PlayerWeaponType.AssaultRifle);
+                float silenceTimeout = rifle != null ? rifle.FireInterval * 1.75f : 0.2f;
+                if (m_health == null || !m_health.IsAlive || m_health.IsKnockedDown ||
+                    Time.time >= m_lastServerRifleShotTime + silenceTimeout)
+                {
+                    EndRifleBurstServer();
+                }
+            }
+
+            UpdateLocalRifleBurst();
+
             if (!IsOwner || m_input == null || !m_input.isActiveAndEnabled || m_health == null ||
                 !m_health.IsAlive || m_health.IsKnockedDown)
                 return;
@@ -127,13 +149,19 @@ namespace CouchGuys.Gameplay.Weapons
             int selection = m_input.HotbarSelectionPressedThisFrame;
             if (selection >= 0 && selection != m_selectedHotbarSlot.Value)
             {
+                EndLocalRifleBurst();
                 m_localReloading = false;
                 RequestHotbarSelectionServerRpc(selection);
                 m_nextLocalRequestTime = Time.time + m_switchDuration;
             }
 
             if (m_input.ReloadPressedThisFrame && !m_localReloading)
+            {
+                WeaponDefinition equipped = GetWeapon(m_equippedIndex.Value);
+                if (equipped != null && CurrentMagazine < equipped.MagazineCapacity && CurrentReserve > 0)
+                    EndLocalRifleBurst();
                 RequestReloadServerRpc();
+            }
 
         }
 
@@ -172,7 +200,25 @@ namespace CouchGuys.Gameplay.Weapons
             Ray ray = m_aimCamera != null
                 ? m_aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f))
                 : new Ray(transform.position + Vector3.up * 1.2f, transform.forward);
+            int weaponIndex = m_equippedIndex.Value;
+            int predictedMagazine = ValidIndex(weaponIndex)
+                ? m_magazine[weaponIndex] - m_pendingLocalShots[weaponIndex]
+                : 0;
+            bool endsRifleBurst = false;
+            if (predictedMagazine > 0)
+            {
+                Vector3 muzzle = GetMuzzlePosition(weaponIndex, m_health.AimPoint);
+                m_audio?.PlayShot(weapon.Type, muzzle, m_muzzles[weaponIndex]);
+                m_pendingLocalShots[weaponIndex]++;
+                if (weapon.Type == PlayerWeaponType.AssaultRifle)
+                {
+                    m_localRifleBurstActive = true;
+                    endsRifleBurst = predictedMagazine <= 1;
+                }
+            }
             RequestFireServerRpc(ray.origin, ray.direction);
+            if (endsRifleBurst)
+                EndLocalRifleBurst();
             m_nextLocalRequestTime = Time.time + weapon.FireInterval;
         }
 
@@ -181,6 +227,7 @@ namespace CouchGuys.Gameplay.Weapons
         {
             if (slot < 0 || slot >= 5 || slot == m_selectedHotbarSlot.Value || !m_health.IsAlive) return;
             int index = slot < WeaponCount ? slot : -1;
+            EndRifleBurstServer();
             m_reloadingIndex = -1;
             m_selectedHotbarSlot.Value = slot;
             m_equippedIndex.Value = index;
@@ -204,6 +251,7 @@ namespace CouchGuys.Gameplay.Weapons
                 m_magazine[index] >= weapon.MagazineCapacity || m_reserve[index] <= 0 ||
                 !m_health.IsAlive || (m_couchCarrier != null && m_couchCarrier.IsCarrying)) return;
 
+            EndRifleBurstServer();
             m_reloadingIndex = index;
             m_reloadCompleteAt = Time.time + weapon.ReloadDuration;
             if (Owner.IsValid)
@@ -227,7 +275,16 @@ namespace CouchGuys.Gameplay.Weapons
         [ServerRpc]
         private void RequestFireServerRpc(Vector3 aimOrigin, Vector3 aimDirection)
         {
-            TryFireServer(aimOrigin, aimDirection);
+            if (TryFireServer(aimOrigin, aimDirection) || !Owner.IsValid)
+                return;
+
+            int index = Mathf.Clamp(m_equippedIndex.Value, 0, WeaponCount - 1);
+            SendWeaponStateTargetRpc(
+                Owner,
+                index,
+                m_magazine[index],
+                m_reserve[index],
+                m_reloadingIndex == index);
         }
 
         internal void ConfigureAiWeaponServer(PlayerWeaponType weaponType)
@@ -239,6 +296,7 @@ namespace CouchGuys.Gameplay.Weapons
             }
 
             int index = (int)weaponType;
+            EndRifleBurstServer();
             m_reloadingIndex = -1;
             m_equippedIndex.Value = index;
             m_switchCompleteAt = Time.time;
@@ -325,7 +383,14 @@ namespace CouchGuys.Gameplay.Weapons
 
             Vector3[] ends = ResolveHitsServer(muzzle, muzzleDirection.normalized, weapon,
                 out Vector3[] normals, out byte[] surfaces);
+            if (weapon.Type == PlayerWeaponType.AssaultRifle)
+            {
+                m_serverRifleBurstActive = true;
+                m_lastServerRifleShotTime = Time.time;
+            }
             ShowShotObserversRpc(index, muzzle, ends, normals, surfaces);
+            if (weapon.Type == PlayerWeaponType.AssaultRifle && m_magazine[index] <= 0)
+                EndRifleBurstServer();
             if (Owner.IsValid)
             {
                 SendWeaponStateTargetRpc(
@@ -492,7 +557,10 @@ namespace CouchGuys.Gameplay.Weapons
             if (!ValidIndex(index)) return;
             m_magazine[index] = magazine;
             m_reserve[index] = reserve;
+            m_pendingLocalShots[index] = 0;
             m_localReloading = reloading;
+            if (reloading)
+                EndLocalRifleBurst();
         }
 
         [TargetRpc]
@@ -506,6 +574,8 @@ namespace CouchGuys.Gameplay.Weapons
             Vector3[] normals, byte[] surfaces)
         {
             WeaponDefinition weapon = GetWeapon(weaponIndex);
+            if (!IsOwner && weapon != null)
+                m_audio?.PlayShot(weapon.Type, muzzle, m_muzzles[weaponIndex]);
             m_effects?.PlayShot(weapon, muzzle, ends, normals, surfaces, IsOwner);
             m_animationDriver?.PlayWeaponShot((PlayerWeaponType)weaponIndex);
             if (IsOwner) LocalShotFired?.Invoke((PlayerWeaponType)weaponIndex);
@@ -518,6 +588,55 @@ namespace CouchGuys.Gameplay.Weapons
         }
 
         private void OnEquippedChanged(int previous, int next, bool asServer) => ApplyEquippedWeapon(next);
+
+        private void UpdateLocalRifleBurst()
+        {
+            if (!IsOwner || !m_localRifleBurstActive)
+                return;
+
+            bool interrupted = m_input == null || !m_input.isActiveAndEnabled || !m_input.ShootHeld ||
+                m_health == null || !m_health.IsAlive || m_health.IsKnockedDown ||
+                m_equippedIndex.Value != (int)PlayerWeaponType.AssaultRifle || m_localReloading ||
+                (m_couchCarrier != null && m_couchCarrier.IsCarrying) ||
+                (m_map != null && m_map.IsOpen);
+            if (interrupted)
+                EndLocalRifleBurst();
+        }
+
+        private void EndLocalRifleBurst()
+        {
+            if (!m_localRifleBurstActive)
+                return;
+
+            m_localRifleBurstActive = false;
+            int rifleIndex = (int)PlayerWeaponType.AssaultRifle;
+            Vector3 muzzle = GetMuzzlePosition(rifleIndex, transform.position);
+            m_audio?.PlayRifleStop(muzzle);
+            if (IsClientInitialized)
+                EndRifleBurstServerRpc();
+        }
+
+        [ServerRpc]
+        private void EndRifleBurstServerRpc() => EndRifleBurstServer();
+
+        [Server]
+        private void EndRifleBurstServer()
+        {
+            if (!m_serverRifleBurstActive)
+                return;
+
+            m_serverRifleBurstActive = false;
+            int rifleIndex = (int)PlayerWeaponType.AssaultRifle;
+            Vector3 muzzle = GetMuzzlePosition(rifleIndex, transform.position);
+            PlayRifleStopObserversRpc(muzzle);
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void PlayRifleStopObserversRpc(Vector3 muzzle)
+        {
+            if (!IsOwner)
+                m_audio?.PlayRifleStop(muzzle);
+        }
 
         private void ApplyEquippedWeapon(int index)
         {

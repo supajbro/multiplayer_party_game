@@ -24,6 +24,9 @@ namespace CouchGuys.Gameplay.Traffic
         [SerializeField] private CarSettings m_settings;
         [SerializeField] private Rigidbody m_rigidbody;
         [SerializeField] private Renderer[] m_renderers;
+        [SerializeField] private Transform m_visualAnchor;
+        [SerializeField] private GameObject[] m_visualPrefabs;
+        [SerializeField] private GameObject[] m_visualVariants;
 
         private TrafficRoute m_route;
         private TrafficManager m_manager;
@@ -38,14 +41,19 @@ namespace CouchGuys.Gameplay.Traffic
         private float m_stationaryCheckAt;
         private Vector3 m_drivingStartPosition;
         private PhysicsMaterial m_runtimeTyreMaterial;
+        private GameObject m_visualInstance;
 
         public bool IsDestroyed => m_destroyed.Value;
         public float CurrentHealth => m_health.Value;
+        public int VisualVariantCount => m_visualVariants != null && m_visualVariants.Length > 0
+            ? m_visualVariants.Length
+            : m_visualPrefabs?.Length ?? 0;
 
         private void Awake()
         {
             m_rigidbody ??= GetComponent<Rigidbody>();
             ConfigureGroundContact();
+            ApplyVisualVariant(0);
             m_health.OnChange += OnHealthChanged;
             m_destroyed.OnChange += OnDestroyedChanged;
         }
@@ -79,12 +87,13 @@ namespace CouchGuys.Gameplay.Traffic
             base.OnStopServer();
         }
 
-        internal void InitialiseServer(TrafficRoute route, TrafficManager manager)
+        internal void InitialiseServer(TrafficRoute route, TrafficManager manager, int visualVariant)
         {
             m_route = route;
             m_manager = manager;
             m_waypointIndex = route != null && route.Waypoints.Length > 1 ? 1 : 0;
             m_serverDriving = route != null && route.Waypoints.Length > 1;
+            SetVisualVariantObserversRpc(visualVariant);
             if (m_serverDriving && m_rigidbody != null)
             {
                 m_drivingStartPosition = m_rigidbody.position;
@@ -93,6 +102,60 @@ namespace CouchGuys.Gameplay.Traffic
                 m_rigidbody.isKinematic = false;
                 m_rigidbody.WakeUp();
             }
+        }
+
+        [ObserversRpc(BufferLast = true, RunLocally = true)]
+        private void SetVisualVariantObserversRpc(int visualVariant)
+        {
+            ApplyVisualVariant(visualVariant);
+        }
+
+        private void ApplyVisualVariant(int visualVariant)
+        {
+            if (m_visualVariants != null && m_visualVariants.Length > 0)
+            {
+                int selectedIndex = Mathf.Abs(visualVariant) % m_visualVariants.Length;
+                for (int variantIndex = 0; variantIndex < m_visualVariants.Length; variantIndex++)
+                {
+                    GameObject variant = m_visualVariants[variantIndex];
+                    if (variant != null) variant.SetActive(variantIndex == selectedIndex);
+                }
+
+                m_visualInstance = m_visualVariants[selectedIndex];
+                m_renderers = m_visualInstance != null
+                    ? m_visualInstance.GetComponentsInChildren<Renderer>(true)
+                    : System.Array.Empty<Renderer>();
+                ApplyDestroyedVisual(m_destroyed.Value);
+                return;
+            }
+
+            if (m_visualPrefabs == null || m_visualPrefabs.Length == 0) return;
+            if (m_visualAnchor == null)
+            {
+                GameObject anchor = new GameObject("VisualAnchor");
+                anchor.transform.SetParent(transform, false);
+                m_visualAnchor = anchor.transform;
+                if (m_renderers != null)
+                {
+                    for (int rendererIndex = 0; rendererIndex < m_renderers.Length; rendererIndex++)
+                        if (m_renderers[rendererIndex] != null)
+                            m_renderers[rendererIndex].gameObject.SetActive(false);
+                }
+            }
+
+            int index = Mathf.Abs(visualVariant) % m_visualPrefabs.Length;
+            GameObject visualPrefab = m_visualPrefabs[index];
+            if (visualPrefab == null) return;
+            if (m_visualInstance != null)
+            {
+                m_visualInstance.SetActive(false);
+                Destroy(m_visualInstance);
+            }
+
+            m_visualInstance = Instantiate(visualPrefab, m_visualAnchor, false);
+            m_visualInstance.name = visualPrefab.name;
+            m_renderers = m_visualInstance.GetComponentsInChildren<Renderer>(true);
+            ApplyDestroyedVisual(m_destroyed.Value);
         }
 
         private void FixedUpdate()

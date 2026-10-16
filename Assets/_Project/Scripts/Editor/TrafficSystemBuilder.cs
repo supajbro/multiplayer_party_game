@@ -15,14 +15,20 @@ namespace CouchGuys.Editor
         private const string TrafficSettingsPath = SettingsDirectory + "/TrafficSettings.asset";
         private const string CarSettingsPath = SettingsDirectory + "/CarSettings.asset";
         private const string PrefabPath = SettingsDirectory + "/TrafficCar.prefab";
+        private const string SourceModelDirectory = "Assets/_Project/Models/Cars";
+        private const string VisualPrefabDirectory = SettingsDirectory + "/CarModels";
         private const string BodyMaterialPath = SettingsDirectory + "/TrafficCarBody.mat";
         private const string TrimMaterialPath = SettingsDirectory + "/TrafficCarTrim.mat";
         private const string SpawnablesPath = "Assets/_Project/Settings/NetworkSpawnablePrefabs.asset";
+        private const float ImportedCarVisualScale = 25f;
+        private static readonly Quaternion ImportedCarVisualRotation = Quaternion.Euler(-90f, 0f, 0f);
 
         [InitializeOnLoadMethod]
         private static void BuildMissingAssetsAfterImport()
         {
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) == null)
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) == null ||
+                CountExistingVisualPrefabs() < 10 || VisualPrefabsNeedTransformCorrection() ||
+                TrafficPrefabNeedsVisualChildren())
                 EditorApplication.delayCall += BuildTrafficSystem;
         }
 
@@ -32,13 +38,15 @@ namespace CouchGuys.Editor
             EnsureDirectory();
             TrafficSettings trafficSettings = LoadOrCreate<TrafficSettings>(TrafficSettingsPath);
             CarSettings carSettings = LoadOrCreate<CarSettings>(CarSettingsPath);
-            NetworkObject prefab = BuildCarPrefab(carSettings);
+            GameObject[] visualPrefabs = BuildVisualPrefabs();
+            NetworkObject prefab = BuildCarPrefab(carSettings, visualPrefabs);
             RegisterPrefab(prefab);
             EditorUtility.SetDirty(trafficSettings);
             EditorUtility.SetDirty(carSettings);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("Built traffic settings, server-authoritative placeholder car, and FishNet spawn registration.");
+            Debug.Log($"Built traffic settings, {visualPrefabs.Length} car visual prefabs, " +
+                      "the server-authoritative traffic car, and FishNet spawn registration.");
         }
 
         public static void BuildFromCommandLine() => BuildTrafficSystem();
@@ -52,7 +60,7 @@ namespace CouchGuys.Editor
             return asset;
         }
 
-        private static NetworkObject BuildCarPrefab(CarSettings settings)
+        private static NetworkObject BuildCarPrefab(CarSettings settings, GameObject[] visualPrefabs)
         {
             GameObject root = new GameObject("TrafficCar");
             Material bodyMaterial = LoadOrCreateMaterial(
@@ -84,33 +92,41 @@ namespace CouchGuys.Editor
                 NetworkTransform networkTransform = root.AddComponent<NetworkTransform>();
                 TrafficVehicleController controller = root.AddComponent<TrafficVehicleController>();
 
-                CreateVisual(root.transform, PrimitiveType.Cube, "Body",
-                    new Vector3(0f, 0.72f, 0f), new Vector3(1.82f, 0.72f, 4f), bodyMaterial);
-                CreateVisual(root.transform, PrimitiveType.Cube, "Cabin",
-                    new Vector3(0f, 1.25f, -0.15f), new Vector3(1.55f, 0.65f, 2f), bodyMaterial);
-                CreateVisual(root.transform, PrimitiveType.Cube, "FrontWindow",
-                    new Vector3(0f, 1.29f, 0.88f), new Vector3(1.42f, 0.48f, 0.08f), darkMaterial);
-                for (int side = -1; side <= 1; side += 2)
-                for (int axle = -1; axle <= 1; axle += 2)
+                GameObject visualAnchor = new GameObject("VisualAnchor");
+                visualAnchor.transform.SetParent(root.transform, false);
+                GameObject[] visualVariants = new GameObject[visualPrefabs.Length];
+                for (int index = 0; index < visualPrefabs.Length; index++)
                 {
-                    GameObject wheel = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                    wheel.name = "Wheel";
-                    wheel.transform.SetParent(root.transform, false);
-                    wheel.transform.localPosition = new Vector3(side * 0.9f, 0.38f, axle * 1.3f);
-                    wheel.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
-                    wheel.transform.localScale = new Vector3(0.62f, 0.2f, 0.62f);
-                    Object.DestroyImmediate(wheel.GetComponent<Collider>());
-                    wheel.GetComponent<Renderer>().sharedMaterial = darkMaterial;
+                    GameObject visual = (GameObject)PrefabUtility.InstantiatePrefab(visualPrefabs[index]);
+                    visual.name = visualPrefabs[index].name;
+                    visual.transform.SetParent(visualAnchor.transform, false);
+                    visual.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+                    visual.transform.localScale = Vector3.one;
+                    visual.SetActive(index == 0);
+                    visualVariants[index] = visual;
+                }
+                if (visualPrefabs.Length == 0)
+                {
+                    CreatePlaceholderVisual(visualAnchor.transform, bodyMaterial, darkMaterial);
                 }
 
                 SetReference(controller, "m_settings", settings);
                 SetReference(controller, "m_rigidbody", body);
+                SetReference(controller, "m_visualAnchor", visualAnchor.transform);
                 Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
                 SerializedObject controllerSo = new SerializedObject(controller);
                 SerializedProperty rendererArray = controllerSo.FindProperty("m_renderers");
                 rendererArray.arraySize = renderers.Length;
                 for (int index = 0; index < renderers.Length; index++)
                     rendererArray.GetArrayElementAtIndex(index).objectReferenceValue = renderers[index];
+                SerializedProperty visualArray = controllerSo.FindProperty("m_visualPrefabs");
+                visualArray.arraySize = visualPrefabs.Length;
+                for (int index = 0; index < visualPrefabs.Length; index++)
+                    visualArray.GetArrayElementAtIndex(index).objectReferenceValue = visualPrefabs[index];
+                SerializedProperty variantArray = controllerSo.FindProperty("m_visualVariants");
+                variantArray.arraySize = visualVariants.Length;
+                for (int index = 0; index < visualVariants.Length; index++)
+                    variantArray.GetArrayElementAtIndex(index).objectReferenceValue = visualVariants[index];
                 controllerSo.ApplyModifiedPropertiesWithoutUndo();
                 ConfigureNetwork(networkObject, networkTransform, controller);
 
@@ -121,6 +137,114 @@ namespace CouchGuys.Editor
             finally
             {
                 Object.DestroyImmediate(root);
+            }
+        }
+
+        private static GameObject[] BuildVisualPrefabs()
+        {
+            EnsureVisualDirectory();
+            GameObject[] prefabs = new GameObject[10];
+            int prefabCount = 0;
+            for (int index = 1; index <= 10; index++)
+            {
+                string number = index.ToString("00");
+                string sourcePath = $"{SourceModelDirectory}/car_{number}.fbx";
+                GameObject source = AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath);
+                if (source == null)
+                {
+                    Debug.LogWarning($"Traffic car model was not found at {sourcePath}.");
+                    continue;
+                }
+
+                GameObject root = new GameObject($"TrafficCarVisual_{number}");
+                try
+                {
+                    GameObject model = (GameObject)PrefabUtility.InstantiatePrefab(source);
+                    model.name = source.name;
+                    model.transform.SetParent(root.transform, false);
+                    model.transform.SetLocalPositionAndRotation(
+                        Vector3.zero,
+                        ImportedCarVisualRotation);
+                    model.transform.localScale = Vector3.one * ImportedCarVisualScale;
+                    Collider[] colliders = root.GetComponentsInChildren<Collider>(true);
+                    for (int colliderIndex = 0; colliderIndex < colliders.Length; colliderIndex++)
+                        Object.DestroyImmediate(colliders[colliderIndex]);
+
+                    string prefabPath = $"{VisualPrefabDirectory}/TrafficCarVisual_{number}.prefab";
+                    GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+                    if (saved != null) prefabs[prefabCount++] = saved;
+                }
+                finally
+                {
+                    Object.DestroyImmediate(root);
+                }
+            }
+
+            if (prefabCount == prefabs.Length) return prefabs;
+            GameObject[] available = new GameObject[prefabCount];
+            System.Array.Copy(prefabs, available, prefabCount);
+            return available;
+        }
+
+        private static int CountExistingVisualPrefabs()
+        {
+            int count = 0;
+            for (int index = 1; index <= 10; index++)
+            {
+                string path = $"{VisualPrefabDirectory}/TrafficCarVisual_{index:00}.prefab";
+                if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null) count++;
+            }
+            return count;
+        }
+
+        private static bool VisualPrefabsNeedTransformCorrection()
+        {
+            for (int index = 1; index <= 10; index++)
+            {
+                string path = $"{VisualPrefabDirectory}/TrafficCarVisual_{index:00}.prefab";
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (prefab == null || prefab.transform.childCount == 0) return true;
+                Transform model = prefab.transform.GetChild(0);
+                if ((model.localScale - Vector3.one * ImportedCarVisualScale).sqrMagnitude > 0.001f ||
+                    Quaternion.Angle(model.localRotation, ImportedCarVisualRotation) > 0.1f)
+                    return true;
+            }
+            return false;
+        }
+
+        private static bool TrafficPrefabNeedsVisualChildren()
+        {
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            if (prefab == null) return true;
+            TrafficVehicleController controller = prefab.GetComponent<TrafficVehicleController>();
+            if (controller == null) return true;
+            SerializedObject serializedController = new SerializedObject(controller);
+            SerializedProperty variants = serializedController.FindProperty("m_visualVariants");
+            return variants == null || variants.arraySize < 10;
+        }
+
+        private static void CreatePlaceholderVisual(
+            Transform parent,
+            Material bodyMaterial,
+            Material darkMaterial)
+        {
+            CreateVisual(parent, PrimitiveType.Cube, "Body",
+                new Vector3(0f, 0.72f, 0f), new Vector3(1.82f, 0.72f, 4f), bodyMaterial);
+            CreateVisual(parent, PrimitiveType.Cube, "Cabin",
+                new Vector3(0f, 1.25f, -0.15f), new Vector3(1.55f, 0.65f, 2f), bodyMaterial);
+            CreateVisual(parent, PrimitiveType.Cube, "FrontWindow",
+                new Vector3(0f, 1.29f, 0.88f), new Vector3(1.42f, 0.48f, 0.08f), darkMaterial);
+            for (int side = -1; side <= 1; side += 2)
+            for (int axle = -1; axle <= 1; axle += 2)
+            {
+                GameObject wheel = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                wheel.name = "Wheel";
+                wheel.transform.SetParent(parent, false);
+                wheel.transform.localPosition = new Vector3(side * 0.9f, 0.38f, axle * 1.3f);
+                wheel.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+                wheel.transform.localScale = new Vector3(0.62f, 0.2f, 0.62f);
+                Object.DestroyImmediate(wheel.GetComponent<Collider>());
+                wheel.GetComponent<Renderer>().sharedMaterial = darkMaterial;
             }
         }
 
@@ -207,6 +331,13 @@ namespace CouchGuys.Editor
                 AssetDatabase.CreateFolder("Assets/_Project", "Resources");
             if (!AssetDatabase.IsValidFolder(SettingsDirectory))
                 AssetDatabase.CreateFolder("Assets/_Project/Resources", "Traffic");
+        }
+
+        private static void EnsureVisualDirectory()
+        {
+            EnsureDirectory();
+            if (!AssetDatabase.IsValidFolder(VisualPrefabDirectory))
+                AssetDatabase.CreateFolder(SettingsDirectory, "CarModels");
         }
     }
 }

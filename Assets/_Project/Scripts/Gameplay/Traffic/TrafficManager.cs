@@ -122,7 +122,10 @@ namespace CouchGuys.Gameplay.Traffic
                 InstanceFinder.ServerManager.Spawn(instance);
                 // Assign after FishNet has completed its spawn callbacks. The route is
                 // server-only runtime data and must not be cleared during initialization.
-                vehicle.InitialiseServer(route, this);
+                int visualVariant = vehicle.VisualVariantCount > 0
+                    ? Random.Range(0, vehicle.VisualVariantCount)
+                    : 0;
+                vehicle.InitialiseServer(route, this, visualVariant);
                 m_activeVehicles.Add(instance);
                 return;
             }

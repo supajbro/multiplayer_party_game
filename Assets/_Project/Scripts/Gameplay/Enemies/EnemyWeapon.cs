@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CouchGuys.Gameplay.Weapons;
 using CouchGuys.Player;
 using CouchGuys.Gameplay.Vehicles;
 using FishNet.Object;
@@ -46,10 +47,12 @@ namespace CouchGuys.Gameplay.Enemies
         private Material m_tracerMaterial;
         private ThiefAnimationDriver m_animationDriver;
         private NavMeshAgent m_agent;
+        private WeaponAudioEmitter m_audio;
         private Vector3 m_aimDirection;
         private float m_nextFireTime;
         private float m_reactionEndsAt;
         private int m_burstShotsRemaining;
+        private bool m_rifleBurstActive;
 
         public EnemyWeaponType WeaponType => m_weaponType;
         public float PreferredRange => m_preferredRange;
@@ -58,6 +61,8 @@ namespace CouchGuys.Gameplay.Enemies
         {
             m_animationDriver = GetComponentInChildren<ThiefAnimationDriver>(true);
             m_agent = GetComponent<NavMeshAgent>();
+            m_audio = GetComponent<WeaponAudioEmitter>();
+            if (m_audio == null) m_audio = gameObject.AddComponent<WeaponAudioEmitter>();
             m_aimDirection = transform.forward;
             Shader shader = Shader.Find("Sprites/Default");
             if (shader != null) m_tracerMaterial = new Material(shader);
@@ -73,6 +78,7 @@ namespace CouchGuys.Gameplay.Enemies
             if (!IsServerInitialized && NetworkObject != null && NetworkObject.IsSpawned) return;
             if (m_target != target)
             {
+                EndRifleBurstServer();
                 m_reactionEndsAt = Time.time + m_reactionTime;
                 m_burstShotsRemaining = Random.Range(m_minBurstShots, m_maxBurstShots + 1);
             }
@@ -81,7 +87,12 @@ namespace CouchGuys.Gameplay.Enemies
 
         private void Update()
         {
-            if (!IsServerInitialized || m_target == null || !m_target.IsAlive) return;
+            if (!IsServerInitialized) return;
+            if (m_target == null || !m_target.IsAlive)
+            {
+                EndRifleBurstServer();
+                return;
+            }
             Vector3 desired = (m_target.AimPoint - GetMuzzlePosition()).normalized;
             m_aimDirection = Vector3.RotateTowards(m_aimDirection, desired,
                 m_aimRotationSpeed * Mathf.Deg2Rad * Time.deltaTime, 0f).normalized;
@@ -91,6 +102,7 @@ namespace CouchGuys.Gameplay.Enemies
             m_burstShotsRemaining--;
             if (m_burstShotsRemaining <= 0)
             {
+                EndRifleBurstServer();
                 m_burstShotsRemaining = Random.Range(m_minBurstShots, m_maxBurstShots + 1);
                 m_nextFireTime = Time.time + m_burstCooldown;
             }
@@ -167,6 +179,8 @@ namespace CouchGuys.Gameplay.Enemies
             }
             foreach (KeyValuePair<VanController, float> damage in m_damageByVan)
                 damage.Key.ApplyBulletDamageServer(damage.Value);
+            if (m_weaponType == EnemyWeaponType.AssaultRifle)
+                m_rifleBurstActive = true;
             ShowShotObserversRpc(origin, m_tracerEnds.ToArray());
         }
 
@@ -185,6 +199,7 @@ namespace CouchGuys.Gameplay.Enemies
         private void ShowShotObserversRpc(Vector3 origin, Vector3[] ends)
         {
             m_animationDriver?.TriggerShoot();
+            m_audio?.PlayShot((PlayerWeaponType)m_weaponType, origin, m_muzzle);
             if (ends == null) return;
             for (int i = 0; i < ends.Length; i++)
             {
@@ -195,6 +210,19 @@ namespace CouchGuys.Gameplay.Enemies
                     origin, ends[i], m_tracerDuration, m_tracerWidth, m_tracerMaterial, m_tracerColour);
             }
         }
+
+        [Server]
+        private void EndRifleBurstServer()
+        {
+            if (!m_rifleBurstActive)
+                return;
+
+            m_rifleBurstActive = false;
+            PlayRifleStopObserversRpc(GetMuzzlePosition());
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void PlayRifleStopObserversRpc(Vector3 origin) => m_audio?.PlayRifleStop(origin);
 
         private Vector3 GetMuzzlePosition() =>
             m_muzzle != null ? m_muzzle.position : transform.position + Vector3.up * 1.1f;

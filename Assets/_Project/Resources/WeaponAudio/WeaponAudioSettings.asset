@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b7d31aa2c9840c09f0a7e64d4fe8c21, type: 3}
+  m_Name: WeaponAudioSettings
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Weapons.WeaponAudioSettings
+  m_profiles:
+  - m_weaponType: 0
+    m_gunshots:
+    - {fileID: 8300000, guid: 679c030fbfcae764080453bb44c1b11b, type: 3}
+    - {fileID: 8300000, guid: 6deff26f069c3dd4092b30813b74772e, type: 3}
+    - {fileID: 8300000, guid: 567e3363372a8464c82e5d99be5732b3, type: 3}
+    m_gunshotVolume: 1
+    m_minimumDistance: 3
+    m_maximumDistance: 55
+    m_spatialBlend: 1
+    m_pitchRange: {x: 0.97, y: 1.03}
+    m_maximumGunshotVoices: 5
+    m_firingStopClip: {fileID: 0}
+    m_firingStopVolume: 0
+    m_pumpClip: {fileID: 0}
+    m_pumpVolume: 0
+    m_pumpDelay: 0
+  - m_weaponType: 1
+    m_gunshots:
+    - {fileID: 8300000, guid: 1146c4be485a4134858bf58758277ad1, type: 3}
+    - {fileID: 8300000, guid: 28019721357a451cbb5df9274a6363c1, type: 3}
+    - {fileID: 8300000, guid: 35d47614e6c84bd6b542148b233a419d, type: 3}
+    - {fileID: 8300000, guid: 42b96584c5ca413681ce50d511674071, type: 3}
+    - {fileID: 8300000, guid: 57a8a9f45c2a49a583007818b538d9ef, type: 3}
+    - {fileID: 8300000, guid: 634751fbc7524eb3b63a7a2a91297751, type: 3}
+    m_gunshotVolume: 0.9
+    m_minimumDistance: 4
+    m_maximumDistance: 85
+    m_spatialBlend: 1
+    m_pitchRange: {x: 0.97, y: 1.03}
+    m_maximumGunshotVoices: 8
+    m_firingStopClip: {fileID: 8300000, guid: 79c6674c978746b196f6ed6b56608857, type: 3}
+    m_firingStopVolume: 0.8
+    m_pumpClip: {fileID: 0}
+    m_pumpVolume: 0
+    m_pumpDelay: 0
+  - m_weaponType: 2
+    m_gunshots:
+    - {fileID: 8300000, guid: 661cc786807815f4ea761fc6ceb1ba42, type: 3}
+    - {fileID: 8300000, guid: c14b253cb351e1345bc47bf79ed9e63c, type: 3}
+    - {fileID: 8300000, guid: 3433f2c86925aed4082f4659184e2c31, type: 3}
+    - {fileID: 8300000, guid: 20c3aa0522cde4740883e259f5e62e25, type: 3}
+    m_gunshotVolume: 1
+    m_minimumDistance: 5
+    m_maximumDistance: 75
+    m_spatialBlend: 1
+    m_pitchRange: {x: 0.97, y: 1.03}
+    m_maximumGunshotVoices: 4
+    m_firingStopClip: {fileID: 0}
+    m_firingStopVolume: 0
+    m_pumpClip: {fileID: 8300000, guid: d16222d4243585e45856a256bfb893bf, type: 3}
+    m_pumpVolume: 0.85
+    m_pumpDelay: 0.42
