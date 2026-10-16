@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,6 +7,12 @@ namespace CouchGuys.ProceduralGeneration
     public sealed partial class NeighbourhoodGenerator
     {
         private const float DrivewayBedOffset = 0.025f;
+        private const float ModuleGroundClearance = 0.018f;
+        private const float ModuleJointScale = 0.985f;
+
+        public int GeneratedDrivewaySlabCount { get; private set; }
+        public int GeneratedFootpathSlabCount { get; private set; }
+        public int GeneratedPathLightCount { get; private set; }
 
         private readonly struct DrivewaySidewalkCut
         {
@@ -29,15 +36,15 @@ namespace CouchGuys.ProceduralGeneration
 
         private void CreateDriveways()
         {
+            GeneratedDrivewaySurface = null;
+            GeneratedDrivewaySlabCount = 0;
+            GeneratedFootpathSlabCount = 0;
+            GeneratedPathLightCount = 0;
             if (m_drivewaysRoot == null || m_generatedProperties.Count == 0)
             {
                 return;
             }
 
-            List<Vector3> vertices = new List<Vector3>(m_generatedProperties.Count * 64);
-            List<Vector2> uvs = new List<Vector2>(m_generatedProperties.Count * 64);
-            List<int> triangles = new List<int>(m_generatedProperties.Count * 192);
-            float spacing = Mathf.Max(0.5f, Mathf.Min(1f, m_terrainSettings.VertexSpacing));
             for (int propertyIndex = 0; propertyIndex < m_generatedProperties.Count; propertyIndex++)
             {
                 GeneratedProperty property = m_generatedProperties[propertyIndex];
@@ -46,121 +53,293 @@ namespace CouchGuys.ProceduralGeneration
                     continue;
                 }
 
-                Vector3 start = property.DrivewayStart;
-                Vector3 end = property.DrivewayEnd;
-                Vector3 flatSegment = end - start;
-                flatSegment.y = 0f;
-                float length = flatSegment.magnitude;
-                if (length <= 0.05f)
+                HouseExteriorModuleSet modules = property.GetComponent<HouseExteriorModuleSet>();
+                if (modules == null || !modules.IsConfigured)
                 {
+                    Debug.LogWarning(
+                        $"House '{property.name}' has no configured exterior module set; " +
+                        "its old generated driveway has intentionally not been recreated.",
+                        property);
                     continue;
                 }
 
-                Vector3 forward = flatSegment / length;
-                Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
-                int lengthSegments = Mathf.Max(1, Mathf.CeilToInt(length / spacing));
-                int widthSegments = Mathf.Max(
-                    1,
-                    Mathf.CeilToInt(property.ReservedDrivewayWidth / spacing));
-                int firstVertex = vertices.Count;
-                for (int row = 0; row <= lengthSegments; row++)
-                {
-                    float t = row / (float)lengthSegments;
-                    Vector3 centre = Vector3.Lerp(start, end, t);
-                    for (int column = 0; column <= widthSegments; column++)
-                    {
-                        float across = Mathf.Lerp(
-                            -property.ReservedDrivewayWidth * 0.5f,
-                            property.ReservedDrivewayWidth * 0.5f,
-                            column / (float)widthSegments);
-                        Vector3 point = centre + right * across;
-                        point.y = SampleDrivewaySurfaceHeight(property, point, t, across);
-                        vertices.Add(m_drivewaysRoot.InverseTransformPoint(point));
-                        uvs.Add(new Vector2(
-                            across / Mathf.Max(0.1f, property.ReservedDrivewayWidth) + 0.5f,
-                            t * length / Mathf.Max(0.1f, property.ReservedDrivewayWidth)));
-                    }
-                }
-
-                int rowSize = widthSegments + 1;
-                for (int row = 0; row < lengthSegments; row++)
-                {
-                    for (int column = 0; column < widthSegments; column++)
-                    {
-                        int bottomLeft = firstVertex + row * rowSize + column;
-                        int bottomRight = bottomLeft + 1;
-                        int topLeft = bottomLeft + rowSize;
-                        int topRight = topLeft + 1;
-                        triangles.Add(bottomLeft);
-                        triangles.Add(topLeft);
-                        triangles.Add(topRight);
-                        triangles.Add(bottomLeft);
-                        triangles.Add(topRight);
-                        triangles.Add(bottomRight);
-                    }
-                }
+                CreateModularDriveway(property, modules);
+                CreateModularFrontPath(property, modules);
             }
+        }
 
-            if (vertices.Count == 0)
+        private void CreateModularDriveway(
+            GeneratedProperty property,
+            HouseExteriorModuleSet modules)
+        {
+            Vector3 roadEnd = property.DrivewayStart;
+            Vector3 houseEnd = modules.DrivewayAnchor.position;
+            Vector3 flatSegment = houseEnd - roadEnd;
+            flatSegment.y = 0f;
+            float length = flatSegment.magnitude;
+            if (length <= 0.05f)
             {
                 return;
             }
 
-            Mesh mesh = new Mesh
-            {
-                name = $"GeneratedDriveways_{CurrentSeed}",
-                indexFormat = vertices.Count > ushort.MaxValue
-                    ? UnityEngine.Rendering.IndexFormat.UInt32
-                    : UnityEngine.Rendering.IndexFormat.UInt16
-            };
-            mesh.SetVertices(vertices);
-            mesh.SetUVs(0, uvs);
-            mesh.SetTriangles(triangles, 0);
-            mesh.RecalculateNormals();
-            mesh.RecalculateTangents();
-            mesh.RecalculateBounds();
+            Vector3 forward = flatSegment / length;
+            Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
+            Vector3 templateScale = Abs(modules.DrivewaySlabTemplate.lossyScale);
+            float nativeLength = Mathf.Max(0.05f, modules.DrivewaySlabSize.z * templateScale.z);
+            float authoredSpacing = Mathf.Max(
+                nativeLength,
+                modules.DrivewaySlabSpacing * templateScale.z);
+            int pieceCount = Mathf.Clamp(Mathf.CeilToInt(length / authoredSpacing), 1, 24);
+            float pieceSpacing = length / pieceCount;
+            float pieceLength = Mathf.Min(pieceSpacing * 0.94f, nativeLength * 1.2f);
+            float targetWidth = property.ReservedDrivewayWidth;
+            float nativeWidth = Mathf.Max(0.1f, modules.DrivewaySlabSize.x * templateScale.x);
 
-            GameObject drivewayObject = new GameObject(
-                "GeneratedDriveways",
-                typeof(MeshFilter),
-                typeof(MeshRenderer),
-                typeof(MeshCollider),
-                typeof(GeneratedTerrainMesh));
-            drivewayObject.transform.SetParent(m_drivewaysRoot, false);
-            drivewayObject.GetComponent<MeshFilter>().sharedMesh = mesh;
-            drivewayObject.GetComponent<MeshCollider>().sharedMesh = mesh;
-            drivewayObject.GetComponent<MeshRenderer>().sharedMaterial = GetDrivewayMaterial();
-            GeneratedDrivewaySurface = drivewayObject.GetComponent<GeneratedTerrainMesh>();
-            GeneratedDrivewaySurface.Initialise(mesh, null);
+            for (int index = 0; index < pieceCount; index++)
+            {
+                float t = (index + 0.5f) / pieceCount;
+                Vector3 centre = Vector3.Lerp(roadEnd, houseEnd, t);
+                Func<Vector3, float> sampler = point => SampleDrivewayHeightAtPoint(property, point);
+                CalculateSurfacePose(
+                    centre,
+                    forward,
+                    right,
+                    pieceLength * 0.5f,
+                    targetWidth * 0.5f,
+                    sampler,
+                    out Vector3 position,
+                    out Quaternion rotation);
+                Vector3 scale = templateScale;
+                scale.x *= targetWidth / nativeWidth;
+                scale.z *= pieceLength * ModuleJointScale / nativeLength;
+                CreateModuleInstance(
+                    modules.DrivewaySlabTemplate,
+                    $"{property.name}_DrivewaySlab_{index:00}",
+                    position,
+                    rotation,
+                    scale,
+                    modules.DrivewaySlabSize,
+                    HouseAccessModuleKind.DrivewaySlab,
+                    true);
+                GeneratedDrivewaySlabCount++;
+            }
         }
 
-        private Material GetDrivewayMaterial()
+        private void CreateModularFrontPath(
+            GeneratedProperty property,
+            HouseExteriorModuleSet modules)
         {
-            if (m_drivewayMaterial != null)
+            Vector3 houseEnd = modules.FootpathAnchor.position;
+            Vector3 towardRoad = property.FrontageDirection;
+            towardRoad.y = 0f;
+            if (towardRoad.sqrMagnitude <= 0.001f)
             {
-                return m_drivewayMaterial;
+                return;
             }
 
-            if (m_runtimeDrivewayMaterial != null)
+            towardRoad.Normalize();
+            Vector3 roadCentre = GridToWorld(property.RoadCoordinate);
+            float halfRoad = Mathf.Min(m_terrainSettings.RoadHalfWidth, m_roadTileSize * 0.5f);
+            float distanceToOuterSidewalk =
+                Vector3.Dot(roadCentre - houseEnd, towardRoad) - halfRoad - m_sidewalkWidth;
+            if (distanceToOuterSidewalk <= 0.1f)
             {
-                return m_runtimeDrivewayMaterial;
+                return;
             }
 
-            Shader shader = Shader.Find("Couch Guys/Toon Lit") ??
-                            Shader.Find("Universal Render Pipeline/Lit") ??
-                            Shader.Find("Standard");
-            if (shader == null)
+            Vector3 sidewalkEnd = houseEnd + towardRoad * distanceToOuterSidewalk;
+            Vector3 templateScale = Abs(modules.FootpathSlabTemplate.lossyScale);
+            float nativeLength = Mathf.Max(0.05f, modules.FootpathSlabSize.z * templateScale.z);
+            float nativeWidth = Mathf.Max(0.1f, modules.FootpathSlabSize.x * templateScale.x);
+            float pathWidth = Mathf.Clamp(nativeWidth, 0.85f, 1.6f);
+            float authoredSpacing = Mathf.Max(
+                nativeLength * 1.1f,
+                modules.FootpathSlabSpacing * templateScale.z);
+            int pieceCount = Mathf.Clamp(
+                Mathf.CeilToInt(distanceToOuterSidewalk / authoredSpacing),
+                1,
+                32);
+            float pieceSpacing = distanceToOuterSidewalk / pieceCount;
+            float pieceLength = Mathf.Min(pieceSpacing * 0.72f, nativeLength * 1.25f);
+            Vector3 right = Vector3.Cross(Vector3.up, towardRoad).normalized;
+            Func<Vector3, float> sampler = SampleGeneratedTerrainHeight;
+            for (int index = 0; index < pieceCount; index++)
             {
-                return null;
+                float t = (index + 0.5f) / pieceCount;
+                Vector3 centre = Vector3.Lerp(houseEnd, sidewalkEnd, t);
+                CalculateSurfacePose(
+                    centre,
+                    towardRoad,
+                    right,
+                    pieceLength * 0.5f,
+                    pathWidth * 0.5f,
+                    sampler,
+                    out Vector3 position,
+                    out Quaternion rotation);
+                Vector3 scale = templateScale;
+                scale.x *= pathWidth / nativeWidth;
+                scale.z *= pieceLength * ModuleJointScale / nativeLength;
+                CreateModuleInstance(
+                    modules.FootpathSlabTemplate,
+                    $"{property.name}_FootpathSlab_{index:00}",
+                    position,
+                    rotation,
+                    scale,
+                    modules.FootpathSlabSize,
+                    HouseAccessModuleKind.FootpathSlab,
+                    true);
+                GeneratedFootpathSlabCount++;
             }
 
-            m_runtimeDrivewayMaterial = new Material(shader)
-            {
-                name = "Generated Driveway Concrete",
-                color = new Color(0.69f, 0.70f, 0.72f)
-            };
-            return m_runtimeDrivewayMaterial;
+            CreatePathLights(
+                property,
+                modules,
+                houseEnd,
+                sidewalkEnd,
+                towardRoad,
+                right,
+                pathWidth,
+                sampler);
         }
+
+        private void CreatePathLights(
+            GeneratedProperty property,
+            HouseExteriorModuleSet modules,
+            Vector3 pathStart,
+            Vector3 pathEnd,
+            Vector3 forward,
+            Vector3 right,
+            float pathWidth,
+            Func<Vector3, float> sampler)
+        {
+            float length = Vector3.Distance(
+                new Vector3(pathStart.x, 0f, pathStart.z),
+                new Vector3(pathEnd.x, 0f, pathEnd.z));
+            int lightCount = Mathf.Clamp(Mathf.FloorToInt(length / 2.8f), 1, 8);
+            Vector3 templateScale = Abs(modules.PathLightTemplate.lossyScale);
+            float lightWidth = Mathf.Max(0.1f, modules.PathLightSize.x * templateScale.x);
+            float sideOffset = pathWidth * 0.5f + lightWidth * 0.5f + 0.18f;
+            for (int index = 0; index < lightCount; index++)
+            {
+                float t = (index + 1f) / (lightCount + 1f);
+                float side = (index & 1) == 0 ? 1f : -1f;
+                Vector3 centre = Vector3.Lerp(pathStart, pathEnd, t) + right * sideOffset * side;
+                CalculateSurfacePose(
+                    centre,
+                    forward,
+                    right,
+                    Mathf.Max(0.08f, modules.PathLightSize.z * templateScale.z * 0.5f),
+                    lightWidth * 0.5f,
+                    sampler,
+                    out Vector3 position,
+                    out Quaternion rotation);
+                CreateModuleInstance(
+                    modules.PathLightTemplate,
+                    $"{property.name}_PathLight_{index:00}",
+                    position,
+                    rotation,
+                    templateScale,
+                    modules.PathLightSize,
+                    HouseAccessModuleKind.PathLight,
+                    false);
+                GeneratedPathLightCount++;
+            }
+        }
+
+        private GameObject CreateModuleInstance(
+            Transform template,
+            string instanceName,
+            Vector3 position,
+            Quaternion rotation,
+            Vector3 worldScale,
+            Vector3 localBoundsSize,
+            HouseAccessModuleKind kind,
+            bool addCollider)
+        {
+            GameObject instance = Instantiate(template.gameObject);
+            instance.name = instanceName;
+            instance.transform.SetParent(m_drivewaysRoot, false);
+            instance.transform.SetPositionAndRotation(position, rotation);
+            instance.transform.localScale = worldScale;
+            instance.SetActive(true);
+            GeneratedHouseAccessModule marker = instance.AddComponent<GeneratedHouseAccessModule>();
+            marker.Initialise(kind);
+            if (addCollider)
+            {
+                BoxCollider collider = instance.AddComponent<BoxCollider>();
+                collider.center = new Vector3(0f, localBoundsSize.y * 0.5f, 0f);
+                collider.size = localBoundsSize;
+            }
+
+            return instance;
+        }
+
+        private float SampleDrivewayHeightAtPoint(GeneratedProperty property, Vector3 point)
+        {
+            if (!TryGetDrivewayCoordinates(property, point, out float t, out float across, out _))
+            {
+                return SampleGeneratedTerrainHeight(point);
+            }
+
+            return SampleDrivewaySurfaceHeight(property, point, t, across) - DrivewayBedOffset;
+        }
+
+        private float SampleGeneratedTerrainHeight(Vector3 flatWorldPosition)
+        {
+            GridCoordinate rightOffset = DirectionOffset(TurnRight(m_startDirection));
+            GridCoordinate forwardOffset = DirectionOffset(m_startDirection);
+            Vector3 gridRight = new Vector3(rightOffset.X, 0f, rightOffset.Y);
+            Vector3 gridForward = new Vector3(forwardOffset.X, 0f, forwardOffset.Y);
+            Vector3 offset = flatWorldPosition - m_gridOrigin;
+            float localX = Vector3.Dot(offset, gridRight) / m_roadTileSize;
+            float localY = Vector3.Dot(offset, gridForward) / m_roadTileSize;
+            return m_gridOrigin.y + SampleContinuousTerrainHeight(localX, localY, flatWorldPosition);
+        }
+
+        private static void CalculateSurfacePose(
+            Vector3 centre,
+            Vector3 forward,
+            Vector3 right,
+            float halfLength,
+            float halfWidth,
+            Func<Vector3, float> heightSampler,
+            out Vector3 position,
+            out Quaternion rotation)
+        {
+            halfLength = Mathf.Max(0.02f, halfLength);
+            halfWidth = Mathf.Max(0.02f, halfWidth);
+            float backHeight = heightSampler(centre - forward * halfLength);
+            float frontHeight = heightSampler(centre + forward * halfLength);
+            float leftHeight = heightSampler(centre - right * halfWidth);
+            float rightHeight = heightSampler(centre + right * halfWidth);
+            float forwardGradient = (frontHeight - backHeight) / (halfLength * 2f);
+            float rightGradient = (rightHeight - leftHeight) / (halfWidth * 2f);
+            Vector3 normal = (Vector3.up - forward * forwardGradient - right * rightGradient).normalized;
+            Vector3 surfaceForward = Vector3.ProjectOnPlane(forward, normal).normalized;
+            rotation = Quaternion.LookRotation(surfaceForward, normal);
+
+            float centreHeight = (backHeight + frontHeight + leftHeight + rightHeight) * 0.25f;
+            for (int forwardSide = -1; forwardSide <= 1; forwardSide += 2)
+            {
+                for (int rightSide = -1; rightSide <= 1; rightSide += 2)
+                {
+                    float along = forwardSide * halfLength;
+                    float across = rightSide * halfWidth;
+                    Vector3 corner = centre + forward * along + right * across;
+                    float requiredCentre = heightSampler(corner) -
+                                           forwardGradient * along -
+                                           rightGradient * across;
+                    centreHeight = Mathf.Max(centreHeight, requiredCentre);
+                }
+            }
+
+            position = new Vector3(centre.x, centreHeight + ModuleGroundClearance, centre.z);
+        }
+
+        private static Vector3 Abs(Vector3 value) => new Vector3(
+            Mathf.Abs(value.x),
+            Mathf.Abs(value.y),
+            Mathf.Abs(value.z));
 
         private float BlendDrivewayGrades(float terrainHeight, Vector3 flatWorldPosition)
         {
@@ -200,45 +379,6 @@ namespace CouchGuys.ProceduralGeneration
 
             return result;
         }
-
-        private bool IsTerrainQuadCoveredByDriveway(
-            Vector3 bottomLeft,
-            Vector3 bottomRight,
-            Vector3 topLeft,
-            Vector3 topRight)
-        {
-            for (int propertyIndex = 0; propertyIndex < m_generatedProperties.Count; propertyIndex++)
-            {
-                GeneratedProperty property = m_generatedProperties[propertyIndex];
-                if (property == null || property.ReservedDrivewayWidth <= 0.05f)
-                {
-                    continue;
-                }
-
-                float halfWidth = Mathf.Max(0f, property.ReservedDrivewayWidth * 0.5f - 0.01f);
-                if (IsPointInsideDriveway(property, bottomLeft, halfWidth) &&
-                    IsPointInsideDriveway(property, bottomRight, halfWidth) &&
-                    IsPointInsideDriveway(property, topLeft, halfWidth) &&
-                    IsPointInsideDriveway(property, topRight, halfWidth))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool IsPointInsideDriveway(
-            GeneratedProperty property,
-            Vector3 point,
-            float halfWidth) =>
-            TryGetDrivewayCoordinates(
-                property,
-                point,
-                out _,
-                out float across,
-                out _) &&
-            Mathf.Abs(across) <= halfWidth;
 
         private bool TrySampleDrivewaySurface(Vector3 worldPosition, out float height)
         {

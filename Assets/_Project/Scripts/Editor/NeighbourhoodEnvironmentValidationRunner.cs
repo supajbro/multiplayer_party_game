@@ -10,7 +10,7 @@ namespace CouchGuys.Editor
     public static class NeighbourhoodEnvironmentValidationRunner
     {
         private const string RegionPath = "Assets/_Project/Settings/Regions/Region_Suburbs.asset";
-        private const string SessionKey = "CouchGuys.EnvironmentValidation.2026-10-14.CardinalFrontageV4";
+        private const string SessionKey = "CouchGuys.EnvironmentValidation.2026-10-16.ModularHouseAccessV1";
         private static readonly int[] ValidationSeeds = { 12345, 24680, 97531 };
 
         [InitializeOnLoadMethod]
@@ -70,6 +70,9 @@ namespace CouchGuys.Editor
                 ValidateGrass(generator, seed);
                 Debug.Log($"Environment seed {seed}: {generator.GeneratedRoads.Count} roads, " +
                           $"{generator.GeneratedProperties.Count} properties, {generator.GeneratedParkCount} parks, " +
+                          $"{generator.GeneratedDrivewaySlabCount} driveway slabs, " +
+                          $"{generator.GeneratedFootpathSlabCount} footpath slabs, " +
+                          $"{generator.GeneratedPathLightCount} path lights, " +
                           $"{generator.GeneratedStreetlightCount} streetlights, " +
                           $"{generator.GeneratedResidentialDecorationCount} residential decorations, " +
                           $"{generator.GeneratedRoadsideDecorationCount} roadside decorations.");
@@ -82,24 +85,21 @@ namespace CouchGuys.Editor
 
         private static void ValidateDriveways(NeighbourhoodGenerator generator, int seed)
         {
-            GeneratedTerrainMesh surface = generator.GeneratedDrivewaySurface;
-            if (surface == null || surface.VertexCount <= 0 || surface.TriangleCount <= 0 ||
-                !surface.TryGetComponent(out MeshFilter filter) || filter.sharedMesh == null ||
-                !surface.TryGetComponent(out MeshCollider collider) ||
-                collider.sharedMesh != filter.sharedMesh)
+            if (generator.GeneratedDrivewaySurface != null)
             {
                 throw new InvalidOperationException(
-                    $"Seed {seed} generated no valid combined driveway mesh/collider.");
+                    $"Seed {seed} still generated the removed legacy combined driveway surface.");
             }
 
-            Material drivewayMaterial = surface.GetComponent<MeshRenderer>().sharedMaterial;
-            if (drivewayMaterial == null ||
-                drivewayMaterial.GetTexture("_BaseMap") == null ||
-                drivewayMaterial.GetTexture("_BumpMap") == null ||
-                drivewayMaterial.GetFloat("_BumpScale") <= 0f)
+            if (generator.GeneratedDrivewaySlabCount <= 0 ||
+                generator.GeneratedFootpathSlabCount <= 0 ||
+                generator.GeneratedPathLightCount <= 0)
             {
                 throw new InvalidOperationException(
-                    $"Seed {seed} did not apply the pebble albedo and normal-mapped driveway material.");
+                    $"Seed {seed} generated incomplete modular house access: " +
+                    $"{generator.GeneratedDrivewaySlabCount} driveway slabs, " +
+                    $"{generator.GeneratedFootpathSlabCount} footpath slabs and " +
+                    $"{generator.GeneratedPathLightCount} path lights.");
             }
 
             int garageConnections = 0;
@@ -128,21 +128,36 @@ namespace CouchGuys.Editor
                         $"{startHeightError:F3}m.");
                 }
 
-                Renderer garageDoor = FindGarageDoorRenderer(property);
-                if (property.DrivewayAnchor == null && garageDoor != null)
+                HouseExteriorModuleSet modules = property.GetComponent<HouseExteriorModuleSet>();
+                if (modules == null || !modules.IsConfigured || property.DrivewayAnchor == null)
                 {
-                    Vector3 endAtGarageHeight = property.DrivewayEnd;
-                    endAtGarageHeight.y = garageDoor.bounds.center.y;
-                    if (garageDoor.bounds.SqrDistance(endAtGarageHeight) > 0.04f)
-                        throw new InvalidOperationException(
-                            $"Seed {seed} driveway '{property.name}' does not finish at its garage door.");
-                    garageConnections++;
+                    throw new InvalidOperationException(
+                        $"Seed {seed} house '{property.name}' has no configured modular exterior set.");
                 }
+
+                if (Vector3.Distance(property.DrivewayEnd, modules.DrivewayAnchor.position) > 0.05f)
+                    throw new InvalidOperationException(
+                        $"Seed {seed} driveway '{property.name}' does not finish at its authored driveway anchor.");
+                garageConnections++;
             }
 
             if (garageConnections == 0)
                 throw new InvalidOperationException(
-                    $"Seed {seed} did not validate any automatic garage-door driveway connections.");
+                    $"Seed {seed} did not validate any modular house access connections.");
+
+            GeneratedHouseAccessModule[] generatedModules =
+                generator.GetComponentsInChildren<GeneratedHouseAccessModule>(true);
+            for (int index = 0; index < generatedModules.Length; index++)
+            {
+                GeneratedHouseAccessModule module = generatedModules[index];
+                if ((module.Kind == HouseAccessModuleKind.DrivewaySlab ||
+                     module.Kind == HouseAccessModuleKind.FootpathSlab) &&
+                    !module.TryGetComponent(out BoxCollider _))
+                {
+                    throw new InvalidOperationException(
+                        $"Seed {seed} module '{module.name}' has no simple runtime collider.");
+                }
+            }
         }
 
         private static Renderer FindGarageDoorRenderer(GeneratedProperty property)

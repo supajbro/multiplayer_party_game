@@ -301,28 +301,6 @@ namespace CouchGuys.ProceduralGeneration
             }
         }
 
-        private bool IsTerrainQuadCoveredByHouse(
-            Vector3 bottomLeft,
-            Vector3 bottomRight,
-            Vector3 topLeft,
-            Vector3 topRight)
-        {
-            const float inset = -0.04f;
-            for (int index = 0; index < m_placedHouseFootprints.Count; index++)
-            {
-                OrientedFootprint footprint = m_placedHouseFootprints[index];
-                if (IsPointInsideFootprint(new Vector2(bottomLeft.x, bottomLeft.z), footprint, inset) &&
-                    IsPointInsideFootprint(new Vector2(bottomRight.x, bottomRight.z), footprint, inset) &&
-                    IsPointInsideFootprint(new Vector2(topLeft.x, topLeft.z), footprint, inset) &&
-                    IsPointInsideFootprint(new Vector2(topRight.x, topRight.z), footprint, inset))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         private static void DestroyOwnedObject(UnityEngine.Object target)
         {
             if (target == null) return;

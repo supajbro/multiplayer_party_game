@@ -2137,20 +2137,9 @@ namespace CouchGuys.ProceduralGeneration
                     int bottomRight = bottomLeft + 1;
                     int topLeft = bottomLeft + vertexCountX;
                     int topRight = topLeft + 1;
-                    if (IsTerrainQuadCoveredByDriveway(
-                            terrainObject.transform.TransformPoint(vertices[bottomLeft]),
-                            terrainObject.transform.TransformPoint(vertices[bottomRight]),
-                            terrainObject.transform.TransformPoint(vertices[topLeft]),
-                            terrainObject.transform.TransformPoint(vertices[topRight])) ||
-                        IsTerrainQuadCoveredByHouse(
-                            terrainObject.transform.TransformPoint(vertices[bottomLeft]),
-                            terrainObject.transform.TransformPoint(vertices[bottomRight]),
-                            terrainObject.transform.TransformPoint(vertices[topLeft]),
-                            terrainObject.transform.TransformPoint(vertices[topRight])))
-                    {
-                        continue;
-                    }
-
+                    // House pads and modular access routes reshape the continuous terrain;
+                    // their quads must remain present so model edges and slab joints cannot
+                    // expose holes in either the rendered surface or its MeshCollider.
                     triangles.Add(bottomLeft);
                     triangles.Add(topLeft);
                     triangles.Add(topRight);
@@ -4001,17 +3990,13 @@ namespace CouchGuys.ProceduralGeneration
             GeneratedProperty metadata = property.GetComponent<GeneratedProperty>();
             if (metadata != null && metadata.FitVisualToFootprint && metadata.VisualRoot != null)
             {
-                // The Blender houses are authored Z-up with their facade along -Y.
-                // Correct Z-up to Unity Y-up with -90 X, then turn around the model's
-                // original Z axis so the facade points at this property's road.
+                // The imported FBX is already Unity Y-up and its facade points along local
+                // forward. The property root supplies the road-facing yaw, so the visual must
+                // remain upright with an identity local rotation.
                 Vector3 localDirectionToRoad = Vector3.ProjectOnPlane(
                     property.InverseTransformDirection(directionToRoad.normalized),
                     Vector3.up).normalized;
-                float localZAngle = Vector3.SignedAngle(
-                    Vector3.forward,
-                    localDirectionToRoad,
-                    Vector3.up);
-                metadata.VisualRoot.localRotation = Quaternion.Euler(-90f, 0f, localZAngle);
+                metadata.VisualRoot.localRotation = Quaternion.identity;
                 SetPropertyPointDirection(metadata.RoadConnection, localDirectionToRoad);
                 SetPropertyPointDirection(metadata.DeliveryPoint, localDirectionToRoad);
             }
@@ -4083,18 +4068,26 @@ namespace CouchGuys.ProceduralGeneration
                 property.transform.position.y - bounds.min.y,
                 property.transform.position.z - renderedCentre.y);
             TryCalculateRendererBounds(renderers, out bounds);
-            if (!property.TryGetComponent(out BoxCollider houseCollider))
+            // Prefer authored compound colliders on the house's structural meshes. A detailed
+            // render-mesh collider would include shingles, plants, lights and driveway pieces,
+            // while this legacy bounds box also blocks the entire landscaped footprint.
+            // Retain the bounds collider only as a safe fallback for older house prefabs.
+            Collider[] authoredColliders = property.VisualRoot.GetComponentsInChildren<Collider>(true);
+            if (authoredColliders.Length == 0)
             {
-                houseCollider = property.gameObject.AddComponent<BoxCollider>();
-            }
+                if (!property.TryGetComponent(out BoxCollider houseCollider))
+                {
+                    houseCollider = property.gameObject.AddComponent<BoxCollider>();
+                }
 
-            houseCollider.center = property.transform.InverseTransformPoint(bounds.center);
-            Vector3 localMinimum = property.transform.InverseTransformPoint(bounds.min);
-            Vector3 localMaximum = property.transform.InverseTransformPoint(bounds.max);
-            houseCollider.size = new Vector3(
-                Mathf.Abs(localMaximum.x - localMinimum.x),
-                Mathf.Abs(localMaximum.y - localMinimum.y),
-                Mathf.Abs(localMaximum.z - localMinimum.z));
+                houseCollider.center = property.transform.InverseTransformPoint(bounds.center);
+                Vector3 localMinimum = property.transform.InverseTransformPoint(bounds.min);
+                Vector3 localMaximum = property.transform.InverseTransformPoint(bounds.max);
+                houseCollider.size = new Vector3(
+                    Mathf.Abs(localMaximum.x - localMinimum.x),
+                    Mathf.Abs(localMaximum.y - localMinimum.y),
+                    Mathf.Abs(localMaximum.z - localMinimum.z));
+            }
 
             Vector3 frontDirection = property.RoadConnection != null
                 ? Vector3.ProjectOnPlane(property.RoadConnection.localPosition, Vector3.up)
@@ -4359,7 +4352,7 @@ namespace CouchGuys.ProceduralGeneration
             for (int index = 0; index < renderers.Length; index++)
             {
                 Renderer candidate = renderers[index];
-                if (candidate == null || !candidate.enabled)
+                if (candidate == null || !candidate.enabled || !candidate.gameObject.activeInHierarchy)
                 {
                     continue;
                 }
@@ -4677,7 +4670,7 @@ namespace CouchGuys.ProceduralGeneration
             for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
             {
                 Renderer renderer = renderers[rendererIndex];
-                if (renderer == null)
+                if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy)
                 {
                     continue;
                 }
@@ -4726,7 +4719,7 @@ namespace CouchGuys.ProceduralGeneration
             for (int index = 0; index < renderers.Length; index++)
             {
                 Renderer renderer = renderers[index];
-                if (renderer == null)
+                if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy)
                 {
                     continue;
                 }

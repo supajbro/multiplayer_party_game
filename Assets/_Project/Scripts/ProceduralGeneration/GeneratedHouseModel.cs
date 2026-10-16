@@ -27,7 +27,7 @@ namespace CouchGuys.ProceduralGeneration
             model.name = m_modelPrefab.name;
             model.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
             model.transform.localScale = Vector3.one;
-            m_visualRoot.localRotation = Quaternion.Euler(-90f, 0f, 0f);
+            m_visualRoot.localRotation = Quaternion.identity;
             CentreVisualPivot();
         }
 
