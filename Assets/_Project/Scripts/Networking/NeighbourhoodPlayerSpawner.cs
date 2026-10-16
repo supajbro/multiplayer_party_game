@@ -7,6 +7,7 @@ using FishNet.Object;
 using FishNet.Transporting;
 using UnityEngine;
 using UnityEngine.AI;
+using System.Collections;
 
 namespace CouchGuys.Networking
 {
@@ -73,32 +74,47 @@ namespace CouchGuys.Networking
                 return;
             }
 
+            if (asServer) StartCoroutine(SpawnPlayerWhenNeighbourhoodReady(connection));
+        }
+
+        private IEnumerator SpawnPlayerWhenNeighbourhoodReady(NetworkConnection connection)
+        {
             if (m_playerPrefab == null)
             {
                 Debug.LogError($"Player prefab is missing; connection {connection.ClientId} cannot spawn.", this);
-                return;
+                yield break;
             }
 
             NeighbourhoodGenerator generator = FindFirstObjectByType<NeighbourhoodGenerator>();
             if (generator == null)
             {
                 Debug.LogError("The gameplay scene has no NeighbourhoodGenerator; Player spawning was stopped.", this);
-                return;
+                yield break;
             }
 
             NeighbourhoodSeedSynchroniser seedSynchroniser =
                 generator.GetComponent<NeighbourhoodSeedSynchroniser>();
-            if (seedSynchroniser == null || !seedSynchroniser.EnsureAuthoritativeGeneration())
+            if (seedSynchroniser == null)
             {
-                Debug.LogError("The host neighbourhood was not ready; Player spawning was stopped.", this);
-                return;
+                Debug.LogError("The host neighbourhood seed synchroniser is missing; Player spawning was stopped.", this);
+                yield break;
+            }
+
+            seedSynchroniser.EnsureAuthoritativeGeneration();
+            float timeoutAt = Time.realtimeSinceStartup + 120f;
+            while (!generator.HasGeneratedNeighbourhood && Time.realtimeSinceStartup < timeoutAt)
+                yield return null;
+            if (!generator.HasGeneratedNeighbourhood)
+            {
+                Debug.LogError("The host neighbourhood did not become ready within 120 seconds; Player spawning was stopped.", this);
+                yield break;
             }
 
             Transform spawnPoint = SelectSpawnPoint(generator.GeneratedStartingArea, connection.ClientId);
             if (spawnPoint == null)
             {
                 Debug.LogError("The generated Starting Area has no valid PlayerSpawnPoint; Player spawning was stopped.", this);
-                return;
+                yield break;
             }
 
             NetworkObject player = m_networkManager.GetPooledInstantiated(

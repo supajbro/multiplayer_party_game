@@ -1,6 +1,7 @@
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using UnityEngine;
+using CouchGuys.UI;
 
 namespace CouchGuys.ProceduralGeneration
 {
@@ -107,7 +108,10 @@ namespace CouchGuys.ProceduralGeneration
 
             m_appliedSeed = seed;
             m_appliedRegionIndex = regionIndex;
-            m_generator.Generate(seed);
+            if (GameLaunchContext.UseLoadingFlow)
+                m_generator.GenerateAsync(seed);
+            else
+                m_generator.Generate(seed);
         }
     }
 }

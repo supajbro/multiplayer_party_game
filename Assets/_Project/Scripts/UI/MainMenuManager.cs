@@ -18,10 +18,15 @@ namespace CouchGuys.UI
         [SerializeField] private Button m_settingsButton;
 
         private bool m_launching;
+        private MultiplayerMenuController m_multiplayerMenu;
 
         private void Awake()
         {
+            GameLaunchContext.EnterMainMenu();
             SteamLobbyDebugInterface.IsVisible = false;
+            m_multiplayerMenu = GetComponent<MultiplayerMenuController>();
+            if (m_multiplayerMenu == null) m_multiplayerMenu = gameObject.AddComponent<MultiplayerMenuController>();
+            m_multiplayerMenu.InitialiseMainButtons(m_soloButton, m_multiplayerButton, m_settingsButton);
             BindButtons();
         }
 
@@ -63,21 +68,16 @@ namespace CouchGuys.UI
             m_launching = true;
             SetButtonsInteractable(false);
             SteamLobbyDebugInterface.IsVisible = false;
+            GameLaunchContext.BeginSolo();
+            LoadingScreenController.Show("Building Neighbourhood...");
             DontDestroyOnLoad(gameObject);
             StartCoroutine(BeginSoloLaunch());
         }
 
         public void StartMultiplayer()
         {
-            if (m_launching)
-            {
-                return;
-            }
-
-            m_launching = true;
-            SetButtonsInteractable(false);
-            SteamLobbyDebugInterface.IsVisible = true;
-            SceneManager.LoadScene(GameplaySceneName, LoadSceneMode.Single);
+            SteamLobbyDebugInterface.IsVisible = false;
+            m_multiplayerMenu.Open(m_soloButton, m_multiplayerButton, m_settingsButton);
         }
 
         private void OnSoloSceneLoaded(Scene scene, LoadSceneMode mode)

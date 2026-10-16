@@ -11,6 +11,14 @@ namespace CouchGuys.Networking
     {
         public static bool IsVisible { get; set; } = true;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetVisibility()
+        {
+            // MainMenuManager hides this again when the authored menu is the entry point.
+            // A direct gameplay-scene play session therefore always keeps the dev panel.
+            IsVisible = true;
+        }
+
         [SerializeField] private SteamLobbyController m_lobbyController;
 
         private string m_lobbyIdText = string.Empty;

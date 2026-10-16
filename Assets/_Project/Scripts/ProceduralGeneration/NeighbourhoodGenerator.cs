@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using CouchGuys.Gameplay.Delivery;
@@ -19,6 +20,7 @@ namespace CouchGuys.ProceduralGeneration
     {
         public event Action<NeighbourhoodGenerator> RegionGenerated;
         public event Action<NeighbourhoodGenerator> RegionClearing;
+        public event Action<NeighbourhoodGenerator, float, string> GenerationProgressed;
 
         [Header("Generation")]
         [SerializeField] private bool m_generateOnStart = true;
@@ -228,6 +230,9 @@ namespace CouchGuys.ProceduralGeneration
         public bool IsNavMeshReady { get; private set; }
         public bool IsDeliveryDifficultyReady { get; private set; }
         public bool LastValidationSucceeded { get; private set; }
+        public bool IsGenerating { get; private set; }
+        public float GenerationProgress { get; private set; }
+        public string GenerationStatus { get; private set; } = "Preparing neighbourhood...";
         public bool HasGeneratedNeighbourhood =>
             IsGenerationReady && GeneratedStartingArea != null && m_generatedRoads.Count > 0;
         public Bounds GeneratedWorldBounds { get; private set; }
@@ -255,6 +260,123 @@ namespace CouchGuys.ProceduralGeneration
         public void Generate(RegionDefinition region, int seed)
         {
             GenerateInternal(region, seed, 0);
+        }
+
+        /// <summary>
+        /// Menu launches use the same deterministic generation operations, grouped into
+        /// real stages with frame yields so loading UI and Steam callbacks remain responsive.
+        /// Direct gameplay-scene launches continue to use the original synchronous path.
+        /// </summary>
+        public void GenerateAsync(int seed)
+        {
+            if (!IsGenerating) StartCoroutine(GenerateAsyncRoutine(m_selectedRegion, seed));
+        }
+
+        private IEnumerator GenerateAsyncRoutine(RegionDefinition region, int seed)
+        {
+            IsGenerating = true;
+            ApplyRegionConfiguration(region);
+            ApplyEnvironmentAtmosphere();
+            m_progression.Validate();
+            m_terrainSettings.Validate();
+            m_borderSettings.Validate();
+            EnsureDifficultySettings();
+            if (!ValidateConfiguration())
+            {
+                ReportGenerationProgress(0f, "Neighbourhood configuration failed.");
+                IsGenerating = false;
+                yield break;
+            }
+
+            Stopwatch stopwatch = Stopwatch.StartNew();
+            Clear();
+            CurrentSeed = seed;
+            System.Random layoutRandom = new System.Random(seed);
+            ReportGenerationProgress(0.03f, "Preparing the depot...");
+            CreateGeneratedHierarchy();
+            GeneratedStartingArea = CreateStartingArea();
+            if (GeneratedStartingArea == null || GeneratedStartingArea.RoadConnection == null)
+            {
+                Debug.LogError("Neighbourhood generation stopped because no valid Starting Area RoadConnection could be created.", this);
+                Clear();
+                IsGenerating = false;
+                yield break;
+            }
+            m_gridOrigin = GeneratedStartingArea.RoadConnection.position;
+            m_startDirection = ClosestDirection(GeneratedStartingArea.RoadConnection.forward);
+            ReserveStartingArea(GeneratedStartingArea);
+            m_minimumLocalX = -(m_gridWidth / 2) * (m_blockWidth + 1);
+            AssignBlockElevations(layoutRandom);
+            yield return null;
+
+            ReportGenerationProgress(0.14f, "Generating Roads...");
+            GenerateRoadLayout(new System.Random(DeriveSeed(seed, 0x1874A2B1)));
+            CreateTrafficBoundaryExtensions();
+            CalculateRoadConnections();
+            ResolveRoadElevations();
+            FinaliseTrafficBoundaryConnections();
+            RefreshBlockElevationsFromRoads();
+            CreateRoadVisuals(new System.Random(DeriveSeed(seed, 0x2D31A7B5)));
+            yield return null;
+
+            ReportGenerationProgress(0.34f, "Placing Houses...");
+            GenerateParksAndMajorLandmarks(new System.Random(DeriveSeed(seed, 0x3A71C4E9)));
+            GenerateLandmarks(new System.Random(DeriveSeed(seed, 0x4F1BBCDC)));
+            GenerateProperties(new System.Random(DeriveSeed(seed, 0x61C88647)));
+            yield return null;
+
+            ReportGenerationProgress(0.52f, "Shaping Terrain...");
+            CreateContinuousTerrain();
+            CreateSidewalks();
+            CreateDriveways();
+            CreateGrassTufts();
+            yield return null;
+
+            ReportGenerationProgress(0.68f, "Adding Landmarks...");
+            GenerateStreetlights(new System.Random(DeriveSeed(seed, 0x0F4A7C15)));
+            PopulateGeneratedParks(new System.Random(DeriveSeed(seed, 0x6D2B79F3)));
+            GenerateResidentialDecorations(new System.Random(DeriveSeed(seed, 0x24C18E6B)));
+            GenerateRoadsideDecorations(new System.Random(DeriveSeed(seed, 0x7B531D29)));
+            CreateNeighbourhoodBorder();
+            GenerateRegionObjects(m_selectedRegion != null ? m_selectedRegion.Props : null, m_propsRoot,
+                new System.Random(DeriveSeed(seed, 0x15342E19)), false);
+            GenerateRegionObjects(m_selectedRegion != null ? m_selectedRegion.Hazards : null, m_hazardsRoot,
+                new System.Random(DeriveSeed(seed, 0x72AE91C3)), true);
+            yield return null;
+
+            ReportGenerationProgress(0.82f, "Preparing Deliveries...");
+            AnalyseDeliveryDestinations();
+            if (m_createDeliveryNpc) CreateDeliveryNpc();
+            CalculateWorldBounds();
+            LastValidationSucceeded = ValidateLayout();
+            if (!LastValidationSucceeded)
+            {
+                // Preserve the established deterministic repair behaviour on the rare
+                // invalid seed, even though the retry itself is a single frame.
+                int retrySeed = DeriveSeed(seed, 0x51ED270B);
+                IsGenerating = false;
+                GenerateInternal(region, retrySeed, 1);
+                yield break;
+            }
+            yield return null;
+
+            ReportGenerationProgress(0.92f, "Baking Navigation...");
+            BuildNavMeshOnce();
+            IsGenerationReady = true;
+            stopwatch.Stop();
+            LastGenerationMilliseconds = stopwatch.Elapsed.TotalMilliseconds;
+            if (m_createDeliveryNpc && GetComponent<CouchGuys.Gameplay.Traffic.TrafficManager>() == null)
+                gameObject.AddComponent<CouchGuys.Gameplay.Traffic.TrafficManager>();
+            ReportGenerationProgress(1f, "Spawning Couches...");
+            IsGenerating = false;
+            RegionGenerated?.Invoke(this);
+        }
+
+        private void ReportGenerationProgress(float progress, string status)
+        {
+            GenerationProgress = Mathf.Clamp01(progress);
+            GenerationStatus = status;
+            GenerationProgressed?.Invoke(this, GenerationProgress, GenerationStatus);
         }
 
         /// <summary>Configures this generator for a non-gameplay showcase scene.</summary>
