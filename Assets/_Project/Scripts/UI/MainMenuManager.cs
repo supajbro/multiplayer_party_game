@@ -16,18 +16,41 @@ namespace CouchGuys.UI
         [SerializeField] private Button m_soloButton;
         [SerializeField] private Button m_multiplayerButton;
         [SerializeField] private Button m_settingsButton;
+        [SerializeField] private Sprite m_backgroundSprite;
 
         private bool m_launching;
         private MultiplayerMenuController m_multiplayerMenu;
 
         private void Awake()
         {
+            InstallStaticBackground();
             GameLaunchContext.EnterMainMenu();
             SteamLobbyDebugInterface.IsVisible = false;
             m_multiplayerMenu = GetComponent<MultiplayerMenuController>();
             if (m_multiplayerMenu == null) m_multiplayerMenu = gameObject.AddComponent<MultiplayerMenuController>();
             m_multiplayerMenu.InitialiseMainButtons(m_soloButton, m_multiplayerButton, m_settingsButton);
             BindButtons();
+        }
+
+        private void InstallStaticBackground()
+        {
+            GameObject decorativeNeighbourhood = GameObject.Find("Decorative Neighbourhood");
+            if (decorativeNeighbourhood != null) decorativeNeighbourhood.SetActive(false);
+            if (m_backgroundSprite == null) return;
+
+            Canvas canvas = FindFirstObjectByType<Canvas>();
+            if (canvas == null || canvas.transform.Find("Concept Background") != null) return;
+            GameObject background = new GameObject("Concept Background", typeof(RectTransform), typeof(Image));
+            background.transform.SetParent(canvas.transform, false);
+            background.transform.SetAsFirstSibling();
+            RectTransform rect = background.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            Image image = background.GetComponent<Image>();
+            image.sprite = m_backgroundSprite;
+            image.preserveAspect = true;
+            image.raycastTarget = false;
         }
 
         public void Initialise(Button soloButton, Button multiplayerButton, Button settingsButton)

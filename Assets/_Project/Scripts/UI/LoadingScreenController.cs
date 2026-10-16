@@ -2,6 +2,7 @@ using System.Collections;
 using CouchGuys.Input;
 using CouchGuys.Networking;
 using CouchGuys.ProceduralGeneration;
+using FishNet.Object;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -14,13 +15,27 @@ namespace CouchGuys.UI
     {
         public static GameLaunchMode Mode { get; private set; } = GameLaunchMode.DirectScene;
         public static bool UseLoadingFlow => Mode != GameLaunchMode.DirectScene;
+        public static int AuthoritativeSeed { get; private set; }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void Reset() => Mode = GameLaunchMode.DirectScene;
+        private static void Reset()
+        {
+            Mode = GameLaunchMode.DirectScene;
+            AuthoritativeSeed = 0;
+        }
 
         public static void EnterMainMenu() => Mode = GameLaunchMode.DirectScene;
-        public static void BeginSolo() => Mode = GameLaunchMode.Solo;
-        public static void BeginMultiplayer() => Mode = GameLaunchMode.Multiplayer;
+        public static void BeginSolo()
+        {
+            Mode = GameLaunchMode.Solo;
+            AuthoritativeSeed = Random.Range(1, int.MaxValue);
+        }
+
+        public static void BeginMultiplayer(int seed = 0)
+        {
+            Mode = GameLaunchMode.Multiplayer;
+            if (seed != 0) AuthoritativeSeed = seed;
+        }
     }
 
     /// <summary>Persistent, code-authored loading view shared by solo and network launches.</summary>
@@ -40,9 +55,11 @@ namespace CouchGuys.UI
         private Text m_status;
         private Text m_tip;
         private Image m_fill;
+        private Text m_progressPercent;
         private RectTransform m_spinner;
         private Button m_returnButton;
         private float m_displayedProgress;
+        private float m_visualProgress;
         private bool m_finishing;
 
         public static void Show(string initialStatus)
@@ -74,7 +91,12 @@ namespace CouchGuys.UI
         private void Update()
         {
             if (m_spinner != null) m_spinner.Rotate(0f, 0f, -150f * Time.unscaledDeltaTime);
-            m_fill.fillAmount = Mathf.MoveTowards(m_fill.fillAmount, m_displayedProgress, Time.unscaledDeltaTime * 0.8f);
+            m_visualProgress = Mathf.MoveTowards(m_visualProgress, m_displayedProgress, Time.unscaledDeltaTime * 0.8f);
+            if (m_fill != null)
+            {
+                m_fill.rectTransform.sizeDelta = new Vector2(808f * m_visualProgress, 30f);
+                m_progressPercent.text = $"{Mathf.RoundToInt(m_visualProgress * 100f)}%";
+            }
             foreach (PlayerInputReader input in FindObjectsByType<PlayerInputReader>(FindObjectsSortMode.None))
                 input.SetGameplaySuppressed(true);
         }
@@ -107,9 +129,9 @@ namespace CouchGuys.UI
 
             m_displayedProgress = 0.9f;
             m_status.text = "Spawning Couches...";
-            while (FindFirstObjectByType<PlayerInputReader>() == null && Time.realtimeSinceStartup < deadline)
+            while (!HasLocalPlayer() && Time.realtimeSinceStartup < deadline)
                 yield return null;
-            if (FindFirstObjectByType<PlayerInputReader>() == null) { Fail("Player spawning timed out."); yield break; }
+            if (!HasLocalPlayer()) { Fail("Player spawning timed out."); yield break; }
 
             if (GameLaunchContext.Mode == GameLaunchMode.Multiplayer)
             {
@@ -132,8 +154,8 @@ namespace CouchGuys.UI
 
             m_displayedProgress = 1f;
             m_status.text = "Ready!";
-            yield return null;
-            yield return null;
+            while (m_visualProgress < .995f) yield return null;
+            yield return new WaitForSecondsRealtime(.35f);
             Finish();
         }
 
@@ -143,6 +165,16 @@ namespace CouchGuys.UI
             foreach (PlayerInputReader input in FindObjectsByType<PlayerInputReader>(FindObjectsSortMode.None))
                 input.SetGameplaySuppressed(false);
             Destroy(gameObject);
+        }
+
+        private static bool HasLocalPlayer()
+        {
+            foreach (PlayerInputReader input in FindObjectsByType<PlayerInputReader>(FindObjectsSortMode.None))
+            {
+                NetworkObject networkObject = input.GetComponent<NetworkObject>();
+                if (networkObject != null && networkObject.IsOwner) return true;
+            }
+            return false;
         }
 
         private void Fail(string message)
@@ -206,10 +238,13 @@ namespace CouchGuys.UI
             track.rectTransform.anchorMin = track.rectTransform.anchorMax = new Vector2(.5f, .24f);
             track.rectTransform.sizeDelta = new Vector2(820f, 42f);
             m_fill = UiImage(track.transform, "Actual Progress", new Color(1f, .63f, .12f, 1f));
-            Stretch(m_fill.rectTransform, 6f);
-            m_fill.type = Image.Type.Filled;
-            m_fill.fillMethod = Image.FillMethod.Horizontal;
-            m_fill.fillAmount = 0f;
+            m_fill.rectTransform.anchorMin = m_fill.rectTransform.anchorMax = new Vector2(0f, .5f);
+            m_fill.rectTransform.pivot = new Vector2(0f, .5f);
+            m_fill.rectTransform.anchoredPosition = new Vector2(6f, 0f);
+            m_fill.rectTransform.sizeDelta = new Vector2(0f, 30f);
+            m_progressPercent = UiText(track.transform, "0%", 24, FontStyle.Bold, Color.white);
+            Stretch(m_progressPercent.rectTransform);
+            m_progressPercent.alignment = TextAnchor.MiddleCenter;
 
             m_tip = UiText(transform, Tips[Random.Range(0, Tips.Length)], 27, FontStyle.Italic, new Color(1f, .93f, .72f));
             m_tip.alignment = TextAnchor.MiddleCenter;

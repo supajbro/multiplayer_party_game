@@ -8,6 +8,7 @@ using UnityEngine.AI;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Debug = UnityEngine.Debug;
+using CouchGuys.UI;
 
 namespace CouchGuys.ProceduralGeneration
 {
@@ -242,7 +243,10 @@ namespace CouchGuys.ProceduralGeneration
         {
             if (m_generateOnStart && GetComponent<NeighbourhoodSeedSynchroniser>() == null)
             {
-                Generate();
+                if (GameLaunchContext.UseLoadingFlow)
+                    GenerateAsync(GameLaunchContext.AuthoritativeSeed != 0 ? GameLaunchContext.AuthoritativeSeed : SelectSeed());
+                else
+                    Generate();
             }
         }
 

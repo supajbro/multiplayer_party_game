@@ -1,5 +1,6 @@
 using CouchGuys.Player;
 using CouchGuys.ProceduralGeneration;
+using CouchGuys.UI;
 using FishNet;
 using FishNet.Connection;
 using FishNet.Managing;
@@ -8,6 +9,7 @@ using FishNet.Transporting;
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace CouchGuys.Networking
 {
@@ -28,6 +30,8 @@ namespace CouchGuys.Networking
 
         private NetworkManager m_networkManager;
         private bool m_aiTeamSpawned;
+        private readonly HashSet<int> m_pendingConnections = new HashSet<int>();
+        private readonly HashSet<int> m_spawnedConnections = new HashSet<int>();
 
         public NetworkObject PlayerPrefab => m_playerPrefab;
 
@@ -43,6 +47,7 @@ namespace CouchGuys.Networking
 
             m_networkManager.SceneManager.OnClientLoadedStartScenes += OnClientLoadedStartScenes;
             m_networkManager.ServerManager.OnServerConnectionState += OnServerConnectionState;
+            m_networkManager.ServerManager.OnRemoteConnectionState += OnRemoteConnectionState;
         }
 
         private void OnDestroy()
@@ -51,6 +56,7 @@ namespace CouchGuys.Networking
             {
                 m_networkManager.SceneManager.OnClientLoadedStartScenes -= OnClientLoadedStartScenes;
                 m_networkManager.ServerManager.OnServerConnectionState -= OnServerConnectionState;
+                m_networkManager.ServerManager.OnRemoteConnectionState -= OnRemoteConnectionState;
             }
         }
 
@@ -59,7 +65,16 @@ namespace CouchGuys.Networking
             if (args.ConnectionState == LocalConnectionState.Stopped)
             {
                 m_aiTeamSpawned = false;
+                m_pendingConnections.Clear();
+                m_spawnedConnections.Clear();
             }
+        }
+
+        private void OnRemoteConnectionState(NetworkConnection connection, RemoteConnectionStateArgs args)
+        {
+            if (args.ConnectionState != RemoteConnectionState.Stopped) return;
+            m_pendingConnections.Remove(connection.ClientId);
+            m_spawnedConnections.Remove(connection.ClientId);
         }
 
         public void SetPlayerPrefab(NetworkObject playerPrefab)
@@ -74,7 +89,9 @@ namespace CouchGuys.Networking
                 return;
             }
 
-            if (asServer) StartCoroutine(SpawnPlayerWhenNeighbourhoodReady(connection));
+            int clientId = connection.ClientId;
+            if (m_spawnedConnections.Contains(clientId) || !m_pendingConnections.Add(clientId)) return;
+            StartCoroutine(SpawnPlayerWhenNeighbourhoodReady(connection));
         }
 
         private IEnumerator SpawnPlayerWhenNeighbourhoodReady(NetworkConnection connection)
@@ -82,31 +99,63 @@ namespace CouchGuys.Networking
             if (m_playerPrefab == null)
             {
                 Debug.LogError($"Player prefab is missing; connection {connection.ClientId} cannot spawn.", this);
+                m_pendingConnections.Remove(connection.ClientId);
                 yield break;
             }
 
-            NeighbourhoodGenerator generator = FindFirstObjectByType<NeighbourhoodGenerator>();
+            float sceneTimeoutAt = Time.realtimeSinceStartup + 600f;
+            NeighbourhoodGenerator generator = FindGameplayGenerator();
+            while (generator == null && connection.IsActive && Time.realtimeSinceStartup < sceneTimeoutAt)
+            {
+                yield return null;
+                generator = FindGameplayGenerator();
+            }
+
             if (generator == null)
             {
-                Debug.LogError("The gameplay scene has no NeighbourhoodGenerator; Player spawning was stopped.", this);
+                m_pendingConnections.Remove(connection.ClientId);
+                if (connection.IsActive)
+                    Debug.LogError("The gameplay scene did not provide a NeighbourhoodGenerator before the scene-load timeout; Player spawning was stopped.", this);
                 yield break;
             }
 
             NeighbourhoodSeedSynchroniser seedSynchroniser =
                 generator.GetComponent<NeighbourhoodSeedSynchroniser>();
-            if (seedSynchroniser == null)
+            if (seedSynchroniser != null)
             {
-                Debug.LogError("The host neighbourhood seed synchroniser is missing; Player spawning was stopped.", this);
-                yield break;
+                seedSynchroniser.EnsureAuthoritativeGeneration();
+            }
+            else
+            {
+                // Give the generator's normal Start method the first opportunity to run.
+                yield return null;
+                if (!generator.HasGeneratedNeighbourhood && !generator.IsGenerating)
+                {
+                    if (GameLaunchContext.UseLoadingFlow)
+                    {
+                        int seed = GameLaunchContext.AuthoritativeSeed != 0
+                            ? GameLaunchContext.AuthoritativeSeed
+                            : generator.SelectSeed();
+                        generator.GenerateAsync(seed);
+                    }
+                    else
+                    {
+                        generator.Generate();
+                    }
+                }
             }
 
-            seedSynchroniser.EnsureAuthoritativeGeneration();
+            // Scenes without the optional network synchroniser still generate from the
+            // launch-context seed. This is the current Solo scene setup and also serves
+            // as a deterministic Steam-lobby fallback.
             float timeoutAt = Time.realtimeSinceStartup + 120f;
-            while (!generator.HasGeneratedNeighbourhood && Time.realtimeSinceStartup < timeoutAt)
+            while (!generator.HasGeneratedNeighbourhood && connection.IsActive && Time.realtimeSinceStartup < timeoutAt)
                 yield return null;
             if (!generator.HasGeneratedNeighbourhood)
             {
-                Debug.LogError("The host neighbourhood did not become ready within 120 seconds; Player spawning was stopped.", this);
+                m_pendingConnections.Remove(connection.ClientId);
+                if (connection.IsActive)
+                    Debug.LogError("The host neighbourhood did not become ready within 120 seconds; Player spawning was stopped.", this);
                 yield break;
             }
 
@@ -114,6 +163,7 @@ namespace CouchGuys.Networking
             if (spawnPoint == null)
             {
                 Debug.LogError("The generated Starting Area has no valid PlayerSpawnPoint; Player spawning was stopped.", this);
+                m_pendingConnections.Remove(connection.ClientId);
                 yield break;
             }
 
@@ -123,6 +173,8 @@ namespace CouchGuys.Networking
                 spawnPoint.rotation,
                 true);
             m_networkManager.ServerManager.Spawn(player, connection);
+            m_pendingConnections.Remove(connection.ClientId);
+            m_spawnedConnections.Add(connection.ClientId);
 
             if (m_addToDefaultScene)
             {
@@ -130,6 +182,16 @@ namespace CouchGuys.Networking
             }
 
             SpawnAiTeammatesServer(player, generator);
+        }
+
+        private static NeighbourhoodGenerator FindGameplayGenerator()
+        {
+            foreach (NeighbourhoodGenerator generator in
+                     FindObjectsByType<NeighbourhoodGenerator>(FindObjectsSortMode.None))
+            {
+                if (generator.gameObject.scene.name == "SampleScene") return generator;
+            }
+            return null;
         }
 
         private void SpawnAiTeammatesServer(

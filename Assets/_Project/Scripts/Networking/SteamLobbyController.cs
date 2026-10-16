@@ -23,6 +23,7 @@ namespace CouchGuys.Networking
         private const string BuildKey = "build";
         private const string StateKey = "state";
         private const string ReadyKey = "ready";
+        private const string WorldSeedKey = "world_seed";
         private const string WaitingState = "waiting";
         private const string LoadingState = "loading";
         private const string PlayingState = "playing";
@@ -187,10 +188,12 @@ namespace CouchGuys.Networking
             }
 
             SteamMatchmaking.SetLobbyJoinable(m_currentLobby, false);
+            int worldSeed = UnityEngine.Random.Range(1, int.MaxValue);
+            SteamMatchmaking.SetLobbyData(m_currentLobby, WorldSeedKey, worldSeed.ToString());
             SteamMatchmaking.SetLobbyData(m_currentLobby, StateKey, LoadingState);
             SteamMatchmaking.SetLobbyMemberData(m_currentLobby, ReadyKey, "0");
             SetStatus("Loading the neighbourhood...");
-            GameLaunchContext.BeginMultiplayer();
+            GameLaunchContext.BeginMultiplayer(worldSeed);
             LoadingScreenController.Show("Building Neighbourhood...");
             GameStartRequested?.Invoke();
 
@@ -463,7 +466,8 @@ namespace CouchGuys.Networking
             string state = SteamMatchmaking.GetLobbyData(m_currentLobby, StateKey);
             if (state == LoadingState)
             {
-                GameLaunchContext.BeginMultiplayer();
+                int.TryParse(SteamMatchmaking.GetLobbyData(m_currentLobby, WorldSeedKey), out int worldSeed);
+                GameLaunchContext.BeginMultiplayer(worldSeed);
                 LoadingScreenController.Show("Joining the neighbourhood...");
                 GameStartRequested?.Invoke();
             }

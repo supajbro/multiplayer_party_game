@@ -1,5 +1,4 @@
 using System.IO;
-using CouchGuys.ProceduralGeneration;
 using CouchGuys.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -18,6 +17,7 @@ namespace CouchGuys.Editor
         private const string GameplayScenePath = "Assets/Scenes/SampleScene.unity";
         private const string MainMenuScenePath = "Assets/Scenes/MainMenu.unity";
         private const string LogoPath = "Assets/_Project/Concepts/logo.png";
+        private const string BackgroundPath = "Assets/_Project/Concepts/Couch_Guys_Concept_01.png";
         private const string ButtonBackgroundPath = "Assets/_Project/UI/Button_Background.png";
         private const string SoloOverlayPath = "Assets/_Project/UI/Button_Overlay_white.png";
         private const string MultiplayerOverlayPath = "Assets/_Project/UI/Button_Overlay_yellow.png";
@@ -42,30 +42,22 @@ namespace CouchGuys.Editor
         public static void BuildMainMenuScene()
         {
             ConfigureSingleSprite(LogoPath);
+            ConfigureSingleSprite(BackgroundPath);
             ConfigureSingleSprite(ButtonBackgroundPath);
             ConfigureSingleSprite(SoloOverlayPath);
             ConfigureSingleSprite(MultiplayerOverlayPath);
             ConfigureSingleSprite(SettingsOverlayPath);
 
-            Scene gameplayScene = EditorSceneManager.OpenScene(GameplayScenePath, OpenSceneMode.Single);
-            NeighbourhoodGenerator sourceGenerator = FindComponentInScene<NeighbourhoodGenerator>(gameplayScene);
-            if (sourceGenerator == null)
-            {
-                throw new UnityException("SampleScene has no NeighbourhoodGenerator to reuse for MainMenu.");
-            }
-
-            Scene menuScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+            Scene menuScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             SceneManager.SetActiveScene(menuScene);
 
-            Camera menuCamera = CreateCamera(menuScene);
+            CreateCamera(menuScene);
             CreateLighting(menuScene);
-            CreateDecorativeNeighbourhood(menuScene, sourceGenerator, menuCamera);
             CreateMenuUi(menuScene);
             CreateEventSystem(menuScene);
             CreatePostProcessing(menuScene);
 
             EditorSceneManager.SaveScene(menuScene, MainMenuScenePath);
-            EditorSceneManager.CloseScene(gameplayScene, true);
             ConfigureBuildScenes();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -114,30 +106,6 @@ namespace CouchGuys.Editor
             RenderSettings.ambientGroundColor = new Color(0.24f, 0.2f, 0.16f);
         }
 
-        private static void CreateDecorativeNeighbourhood(
-            Scene scene,
-            NeighbourhoodGenerator source,
-            Camera menuCamera)
-        {
-            GameObject root = new GameObject("Decorative Neighbourhood");
-            SceneManager.MoveGameObjectToScene(root, scene);
-            NeighbourhoodGenerator generator = root.AddComponent<NeighbourhoodGenerator>();
-            EditorUtility.CopySerialized(source, generator);
-
-            SerializedObject serialized = new SerializedObject(generator);
-            serialized.FindProperty("m_generateOnStart").boolValue = true;
-            serialized.FindProperty("m_useRandomSeed").boolValue = true;
-            serialized.FindProperty("m_createDeliveryNpc").boolValue = false;
-            serialized.FindProperty("m_navMeshSurface").objectReferenceValue = null;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-
-            MainMenuEnvironment environment = root.AddComponent<MainMenuEnvironment>();
-            SerializedObject environmentSerialized = new SerializedObject(environment);
-            environmentSerialized.FindProperty("m_generator").objectReferenceValue = generator;
-            environmentSerialized.FindProperty("m_menuCamera").objectReferenceValue = menuCamera;
-            environmentSerialized.ApplyModifiedPropertiesWithoutUndo();
-        }
-
         private static void CreateMenuUi(Scene scene)
         {
             GameObject canvasObject = new GameObject("Main Menu Canvas", typeof(Canvas), typeof(CanvasScaler),
@@ -151,6 +119,8 @@ namespace CouchGuys.Editor
             scaler.referenceResolution = new Vector2(1920f, 1080f);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             scaler.matchWidthOrHeight = 0.5f;
+
+            CreateBackground(canvas.transform);
 
             CreateLeftScrim(canvas.transform);
             CreateLogo(canvas.transform);
@@ -174,7 +144,23 @@ namespace CouchGuys.Editor
             serialized.FindProperty("m_soloButton").objectReferenceValue = soloButton;
             serialized.FindProperty("m_multiplayerButton").objectReferenceValue = multiplayerButton;
             serialized.FindProperty("m_settingsButton").objectReferenceValue = settingsButton;
+            serialized.FindProperty("m_backgroundSprite").objectReferenceValue =
+                AssetDatabase.LoadAssetAtPath<Sprite>(BackgroundPath);
             serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void CreateBackground(Transform parent)
+        {
+            GameObject backgroundObject = new GameObject("Concept Background", typeof(RectTransform), typeof(Image));
+            backgroundObject.transform.SetParent(parent, false);
+            RectTransform rect = (RectTransform)backgroundObject.transform;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            Image image = backgroundObject.GetComponent<Image>();
+            image.sprite = AssetDatabase.LoadAssetAtPath<Sprite>(BackgroundPath);
+            image.preserveAspect = true;
+            image.raycastTarget = false;
         }
 
         private static void CreateLeftScrim(Transform parent)
@@ -343,7 +329,6 @@ namespace CouchGuys.Editor
         private static void ValidateScene(Scene scene)
         {
             if (FindComponentInScene<MainMenuManager>(scene) == null ||
-                FindComponentInScene<NeighbourhoodGenerator>(scene) == null ||
                 FindComponentInScene<Canvas>(scene) == null ||
                 FindComponentInScene<EventSystem>(scene) == null ||
                 FindComponentInScene<Camera>(scene) == null)

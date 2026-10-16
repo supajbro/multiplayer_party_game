@@ -657,7 +657,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &642291888
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1466,6 +1466,7 @@ MonoBehaviour:
   m_soloButton: {fileID: 375843936}
   m_multiplayerButton: {fileID: 1890720116}
   m_settingsButton: {fileID: 326747452}
+  m_backgroundSprite: {fileID: 21300000, guid: 76686cf808971494a8b6253460aa2ae9, type: 3}
 --- !u!4 &1277187852
 Transform:
   m_ObjectHideFlags: 0
