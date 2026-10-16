@@ -191,6 +191,12 @@ namespace CouchGuys.Gameplay.Couch
             }
         }
 
+        public override void OnStopServer()
+        {
+            ReleaseAllOccupantsServer();
+            base.OnStopServer();
+        }
+
         private void OnDestroy()
         {
             m_modelVariantIndex.OnChange -= OnModelVariantChanged;
@@ -938,6 +944,14 @@ namespace CouchGuys.Gameplay.Couch
             return m_settings != null
                 ? m_settings.GetMoveSpeed(clampedCount)
                 : s_defaultMoveSpeeds[clampedCount - 1];
+        }
+
+        internal float GetConfiguredCarrierMoveSpeedServer()
+        {
+            int carrierCount = IsServerInitialized
+                ? CountServerCarriers()
+                : ActiveCarrierCount;
+            return carrierCount > 0 ? GetConfiguredMoveSpeed(carrierCount) : 0f;
         }
 
         private static float SelectAccelerationLimit(Vector3 currentVelocity, Vector3 desiredVelocity)

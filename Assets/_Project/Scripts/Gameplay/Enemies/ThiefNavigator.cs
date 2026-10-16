@@ -27,8 +27,6 @@ namespace CouchGuys.Gameplay.Enemies
         [SerializeField, Min(1f)] private float m_aimTurnSpeed = 260f;
 
         private const float CouchGrabDistance = 2.1f;
-        private const float CarryDistance = 0.55f;
-        private const float CarryHeight = 0.45f;
         private const float EscapeDistance = 20f;
         private const float ThreatDecisionDistance = 8f;
         private const int MaximumThiefCouchCarriers = 2;
@@ -55,6 +53,11 @@ namespace CouchGuys.Gameplay.Enemies
         private float m_rangeMultiplier = 1f;
         private int m_memberIndex;
         private bool m_hasDestination;
+        private bool m_usingConstrainedCarryMovement;
+        private float m_normalNavigationSpeed;
+        private bool m_normalUpdateRotation;
+        private Collider m_carrierCollider;
+        private CouchCarryController m_collisionIgnoredCouch;
 
         NetworkObject ICouchCarrierServer.CarrierNetworkObject => NetworkObject;
         bool ICouchCarrierServer.IsCarrierAvailable => IsSpawned &&
@@ -65,7 +68,13 @@ namespace CouchGuys.Gameplay.Enemies
             m_agent ??= GetComponent<NavMeshAgent>();
             m_weapon ??= GetComponent<EnemyWeapon>();
             m_health ??= GetComponent<ThiefHealth>();
+            m_carrierCollider = GetComponent<Collider>();
             m_path = new NavMeshPath();
+            if (m_agent != null)
+            {
+                m_normalNavigationSpeed = m_agent.speed;
+                m_normalUpdateRotation = m_agent.updateRotation;
+            }
         }
 
         public override void OnStartServer()
@@ -91,7 +100,14 @@ namespace CouchGuys.Gameplay.Enemies
         public override void OnStopServer()
         {
             ReleaseCarriedCouchServer();
+            SetConstrainedCarryMovement(false);
+            UpdateCarriedCouchCollision(null);
             base.OnStopServer();
+        }
+
+        private void OnDestroy()
+        {
+            UpdateCarriedCouchCollision(null);
         }
 
         public void ConfigureTacticalSlotServer(int index, int groupSize)
@@ -210,8 +226,11 @@ namespace CouchGuys.Gameplay.Enemies
 
             Vector3 escapeTarget = CalculateEscapeTarget();
             MoveTo(escapeTarget, 0.25f);
-            Vector3 desired = Vector3.ProjectOnPlane(escapeTarget - transform.position, Vector3.up);
+            Vector3 desired = m_agent != null && m_agent.enabled && m_agent.hasPath
+                ? Vector3.ProjectOnPlane(m_agent.steeringTarget - transform.position, Vector3.up)
+                : Vector3.ProjectOnPlane(escapeTarget - transform.position, Vector3.up);
             m_carryIntent = desired.sqrMagnitude > 0.01f ? desired.normalized : Vector3.zero;
+            ApplyConstrainedCarryMovement(m_carryIntent);
         }
 
         private Vector3 CalculateEscapeTarget()
@@ -277,6 +296,113 @@ namespace CouchGuys.Gameplay.Enemies
             if (!m_hasDestination) return;
             m_agent.isStopped = false;
             m_agent.SetDestination(m_destination);
+        }
+
+        private void ApplyConstrainedCarryMovement(Vector3 movementIntent)
+        {
+            SetConstrainedCarryMovement(true);
+            if (m_carriedCouch == null || m_agent == null || !m_agent.enabled ||
+                !m_agent.isOnNavMesh)
+            {
+                return;
+            }
+
+            CouchCarryPoint point = m_carriedCouch.GetPoint(m_carriedPointIndex);
+            if (point == null)
+            {
+                ReleaseCarriedCouchServer();
+                return;
+            }
+
+            Transform anchor = point.transform;
+            Vector3 outwardDirection = Vector3.ProjectOnPlane(
+                anchor.position - m_carriedCouch.transform.position,
+                Vector3.up);
+            float maximumDistance = m_carriedCouch.MaxCarryDistance;
+            float minimumDistance = Mathf.Min(PlayerCouchCarrier.CarryDistance, maximumDistance);
+            float comfortableDistance = Mathf.Clamp(
+                maximumDistance * PlayerCouchCarrier.SoftConstraintStartRatio,
+                minimumDistance,
+                maximumDistance);
+            Vector3 constrainedMovement = ThirdPersonPlayerController.ApplyDirectionalResistance(
+                movementIntent,
+                transform.position,
+                anchor.position,
+                outwardDirection,
+                minimumDistance,
+                comfortableDistance,
+                maximumDistance,
+                PlayerCouchCarrier.CouchPushingSpeedMultiplier,
+                out _);
+
+            float speed = m_carriedCouch.GetConfiguredCarrierMoveSpeedServer();
+            Vector3 displacement = constrainedMovement * speed * Time.deltaTime;
+            Vector3 attachmentCorrection = ThirdPersonPlayerController.CalculateAttachmentCorrection(
+                transform.position + displacement,
+                anchor.position,
+                outwardDirection,
+                minimumDistance,
+                maximumDistance);
+            // updatePosition is disabled while carrying, so discard the agent's own
+            // simulated advance before applying the shared constrained displacement.
+            m_agent.nextPosition = transform.position;
+            m_agent.Move(displacement + attachmentCorrection);
+            transform.position = m_agent.nextPosition;
+
+            // NavMeshAgent.Move may trim a correction at a NavMesh edge. The grip
+            // limit is authoritative, so finish any remainder before resynchronising
+            // the agent's internal position.
+            transform.position += ThirdPersonPlayerController.CalculateAttachmentCorrection(
+                transform.position,
+                anchor.position,
+                outwardDirection,
+                minimumDistance,
+                maximumDistance);
+            m_agent.nextPosition = transform.position;
+
+            Vector3 facing = PlayerCouchCarrier.CalculateCarryFacingDirection(
+                transform.position,
+                anchor.position);
+            if (facing.sqrMagnitude > 0.001f)
+            {
+                transform.rotation = Quaternion.RotateTowards(
+                    transform.rotation,
+                    Quaternion.LookRotation(facing.normalized),
+                    m_aimTurnSpeed * Time.deltaTime);
+            }
+        }
+
+        private void SetConstrainedCarryMovement(bool constrained)
+        {
+            if (m_usingConstrainedCarryMovement == constrained)
+            {
+                return;
+            }
+
+            m_usingConstrainedCarryMovement = constrained;
+            if (m_agent == null)
+            {
+                return;
+            }
+
+            if (constrained)
+            {
+                // Keep path/steering data available, but prevent the agent's own
+                // simulation from advancing independently of the grip constraint.
+                m_agent.speed = 0f;
+                m_agent.updatePosition = false;
+                m_agent.updateRotation = false;
+                m_agent.nextPosition = transform.position;
+                return;
+            }
+
+            if (m_agent.enabled)
+            {
+                m_agent.nextPosition = transform.position;
+            }
+            m_agent.updatePosition = true;
+            m_agent.updateRotation = m_normalUpdateRotation;
+            m_agent.speed = m_normalNavigationSpeed;
         }
 
         private CouchCarryPoint FindBestAvailablePoint(CouchCarryController couch)
@@ -357,14 +483,22 @@ namespace CouchGuys.Gameplay.Enemies
             CouchCarryController couch = m_carriedCouch;
             int pointIndex = m_carriedPointIndex;
             if (couch != null) couch.ReleasePointServer(pointIndex, this);
-            else { m_carriedCouch = null; m_carriedPointIndex = -1; m_carryIntent = Vector3.zero; }
+            else
+            {
+                m_carriedCouch = null;
+                m_carriedPointIndex = -1;
+                m_carryIntent = Vector3.zero;
+                SetConstrainedCarryMovement(false);
+                UpdateCarriedCouchCollision(null);
+            }
         }
 
         Vector3 ICouchCarrierServer.CalculateDesiredCarryPosition(Vector3 couchCentre)
         {
             Vector3 direction = Vector3.ProjectOnPlane(couchCentre - transform.position, Vector3.up);
             if (direction.sqrMagnitude < 0.001f) direction = transform.forward;
-            return transform.position + direction.normalized * CarryDistance + Vector3.up * CarryHeight;
+            return transform.position + direction.normalized * PlayerCouchCarrier.CarryDistance +
+                   Vector3.up * PlayerCouchCarrier.CarryHeight;
         }
 
         Vector3 ICouchCarrierServer.GetServerMovementIntent() => m_carryIntent;
@@ -374,6 +508,14 @@ namespace CouchGuys.Gameplay.Enemies
             m_carriedCouch = couch;
             m_carriedPointIndex = pointIndex;
             m_carryIntent = Vector3.zero;
+            m_hasDestination = false;
+            m_nextPathTime = 0f;
+            if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh)
+            {
+                m_agent.ResetPath();
+            }
+            UpdateCarriedCouchCollision(couch);
+            SetConstrainedCarryMovement(true);
         }
 
         void ICouchCarrierServer.ClearCarriedCouchServer(CouchCarryController couch, int pointIndex)
@@ -382,6 +524,20 @@ namespace CouchGuys.Gameplay.Enemies
             m_carriedCouch = null;
             m_carriedPointIndex = -1;
             m_carryIntent = Vector3.zero;
+            SetConstrainedCarryMovement(false);
+            UpdateCarriedCouchCollision(null);
+        }
+
+        private void UpdateCarriedCouchCollision(CouchCarryController couch)
+        {
+            if (couch == m_collisionIgnoredCouch)
+            {
+                return;
+            }
+
+            m_collisionIgnoredCouch?.SetCarrierCollisionIgnored(m_carrierCollider, false);
+            m_collisionIgnoredCouch = couch;
+            m_collisionIgnoredCouch?.SetCarrierCollisionIgnored(m_carrierCollider, true);
         }
 
 #if UNITY_EDITOR

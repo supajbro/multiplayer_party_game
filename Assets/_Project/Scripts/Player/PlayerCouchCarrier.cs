@@ -39,11 +39,11 @@ namespace CouchGuys.Player
         [Header("Debug Bot")]
         [SerializeField] private DebugCouchBotSettings m_debugBot = new();
 
-        private const float CarryDistance = 0.45f;
-        private const float CarryHeight = 0.45f;
-        private const float SoftConstraintStartRatio = 0.7f;
+        internal const float CarryDistance = 0.45f;
+        internal const float CarryHeight = 0.45f;
+        internal const float SoftConstraintStartRatio = 0.7f;
         private const float CarrierSpeedTransitionRate = 2.5f;
-        private const float CouchPushingSpeedMultiplier = 0.3f;
+        internal const float CouchPushingSpeedMultiplier = 0.3f;
         private const float MinimumGrabFacingDot = 0.35f;
         private const float ServerGrabFacingTolerance = 0.15f;
 
