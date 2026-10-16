@@ -45,6 +45,10 @@ namespace CouchGuys.Player
 
         private void Awake()
         {
+            if (GetComponent<RobotHoverVFX>() == null)
+            {
+                gameObject.AddComponent<RobotHoverVFX>();
+            }
             CacheReferences();
         }
 

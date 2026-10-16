@@ -12,7 +12,7 @@ namespace CouchGuys.Editor
     /// </summary>
     public static class CouchGuyAnimatorControllerBuilder
     {
-        public const string ModelPath = "Assets/_Project/Models/robot_01.fbx";
+        public const string ModelPath = "Assets/_Project/Models/CouchGuy/CouchGuy_Redesigned.fbx";
         public const string ControllerPath = "Assets/_Project/Animations/CouchGuy.controller";
         private const string PlayerPrefabPath = "Assets/_Project/Prefabs/Player.prefab";
 

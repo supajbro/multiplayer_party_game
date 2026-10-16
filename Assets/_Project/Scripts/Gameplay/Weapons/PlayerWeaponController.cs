@@ -34,6 +34,7 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] private PlayerWeaponEffects m_effects;
         [SerializeField] private WeaponAudioEmitter m_audio;
         [SerializeField] private NeighbourhoodMap m_map;
+        private RobotHoverVFX m_hoverVfx;
 
         [Header("Weapons")]
         [SerializeField] private WeaponDefinition[] m_weapons = new WeaponDefinition[WeaponCount];
@@ -92,6 +93,7 @@ namespace CouchGuys.Gameplay.Weapons
             m_effects ??= GetComponent<PlayerWeaponEffects>();
             m_audio ??= GetComponent<WeaponAudioEmitter>();
             m_map ??= GetComponent<NeighbourhoodMap>();
+            m_hoverVfx ??= GetComponent<RobotHoverVFX>();
             if (m_effects == null) m_effects = gameObject.AddComponent<PlayerWeaponEffects>();
             if (m_audio == null) m_audio = gameObject.AddComponent<WeaponAudioEmitter>();
             if (m_weapons == null || m_weapons.Length != WeaponCount || m_weapons[0] == null)
@@ -683,10 +685,12 @@ namespace CouchGuys.Gameplay.Weapons
         private Vector3 GetMuzzlePosition(int index, Vector3 fallback)
         {
             if (!ValidIndex(index)) return fallback;
-            if (m_muzzles[index] != null) return m_muzzles[index].position;
+            m_hoverVfx ??= GetComponent<RobotHoverVFX>();
+            Vector3 visualOffset = m_hoverVfx != null ? m_hoverVfx.VisualWorldOffset : Vector3.zero;
+            if (m_muzzles[index] != null) return m_muzzles[index].position - visualOffset;
             // Never make a player projectile appear at the centre-screen camera
             // just because an imported model is missing its muzzle socket.
-            return m_weaponModels[index] != null ? m_weaponModels[index].position : fallback;
+            return m_weaponModels[index] != null ? m_weaponModels[index].position - visualOffset : fallback;
         }
 
         private WeaponDefinition GetWeapon(int index) =>

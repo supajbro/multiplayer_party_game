@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51dbfe0c49fc4f19a2484688987c62a6, type: 3}
+  m_Name: RobotHoverVFXSettings
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.RobotHoverVFXSettings
+  m_ringRotationSpeed: 135
+  m_hoverBobAmplitude: 0.045
+  m_hoverBobFrequency: 1.8
+  m_emissionBrightness: 3.2
+  m_emissionPulseSpeed: 2.1
+  m_rippleSpawnRate: 1.25
+  m_particleEmissionRate: 9
+  m_groundGlowIntensity: 0.55

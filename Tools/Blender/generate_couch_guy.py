@@ -1,8 +1,9 @@
 
-"""Couch Guys floating robot character and expressive animation generator.
+"""Couch Guys polished floating robot character generator.
 
-Preserves the original character geometry, both arms, three weapons, and rig.
-Creates 36 Blender animation Actions for Unity export.
+Builds a concept-faithful, animation-ready robot with layered armour, a digital
+display face, articulated arms, a segmented hover mechanism, three detachable
+weapons and the original 36-action animation library.
 
 Blender: Scripting > Run Script
 FBX: -Z Forward, Y Up, Bake Animation, All Actions enabled.
@@ -12,6 +13,7 @@ WARNING: Replaces all objects and Actions in the current Blender scene.
 """
 
 import math
+from pathlib import Path
 import bpy
 from mathutils import Vector
 
@@ -19,6 +21,13 @@ from mathutils import Vector
 # Other weapons still exist and can be exported.
 # Options: None, "Pistol", "AssaultRifle", "Shotgun"
 PREVIEW_WEAPON = "Pistol"
+
+SCRIPT_PATH = Path(__file__).resolve()
+PROJECT_ROOT = SCRIPT_PATH.parents[2]
+OUTPUT_DIR = PROJECT_ROOT / "Assets" / "_Project" / "Models" / "CouchGuy"
+RENDER_DIR = PROJECT_ROOT / "Assets" / "_Project" / "Concepts" / "CouchGuy_Renders"
+BLEND_PATH = OUTPUT_DIR / "CouchGuy_Redesigned.blend"
+FBX_PATH = OUTPUT_DIR / "CouchGuy_Redesigned.fbx"
 
 
 # ============================================================
@@ -54,7 +63,10 @@ def make_material(
     mat.use_nodes = True
     mat.diffuse_color = colour
 
-    bsdf = mat.node_tree.nodes.get("Principled BSDF")
+    bsdf = next(
+        node for node in mat.node_tree.nodes
+        if node.type == "BSDF_PRINCIPLED"
+    )
     bsdf.inputs["Base Color"].default_value = colour
     bsdf.inputs["Metallic"].default_value = metallic
     bsdf.inputs["Roughness"].default_value = roughness
@@ -77,20 +89,33 @@ def create_materials():
     return {
         "white": make_material(
             "WhiteBody", (0.92, 0.95, 1.0, 1.0),
-            metallic=0.05, roughness=0.2
+            metallic=0.08, roughness=0.22
+        ),
+        "white_secondary": make_material(
+            "WarmWhitePanels", (0.72, 0.78, 0.86, 1.0),
+            metallic=0.14, roughness=0.28
         ),
         "visor": make_material(
             "DarkVisor", (0.008, 0.012, 0.022, 1.0),
-            metallic=0.35, roughness=0.12
+            metallic=0.42, roughness=0.08
         ),
         "glow": make_material(
-            "PlayerGlow", (0.015, 0.28, 1.0, 1.0),
-            emission_color=(0.01, 0.35, 1.0, 1.0),
-            emission_strength=7.0
+            "PlayerGlow", (0.0, 0.10, 0.80, 1.0),
+            emission_color=(0.0, 0.12, 1.0, 1.0),
+            emission_strength=3.8
         ),
         "joints": make_material(
             "DarkJoints", (0.035, 0.045, 0.065, 1.0),
             metallic=0.3, roughness=0.28
+        ),
+        "metal": make_material(
+            "BrushedMetal", (0.16, 0.20, 0.27, 1.0),
+            metallic=0.75, roughness=0.22
+        ),
+        "screen_graphic": make_material(
+            "FaceDisplay_Emission", (0.0, 0.16, 1.0, 1.0),
+            emission_color=(0.0, 0.18, 1.0, 1.0),
+            emission_strength=4.5
         ),
         "gunmetal": make_material(
             "WeaponGunmetal", (0.055, 0.07, 0.095, 1.0),
@@ -209,86 +234,213 @@ def create_empty(name, parent=None):
     return obj
 
 
+def mark_rig(obj, bone):
+    """Mark a mesh for deterministic rigid binding later."""
+    obj["rig_bone"] = bone
+    return obj
+
+
+def cylinder(
+    name, location, radius, depth, material,
+    rotation=(0, 0, 0), vertices=32, bevel=0.025
+):
+    bpy.ops.mesh.primitive_cylinder_add(
+        vertices=vertices, radius=radius, depth=depth,
+        location=location, rotation=rotation
+    )
+    obj = bpy.context.object
+    obj.name = name
+    assign_material(obj, material)
+    if bevel:
+        add_bevel(obj, bevel, 3)
+    else:
+        smooth_mesh(obj)
+    return obj
+
+
+def torus(
+    name, location, major_radius, minor_radius, material,
+    rotation=(0, 0, 0), major_segments=48, minor_segments=10
+):
+    bpy.ops.mesh.primitive_torus_add(
+        major_radius=major_radius,
+        minor_radius=minor_radius,
+        major_segments=major_segments,
+        minor_segments=minor_segments,
+        location=location,
+        rotation=rotation
+    )
+    obj = bpy.context.object
+    obj.name = name
+    smooth_mesh(obj)
+    assign_material(obj, material)
+    return obj
+
+
+def face_arc(name, center, side, material):
+    """Flat emissive display decal; deliberately has no physical depth."""
+    cx, y, cz = center
+    points = []
+    for i in range(9):
+        x = -0.19 + i * (0.38 / 8)
+        z = 0.10 - 0.11 * (x / 0.19) ** 2
+        points.append((cx + x, y, cz + z))
+    thickness = 0.055
+    verts = [(x, y, z + thickness) for x, y, z in points]
+    verts += [(x, y, z - thickness) for x, y, z in reversed(points)]
+    faces = [tuple(range(len(verts)))]
+    mesh = bpy.data.meshes.new(name + "_Mesh")
+    mesh.from_pydata(verts, [], faces)
+    mesh.update()
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+    assign_material(obj, material)
+    uv = mesh.uv_layers.new(name="UVMap")
+    for loop in mesh.loops:
+        co = mesh.vertices[loop.vertex_index].co
+        uv.data[loop.index].uv = (
+            (co.x - (cx - 0.19)) / 0.38,
+            (co.z - (cz - 0.12)) / 0.28
+        )
+    obj["display_graphic"] = True
+    obj["expression_default"] = "Happy"
+    return obj
+
+
 # ============================================================
-# ORIGINAL CHARACTER MODEL
+# POLISHED CHARACTER MODEL
 # ============================================================
 
 def create_head(materials, root):
     head = rounded_box(
-        "Head", (0, 0, 1.82), (1.42, 0.94, 1.02),
-        materials["white"], bevel=0.25
+        "Head", (0, 0.03, 1.84), (1.48, 0.92, 1.00),
+        materials["white"], bevel=0.28
     )
+    mark_rig(head, "Head")
     parent_to(head, root)
 
-    visor = rounded_box(
-        "Visor", (0, -0.486, 1.84), (1.10, 0.09, 0.52),
+    bezel = rounded_box(
+        "FaceBezel", (0, -0.458, 1.84), (1.22, 0.105, 0.66),
+        materials["joints"], bevel=0.19
+    )
+    screen = rounded_box(
+        "FaceDisplay", (0, -0.516, 1.84), (1.08, 0.025, 0.52),
         materials["visor"], bevel=0.15
     )
-    parent_to(visor, root)
+    screen["unity_material_role"] = "Runtime facial expression display"
+    screen["expression_atlas_layout"] = "4x2: Neutral,Happy,Determined,Surprised,Exhausted,Hurt,Blink,Spare"
+    screen["uv_channel"] = 0
+    for obj in (bezel, screen):
+        mark_rig(obj, "Head")
+        parent_to(obj, root)
 
-    for side, x in (("L", -0.27), ("R", 0.27)):
-        eye = rounded_box(
-            "Eye_" + side,
-            (x, -0.542, 1.86),
-            (0.31, 0.045, 0.18),
-            materials["glow"],
-            bevel=0.09
+    for side, x in (("L", -0.29), ("R", 0.29)):
+        eye = face_arc(
+            "FaceGraphic_" + side,
+            (x, -0.532, 1.84), side,
+            materials["screen_graphic"]
         )
+        mark_rig(eye, "Eye_" + side)
         parent_to(eye, root)
 
-    for side, x in (("L", -0.77), ("R", 0.77)):
-        ear = ellipsoid(
-            "Ear_" + side,
-            (x, 0, 1.84),
-            (0.18, 0.12, 0.39),
-            materials["joints"],
-            segments=20,
-            rings=12,
-            rotation=(
-                0, 0,
-                math.radians(8 if side == "L" else -8)
-            )
-        )
+    top_panel = rounded_box(
+        "Head_TopPanel", (0, 0.02, 2.355), (0.72, 0.62, 0.055),
+        materials["white_secondary"], bevel=0.025
+    )
+    top_light = rounded_box(
+        "Head_TopLight", (0, -0.10, 2.388), (0.42, 0.19, 0.026),
+        materials["glow"], bevel=0.012
+    )
+    for obj in (top_panel, top_light):
+        mark_rig(obj, "Head")
+        parent_to(obj, root)
 
-        light_x = x + (-0.105 if side == "L" else 0.105)
-        light = ellipsoid(
-            "EarLight_" + side,
-            (light_x, -0.018, 1.84),
-            (0.035, 0.105, 0.29),
-            materials["glow"],
-            segments=16,
-            rings=10
-        )
+    rear_panel = rounded_box(
+        "Head_RearPanel", (0, 0.495, 1.84), (0.92, 0.035, 0.57),
+        materials["white_secondary"], bevel=0.12
+    )
+    rear_light = rounded_box(
+        "Head_RearLight", (0, 0.518, 1.84), (0.075, 0.018, 0.31),
+        materials["glow"], bevel=0.028
+    )
+    for obj in (rear_panel, rear_light):
+        mark_rig(obj, "Head")
+        parent_to(obj, root)
 
-        parent_to(ear, root)
-        parent_to(light, root)
+    for side, x in (("L", -0.79), ("R", 0.79)):
+        sign = -1 if side == "L" else 1
+        ear_mount = cylinder(
+            "EarMount_" + side, (x, 0.03, 1.84),
+            0.31, 0.15, materials["joints"],
+            rotation=(0, math.radians(90), 0), vertices=36, bevel=0.035
+        )
+        ear_shell = cylinder(
+            "EarShell_" + side, (x + sign * 0.075, 0.03, 1.84),
+            0.255, 0.095, materials["white_secondary"],
+            rotation=(0, math.radians(90), 0), vertices=36, bevel=0.028
+        )
+        ear_light = torus(
+            "EarLightRing_" + side,
+            (x + sign * 0.127, 0.03, 1.84),
+            0.175, 0.027, materials["glow"],
+            rotation=(0, math.radians(90), 0),
+            major_segments=36, minor_segments=8
+        )
+        ear_hub = cylinder(
+            "EarHub_" + side, (x + sign * 0.145, 0.03, 1.84),
+            0.105, 0.035, materials["metal"],
+            rotation=(0, math.radians(90), 0), vertices=32, bevel=0.015
+        )
+        for obj in (ear_mount, ear_shell, ear_light, ear_hub):
+            mark_rig(obj, "Head")
+            parent_to(obj, root)
 
     return head
 
 
 def create_torso(materials, root):
     torso = ellipsoid(
-        "Torso", (0, 0.04, 0.94),
-        (0.58, 0.42, 0.58),
+        "Torso", (0, 0.06, 0.92),
+        (0.62, 0.44, 0.59),
         materials["white"]
     )
+    mark_rig(torso, "Torso")
     parent_to(torso, root)
 
-    neck = ellipsoid(
-        "NeckJoint", (0, 0.02, 1.37),
-        (0.28, 0.24, 0.13),
-        materials["joints"],
-        segments=20,
-        rings=12
+    neck = cylinder(
+        "NeckJoint", (0, 0.03, 1.38),
+        0.255, 0.16, materials["joints"],
+        vertices=36, bevel=0.035
     )
+    mark_rig(neck, "Torso")
     parent_to(neck, root)
 
     chest = rounded_box(
-        "ChestPanel", (0, -0.405, 1.01),
-        (0.48, 0.035, 0.24),
-        materials["white"], bevel=0.08
+        "ChestPanel", (0, -0.407, 1.02),
+        (0.56, 0.045, 0.27),
+        materials["white_secondary"], bevel=0.075
     )
-    parent_to(chest, root)
+    chest_light = rounded_box(
+        "ChestIndicator", (0, -0.435, 1.09),
+        (0.31, 0.022, 0.055), materials["glow"], bevel=0.024
+    )
+    lower_light = rounded_box(
+        "TorsoLowerLight", (0, -0.377, 0.69),
+        (0.38, 0.025, 0.055), materials["glow"], bevel=0.024
+    )
+    for obj in (chest, chest_light, lower_light):
+        mark_rig(obj, "Torso")
+        parent_to(obj, root)
+
+    for side, x in (("L", -0.32), ("R", 0.32)):
+        for index in range(3):
+            vent = rounded_box(
+                "TorsoVent_%s_%d" % (side, index + 1),
+                (x, 0.415, 0.87 + index * 0.095),
+                (0.18, 0.025, 0.038), materials["joints"], bevel=0.012
+            )
+            mark_rig(vent, "Torso")
+            parent_to(vent, root)
 
     return torso
 
@@ -326,6 +478,13 @@ def create_hand(side, wrist, materials):
             bevel=0.13
         )
     ]
+    pieces.append(
+        rounded_box(
+            "Hand_%s_Armour" % side,
+            palm_center + Vector((0, 0.018, 0.10)),
+            (0.33, 0.25, 0.16), materials["white_secondary"], bevel=0.075
+        )
+    )
 
     for index, offset in enumerate(
         (-0.135, -0.045, 0.045, 0.135), start=1
@@ -412,11 +571,43 @@ def create_arm(side, materials, root):
 
     hand = create_hand(side, wrist, materials)
 
+    shoulder_shell = ellipsoid(
+        "ShoulderArmour_" + side,
+        shoulder + Vector((sign * 0.03, -0.01, 0.035)),
+        (0.225, 0.205, 0.22), materials["white_secondary"],
+        segments=24, rings=16
+    )
+    elbow_ring = torus(
+        "ElbowGlow_" + side, elbow, 0.135, 0.022, materials["glow"],
+        rotation=(0, math.radians(90), 0), major_segments=28, minor_segments=8
+    )
+    wrist_joint = ellipsoid(
+        "WristJoint_" + side, wrist, (0.135, 0.135, 0.135),
+        materials["joints"], segments=20, rings=12
+    )
+    forearm_strip = capsule(
+        "ForearmLight_" + side,
+        elbow.lerp(wrist, 0.35) + Vector((0, -0.155, 0.03)),
+        elbow.lerp(wrist, 0.75) + Vector((0, -0.155, 0.03)),
+        0.025, materials["glow"], bevel=0.02
+    )
+
     for obj in (
-        shoulder_joint, upper,
-        elbow_joint, forearm, hand
+        shoulder_joint, shoulder_shell, upper,
+        elbow_joint, elbow_ring, forearm, forearm_strip,
+        wrist_joint, hand
     ):
         parent_to(obj, arm_root)
+
+    mark_rig(shoulder_joint, "UpperArm_" + side)
+    mark_rig(shoulder_shell, "UpperArm_" + side)
+    mark_rig(upper, "UpperArm_" + side)
+    mark_rig(elbow_joint, "LowerArm_" + side)
+    mark_rig(elbow_ring, "LowerArm_" + side)
+    mark_rig(forearm, "LowerArm_" + side)
+    mark_rig(forearm_strip, "LowerArm_" + side)
+    mark_rig(wrist_joint, "Hand_" + side)
+    mark_rig(hand, "Hand_" + side)
 
     return {
         "root": arm_root,
@@ -430,22 +621,53 @@ def create_arm(side, materials, root):
 
 
 def create_hover_ring(materials, root):
-    bpy.ops.mesh.primitive_torus_add(
-        major_radius=0.48,
-        minor_radius=0.065,
-        major_segments=32,
-        minor_segments=10,
-        location=(0, 0.02, 0.16)
+    hover = create_empty("HoverAssembly", root)
+    hover["animation_role"] = "vertical bob / energy pulse"
+    outer_rotor = create_empty("HoverRotor_Outer", hover)
+    inner_rotor = create_empty("HoverRotor_Inner", hover)
+    outer_rotor["animation_role"] = "clockwise rotation"
+    inner_rotor["animation_role"] = "counter-clockwise rotation"
+
+    base = torus(
+        "HoverRing", (0, 0.02, 0.16), 0.52, 0.085,
+        materials["joints"], major_segments=64, minor_segments=12
     )
+    inner = torus(
+        "HoverRing_InnerGlow", (0, 0.02, 0.16), 0.405, 0.030,
+        materials["glow"], major_segments=64, minor_segments=8
+    )
+    parent_to(base, outer_rotor)
+    parent_to(inner, inner_rotor)
+    mark_rig(base, "Root")
+    mark_rig(inner, "Root")
 
-    ring = bpy.context.object
-    ring.name = "HoverRing"
-    smooth_mesh(ring)
-    assign_material(ring, materials["glow"])
-    parent_to(ring, root)
-    apply_transforms(ring)
+    for index in range(12):
+        angle = math.tau * index / 12
+        radius = 0.53
+        x = radius * math.cos(angle)
+        y = 0.02 + radius * math.sin(angle)
+        mat = materials["glow"] if index % 2 == 0 else materials["metal"]
+        segment = rounded_box(
+            "HoverSegment_%02d" % (index + 1),
+            (x, y, 0.16), (0.29, 0.15, 0.12), mat,
+            bevel=0.055, rotation=(0, 0, angle + math.pi / 2)
+        )
+        segment["segment_index"] = index
+        mark_rig(segment, "Root")
+        parent_to(segment, outer_rotor)
 
-    return ring
+    for index in range(4):
+        angle = math.tau * index / 4 + math.pi / 4
+        radius = 0.36
+        projector = cylinder(
+            "HoverProjector_%02d" % (index + 1),
+            (radius * math.cos(angle), 0.02 + radius * math.sin(angle), 0.105),
+            0.07, 0.10, materials["white_secondary"], vertices=24, bevel=0.018
+        )
+        mark_rig(projector, "Root")
+        parent_to(projector, inner_rotor)
+
+    return base
 
 
 # ============================================================
@@ -652,45 +874,18 @@ def bind_rigid_object(obj, rig, bone_name):
 
 
 def rig_character(rig, geometry):
-    for name in (
-        "Head", "Visor",
-        "Ear_L", "Ear_R",
-        "EarLight_L", "EarLight_R"
-    ):
-        bind_rigid_object(geometry[name], rig, "Head")
-
-    for side in ("L", "R"):
-        bind_rigid_object(
-            geometry["Eye_" + side],
-            rig, "Eye_" + side
-        )
-
-    for name in ("Torso", "NeckJoint", "ChestPanel"):
-        bind_rigid_object(geometry[name], rig, "Torso")
-
-    bind_rigid_object(geometry["HoverRing"], rig, "Root")
-
-    for side in ("L", "R"):
-        bind_rigid_object(
-            geometry["ShoulderJoint_" + side],
-            rig, "UpperArm_" + side
-        )
-        bind_rigid_object(
-            geometry["UpperArm_" + side],
-            rig, "UpperArm_" + side
-        )
-        bind_rigid_object(
-            geometry["ElbowJoint_" + side],
-            rig, "LowerArm_" + side
-        )
-        bind_rigid_object(
-            geometry["Forearm_" + side],
-            rig, "LowerArm_" + side
-        )
-        bind_rigid_object(
-            geometry["Hand_" + side],
-            rig, "Hand_" + side
-        )
+    bound = 0
+    for obj in geometry.values():
+        bone_name = obj.get("rig_bone")
+        if obj.type == "MESH" and bone_name:
+            if bone_name not in rig.pose.bones:
+                raise RuntimeError(
+                    "Unknown rig bone %s on %s" % (bone_name, obj.name)
+                )
+            bind_rigid_object(obj, rig, bone_name)
+            bound += 1
+    if bound < 20:
+        raise RuntimeError("Unexpectedly low rigid-binding count: %d" % bound)
 
 
 def attach_weapons_to_hand(rig, weapons):
@@ -716,6 +911,7 @@ def set_weapon_preview(weapons, selected=PREVIEW_WEAPON):
         while stack:
             obj = stack.pop()
             obj.hide_set(not visible)
+            obj.hide_render = not visible
             stack.extend(obj.children)
 
 
@@ -1962,7 +2158,7 @@ def create_animation_library(rig):
 
 def validate_character(rig, geometry, weapons):
     required_meshes = (
-        "Head", "Visor", "Torso", "HoverRing",
+        "Head", "FaceBezel", "FaceDisplay", "Torso", "HoverRing",
         "UpperArm_L", "Forearm_L", "Hand_L",
         "UpperArm_R", "Forearm_R", "Hand_R"
     )
@@ -2035,14 +2231,160 @@ def validate_character(rig, geometry, weapons):
         )
 
     print(
-        "Validation passed: both arms, both hands, "
-        "three weapons and all required animation Actions."
+        "Validation passed: digital face, segmented hover ring, both arms, "
+        "both hands, three weapons and all required animation Actions."
     )
 
 
 # ============================================================
 # MAIN
 # ============================================================
+
+def point_camera(camera, target):
+    direction = Vector(target) - camera.location
+    camera.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
+
+
+def setup_studio():
+    scene = bpy.context.scene
+    scene.render.resolution_x = 720
+    scene.render.resolution_y = 720
+    scene.render.resolution_percentage = 100
+    scene.render.image_settings.file_format = "PNG"
+    scene.render.film_transparent = False
+    # Standard preserves the concept's saturated cyan emissive accents; AgX
+    # intentionally desaturates highlights and made the display read as white.
+    try:
+        scene.view_settings.view_transform = "Standard"
+    except TypeError:
+        pass
+
+    world = scene.world or bpy.data.worlds.new("CouchGuy_StudioWorld")
+    scene.world = world
+    world.use_nodes = True
+    background = next(
+        node for node in world.node_tree.nodes
+        if node.type == "BACKGROUND"
+    )
+    background.inputs["Color"].default_value = (0.025, 0.045, 0.085, 1)
+    background.inputs["Strength"].default_value = 0.32
+
+    try:
+        scene.render.engine = "BLENDER_EEVEE_NEXT"
+    except TypeError:
+        pass
+
+    camera_data = bpy.data.cameras.new("CouchGuy_HeroCamera")
+    camera = bpy.data.objects.new("CouchGuy_HeroCamera", camera_data)
+    bpy.context.collection.objects.link(camera)
+    camera.location = (3.9, -6.1, 3.15)
+    camera.data.lens = 62
+    point_camera(camera, (0, 0, 1.24))
+    scene.camera = camera
+
+    lights = (
+        ("Key", (3.2, -4.1, 5.0), 1050, 4.0, (0.72, 0.86, 1.0)),
+        ("Fill", (-4.0, -2.0, 2.9), 760, 3.5, (0.42, 0.65, 1.0)),
+        ("Rim", (1.0, 3.8, 4.4), 1200, 3.0, (0.12, 0.48, 1.0)),
+    )
+    for name, location, energy, size, colour in lights:
+        data = bpy.data.lights.new("Studio_" + name, "AREA")
+        data.energy = energy
+        data.shape = "DISK"
+        data.size = size
+        data.color = colour
+        obj = bpy.data.objects.new("Studio_" + name, data)
+        bpy.context.collection.objects.link(obj)
+        obj.location = location
+        point_camera(obj, (0, 0, 1.15))
+
+    bpy.ops.mesh.primitive_plane_add(size=18, location=(0, 0, -0.04))
+    floor = bpy.context.object
+    floor.name = "Studio_Floor"
+    floor_mat = make_material(
+        "StudioFloor", (0.035, 0.065, 0.11, 1),
+        metallic=0.08, roughness=0.32
+    )
+    assign_material(floor, floor_mat)
+
+    for obj in (camera, floor):
+        obj["export_exclude"] = True
+    for name, _location, _energy, _size, _colour in lights:
+        bpy.data.objects["Studio_" + name]["export_exclude"] = True
+    return camera
+
+
+def save_outputs(root, weapons):
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    RENDER_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Export the complete character hierarchy, including all three weapons.
+    export_objects = [root] + list(root.children_recursive)
+    for obj in export_objects:
+        obj.hide_set(False)
+        obj.hide_viewport = False
+        obj.hide_render = False
+
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in export_objects:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = root
+
+    try:
+        bpy.ops.export_scene.fbx(
+            filepath=str(FBX_PATH),
+            use_selection=True,
+            object_types={"ARMATURE", "MESH", "EMPTY"},
+            axis_forward="-Z",
+            axis_up="Y",
+            add_leaf_bones=False,
+            bake_anim=True,
+            bake_anim_use_all_actions=True,
+            bake_anim_simplify_factor=0.0,
+            path_mode="AUTO"
+        )
+        root["fbx_export"] = str(FBX_PATH)
+    except Exception as exc:
+        root["fbx_export_error"] = str(exc)
+        print("FBX export unavailable:", exc)
+
+    set_weapon_preview(weapons)
+    bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH), check_existing=False)
+
+    bpy.context.scene.render.filepath = str(RENDER_DIR / "CouchGuy_Hero.png")
+    try:
+        bpy.ops.render.render(write_still=True)
+    except Exception as exc:
+        print("Preview render failed:", exc)
+
+    # Clean turntable checks with weapons hidden so the silhouette, arm spacing,
+    # rear vents and separated hover assembly can all be reviewed.
+    camera = bpy.context.scene.camera
+    set_weapon_preview(weapons, None)
+    views = {
+        "UnarmedFront": (0.0, -6.0, 1.85),
+        "UnarmedRight": (6.0, 0.0, 1.85),
+        "UnarmedBack": (0.0, 6.0, 1.85),
+        "UnarmedThreeQuarter": (3.9, -6.1, 3.15),
+    }
+    old_x = bpy.context.scene.render.resolution_x
+    old_y = bpy.context.scene.render.resolution_y
+    bpy.context.scene.render.resolution_x = 560
+    bpy.context.scene.render.resolution_y = 560
+    for name, location in views.items():
+        camera.location = location
+        point_camera(camera, (0, 0, 1.24))
+        bpy.context.scene.render.filepath = str(
+            RENDER_DIR / ("CouchGuy_%s.png" % name)
+        )
+        try:
+            bpy.ops.render.render(write_still=True)
+        except Exception as exc:
+            print("%s render failed:" % name, exc)
+    bpy.context.scene.render.resolution_x = old_x
+    bpy.context.scene.render.resolution_y = old_y
+    set_weapon_preview(weapons)
+    bpy.ops.wm.save_as_mainfile(filepath=str(BLEND_PATH), check_existing=False)
 
 def setup_character():
     clear_scene()
@@ -2053,7 +2395,7 @@ def setup_character():
     root.empty_display_type = "CIRCLE"
     root.empty_display_size = 0.3
 
-    # Restore the complete original geometry.
+    # Build the polished replacement geometry while retaining rig compatibility.
     create_head(materials, root)
     create_torso(materials, root)
 
@@ -2092,6 +2434,11 @@ def setup_character():
     root["forward_axis"] = "-Y"
     root["unity_scale_meters"] = 1.0
     root["player_glow_material"] = "PlayerGlow"
+    root["face_display_material"] = "DarkVisor"
+    root["face_graphic_material"] = "FaceDisplay_Emission"
+    root["hover_outer_pivot"] = "HoverRotor_Outer"
+    root["hover_inner_pivot"] = "HoverRotor_Inner"
+    root["generator_version"] = "Concept Redesign v3"
 
     print("Couch Guy generated successfully.")
     print(
@@ -2103,4 +2450,14 @@ def setup_character():
 
 
 if __name__ == "__main__":
-    setup_character()
+    generated_root, generated_rig = setup_character()
+    generated_weapons = [
+        bpy.data.objects[name]
+        for name in (
+            "Weapon_Pistol", "Weapon_AssaultRifle", "Weapon_Shotgun"
+        )
+    ]
+    setup_studio()
+    save_outputs(generated_root, generated_weapons)
+    print("Blend:", BLEND_PATH)
+    print("FBX:", FBX_PATH)
