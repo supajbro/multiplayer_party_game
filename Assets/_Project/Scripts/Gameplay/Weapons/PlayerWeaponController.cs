@@ -367,11 +367,16 @@ namespace CouchGuys.Gameplay.Weapons
             m_magazine[index]--;
             Vector3 muzzle = GetMuzzlePosition(index, m_health.AimPoint);
             Vector3 cameraDirection = aimDirection.normalized;
-            Vector3 aimPoint = aimOrigin + cameraDirection * weapon.Range;
+            // Find the farthest point on the reticle ray that is still within range of
+            // the muzzle. Using weapon.Range from both origins made the muzzle ray
+            // cross the reticle ray early and continue to its opposite side.
+            float aimTraceDistance = CalculateAimTraceDistance(
+                aimOrigin, cameraDirection, muzzle, weapon.Range);
+            Vector3 aimPoint = aimOrigin + cameraDirection * aimTraceDistance;
             if (TryGetNearestNonSelfHit(
                     aimOrigin,
                     cameraDirection,
-                    weapon.Range,
+                    aimTraceDistance,
                     out RaycastHit aimHit))
             {
                 aimPoint = aimHit.point;
@@ -531,6 +536,25 @@ namespace CouchGuys.Gameplay.Weapons
             return found;
         }
 
+        private static float CalculateAimTraceDistance(
+            Vector3 aimOrigin, Vector3 aimDirection, Vector3 muzzle, float weaponRange)
+        {
+            // Ray/sphere intersection: the sphere is the muzzle's reachable range and
+            // the ray is the exact centre-screen reticle ray. The far intersection is
+            // therefore an exact convergence point without shortening or overshooting
+            // the weapon's range.
+            Vector3 muzzleToAimOrigin = aimOrigin - muzzle;
+            float projected = Vector3.Dot(muzzleToAimOrigin, aimDirection);
+            float discriminant = projected * projected -
+                (muzzleToAimOrigin.sqrMagnitude - weaponRange * weaponRange);
+            if (discriminant < 0f)
+            {
+                return weaponRange;
+            }
+
+            return Mathf.Max(0f, -projected + Mathf.Sqrt(discriminant));
+        }
+
         [Server]
         private void FinishReloadServer()
         {
@@ -576,9 +600,15 @@ namespace CouchGuys.Gameplay.Weapons
             Vector3[] normals, byte[] surfaces)
         {
             WeaponDefinition weapon = GetWeapon(weaponIndex);
+            // Gameplay is resolved from the server's authoritative muzzle. Render from
+            // this observer's live socket so hover/recoil animation cannot make the
+            // tracer appear to originate beside the barrel.
+            Vector3 visualMuzzle = ValidIndex(weaponIndex) && m_muzzles[weaponIndex] != null
+                ? m_muzzles[weaponIndex].position
+                : muzzle;
             if (!IsOwner && weapon != null)
-                m_audio?.PlayShot(weapon.Type, muzzle, m_muzzles[weaponIndex]);
-            m_effects?.PlayShot(weapon, muzzle, ends, normals, surfaces, IsOwner);
+                m_audio?.PlayShot(weapon.Type, visualMuzzle, m_muzzles[weaponIndex]);
+            m_effects?.PlayShot(weapon, visualMuzzle, ends, normals, surfaces, IsOwner);
             m_animationDriver?.PlayWeaponShot((PlayerWeaponType)weaponIndex);
             if (IsOwner) LocalShotFired?.Invoke((PlayerWeaponType)weaponIndex);
             if (weapon != null)

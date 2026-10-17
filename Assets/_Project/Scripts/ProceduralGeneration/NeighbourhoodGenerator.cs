@@ -270,7 +270,24 @@ namespace CouchGuys.ProceduralGeneration
 
         public void Generate(RegionDefinition region, int seed)
         {
-            GenerateInternal(region, seed, 0);
+            if (IsGenerating)
+            {
+                Debug.LogWarning(
+                    $"Ignored a duplicate neighbourhood generation request for seed {seed}; " +
+                    "a generation pass is already in progress.",
+                    this);
+                return;
+            }
+
+            IsGenerating = true;
+            try
+            {
+                GenerateInternal(region, seed, 0);
+            }
+            finally
+            {
+                IsGenerating = false;
+            }
         }
 
         /// <summary>
@@ -366,8 +383,8 @@ namespace CouchGuys.ProceduralGeneration
                 // Preserve the established deterministic repair behaviour on the rare
                 // invalid seed, even though the retry itself is a single frame.
                 int retrySeed = DeriveSeed(seed, 0x51ED270B);
-                IsGenerating = false;
                 GenerateInternal(region, retrySeed, 1);
+                IsGenerating = false;
                 yield break;
             }
             yield return null;
@@ -665,7 +682,27 @@ namespace CouchGuys.ProceduralGeneration
         [ContextMenu("Clear Generated Neighbourhood")]
         public void Clear()
         {
-            if (IsGenerationReady || m_generatedRoot != null)
+            GeneratedNeighbourhoodRoot[] existingRoots =
+                GetComponentsInChildren<GeneratedNeighbourhoodRoot>(true);
+            int ownedRootCount = 0;
+            for (int rootIndex = 0; rootIndex < existingRoots.Length; rootIndex++)
+            {
+                if (existingRoots[rootIndex] != null &&
+                    existingRoots[rootIndex].transform.parent == transform)
+                {
+                    ownedRootCount++;
+                }
+            }
+
+            if (ownedRootCount > 1)
+            {
+                Debug.LogWarning(
+                    $"Found {ownedRootCount} generated neighbourhood roots. " +
+                    "All stale copies will be removed before regeneration.",
+                    this);
+            }
+
+            if (IsGenerationReady || m_generatedRoot != null || ownedRootCount > 0)
             {
                 RegionClearing?.Invoke(this);
             }
@@ -679,11 +716,19 @@ namespace CouchGuys.ProceduralGeneration
             DestroyOwnedRuntimeMaterial(ref m_runtimeRoadMarkingMaterial);
             DestroyOwnedRuntimeMaterial(ref m_runtimeDrivewayMaterial);
 
-            GeneratedNeighbourhoodRoot existingRoot = GetComponentInChildren<GeneratedNeighbourhoodRoot>(true);
-            if (existingRoot != null && existingRoot.transform.parent == transform)
+            for (int rootIndex = 0; rootIndex < existingRoots.Length; rootIndex++)
             {
+                GeneratedNeighbourhoodRoot existingRoot = existingRoots[rootIndex];
+                if (existingRoot == null || existingRoot.transform.parent != transform)
+                {
+                    continue;
+                }
+
                 if (Application.isPlaying)
                 {
+                    // Destroy is deferred until the end of the frame. Disable first so stale
+                    // renderers, colliders and behaviours cannot overlap the replacement world.
+                    existingRoot.gameObject.SetActive(false);
                     Destroy(existingRoot.gameObject);
                 }
                 else
@@ -3136,7 +3181,12 @@ namespace CouchGuys.ProceduralGeneration
             GameObject fallbackPrefab = lotDefinition != null
                 ? ValidateLotPrefab(lotDefinition.Prefab)
                 : SelectHousePrefab(random);
-            GameObject mansionPrefab = ValidateLotPrefab(m_mansionPrefab);
+            SuburbZone zone = m_roadZones.TryGetValue(candidate.Road, out SuburbZone roadZone)
+                ? roadZone
+                : CalculateZone(GridToLocal(candidate.Road).y);
+            GameObject mansionPrefab = zone == SuburbZone.Outer
+                ? ValidateLotPrefab(m_mansionPrefab)
+                : null;
             GameObject prefab = mansionPrefab != null ? mansionPrefab : fallbackPrefab;
             bool roadOnFrontOrBack =
                 candidate.PropertyToRoad == m_startDirection ||
@@ -3396,11 +3446,12 @@ namespace CouchGuys.ProceduralGeneration
                 m_spawnedUniqueLots.Add(definition);
             }
 
-            // A centred, single-property block is the generator's logical mansion lot.
-            // It remains a mansion destination while placeholder/standard art is used,
-            // and automatically picks up dedicated mansion art once assigned.
+            // One centred house per block is the normal Suburbs layout. Only centred
+            // houses in the final progression zone are logical mansion destinations;
+            // otherwise every house would be excluded from Easy and Medium deliveries.
+            bool isMansionDestination = centreInLot && zone == SuburbZone.Outer;
             RegisterDeliveryDestination(property, generatedProperty, definition,
-                centreInLot || (m_mansionPrefab != null && prefab == m_mansionPrefab));
+                isMansionDestination);
             return true;
         }
 
