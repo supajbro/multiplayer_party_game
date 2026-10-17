@@ -162,7 +162,6 @@ Shader "Couch Guys/Toon Lit"
                 clip(lerp(1.0h, baseSample.a - _Cutoff, step(0.5h, _AlphaClip)));
 
                 half3 normalWS = normalize(input.normalWS);
-                half3 viewDirectionWS = SafeNormalize(GetWorldSpaceViewDir(input.positionWS));
                 float4 shadowCoord;
                 #if defined(REQUIRES_VERTEX_SHADOW_COORD_INTERPOLATOR)
                     shadowCoord = input.shadowCoord;
@@ -194,19 +193,29 @@ Shader "Couch Guys/Toon Lit"
                 #endif
 
                 half3 colour = baseSample.rgb * lighting;
-                half fresnel = pow(saturate(1.0h - dot(normalWS, viewDirectionWS)), _RimPower);
-                colour += _RimColor.rgb * fresnel * _RimIntensity * step(0.5h, _RimEnabled);
+                [branch] if (_RimEnabled >= 0.5h)
+                {
+                    half3 rimViewDirectionWS = SafeNormalize(GetWorldSpaceViewDir(input.positionWS));
+                    half fresnel = pow(saturate(1.0h - dot(normalWS, rimViewDirectionWS)), _RimPower);
+                    colour += _RimColor.rgb * fresnel * _RimIntensity;
+                }
 
-                half3 halfDirection = SafeNormalize(mainLight.direction + viewDirectionWS);
-                half specularTerm = saturate(dot(normalWS, halfDirection));
-                half specularThreshold = 1.0h - _SpecularSize;
-                half toonSpecular = smoothstep(
-                    specularThreshold - _SpecularSoftness,
-                    specularThreshold + _SpecularSoftness,
-                    specularTerm);
-                colour += _SpecColor.rgb * toonSpecular * mainBand * _SpecularIntensity * step(0.5h, _SpecularEnabled);
+                [branch] if (_SpecularEnabled >= 0.5h)
+                {
+                    half3 specularViewDirectionWS = SafeNormalize(GetWorldSpaceViewDir(input.positionWS));
+                    half3 halfDirection = SafeNormalize(mainLight.direction + specularViewDirectionWS);
+                    half specularTerm = saturate(dot(normalWS, halfDirection));
+                    half specularThreshold = 1.0h - _SpecularSize;
+                    half toonSpecular = smoothstep(
+                        specularThreshold - _SpecularSoftness,
+                        specularThreshold + _SpecularSoftness,
+                        specularTerm);
+                    colour += _SpecColor.rgb * toonSpecular * mainBand * _SpecularIntensity;
+                }
 
-                half3 emission = SAMPLE_TEXTURE2D(_EmissionMap, sampler_EmissionMap, input.uv).rgb * _EmissionColor.rgb;
+                half3 emission = 0.0h;
+                [branch] if (any(_EmissionColor.rgb != 0.0h))
+                    emission = SAMPLE_TEXTURE2D(_EmissionMap, sampler_EmissionMap, input.uv).rgb * _EmissionColor.rgb;
                 colour = SaturateColour(colour) + emission;
                 colour = MixFog(colour, input.fogFactor);
                 return half4(colour, baseSample.a);

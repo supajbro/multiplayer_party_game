@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CouchGuys.Gameplay.Couch;
 using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Player;
@@ -456,11 +457,12 @@ namespace CouchGuys.Gameplay.Enemies
         {
             PlayerHealth best = null;
             float bestDistance = float.PositiveInfinity;
-            PlayerHealth[] players = FindObjectsByType<PlayerHealth>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-            for (int i = 0; i < players.Length; i++)
+            IReadOnlyList<PlayerHealth> players = PlayerHealth.Instances;
+            for (int i = 0; i < players.Count; i++)
             {
                 PlayerHealth candidate = players[i];
-                if (candidate == null || !candidate.IsAlive || candidate.NetworkObject == null || !candidate.NetworkObject.IsSpawned) continue;
+                if (candidate == null || !candidate.isActiveAndEnabled || !candidate.IsAlive ||
+                    candidate.NetworkObject == null || !candidate.NetworkObject.IsSpawned) continue;
                 float distance = (candidate.transform.position - transform.position).sqrMagnitude;
                 if (distance < bestDistance) { bestDistance = distance; best = candidate; }
             }

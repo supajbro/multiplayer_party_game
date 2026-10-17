@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using CouchGuys.Networking;
 using CouchGuys.ProceduralGeneration;
 using FishNet.Connection;
@@ -12,6 +13,8 @@ namespace CouchGuys.Player
     [DisallowMultipleComponent]
     public sealed class PlayerHealth : NetworkBehaviour
     {
+        private static readonly List<PlayerHealth> s_instances = new();
+
         [Header("Health")]
         [SerializeField, Min(1f)] private float m_maxHealth = 100f;
         [Tooltip("One damage event at or above this fraction of maximum health causes a knockdown.")]
@@ -44,6 +47,8 @@ namespace CouchGuys.Player
         public event Action Died;
         public event Action Respawned;
 
+        public static IReadOnlyList<PlayerHealth> Instances => s_instances;
+
         public float CurrentHealth => m_currentHealth.Value;
         public float MaximumHealth => m_maxHealth;
         public bool IsAlive => m_currentHealth.Value > 0f;
@@ -63,6 +68,7 @@ namespace CouchGuys.Player
 
         private void Awake()
         {
+            if (!s_instances.Contains(this)) s_instances.Add(this);
             m_playerController ??= GetComponent<ThirdPersonPlayerController>();
             m_visualRoot ??= transform.Find("Visual");
             if (m_visualRoot != null)
@@ -76,9 +82,13 @@ namespace CouchGuys.Player
 
         private void OnDestroy()
         {
+            s_instances.Remove(this);
             m_currentHealth.OnChange -= OnHealthChanged;
             m_knockedDown.OnChange -= OnKnockedDownChanged;
         }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetInstances() => s_instances.Clear();
 
         public override void OnStartServer()
         {

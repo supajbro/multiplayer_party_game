@@ -55,6 +55,14 @@ namespace CouchGuys.ProceduralGeneration
             m_markingMesh = markingMesh;
         }
 
+        public void ReleaseOwnedRenderMeshes()
+        {
+            DestroyOwnedMesh(m_surfaceMesh);
+            DestroyOwnedMesh(m_markingMesh);
+            m_surfaceMesh = null;
+            m_markingMesh = null;
+        }
+
         private void OnDestroy()
         {
             DestroyOwnedMesh(m_surfaceMesh);

@@ -166,7 +166,6 @@ namespace CouchGuys.Gameplay.Traffic
             {
                 m_rigidbody.isKinematic = false;
             }
-            m_rigidbody.WakeUp();
             if (m_waypointIndex >= m_route.Waypoints.Length)
             {
                 m_manager?.DespawnVehicle(this);

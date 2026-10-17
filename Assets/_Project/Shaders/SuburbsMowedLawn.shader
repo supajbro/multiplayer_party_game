@@ -93,13 +93,19 @@ Shader "Couch Guys/Suburbs Mowed Lawn"
 
                 float cameraDistance = distance(_WorldSpaceCameraPos, input.positionWS);
                 half detailFade = saturate(1.0 - cameraDistance / 34.0);
-                half fineNoise = (ValueNoise(worldXZ * 3.1) - 0.5) * _DetailStrength * detailFade;
+                half fineNoise = 0.0h;
+                [branch] if (detailFade > 0.0h && _DetailStrength > 0.0h)
+                    fineNoise = (ValueNoise(worldXZ * 3.1) - 0.5) * _DetailStrength * detailFade;
                 half broadVariation = (ValueNoise(worldXZ * 0.115) - 0.5) * 0.10;
 
                 float timeOffset = _Time.y * _WindSpeed;
-                float windA = ValueNoise(worldXZ * 0.055 + float2(timeOffset * 0.22, timeOffset * 0.13));
-                float windB = ValueNoise(worldXZ * 0.10 + float2(-timeOffset * 0.09, timeOffset * 0.16));
-                half wind = ((windA + windB) * 0.5 - 0.5) * _WindStrength * _WindEnabled;
+                half wind = 0.0h;
+                [branch] if (_WindEnabled > 0.0h && _WindStrength > 0.0h)
+                {
+                    float windA = ValueNoise(worldXZ * 0.055 + float2(timeOffset * 0.22, timeOffset * 0.13));
+                    float windB = ValueNoise(worldXZ * 0.10 + float2(-timeOffset * 0.09, timeOffset * 0.16));
+                    wind = ((windA + windB) * 0.5 - 0.5) * _WindStrength * _WindEnabled;
+                }
                 albedo *= 1.0 + fineNoise * 0.20 + broadVariation + wind * 0.12;
 
                 half3 normalWS = normalize(input.normalWS);

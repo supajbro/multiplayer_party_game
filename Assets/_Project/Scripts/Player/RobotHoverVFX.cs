@@ -77,6 +77,7 @@ namespace CouchGuys.Player
 
             CacheRingMaterials();
             m_groundBlock = new MaterialPropertyBlock();
+            if (m_groundGlow != null) m_groundGlow.GetPropertyBlock(m_groundBlock);
             m_phase = (GetInstanceID() & 1023) * (Mathf.PI * 2f / 1024f);
             ApplyParticleRates(0);
         }
@@ -158,7 +159,6 @@ namespace CouchGuys.Player
                     Material material = materials[materialIndex];
                     MaterialPropertyBlock block = blocks[materialIndex];
                     if (material == null) continue;
-                    ringRenderer.GetPropertyBlock(block, materialIndex);
                     if (material.HasProperty(EmissionColourId)) block.SetColor(EmissionColourId, emission);
                     if (material.HasProperty(EmissiveColourId)) block.SetColor(EmissiveColourId, emission);
                     ringRenderer.SetPropertyBlock(block, materialIndex);
@@ -193,7 +193,6 @@ namespace CouchGuys.Player
                 Quaternion.FromToRotation(Vector3.forward, m_groundNormal));
 
             Color colour = new(0.02f, 0.62f, 1f, m_groundAlpha);
-            m_groundGlow.GetPropertyBlock(m_groundBlock);
             m_groundBlock.SetColor(ColourId, colour);
             m_groundBlock.SetColor(BaseColourId, colour);
             m_groundGlow.SetPropertyBlock(m_groundBlock);
@@ -417,7 +416,11 @@ namespace CouchGuys.Player
                 int materialCount = m_ringMaterials[rendererIndex].Length;
                 m_ringBlocks[rendererIndex] = new MaterialPropertyBlock[materialCount];
                 for (int materialIndex = 0; materialIndex < materialCount; materialIndex++)
-                    m_ringBlocks[rendererIndex][materialIndex] = new MaterialPropertyBlock();
+                {
+                    MaterialPropertyBlock block = new MaterialPropertyBlock();
+                    m_ringRenderers[rendererIndex].GetPropertyBlock(block, materialIndex);
+                    m_ringBlocks[rendererIndex][materialIndex] = block;
+                }
             }
         }
 

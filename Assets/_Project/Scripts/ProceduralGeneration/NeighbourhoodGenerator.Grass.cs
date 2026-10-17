@@ -10,6 +10,18 @@ namespace CouchGuys.ProceduralGeneration
         private const float TuftBaseLift = 0.012f;
         private const float TuftHalfWidth = 0.075f;
         private const float TuftMaximumWindDisplacement = 0.16f;
+        private const float GrassChunkSize = 48f;
+
+        private sealed class GrassChunkData
+        {
+            public readonly List<Vector3> Vertices = new List<Vector3>(2048);
+            public readonly List<Vector3> Normals = new List<Vector3>(2048);
+            public readonly List<Vector2> Uvs = new List<Vector2>(2048);
+            public readonly List<Vector2> Phases = new List<Vector2>(2048);
+            public readonly List<Color32> Colours = new List<Color32>(2048);
+            public readonly List<int> Triangles = new List<int>(3072);
+            public int TuftCount;
+        }
 
         private Material CreateLawnMaterial()
         {
@@ -54,12 +66,8 @@ namespace CouchGuys.ProceduralGeneration
             int rows = Mathf.Max(1, Mathf.CeilToInt(bounds.height / spacing));
             System.Random random = new System.Random(DeriveSeed(CurrentSeed, 0x45A17D2B));
 
-            List<Vector3> vertices = new List<Vector3>(columns * rows * 8);
-            List<Vector3> normals = new List<Vector3>(columns * rows * 8);
-            List<Vector2> uvs = new List<Vector2>(columns * rows * 8);
-            List<Vector2> phases = new List<Vector2>(columns * rows * 8);
-            List<Color32> colours = new List<Color32>(columns * rows * 8);
-            List<int> triangles = new List<int>(columns * rows * 12);
+            Dictionary<Vector2Int, GrassChunkData> chunks =
+                new Dictionary<Vector2Int, GrassChunkData>();
             int accepted = 0;
             int rejected = 0;
 
@@ -93,9 +101,19 @@ namespace CouchGuys.ProceduralGeneration
                     float yaw = (float)random.NextDouble() * 180f;
                     float phase = (float)random.NextDouble();
                     byte tint = (byte)Mathf.RoundToInt(Mathf.Lerp(220f, 255f, (float)random.NextDouble()));
-                    AddTuft(vertices, normals, uvs, phases, colours, triangles,
+                    Vector2Int chunkCoordinate = new Vector2Int(
+                        Mathf.FloorToInt(mapLocal.x / GrassChunkSize),
+                        Mathf.FloorToInt(mapLocal.z / GrassChunkSize));
+                    if (!chunks.TryGetValue(chunkCoordinate, out GrassChunkData chunk))
+                    {
+                        chunk = new GrassChunkData();
+                        chunks.Add(chunkCoordinate, chunk);
+                    }
+                    AddTuft(chunk.Vertices, chunk.Normals, chunk.Uvs, chunk.Phases,
+                        chunk.Colours, chunk.Triangles,
                         m_residentialGroundRoot, world, normal,
                         width, height, yaw, phase, new Color32(tint, 255, tint, 255));
+                    chunk.TuftCount++;
                     accepted++;
                 }
             }
@@ -105,26 +123,9 @@ namespace CouchGuys.ProceduralGeneration
                 return;
             }
 
-            Mesh mesh = new Mesh
-            {
-                name = $"GeneratedGrassTufts_{CurrentSeed}",
-                indexFormat = vertices.Count > ushort.MaxValue ? IndexFormat.UInt32 : IndexFormat.UInt16
-            };
-            mesh.SetVertices(vertices);
-            mesh.SetNormals(normals);
-            mesh.SetUVs(0, uvs);
-            mesh.SetUVs(1, phases);
-            mesh.SetColors(colours);
-            mesh.SetTriangles(triangles, 0);
-            mesh.RecalculateBounds();
-            Bounds meshBounds = mesh.bounds;
-            meshBounds.Expand(TuftMaximumWindDisplacement * 2f);
-            mesh.bounds = meshBounds;
-
             Shader shader = Shader.Find("Couch Guys/Suburbs Grass Tuft");
             if (shader == null)
             {
-                DestroyOwnedObject(mesh);
                 Debug.LogError("The Suburbs Grass Tuft shader could not be found.", this);
                 return;
             }
@@ -137,20 +138,67 @@ namespace CouchGuys.ProceduralGeneration
             material.SetFloat("_WindSpeed", m_grassSettings.WindSpeed);
             material.SetFloat("_DrawDistance", m_grassSettings.GrassTuftDrawDistance);
 
-            GameObject tuftObject = new GameObject(
+            GameObject tuftRoot = new GameObject(
                 "GeneratedGrassTufts",
-                typeof(MeshFilter),
-                typeof(MeshRenderer),
                 typeof(GeneratedTerrainMesh),
                 typeof(GeneratedGrassTufts));
-            tuftObject.transform.SetParent(m_residentialGroundRoot, false);
-            tuftObject.GetComponent<MeshFilter>().sharedMesh = mesh;
-            MeshRenderer renderer = tuftObject.GetComponent<MeshRenderer>();
+            tuftRoot.transform.SetParent(m_residentialGroundRoot, false);
+            // The root owns the one shared runtime material. Each child owns only its mesh,
+            // avoiding duplicate material destruction during teardown.
+            tuftRoot.GetComponent<GeneratedTerrainMesh>().Initialise(null, material);
+            tuftRoot.GetComponent<GeneratedGrassTufts>().Initialise(accepted, rejected);
+
+            List<Vector2Int> chunkCoordinates = new List<Vector2Int>(chunks.Keys);
+            chunkCoordinates.Sort((first, second) =>
+            {
+                int yComparison = first.y.CompareTo(second.y);
+                return yComparison != 0 ? yComparison : first.x.CompareTo(second.x);
+            });
+            for (int index = 0; index < chunkCoordinates.Count; index++)
+            {
+                Vector2Int coordinate = chunkCoordinates[index];
+                CreateGrassChunk(tuftRoot.transform, coordinate, chunks[coordinate], material);
+            }
+            tuftRoot.AddComponent<GeneratedGrassChunkCuller>().Initialise(
+                m_grassSettings.GrassTuftDrawDistance);
+        }
+
+        private static void CreateGrassChunk(
+            Transform parent,
+            Vector2Int coordinate,
+            GrassChunkData chunk,
+            Material material)
+        {
+            Mesh mesh = new Mesh
+            {
+                name = $"GeneratedGrassTufts_{coordinate.x}_{coordinate.y}",
+                indexFormat = chunk.Vertices.Count > ushort.MaxValue
+                    ? IndexFormat.UInt32
+                    : IndexFormat.UInt16
+            };
+            mesh.SetVertices(chunk.Vertices);
+            mesh.SetNormals(chunk.Normals);
+            mesh.SetUVs(0, chunk.Uvs);
+            mesh.SetUVs(1, chunk.Phases);
+            mesh.SetColors(chunk.Colours);
+            mesh.SetTriangles(chunk.Triangles, 0);
+            mesh.RecalculateBounds();
+            Bounds meshBounds = mesh.bounds;
+            meshBounds.Expand(TuftMaximumWindDisplacement * 2f);
+            mesh.bounds = meshBounds;
+
+            GameObject chunkObject = new GameObject(
+                $"GrassChunk_{coordinate.x}_{coordinate.y}",
+                typeof(MeshFilter),
+                typeof(MeshRenderer),
+                typeof(GeneratedTerrainMesh));
+            chunkObject.transform.SetParent(parent, false);
+            chunkObject.GetComponent<MeshFilter>().sharedMesh = mesh;
+            MeshRenderer renderer = chunkObject.GetComponent<MeshRenderer>();
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = true;
-            tuftObject.GetComponent<GeneratedTerrainMesh>().Initialise(mesh, material);
-            tuftObject.GetComponent<GeneratedGrassTufts>().Initialise(accepted, rejected);
+            chunkObject.GetComponent<GeneratedTerrainMesh>().Initialise(mesh, null);
         }
 
         private bool IsValidGrassTuftPosition(Vector3 worldPosition, float clearance)
@@ -161,8 +209,10 @@ namespace CouchGuys.ProceduralGeneration
                 return false;
             }
 
-            for (int index = 0; index < m_generatedProperties.Count; index++)
+            CollectNearbyPropertyIndices(worldPosition);
+            for (int candidateIndex = 0; candidateIndex < m_propertyQueryScratch.Count; candidateIndex++)
             {
+                int index = m_propertyQueryScratch[candidateIndex];
                 GeneratedProperty property = m_generatedProperties[index];
                 if (property != null && TryGetDrivewayCoordinates(
                         property, worldPosition, out _, out float across, out _) &&

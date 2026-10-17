@@ -344,8 +344,10 @@ namespace CouchGuys.ProceduralGeneration
         private float BlendDrivewayGrades(float terrainHeight, Vector3 flatWorldPosition)
         {
             float result = terrainHeight;
-            for (int index = 0; index < m_generatedProperties.Count; index++)
+            CollectNearbyPropertyIndices(flatWorldPosition);
+            for (int candidateIndex = 0; candidateIndex < m_propertyQueryScratch.Count; candidateIndex++)
             {
+                int index = m_propertyQueryScratch[candidateIndex];
                 GeneratedProperty property = m_generatedProperties[index];
                 if (!TryGetDrivewayCoordinates(
                         property,
@@ -382,8 +384,10 @@ namespace CouchGuys.ProceduralGeneration
 
         private bool TrySampleDrivewaySurface(Vector3 worldPosition, out float height)
         {
-            for (int index = 0; index < m_generatedProperties.Count; index++)
+            CollectNearbyPropertyIndices(worldPosition);
+            for (int candidateIndex = 0; candidateIndex < m_propertyQueryScratch.Count; candidateIndex++)
             {
+                int index = m_propertyQueryScratch[candidateIndex];
                 GeneratedProperty property = m_generatedProperties[index];
                 if (!TryGetDrivewayCoordinates(
                         property,

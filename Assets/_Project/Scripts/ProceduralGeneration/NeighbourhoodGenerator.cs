@@ -126,6 +126,8 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private bool m_showElevation;
 
         private readonly List<GeneratedRoad> m_generatedRoads = new List<GeneratedRoad>();
+        private readonly List<GeneratedTerrainMesh> m_generatedRoadRenderBatches =
+            new List<GeneratedTerrainMesh>();
         private readonly List<GeneratedProperty> m_generatedProperties = new List<GeneratedProperty>();
         private readonly List<GeneratedLot> m_generatedLots = new List<GeneratedLot>();
         private readonly List<DeliveryDestination> m_deliveryDestinations = new List<DeliveryDestination>();
@@ -147,6 +149,11 @@ namespace CouchGuys.ProceduralGeneration
             new List<OrientedFootprint>();
         private readonly List<OrientedFootprint> m_reservedDrivewayFootprints =
             new List<OrientedFootprint>();
+        private readonly Dictionary<Vector2Int, List<int>> m_propertySpatialIndex =
+            new Dictionary<Vector2Int, List<int>>();
+        private readonly List<int> m_propertyQueryScratch = new List<int>(16);
+        private float m_propertySpatialCellSize;
+        private float m_maximumPropertyInfluenceRadius;
 
         private float[,] m_blockElevations;
         private int m_minimumLocalX;
@@ -327,6 +334,7 @@ namespace CouchGuys.ProceduralGeneration
             GenerateParksAndMajorLandmarks(new System.Random(DeriveSeed(seed, 0x3A71C4E9)));
             GenerateLandmarks(new System.Random(DeriveSeed(seed, 0x4F1BBCDC)));
             GenerateProperties(new System.Random(DeriveSeed(seed, 0x61C88647)));
+            BuildPropertySpatialIndex();
             yield return null;
 
             ReportGenerationProgress(0.52f, "Shaping Terrain...");
@@ -453,6 +461,7 @@ namespace CouchGuys.ProceduralGeneration
             GenerateParksAndMajorLandmarks(new System.Random(DeriveSeed(seed, 0x3A71C4E9)));
             GenerateLandmarks(new System.Random(DeriveSeed(seed, 0x4F1BBCDC)));
             GenerateProperties(new System.Random(DeriveSeed(seed, 0x61C88647)));
+            BuildPropertySpatialIndex();
             CreateContinuousTerrain();
             CreateSidewalks();
             CreateDriveways();
@@ -705,6 +714,7 @@ namespace CouchGuys.ProceduralGeneration
             IsNavMeshReady = false;
             IsDeliveryDifficultyReady = false;
             m_generatedRoads.Clear();
+            m_generatedRoadRenderBatches.Clear();
             m_generatedProperties.Clear();
             m_generatedLots.Clear();
             m_deliveryDestinations.Clear();
@@ -720,6 +730,10 @@ namespace CouchGuys.ProceduralGeneration
             m_primaryRoadCells.Clear();
             m_placedHouseFootprints.Clear();
             m_reservedDrivewayFootprints.Clear();
+            m_propertySpatialIndex.Clear();
+            m_propertyQueryScratch.Clear();
+            m_propertySpatialCellSize = 0f;
+            m_maximumPropertyInfluenceRadius = 0f;
             ClearTrafficBoundaryData();
             m_environmentFootprints.Clear();
             m_generatedParks.Clear();
@@ -753,6 +767,7 @@ namespace CouchGuys.ProceduralGeneration
 
             material = null;
         }
+
 
         public Vector3 GridToWorld(GridCoordinate coordinate)
         {
@@ -1518,6 +1533,7 @@ namespace CouchGuys.ProceduralGeneration
             }
 
             CreateCombinedRoadCollider(colliderSources);
+            CreateRoadRenderBatches();
         }
 
         private GameObject TrySelectRoadPrefab(
@@ -2554,8 +2570,10 @@ namespace CouchGuys.ProceduralGeneration
         private float BlendHousePads(float terrainHeight, Vector3 flatWorldPosition)
         {
             float result = terrainHeight;
-            for (int index = 0; index < m_generatedProperties.Count; index++)
+            CollectNearbyPropertyIndices(flatWorldPosition);
+            for (int candidateIndex = 0; candidateIndex < m_propertyQueryScratch.Count; candidateIndex++)
             {
+                int index = m_propertyQueryScratch[candidateIndex];
                 GeneratedProperty property = m_generatedProperties[index];
                 if (property == null)
                 {
@@ -2595,6 +2613,93 @@ namespace CouchGuys.ProceduralGeneration
 
             return result;
         }
+
+        /// <summary>
+        /// Indexes property centres without changing their source-list ordering. Queries sort
+        /// their candidates back into that ordering, so overlapping pad blends remain bit-for-bit
+        /// equivalent to the original full scan while avoiding millions of irrelevant tests.
+        /// </summary>
+        private void BuildPropertySpatialIndex()
+        {
+            m_propertySpatialIndex.Clear();
+            m_propertyQueryScratch.Clear();
+            m_propertySpatialCellSize = Mathf.Max(1f, m_roadTileSize * 2f);
+            m_maximumPropertyInfluenceRadius = 0f;
+
+            for (int index = 0; index < m_generatedProperties.Count; index++)
+            {
+                GeneratedProperty property = m_generatedProperties[index];
+                if (property == null) continue;
+
+                float halfWidth = property.GridFootprint.x * m_roadTileSize * 0.5f;
+                float halfDepth = property.GridFootprint.y * m_roadTileSize * 0.5f;
+                float radius = Mathf.Sqrt(halfWidth * halfWidth + halfDepth * halfDepth) +
+                               m_terrainSettings.HousePadBlendWidth;
+                if (property.ReservedDrivewayWidth > 0.01f)
+                {
+                    Vector2 propertyCentre = new Vector2(
+                        property.transform.position.x,
+                        property.transform.position.z);
+                    Vector2 drivewayStart = new Vector2(
+                        property.DrivewayStart.x,
+                        property.DrivewayStart.z);
+                    Vector2 drivewayEnd = new Vector2(
+                        property.DrivewayEnd.x,
+                        property.DrivewayEnd.z);
+                    float drivewayRadius = Mathf.Max(
+                        Vector2.Distance(propertyCentre, drivewayStart),
+                        Vector2.Distance(propertyCentre, drivewayEnd)) +
+                        property.ReservedDrivewayWidth * 0.5f +
+                        property.DrivewayClearance;
+                    radius = Mathf.Max(radius, drivewayRadius);
+                }
+                m_maximumPropertyInfluenceRadius = Mathf.Max(
+                    m_maximumPropertyInfluenceRadius,
+                    radius);
+
+                Vector2Int cell = PropertySpatialCell(property.transform.position);
+                if (!m_propertySpatialIndex.TryGetValue(cell, out List<int> indices))
+                {
+                    indices = new List<int>(4);
+                    m_propertySpatialIndex.Add(cell, indices);
+                }
+                indices.Add(index);
+            }
+        }
+
+        private void CollectNearbyPropertyIndices(Vector3 worldPosition)
+        {
+            m_propertyQueryScratch.Clear();
+            if (m_propertySpatialIndex.Count == 0 || m_propertySpatialCellSize <= 0f)
+            {
+                for (int index = 0; index < m_generatedProperties.Count; index++)
+                    m_propertyQueryScratch.Add(index);
+                return;
+            }
+
+            Vector2Int centre = PropertySpatialCell(worldPosition);
+            int radius = Mathf.CeilToInt(
+                m_maximumPropertyInfluenceRadius / m_propertySpatialCellSize) + 1;
+            for (int y = centre.y - radius; y <= centre.y + radius; y++)
+            {
+                for (int x = centre.x - radius; x <= centre.x + radius; x++)
+                {
+                    if (!m_propertySpatialIndex.TryGetValue(
+                            new Vector2Int(x, y),
+                            out List<int> indices))
+                        continue;
+                    m_propertyQueryScratch.AddRange(indices);
+                }
+            }
+
+            // A property belongs to exactly one cell, so sorting is sufficient to restore
+            // the original deterministic blend order and no duplicate removal is needed.
+            m_propertyQueryScratch.Sort();
+        }
+
+        private Vector2Int PropertySpatialCell(Vector3 worldPosition) => new Vector2Int(
+            Mathf.FloorToInt(worldPosition.x / m_propertySpatialCellSize),
+            Mathf.FloorToInt(worldPosition.z / m_propertySpatialCellSize));
 
         private float BlendDepotPad(float terrainHeight, Vector3 flatWorldPosition)
         {
@@ -4787,8 +4892,7 @@ namespace CouchGuys.ProceduralGeneration
             for (int roadIndex = 0; roadIndex < m_generatedRoads.Count; roadIndex++)
             {
                 GeneratedRoad road = m_generatedRoads[roadIndex];
-                if (road == null || !road.TryGetComponent(out MeshFilter roadFilter) ||
-                    roadFilter.sharedMesh == null || roadFilter.sharedMesh.vertexCount < 4)
+                if (road == null)
                 {
                     string roadDescription = road == null
                         ? $"index {roadIndex}"
@@ -4796,6 +4900,21 @@ namespace CouchGuys.ProceduralGeneration
                     Debug.LogError(
                         $"Generated neighbourhood has an invalid road surface ({roadDescription}).",
                         road != null ? road : this);
+                    return false;
+                }
+            }
+
+            if (m_generatedRoadRenderBatches.Count == 0)
+            {
+                Debug.LogError("Generated neighbourhood has no road render batches.", this);
+                return false;
+            }
+            for (int batchIndex = 0; batchIndex < m_generatedRoadRenderBatches.Count; batchIndex++)
+            {
+                GeneratedTerrainMesh batch = m_generatedRoadRenderBatches[batchIndex];
+                if (batch == null || batch.VertexCount < 4 || batch.TriangleCount < 2)
+                {
+                    Debug.LogError($"Generated road render batch {batchIndex} is invalid.", this);
                     return false;
                 }
             }

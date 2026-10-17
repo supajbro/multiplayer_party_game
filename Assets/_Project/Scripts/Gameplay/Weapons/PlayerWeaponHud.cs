@@ -49,6 +49,10 @@ namespace CouchGuys.Gameplay.Weapons
         private float m_staminaDisplay = 1f;
         private float m_nextSlowRefresh;
         private int m_lastSelectedSlot = -1;
+        private string m_lastWeaponName;
+        private int m_lastMagazine = int.MinValue;
+        private int m_lastReserve = int.MinValue;
+        private bool m_lastReloading;
         private int m_lastTimerSecond = -1;
         private int m_seenFailureSequence;
         private float m_failureVisibleUntil;
@@ -138,9 +142,21 @@ namespace CouchGuys.Gameplay.Weapons
             if (m_ammoPanel.activeSelf != showAmmo) m_ammoPanel.SetActive(showAmmo);
             if (showAmmo)
             {
-                m_ammoText.text = m_weapons.IsReloading
-                    ? $"{m_weapons.EquippedWeaponName}\n<size=24>RELOADING  {m_weapons.CurrentMagazine} / {m_weapons.CurrentReserve}</size>"
-                    : $"{m_weapons.EquippedWeaponName}\n<size=30>{m_weapons.CurrentMagazine} / {m_weapons.CurrentReserve}</size>";
+                string weaponName = m_weapons.EquippedWeaponName;
+                int magazine = m_weapons.CurrentMagazine;
+                int reserve = m_weapons.CurrentReserve;
+                bool reloading = m_weapons.IsReloading;
+                if (weaponName != m_lastWeaponName || magazine != m_lastMagazine ||
+                    reserve != m_lastReserve || reloading != m_lastReloading)
+                {
+                    m_ammoText.text = reloading
+                        ? $"{weaponName}\n<size=24>RELOADING  {magazine} / {reserve}</size>"
+                        : $"{weaponName}\n<size=30>{magazine} / {reserve}</size>";
+                    m_lastWeaponName = weaponName;
+                    m_lastMagazine = magazine;
+                    m_lastReserve = reserve;
+                    m_lastReloading = reloading;
+                }
             }
         }
 
