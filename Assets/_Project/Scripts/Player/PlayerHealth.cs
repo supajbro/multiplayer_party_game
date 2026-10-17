@@ -41,6 +41,7 @@ namespace CouchGuys.Player
         private float m_visualFallProgress;
         private float m_recoverAtServerTime;
         private float m_respawnAtServerTime = float.PositiveInfinity;
+        private RobotFaceExpressionController m_faceExpression;
 
         public event Action<float, float> HealthChanged;
         public event Action<bool> KnockdownChanged;
@@ -70,6 +71,7 @@ namespace CouchGuys.Player
         {
             if (!s_instances.Contains(this)) s_instances.Add(this);
             m_playerController ??= GetComponent<ThirdPersonPlayerController>();
+            m_faceExpression = GetComponent<RobotFaceExpressionController>();
             m_visualRoot ??= transform.Find("Visual");
             if (m_visualRoot != null)
             {
@@ -198,6 +200,8 @@ namespace CouchGuys.Player
         private void PlayHitObserversRpc()
         {
             GetComponent<CouchGuyAnimationDriver>()?.PlayHitReaction();
+            m_faceExpression ??= GetComponent<RobotFaceExpressionController>();
+            m_faceExpression?.NotifyDamage();
         }
 
         [TargetRpc]

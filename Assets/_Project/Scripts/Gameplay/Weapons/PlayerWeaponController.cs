@@ -35,6 +35,7 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] private WeaponAudioEmitter m_audio;
         [SerializeField] private NeighbourhoodMap m_map;
         private RobotHoverVFX m_hoverVfx;
+        private RobotFaceExpressionController m_faceExpression;
 
         [Header("Weapons")]
         [SerializeField] private WeaponDefinition[] m_weapons = new WeaponDefinition[WeaponCount];
@@ -94,6 +95,7 @@ namespace CouchGuys.Gameplay.Weapons
             m_audio ??= GetComponent<WeaponAudioEmitter>();
             m_map ??= GetComponent<NeighbourhoodMap>();
             m_hoverVfx ??= GetComponent<RobotHoverVFX>();
+            m_faceExpression ??= GetComponent<RobotFaceExpressionController>();
             if (m_effects == null) m_effects = gameObject.AddComponent<PlayerWeaponEffects>();
             if (m_audio == null) m_audio = gameObject.AddComponent<WeaponAudioEmitter>();
             if (m_weapons == null || m_weapons.Length != WeaponCount || m_weapons[0] == null)
@@ -610,6 +612,8 @@ namespace CouchGuys.Gameplay.Weapons
                 m_audio?.PlayShot(weapon.Type, visualMuzzle, m_muzzles[weaponIndex]);
             m_effects?.PlayShot(weapon, visualMuzzle, ends, normals, surfaces, IsOwner);
             m_animationDriver?.PlayWeaponShot((PlayerWeaponType)weaponIndex);
+            m_faceExpression ??= GetComponent<RobotFaceExpressionController>();
+            m_faceExpression?.NotifyShot((PlayerWeaponType)weaponIndex);
             if (IsOwner) LocalShotFired?.Invoke((PlayerWeaponType)weaponIndex);
             if (weapon != null)
             {

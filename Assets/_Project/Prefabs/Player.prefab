@@ -30,6 +30,7 @@ GameObject:
   - component: {fileID: 7168290924105605430}
   - component: {fileID: 1378019884586452510}
   - component: {fileID: 6387925064444778072}
+  - component: {fileID: 8461372058193047521}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -37,6 +38,31 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &8461372058193047521
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 84b1a32c78064c24a53849fe795a7a12, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.RobotFaceExpressionController
+  m_faceRenderer: {fileID: 0}
+  m_materialIndex: 0
+  m_faceMaterial: {fileID: 2100000, guid: 3e1f98cb1323469182a62f75a69bf2ec, type: 2}
+  m_eyeColour: {r: 0.03, g: 0.72, b: 1, a: 1}
+  m_glowIntensity: 5.5
+  m_transitionDuration: 0.14
+  m_surprisedDuration: 0.85
+  m_angryHoldDuration: 0.32
+  m_happyInterval: {x: 4.5, y: 9}
+  m_happyDuration: {x: 0.8, y: 1.8}
+  m_blinkInterval: {x: 2.2, y: 5.2}
+  m_blinkDuration: 0.12
+  m_eyeDrift: 0.018
 --- !u!4 &100001
 Transform:
   m_ObjectHideFlags: 0

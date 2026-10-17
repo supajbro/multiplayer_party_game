@@ -3,6 +3,7 @@ using System.Text;
 using CouchGuys.ProceduralGeneration;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace CouchGuys.Editor
 {
@@ -13,8 +14,8 @@ namespace CouchGuys.Editor
             "Assets/_Project/Models/Houses/CouchGuys_House_01.fbx";
         public const string House01PrefabPath = "Assets/_Project/Prefabs/Houses/House_01.prefab";
         public const string House02PrefabPath = "Assets/_Project/Prefabs/Houses/House_02.prefab";
+        private const string GeneratedLodMeshFolder = "Assets/_Project/Generated/HouseLods";
         private const int HouseLodCount = 4;
-        private static readonly float[] HouseLodTriangleRatios = { 1f, 0.50f, 0.20f, 0.05f };
 
         [InitializeOnLoadMethod]
         private static void BuildMissingPrefabsAfterImport()
@@ -30,6 +31,8 @@ namespace CouchGuys.Editor
         public static void EnsureHousePrefabs()
         {
             EnsureFolder("Assets/_Project/Prefabs", "Houses");
+            EnsureFolder("Assets/_Project", "Generated");
+            EnsureFolder("Assets/_Project/Generated", "HouseLods");
             // Keep both wrapper assets (and therefore all existing lot/scene references) while
             // intentionally sourcing them from the same approved Couch Guys house model.
             BuildWrapper(HouseModelPath, House01PrefabPath, "House_01");
@@ -88,7 +91,7 @@ namespace CouchGuys.Editor
                     visualRoot,
                     modelInstance);
                 AddCompoundStructuralColliders(modelInstance);
-                ConfigureHouseLods(visualRoot, modelInstance);
+                ConfigureHouseLods(visualRoot, modelInstance, wrapperName);
 
                 Transform roadConnection = CreatePoint(root.transform, "RoadConnection", new Vector3(0f, 0f, 10f));
                 Transform deliveryPoint = CreatePoint(root.transform, "DeliveryPoint", new Vector3(0f, 0f, 10.5f));
@@ -180,7 +183,10 @@ namespace CouchGuys.Editor
             }
         }
 
-        private static void ConfigureHouseLods(Transform visualRoot, GameObject lod0Model)
+        private static void ConfigureHouseLods(
+            Transform visualRoot,
+            GameObject lod0Model,
+            string wrapperName)
         {
             Renderer[][] lodRenderers = new Renderer[HouseLodCount][];
             lod0Model.name = $"{lod0Model.name}_LOD0";
@@ -188,31 +194,25 @@ namespace CouchGuys.Editor
             ForceMeshLod(lodRenderers[0], 0);
             long lod0Triangles = CountRendererTriangles(lodRenderers[0], 0);
 
+            string meshAssetPath = $"{GeneratedLodMeshFolder}/{wrapperName}_CombinedLods.asset";
+            AssetDatabase.DeleteAsset(meshAssetPath);
+            bool meshAssetCreated = false;
             for (int level = 1; level < HouseLodCount; level++)
             {
-                GameObject lodModel = Object.Instantiate(lod0Model, visualRoot);
-                lodModel.name = $"{HouseModelNameWithoutLod(lod0Model.name)}_LOD{level}";
-                lodModel.transform.localPosition = lod0Model.transform.localPosition;
-                lodModel.transform.localRotation = lod0Model.transform.localRotation;
-                lodModel.transform.localScale = lod0Model.transform.localScale;
-
-                // Physics is deliberately owned by LOD0's stable primitive collider set. Render
-                // LOD changes must never create collision holes or alter vehicle/projectile hits.
-                Collider[] duplicateColliders = lodModel.GetComponentsInChildren<Collider>(true);
-                for (int index = 0; index < duplicateColliders.Length; index++)
-                {
-                    Object.DestroyImmediate(duplicateColliders[index]);
-                }
-
-                Renderer[] candidates = lodModel.GetComponentsInChildren<Renderer>(true);
-                ForceMeshLod(candidates, level);
-                lodRenderers[level] = PruneRenderersToTriangleBudget(
-                    lodModel,
-                    candidates,
+                lodRenderers[level] = BuildCombinedLod(
+                    visualRoot,
+                    lod0Model,
                     level,
-                    Mathf.CeilToInt(lod0Triangles * HouseLodTriangleRatios[level]));
+                    meshAssetPath,
+                    ref meshAssetCreated);
             }
 
+            if (!meshAssetCreated)
+            {
+                throw new UnityException($"No combined LOD meshes were created for {wrapperName}.");
+            }
+
+            AssetDatabase.ImportAsset(meshAssetPath, ImportAssetOptions.ForceUpdate);
             LODGroup lodGroup = visualRoot.gameObject.AddComponent<LODGroup>();
             lodGroup.fadeMode = LODFadeMode.None;
             lodGroup.animateCrossFading = false;
@@ -226,112 +226,196 @@ namespace CouchGuys.Editor
             lodGroup.RecalculateBounds();
 
             Debug.Log(
-                $"Built {visualRoot.parent.name} LODs: " +
+                $"Built {visualRoot.parent.name} combined LODs: " +
                 $"LOD0={lod0Triangles:N0} triangles/{lodRenderers[0].Length} renderers, " +
-                $"LOD1={CountRendererTriangles(lodRenderers[1], 1):N0}/{lodRenderers[1].Length}, " +
-                $"LOD2={CountRendererTriangles(lodRenderers[2], 2):N0}/{lodRenderers[2].Length}, " +
-                $"LOD3={CountRendererTriangles(lodRenderers[3], 3):N0}/{lodRenderers[3].Length}.",
+                $"LOD1={CountRendererTriangles(lodRenderers[1], 0):N0}/{lodRenderers[1].Length}, " +
+                $"LOD2={CountRendererTriangles(lodRenderers[2], 0):N0}/{lodRenderers[2].Length}, " +
+                $"LOD3={CountRendererTriangles(lodRenderers[3], 0):N0}/{lodRenderers[3].Length}.",
                 visualRoot);
         }
 
-        private static Renderer[] PruneRenderersToTriangleBudget(
-            GameObject lodModel,
-            IReadOnlyList<Renderer> renderers,
-            int meshLod,
-            long triangleBudget)
+        private static Renderer[] BuildCombinedLod(
+            Transform visualRoot,
+            GameObject lod0Model,
+            int level,
+            string meshAssetPath,
+            ref bool meshAssetCreated)
         {
-            List<LodRendererCandidate> candidates = new List<LodRendererCandidate>(renderers.Count);
-            for (int index = 0; index < renderers.Count; index++)
+            GameObject lodModel = new GameObject($"{HouseModelNameWithoutLod(lod0Model.name)}_LOD{level}");
+            lodModel.transform.SetParent(visualRoot, false);
+            lodModel.transform.localPosition = lod0Model.transform.localPosition;
+            lodModel.transform.localRotation = lod0Model.transform.localRotation;
+            lodModel.transform.localScale = lod0Model.transform.localScale;
+
+            MeshRenderer[] sourceRenderers = lod0Model.GetComponentsInChildren<MeshRenderer>(false);
+            List<LodCombineGroup> groups = new List<LodCombineGroup>();
+            Dictionary<Mesh, Mesh> lodMeshCache = new Dictionary<Mesh, Mesh>();
+            try
             {
-                Renderer renderer = renderers[index];
-                long triangles = CountRendererTriangles(renderer, meshLod);
-                candidates.Add(new LodRendererCandidate(
-                    renderer,
-                    triangles,
-                    CalculateLodImportance(renderer, meshLod)));
-            }
+                for (int rendererIndex = 0; rendererIndex < sourceRenderers.Length; rendererIndex++)
+                {
+                    MeshRenderer sourceRenderer = sourceRenderers[rendererIndex];
+                    if (!sourceRenderer.TryGetComponent(out MeshFilter meshFilter) ||
+                        meshFilter.sharedMesh == null)
+                    {
+                        continue;
+                    }
 
-            candidates.Sort((left, right) => right.Importance.CompareTo(left.Importance));
-            HashSet<Renderer> kept = new HashSet<Renderer>();
-            long keptTriangles = 0;
-            for (int index = 0; index < candidates.Count; index++)
+                    Mesh sourceMesh = meshFilter.sharedMesh;
+                    if (!lodMeshCache.TryGetValue(sourceMesh, out Mesh lodMesh))
+                    {
+                        lodMesh = CreateMeshAtLod(sourceMesh, level);
+                        lodMeshCache.Add(sourceMesh, lodMesh);
+                    }
+
+                    Material[] materials = sourceRenderer.sharedMaterials;
+                    int subMeshCount = Mathf.Min(lodMesh.subMeshCount, sourceMesh.subMeshCount);
+                    for (int subMesh = 0; subMesh < subMeshCount; subMesh++)
+                    {
+                        Material material = materials.Length == 0
+                            ? null
+                            : materials[Mathf.Min(subMesh, materials.Length - 1)];
+                        LodCombineGroup group = FindOrCreateCombineGroup(
+                            groups,
+                            material,
+                            sourceRenderer);
+                        group.Instances.Add(new CombineInstance
+                        {
+                            mesh = lodMesh,
+                            subMeshIndex = subMesh,
+                            transform = lodModel.transform.worldToLocalMatrix *
+                                        sourceRenderer.transform.localToWorldMatrix
+                        });
+                    }
+                }
+
+                Renderer[] combinedRenderers = new Renderer[groups.Count];
+                for (int groupIndex = 0; groupIndex < groups.Count; groupIndex++)
+                {
+                    LodCombineGroup group = groups[groupIndex];
+                    string materialName = group.Material != null ? group.Material.name : "NoMaterial";
+                    GameObject part = new GameObject($"LOD{level}_Combined_{groupIndex:00}_{materialName}");
+                    part.transform.SetParent(lodModel.transform, false);
+                    MeshFilter meshFilter = part.AddComponent<MeshFilter>();
+                    MeshRenderer meshRenderer = part.AddComponent<MeshRenderer>();
+                    Mesh combinedMesh = new Mesh
+                    {
+                        name = $"{lodModel.name}_Combined_{groupIndex:00}",
+                        indexFormat = IndexFormat.UInt32
+                    };
+                    combinedMesh.CombineMeshes(group.Instances.ToArray(), true, true, false);
+                    combinedMesh.RecalculateBounds();
+                    MeshUtility.Optimize(combinedMesh);
+                    PersistCombinedMesh(combinedMesh, meshAssetPath, ref meshAssetCreated);
+
+                    meshFilter.sharedMesh = combinedMesh;
+                    meshRenderer.sharedMaterial = group.Material;
+                    meshRenderer.shadowCastingMode = group.ShadowCastingMode;
+                    meshRenderer.receiveShadows = group.ReceiveShadows;
+                    meshRenderer.lightProbeUsage = group.LightProbeUsage;
+                    meshRenderer.reflectionProbeUsage = group.ReflectionProbeUsage;
+                    meshRenderer.renderingLayerMask = group.RenderingLayerMask;
+                    meshRenderer.motionVectorGenerationMode = group.MotionVectorGenerationMode;
+                    combinedRenderers[groupIndex] = meshRenderer;
+                }
+
+                return combinedRenderers;
+            }
+            finally
             {
-                LodRendererCandidate candidate = candidates[index];
-                if (!candidate.Renderer.gameObject.activeInHierarchy || candidate.Triangles <= 0)
+                foreach (Mesh temporaryMesh in lodMeshCache.Values)
                 {
-                    continue;
-                }
-
-                if (kept.Count == 0 || keptTriangles + candidate.Triangles <= triangleBudget)
-                {
-                    kept.Add(candidate.Renderer);
-                    keptTriangles += candidate.Triangles;
+                    Object.DestroyImmediate(temporaryMesh);
                 }
             }
-
-            for (int index = 0; index < candidates.Count; index++)
-            {
-                Renderer renderer = candidates[index].Renderer;
-                if (kept.Contains(renderer))
-                {
-                    continue;
-                }
-
-                if (renderer.TryGetComponent(out MeshFilter meshFilter))
-                {
-                    Object.DestroyImmediate(meshFilter);
-                }
-
-                Object.DestroyImmediate(renderer);
-            }
-
-            RemoveEmptyRenderTransforms(lodModel.transform, lodModel.transform);
-            return lodModel.GetComponentsInChildren<Renderer>(false);
         }
 
-        private static float CalculateLodImportance(Renderer renderer, int lodLevel)
+        private static Mesh CreateMeshAtLod(Mesh source, int requestedLevel)
         {
-            string lowerName = renderer.gameObject.name.ToLowerInvariant();
-            float structuralPriority = 0f;
-            if (lowerName.Contains("structure") || lowerName.Contains("foundation") ||
-                lowerName.Contains("roof") || lowerName.Contains("gable") ||
-                lowerName.Contains("wall"))
+            Mesh lodMesh = Object.Instantiate(source);
+            lodMesh.name = $"{source.name}_BuildLOD{requestedLevel}";
+            if (source.lodCount > 0)
             {
-                structuralPriority = 100000f;
-            }
-            else if (lowerName.Contains("garage") || lowerName.Contains("door") ||
-                     lowerName.StartsWith("win_") || lowerName.Contains("window"))
-            {
-                structuralPriority = 10000f;
-            }
-            else if (lodLevel < 3 &&
-                     (lowerName.Contains("porch") || lowerName.Contains("column") ||
-                      lowerName.Contains("board")))
-            {
-                structuralPriority = 1000f;
+                int availableLevel = Mathf.Min(requestedLevel, source.lodCount - 1);
+                for (int subMesh = 0; subMesh < source.subMeshCount; subMesh++)
+                {
+                    MeshLodRange lodRange = source.GetLod(subMesh, availableLevel);
+                    SubMeshDescriptor descriptor = source.GetSubMesh(subMesh);
+                    descriptor.indexStart = checked((int)lodRange.indexStart);
+                    descriptor.indexCount = checked((int)lodRange.indexCount);
+                    lodMesh.SetSubMesh(
+                        subMesh,
+                        descriptor,
+                        MeshUpdateFlags.DontRecalculateBounds);
+                }
             }
 
-            Bounds bounds = renderer.bounds;
-            return structuralPriority + bounds.size.sqrMagnitude;
+            lodMesh.RecalculateBounds();
+            return lodMesh;
         }
 
-        private static void RemoveEmptyRenderTransforms(Transform transform, Transform lodRoot)
+        private static LodCombineGroup FindOrCreateCombineGroup(
+            List<LodCombineGroup> groups,
+            Material material,
+            MeshRenderer renderer)
         {
-            for (int childIndex = transform.childCount - 1; childIndex >= 0; childIndex--)
+            for (int index = 0; index < groups.Count; index++)
             {
-                RemoveEmptyRenderTransforms(transform.GetChild(childIndex), lodRoot);
+                LodCombineGroup group = groups[index];
+                if (group.Material == material &&
+                    group.ShadowCastingMode == renderer.shadowCastingMode &&
+                    group.ReceiveShadows == renderer.receiveShadows &&
+                    group.LightProbeUsage == renderer.lightProbeUsage &&
+                    group.ReflectionProbeUsage == renderer.reflectionProbeUsage &&
+                    group.RenderingLayerMask == renderer.renderingLayerMask &&
+                    group.MotionVectorGenerationMode == renderer.motionVectorGenerationMode)
+                {
+                    return group;
+                }
             }
 
-            if (transform == lodRoot || transform.childCount != 0)
+            LodCombineGroup created = new LodCombineGroup(renderer, material);
+            groups.Add(created);
+            return created;
+        }
+
+        private static void PersistCombinedMesh(
+            Mesh mesh,
+            string assetPath,
+            ref bool assetCreated)
+        {
+            if (!assetCreated)
             {
-                return;
+                AssetDatabase.CreateAsset(mesh, assetPath);
+                assetCreated = true;
+            }
+            else
+            {
+                AssetDatabase.AddObjectToAsset(mesh, assetPath);
+            }
+        }
+
+        private sealed class LodCombineGroup
+        {
+            public LodCombineGroup(MeshRenderer renderer, Material material)
+            {
+                Material = material;
+                ShadowCastingMode = renderer.shadowCastingMode;
+                ReceiveShadows = renderer.receiveShadows;
+                LightProbeUsage = renderer.lightProbeUsage;
+                ReflectionProbeUsage = renderer.reflectionProbeUsage;
+                RenderingLayerMask = renderer.renderingLayerMask;
+                MotionVectorGenerationMode = renderer.motionVectorGenerationMode;
             }
 
-            Component[] components = transform.GetComponents<Component>();
-            if (components.Length == 1)
-            {
-                Object.DestroyImmediate(transform.gameObject);
-            }
+            public Material Material { get; }
+            public ShadowCastingMode ShadowCastingMode { get; }
+            public bool ReceiveShadows { get; }
+            public LightProbeUsage LightProbeUsage { get; }
+            public ReflectionProbeUsage ReflectionProbeUsage { get; }
+            public uint RenderingLayerMask { get; }
+            public MotionVectorGenerationMode MotionVectorGenerationMode { get; }
+            public List<CombineInstance> Instances { get; } = new List<CombineInstance>();
         }
 
         private static long CountRendererTriangles(IReadOnlyList<Renderer> renderers, int requestedLod)
@@ -357,33 +441,22 @@ namespace CouchGuys.Editor
                 mesh = skinnedMeshRenderer.sharedMesh;
             }
 
-            if (mesh == null || mesh.lodCount == 0)
+            if (mesh == null)
             {
                 return 0;
             }
 
-            int availableLod = Mathf.Min(requestedLod, mesh.lodCount - 1);
             long triangleCount = 0;
             for (int submesh = 0; submesh < mesh.subMeshCount; submesh++)
             {
-                triangleCount += (long)mesh.GetLod(submesh, availableLod).indexCount / 3L;
+                triangleCount += mesh.lodCount > 0
+                    ? (long)mesh.GetLod(
+                        submesh,
+                        Mathf.Min(requestedLod, mesh.lodCount - 1)).indexCount / 3L
+                    : (long)mesh.GetSubMesh(submesh).indexCount / 3L;
             }
 
             return triangleCount;
-        }
-
-        private readonly struct LodRendererCandidate
-        {
-            public LodRendererCandidate(Renderer renderer, long triangles, float importance)
-            {
-                Renderer = renderer;
-                Triangles = triangles;
-                Importance = importance;
-            }
-
-            public Renderer Renderer { get; }
-            public long Triangles { get; }
-            public float Importance { get; }
         }
 
         private static void ForceMeshLod(IReadOnlyList<Renderer> renderers, int requestedLevel)
@@ -726,6 +799,13 @@ namespace CouchGuys.Editor
                 return false;
             }
 
+            string wrapperName = prefabPath == House01PrefabPath ? "House_01" : "House_02";
+            string combinedMeshPath = $"{GeneratedLodMeshFolder}/{wrapperName}_CombinedLods.asset";
+            if (AssetDatabase.LoadAssetAtPath<Mesh>(combinedMeshPath) == null)
+            {
+                return false;
+            }
+
             Transform visualRoot = prefab.transform.Find("VisualRoot");
             if (visualRoot == null || Quaternion.Angle(visualRoot.localRotation, Quaternion.identity) > 0.01f)
             {
@@ -739,21 +819,42 @@ namespace CouchGuys.Editor
             }
 
             LODGroup lodGroup = visualRoot.GetComponent<LODGroup>();
-            if (lodGroup == null || lodGroup.GetLODs().Length != HouseLodCount)
+            if (lodGroup == null)
             {
                 return false;
             }
 
+            LOD[] lods = lodGroup.GetLODs();
+            if (lods.Length != HouseLodCount || lods[0].renderers.Length == 0)
+            {
+                return false;
+            }
+
+            for (int level = 1; level < lods.Length; level++)
+            {
+                if (lods[level].renderers.Length == 0 ||
+                    lods[level].renderers.Length >= lods[0].renderers.Length)
+                {
+                    return false;
+                }
+            }
+
             string[] dependencies = AssetDatabase.GetDependencies(prefabPath, true);
+            bool usesSourceModel = false;
+            bool usesCombinedLods = false;
             for (int index = 0; index < dependencies.Length; index++)
             {
                 if (dependencies[index] == HouseModelPath)
                 {
-                    return true;
+                    usesSourceModel = true;
+                }
+                else if (dependencies[index] == combinedMeshPath)
+                {
+                    usesCombinedLods = true;
                 }
             }
 
-            return false;
+            return usesSourceModel && usesCombinedLods;
         }
     }
 }

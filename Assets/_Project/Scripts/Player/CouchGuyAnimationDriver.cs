@@ -57,6 +57,10 @@ namespace CouchGuys.Player
 
         private void Awake()
         {
+            if (GetComponent<RobotFaceExpressionController>() == null)
+            {
+                gameObject.AddComponent<RobotFaceExpressionController>();
+            }
             if (GetComponent<RobotHoverVFX>() == null)
             {
                 gameObject.AddComponent<RobotHoverVFX>();

@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: RobotDigitalFace
+  m_Shader: {fileID: 4800000, guid: c531872a5d804118a31b5a2e545892e6, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 2
+  m_EnableInstancingVariants: 1
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties:
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _Blink: 1
+    - _ExpressionBlend: 1
+    - _ExpressionFrom: 0
+    - _ExpressionTo: 0
+    - _GlowIntensity: 5.5
+    - _Pulse: 1
+    m_Colors:
+    - _EyeColor: {r: 0.03, g: 0.72, b: 1, a: 1}
+    - _LookOffset: {r: 0, g: 0, b: 0, a: 0}
+    - _ScreenColor: {r: 0.002, g: 0.006, b: 0.012, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
