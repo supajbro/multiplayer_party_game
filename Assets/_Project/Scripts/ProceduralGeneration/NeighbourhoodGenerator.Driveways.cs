@@ -118,9 +118,7 @@ namespace CouchGuys.ProceduralGeneration
                     position,
                     rotation,
                     scale,
-                    modules.DrivewaySlabSize,
-                    HouseAccessModuleKind.DrivewaySlab,
-                    true);
+                    HouseAccessModuleKind.DrivewaySlab);
                 GeneratedDrivewaySlabCount++;
             }
         }
@@ -185,9 +183,7 @@ namespace CouchGuys.ProceduralGeneration
                     position,
                     rotation,
                     scale,
-                    modules.FootpathSlabSize,
-                    HouseAccessModuleKind.FootpathSlab,
-                    true);
+                    HouseAccessModuleKind.FootpathSlab);
                 GeneratedFootpathSlabCount++;
             }
 
@@ -239,9 +235,7 @@ namespace CouchGuys.ProceduralGeneration
                     position,
                     rotation,
                     templateScale,
-                    modules.PathLightSize,
-                    HouseAccessModuleKind.PathLight,
-                    false);
+                    HouseAccessModuleKind.PathLight);
                 GeneratedPathLightCount++;
             }
         }
@@ -252,9 +246,7 @@ namespace CouchGuys.ProceduralGeneration
             Vector3 position,
             Quaternion rotation,
             Vector3 worldScale,
-            Vector3 localBoundsSize,
-            HouseAccessModuleKind kind,
-            bool addCollider)
+            HouseAccessModuleKind kind)
         {
             GameObject instance = Instantiate(template.gameObject);
             instance.name = instanceName;
@@ -264,14 +256,25 @@ namespace CouchGuys.ProceduralGeneration
             instance.SetActive(true);
             GeneratedHouseAccessModule marker = instance.AddComponent<GeneratedHouseAccessModule>();
             marker.Initialise(kind);
-            if (addCollider)
-            {
-                BoxCollider collider = instance.AddComponent<BoxCollider>();
-                collider.center = new Vector3(0f, localBoundsSize.y * 0.5f, 0f);
-                collider.size = localBoundsSize;
-            }
+            RemoveCollidersFromHierarchy(instance);
 
             return instance;
+        }
+
+        private static void RemoveCollidersFromHierarchy(GameObject root)
+        {
+            Collider[] colliders = root.GetComponentsInChildren<Collider>(true);
+            for (int index = 0; index < colliders.Length; index++)
+            {
+                if (Application.isPlaying)
+                {
+                    Destroy(colliders[index]);
+                }
+                else
+                {
+                    DestroyImmediate(colliders[index]);
+                }
+            }
         }
 
         private float SampleDrivewayHeightAtPoint(GeneratedProperty property, Vector3 point)

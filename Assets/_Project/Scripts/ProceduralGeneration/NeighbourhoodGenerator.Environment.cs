@@ -476,6 +476,7 @@ namespace CouchGuys.ProceduralGeneration
                 if (IsNearDriveway(position, settings.MinimumClearanceFromDriveways)) continue;
                 if (!TryPlaceEnvironmentPrefab(settings.Prefab, position,
                         Quaternion.LookRotation(-outward, Vector3.up), m_streetlightsRoot, true, out GameObject instance)) continue;
+                RemoveCollidersFromHierarchy(instance);
                 StreetlightPlaceholder light = instance.GetComponent<StreetlightPlaceholder>();
                 if (light != null) light.Configure(settings.LightingEnabled, settings.LightColour,
                     settings.LightIntensity, settings.LightRange);

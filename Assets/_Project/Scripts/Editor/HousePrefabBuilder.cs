@@ -533,6 +533,11 @@ namespace CouchGuys.Editor
                 copy.transform.localScale = DivideScale(
                     sources[index].lossyScale,
                     template.lossyScale);
+                Collider[] colliders = copy.GetComponentsInChildren<Collider>(true);
+                for (int colliderIndex = 0; colliderIndex < colliders.Length; colliderIndex++)
+                {
+                    Object.DestroyImmediate(colliders[colliderIndex]);
+                }
                 copy.SetActive(true);
             }
 

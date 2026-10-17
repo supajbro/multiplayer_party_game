@@ -56,7 +56,7 @@ namespace CouchGuys.ProceduralGeneration
         [Tooltip("Optional large home used when distance progression assigns one lot to a block.")]
         [SerializeField] private GameObject m_mansionPrefab;
         [SerializeField, Min(0)] private int m_minimumHousesPerBlock = 1;
-        [SerializeField, Min(0)] private int m_housesPerBlock = 3;
+        [SerializeField, Min(0)] private int m_housesPerBlock = 1;
         [SerializeField, Min(0)] private int m_minimumHouseSpacing = 1;
         [Tooltip("Minimum world-space clearance kept around the rendered footprint of every house.")]
         [SerializeField, Min(0f)] private float m_minimumHouseClearance = 1f;
@@ -2371,7 +2371,6 @@ namespace CouchGuys.ProceduralGeneration
                 "GeneratedSidewalks",
                 typeof(MeshFilter),
                 typeof(MeshRenderer),
-                typeof(MeshCollider),
                 typeof(GeneratedTerrainMesh));
             sidewalkObject.transform.SetParent(m_sidewalksRoot, false);
             Mesh mesh = new Mesh
@@ -2389,7 +2388,6 @@ namespace CouchGuys.ProceduralGeneration
             mesh.RecalculateBounds();
 
             sidewalkObject.GetComponent<MeshFilter>().sharedMesh = mesh;
-            sidewalkObject.GetComponent<MeshCollider>().sharedMesh = mesh;
             Material runtimeMaterial = null;
             Material material = m_sidewalkMaterial;
             if (material == null)
@@ -2478,6 +2476,7 @@ namespace CouchGuys.ProceduralGeneration
                 Quaternion.LookRotation(Vector3.ProjectOnPlane(widthDirection, normal), normal),
                 m_sidewalksRoot);
             piece.name = $"Sidewalk_{pieceIndex:000}";
+            RemoveCollidersFromHierarchy(piece);
             Renderer[] renderers = piece.GetComponentsInChildren<Renderer>(true);
             if (!TryCalculateRendererBounds(renderers, out Bounds bounds))
             {

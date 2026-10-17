@@ -105,8 +105,12 @@ namespace CouchGuys.ProceduralGeneration
         [Min(1)] public int BlockWidth;
         [Min(1)] public int BlockHeight;
         [Min(0.1f)] public float RoadTileSize;
-        [InspectorName("Minimum Lots Per Block"), Min(0)] public int MinimumLotsPerBlock;
-        [InspectorName("Maximum Lots Per Block"), Min(0)] public int LotsPerBlock;
+        [InspectorName("Minimum Houses Per Block")]
+        [Tooltip("Minimum number of residential lots generated in a block. Each residential lot spawns exactly one house.")]
+        [Min(0)] public int MinimumLotsPerBlock;
+        [InspectorName("Maximum Houses Per Block")]
+        [Tooltip("Maximum number of residential lots generated in a block. Set this to 1 for one house per suburban block.")]
+        [Min(0)] public int LotsPerBlock;
         [Min(0)] public int MinimumLotSpacing;
 
         public static RegionGridSettings SuburbsDefault => new RegionGridSettings
@@ -117,7 +121,7 @@ namespace CouchGuys.ProceduralGeneration
             BlockHeight = 4,
             RoadTileSize = 10f,
             MinimumLotsPerBlock = 1,
-            LotsPerBlock = 3,
+            LotsPerBlock = 1,
             MinimumLotSpacing = 1
         };
 
