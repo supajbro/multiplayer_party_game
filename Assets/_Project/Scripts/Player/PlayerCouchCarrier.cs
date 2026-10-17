@@ -635,7 +635,15 @@ namespace CouchGuys.Player
                         if (m_shopPurchaseRequestId == 0) m_shopPurchaseRequestId++;
                         RequestShopPurchaseServerRpc(capturedItemId, m_shopPurchaseRequestId);
                     },
-                    item.Icon));
+                    item.Icon,
+                    item.Category switch
+                    {
+                        ShopItemCategory.Vehicle => "Vans",
+                        ShopItemCategory.Weapon => "Weapons",
+                        ShopItemCategory.Equipment => "Upgrades",
+                        ShopItemCategory.PlayerUpgrade => "Upgrades",
+                        _ => "Other"
+                    }));
             }
 
             List<DialogueShopCategory> categories = new()

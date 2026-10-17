@@ -1,0 +1,93 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cb6905792b0eba24eb514f49e2240643, type: 3}
+  m_Name: CouchDispatchUIStyle
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.UI.CouchDispatchUIStyle
+  m_sprites:
+  - Name: WindowFull
+    Sprite: {fileID: 7678817348688644565, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: WindowHeader
+    Sprite: {fileID: 8479743788955058814, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: CloseButton
+    Sprite: {fileID: 12588965204895407, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: TabDeliveries
+    Sprite: {fileID: 9162291646011161986, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: TabShop
+    Sprite: {fileID: -5976054425075033451, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: ContentPanel
+    Sprite: {fileID: -3894713269654053999, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: ShopPrompt
+    Sprite: {fileID: 4750254437523752009, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: SectionWindowPanels
+    Sprite: {fileID: 7168694716745670315, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: SectionButtonsTabs
+    Sprite: {fileID: -738377616453739576, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: CardBlank
+    Sprite: {fileID: 1042531350980131189, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: CardLocked
+    Sprite: {fileID: 6505512779121731552, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: ButtonSelectPrimary
+    Sprite: {fileID: -3340288276878531364, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: ButtonBuyPrimary
+    Sprite: {fileID: 5321295394437957416, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: ButtonEquip
+    Sprite: {fileID: 6329478512858180113, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: ButtonSelectPressed
+    Sprite: {fileID: -258877850732529532, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: ButtonBuyPressed
+    Sprite: {fileID: 8114626146251267841, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: ButtonBackLocked
+    Sprite: {fileID: 4730501894139550048, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: ButtonBack
+    Sprite: {fileID: 1163850673278809183, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: ButtonOkay
+    Sprite: {fileID: -114482728408470453, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: ButtonLocked
+    Sprite: {fileID: 6723829400994006495, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: DeliveryEasy
+    Sprite: {fileID: 2443954186114137195, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: DeliveryMedium
+    Sprite: {fileID: 1580865531163481872, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: DeliveryHard
+    Sprite: {fileID: -5596295465253498590, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: CategoryVans
+    Sprite: {fileID: -7757264069748059603, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: CategoryWeapons
+    Sprite: {fileID: -4144595249256750367, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: CategoryUpgrades
+    Sprite: {fileID: 6525125038259897845, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: PageDots
+    Sprite: {fileID: -8027932315671793763, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: VanIcon
+    Sprite: {fileID: -6363628860145973549, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: WeaponsIcon
+    Sprite: {fileID: 5237328992742081123, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: UpgradeCrate
+    Sprite: {fileID: -4207307777415953872, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: CurrencyCoin
+    Sprite: {fileID: 6445354400374264901, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: CurrencyCoins
+    Sprite: {fileID: -3640634621463173756, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: ClipboardIcon
+    Sprite: {fileID: 2229158012857374173, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: ArrowIcon
+    Sprite: {fileID: 6172791670031832800, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: CashIcon
+    Sprite: {fileID: -4671911822848218628, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: EnergySmall
+    Sprite: {fileID: -1672754110395662516, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: EnergyLarge
+    Sprite: {fileID: -834585491375666835, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: CashReward
+    Sprite: {fileID: -2127474274083371580, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
+  - Name: Sparkles
+    Sprite: {fileID: 8479970345279289052, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
