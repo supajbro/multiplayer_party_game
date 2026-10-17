@@ -63,6 +63,8 @@ namespace CouchGuys.Input
             : -1;
         public bool TeleportToDeliveryPressedThisFrame =>
             !m_gameplaySuppressed && (m_teleportToDeliveryAction?.WasPressedThisFrame() ?? false);
+        public bool TestResourcesPressedThisFrame =>
+            !m_gameplaySuppressed && (Keyboard.current?.lKey.wasPressedThisFrame ?? false);
 
         public void SetGameplaySuppressed(bool suppressed)
         {

@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using CouchGuys.Player;
 using CouchGuys.Gameplay.Couch;
+using CouchGuys.Gameplay.Enemies;
+using CouchGuys.ProceduralGeneration;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using UnityEngine;
@@ -38,6 +40,7 @@ namespace CouchGuys.Gameplay.Vehicles
         private Vector2 m_driveInput;
         private float m_steering;
         private float m_nextCollisionDamageTime;
+        private readonly Dictionary<int, float> m_nextCharacterImpactTime = new();
         private float m_lastInputTime;
         private Vector3[] m_wheelBasePositions;
         private Quaternion[] m_wheelBaseRotations;
@@ -122,6 +125,8 @@ namespace CouchGuys.Gameplay.Vehicles
         public override void OnStartServer()
         {
             base.OnStartServer();
+            m_nextCollisionDamageTime = 0f;
+            m_nextCharacterImpactTime.Clear();
             m_fuel.Value = m_settings.MaxFuel;
             m_health.Value = m_settings.MaxHealth;
             m_destroyed.Value = false;
@@ -353,13 +358,109 @@ namespace CouchGuys.Gameplay.Vehicles
 
         private void OnCollisionEnter(Collision collision)
         {
-            if (!IsServerInitialized || IsDestroyed || Time.time < m_nextCollisionDamageTime || collision.contactCount == 0) return;
-            float severity = collision.relativeVelocity.magnitude;
+            if (!IsServerInitialized || IsDestroyed || m_settings == null ||
+                collision.contactCount == 0)
+                return;
+
+            PlayerHealth player = collision.collider.GetComponentInParent<PlayerHealth>();
+            ThiefHealth thief = collision.collider.GetComponentInParent<ThiefHealth>();
+            if (player != null || thief != null)
+            {
+                ApplyCharacterImpactServer(collision, player, thief);
+                return;
+            }
+
+            if (Time.time < m_nextCollisionDamageTime || IsGroundSurface(collision.collider))
+                return;
+
+            float severity = GetStrongestObstacleImpactSpeed(collision);
             if (severity < m_settings.MinimumCollisionDamageSpeed) return;
-            float damage = Mathf.Min((severity - m_settings.MinimumCollisionDamageSpeed) * m_settings.CollisionDamageMultiplier, m_settings.MaximumCollisionDamage);
+            float damage = Mathf.Min(
+                (severity - m_settings.MinimumCollisionDamageSpeed) *
+                m_settings.CollisionDamageMultiplier,
+                m_settings.MaximumCollisionDamage);
             if (damage <= 0f) return;
             m_nextCollisionDamageTime = Time.time + m_settings.CollisionDamageCooldown;
             ApplyDamageServer(damage);
+        }
+
+        [Server]
+        private void ApplyCharacterImpactServer(
+            Collision collision,
+            PlayerHealth player,
+            ThiefHealth thief)
+        {
+            Object victim = player != null ? (Object)player : thief;
+            if (victim == null) return;
+
+            int victimId = victim.GetInstanceID();
+            if (m_nextCharacterImpactTime.TryGetValue(victimId, out float nextImpactTime) &&
+                Time.time < nextImpactTime)
+                return;
+
+            Vector3 vanPlanarVelocity = Vector3.ProjectOnPlane(
+                m_rigidbody.linearVelocity, Vector3.up);
+            float impactSpeed = vanPlanarVelocity.magnitude;
+            if (impactSpeed < 0.1f) return;
+
+            m_nextCharacterImpactTime[victimId] =
+                Time.time + m_settings.CollisionDamageCooldown;
+            float damage = Mathf.Max(0f,
+                impactSpeed - m_settings.MinimumCharacterImpactSpeed) *
+                m_settings.CharacterImpactDamageMultiplier;
+            float fullSpeed = Mathf.Max(
+                m_settings.MinimumCharacterImpactSpeed + 0.1f,
+                m_settings.MaxForwardSpeed / 3.6f);
+            float impactScale = Mathf.Lerp(0.2f, 1.5f,
+                Mathf.InverseLerp(0f, fullSpeed, impactSpeed));
+            float knockback = m_settings.CharacterKnockbackForce * impactScale;
+            float upwardKnockback = m_settings.CharacterKnockbackUpwardForce * impactScale;
+            Transform victimTransform = player != null ? player.transform : thief.transform;
+            Vector3 direction = vanPlanarVelocity.sqrMagnitude > 0.01f
+                ? vanPlanarVelocity.normalized
+                : (victimTransform.position - transform.position).normalized;
+
+            if (player != null)
+                player.ApplyVehicleImpactServer(damage, direction, knockback, upwardKnockback);
+            else
+                thief.ApplyVehicleImpactServer(damage, direction, knockback, upwardKnockback);
+        }
+
+        private static float GetStrongestObstacleImpactSpeed(Collision collision)
+        {
+            float strongestImpact = 0f;
+            Vector3 relativeVelocity = collision.relativeVelocity;
+            for (int index = 0; index < collision.contactCount; index++)
+            {
+                Vector3 normal = collision.GetContact(index).normal;
+                // Ground/slope normals point mostly upward. Only the velocity driven
+                // into a substantially lateral face represents an obstacle crash.
+                if (Mathf.Abs(Vector3.Dot(normal, Vector3.up)) > 0.65f) continue;
+                strongestImpact = Mathf.Max(strongestImpact,
+                    Mathf.Abs(Vector3.Dot(relativeVelocity, normal)));
+            }
+            return strongestImpact;
+        }
+
+        private static bool IsGroundSurface(Collider collider)
+        {
+            if (collider == null) return false;
+            if (collider is TerrainCollider ||
+                collider.GetComponentInParent<Terrain>() != null ||
+                collider.GetComponentInParent<GeneratedTerrainMesh>() != null)
+                return true;
+
+            // Generated and authored road pieces currently share the Default layer,
+            // so retain a conservative fallback for their established naming scheme.
+            string objectName = collider.name.ToLowerInvariant();
+            return objectName.StartsWith("terrain") ||
+                   objectName.StartsWith("ground") ||
+                   objectName.StartsWith("road_") ||
+                   objectName.StartsWith("roadtile") ||
+                   objectName.Contains("roadsurface") ||
+                   objectName.Contains("roadcollider") ||
+                   objectName.StartsWith("sidewalk") ||
+                   objectName.StartsWith("driveway");
         }
 
         public bool TryGetExitPosition(NetworkObject player, out Vector3 position, out Quaternion rotation)

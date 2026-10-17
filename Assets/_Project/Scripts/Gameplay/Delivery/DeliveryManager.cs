@@ -173,6 +173,13 @@ namespace CouchGuys.Gameplay.Delivery
             RebuildCandidateCache();
         }
 
+        /// <summary>Adds shared test currency from an already-authorised server action.</summary>
+        [Server]
+        public void AddTestCurrencyServer(int amount)
+        {
+            if (amount > 0) m_currency.Value += amount;
+        }
+
         private void Update()
         {
             if (IsServerInitialized && IsDeliveryTimerActive && TimeManager.Tick >= m_deliveryDeadlineTick.Value)

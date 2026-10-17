@@ -36,10 +36,14 @@ namespace CouchGuys.Gameplay.Vehicles
 
         [Header("Health And Damage")]
         [SerializeField, Min(1f)] private float m_maxHealth = 175f;
-        [SerializeField, Min(0f), Tooltip("Minimum collision relative speed in m/s before damage starts.")] private float m_minimumCollisionDamageSpeed = 4f;
-        [SerializeField, Min(0f)] private float m_collisionDamageMultiplier = 4f;
+        [SerializeField, Min(0f), Tooltip("Minimum speed into a solid obstacle in m/s before the van takes damage.")] private float m_minimumCollisionDamageSpeed = 4f;
+        [SerializeField, Min(0f), Tooltip("Van damage per m/s above the obstacle collision threshold.")] private float m_collisionDamageMultiplier = 4f;
         [SerializeField, Min(0f)] private float m_maximumCollisionDamage = 45f;
-        [SerializeField, Min(0f)] private float m_collisionDamageCooldown = 0.4f;
+        [SerializeField, Min(0f), Tooltip("Minimum time before the same collision can deal damage again.")] private float m_collisionDamageCooldown = 0.4f;
+        [SerializeField, Min(0f), Tooltip("Minimum horizontal van impact speed in m/s before a character takes damage. Slower contact only pushes.")] private float m_minimumCharacterImpactSpeed = 2.5f;
+        [SerializeField, Min(0f), Tooltip("Character damage per m/s above the impact threshold.")] private float m_characterImpactDamageMultiplier = 6f;
+        [SerializeField, Min(0f), Tooltip("Horizontal knockback strength at a full-speed character impact.")] private float m_characterKnockbackForce = 12f;
+        [SerializeField, Min(0f), Tooltip("Upward knockback applied to a character hit by the van.")] private float m_characterKnockbackUpwardForce = 2.5f;
         [SerializeField, Min(0f)] private float m_bulletDamageMultiplier = 1f;
         [SerializeField, Range(0f, 1f)] private float m_criticalHealthThreshold = 0.25f;
 
@@ -89,6 +93,10 @@ namespace CouchGuys.Gameplay.Vehicles
         public float LowFuelWarningThreshold => m_lowFuelWarningThreshold; public float MaxHealth => m_maxHealth;
         public float MinimumCollisionDamageSpeed => m_minimumCollisionDamageSpeed; public float CollisionDamageMultiplier => m_collisionDamageMultiplier;
         public float MaximumCollisionDamage => m_maximumCollisionDamage; public float CollisionDamageCooldown => m_collisionDamageCooldown;
+        public float MinimumCharacterImpactSpeed => m_minimumCharacterImpactSpeed;
+        public float CharacterImpactDamageMultiplier => m_characterImpactDamageMultiplier;
+        public float CharacterKnockbackForce => m_characterKnockbackForce;
+        public float CharacterKnockbackUpwardForce => m_characterKnockbackUpwardForce;
         public float BulletDamageMultiplier => m_bulletDamageMultiplier; public float CriticalHealthThreshold => m_criticalHealthThreshold;
         public float EnterHoldDuration => m_enterHoldDuration; public float ExitHoldDuration => m_exitHoldDuration;
         public float InteractionRange => m_interactionRange; public float ExitClearanceRadius => m_exitClearanceRadius;

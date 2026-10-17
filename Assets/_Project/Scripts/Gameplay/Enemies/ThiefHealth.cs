@@ -89,14 +89,39 @@ namespace CouchGuys.Gameplay.Enemies
         [Server]
         public void ApplyDamageServer(float damage, Vector3 impactDirection, float knockbackForce)
         {
-            if (damage <= 0f || m_dead.Value)
+            ApplyImpactServer(damage, impactDirection, knockbackForce, 0f, false);
+        }
+
+        /// <summary>Applies a server-authoritative vehicle push, with optional damage.</summary>
+        [Server]
+        public void ApplyVehicleImpactServer(
+            float damage,
+            Vector3 impactDirection,
+            float knockbackForce,
+            float upwardForce)
+        {
+            ApplyImpactServer(damage, impactDirection, knockbackForce, upwardForce, true);
+        }
+
+        private void ApplyImpactServer(
+            float damage,
+            Vector3 impactDirection,
+            float knockbackForce,
+            float upwardForce,
+            bool allowPushWithoutDamage)
+        {
+            if ((!allowPushWithoutDamage && damage <= 0f) ||
+                (damage <= 0f && knockbackForce <= 0f && upwardForce <= 0f) ||
+                m_dead.Value)
             {
                 return;
             }
 
-            m_currentHealth.Value = Mathf.Max(0f, m_currentHealth.Value - damage);
+            float appliedDamage = Mathf.Max(0f, damage);
+            m_currentHealth.Value = Mathf.Max(0f, m_currentHealth.Value - appliedDamage);
             Vector3 direction = Vector3.ProjectOnPlane(impactDirection, Vector3.up).normalized;
-            m_knockbackVelocity += direction * Mathf.Max(0f, knockbackForce);
+            m_knockbackVelocity += direction * Mathf.Max(0f, knockbackForce) +
+                                   Vector3.up * Mathf.Max(0f, upwardForce);
             m_resumeNavigationAt = Time.time + m_knockbackDuration;
             if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh)
             {
@@ -109,7 +134,7 @@ namespace CouchGuys.Gameplay.Enemies
                 m_dead.Value = true;
                 m_despawnAt = Time.time + m_deathDespawnDelay;
             }
-            else
+            else if (appliedDamage > 0f)
             {
                 PlayHitObserversRpc();
             }

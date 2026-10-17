@@ -167,6 +167,9 @@ namespace CouchGuys.Gameplay.Weapons
                 RequestReloadServerRpc();
             }
 
+            if (m_input.TestResourcesPressedThisFrame)
+                RequestTestResourcesServerRpc();
+
         }
 
         private void LateUpdate()
@@ -274,6 +277,28 @@ namespace CouchGuys.Gameplay.Weapons
         {
             int index = Mathf.Clamp(m_equippedIndex.Value, 0, WeaponCount - 1);
             SendWeaponStateTargetRpc(Owner, index, m_magazine[index], m_reserve[index], m_reloadingIndex == index);
+        }
+
+        [ServerRpc]
+        private void RequestTestResourcesServerRpc()
+        {
+            EndRifleBurstServer();
+            m_reloadingIndex = -1;
+            for (int index = 0; index < WeaponCount; index++)
+            {
+                WeaponDefinition weapon = GetWeapon(index);
+                if (weapon == null) continue;
+                m_magazine[index] = weapon.MagazineCapacity;
+                m_reserve[index] = weapon.StartingReserve;
+            }
+
+            int equippedIndex = m_equippedIndex.Value;
+            if (Owner.IsValid && ValidIndex(equippedIndex))
+                SendWeaponStateTargetRpc(Owner, equippedIndex,
+                    m_magazine[equippedIndex], m_reserve[equippedIndex], false);
+
+            DeliveryManager deliveryManager = FindFirstObjectByType<DeliveryManager>();
+            deliveryManager?.AddTestCurrencyServer(100);
         }
 
         [ServerRpc]

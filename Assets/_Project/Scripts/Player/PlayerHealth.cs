@@ -140,18 +140,34 @@ namespace CouchGuys.Player
             ApplyDamageInternal(damage, impactDirection, knockbackForce, true);
         }
 
+        /// <summary>Applies a server-authoritative vehicle push, with optional damage.</summary>
+        [Server]
+        public void ApplyVehicleImpactServer(
+            float damage,
+            Vector3 impactDirection,
+            float knockbackForce,
+            float upwardForce)
+        {
+            ApplyDamageInternal(
+                damage, impactDirection, knockbackForce, true, upwardForce, true);
+        }
+
         private void ApplyDamageInternal(
             float damage,
             Vector3 impactDirection,
             float knockbackForce,
-            bool useFullKnockback)
+            bool useFullKnockback,
+            float explicitUpwardForce = 0f,
+            bool allowPushWithoutDamage = false)
         {
-            if (damage <= 0f || !IsAlive)
+            if ((!allowPushWithoutDamage && damage <= 0f) ||
+                (damage <= 0f && knockbackForce <= 0f && explicitUpwardForce <= 0f) ||
+                !IsAlive)
             {
                 return;
             }
 
-            float appliedDamage = Mathf.Min(damage, m_currentHealth.Value);
+            float appliedDamage = Mathf.Min(Mathf.Max(0f, damage), m_currentHealth.Value);
             m_currentHealth.Value = Mathf.Max(0f, m_currentHealth.Value - appliedDamage);
             bool died = !IsAlive;
             Vector3 horizontalDirection = Vector3.ProjectOnPlane(impactDirection, Vector3.up);
@@ -166,9 +182,10 @@ namespace CouchGuys.Player
                 ? knockbackForce
                 : knockbackForce * 0.3f;
             Vector3 impulse = horizontalDirection * appliedForce;
+            impulse += Vector3.up * Mathf.Max(0f, explicitUpwardForce);
             if (severeHit)
             {
-                impulse += Vector3.up * m_upwardImpulse;
+                impulse += Vector3.up * Mathf.Max(0f, m_upwardImpulse - explicitUpwardForce);
                 m_knockdownDirection.Value = horizontalDirection;
                 m_recoverAtServerTime = died
                     ? float.PositiveInfinity
@@ -193,7 +210,7 @@ namespace CouchGuys.Player
                 GetComponent<DebugCouchBotController>()?.ApplyExternalImpulseServer(impulse);
             }
 
-            PlayHitObserversRpc();
+            if (appliedDamage > 0f) PlayHitObserversRpc();
         }
 
         [ObserversRpc(RunLocally = true)]

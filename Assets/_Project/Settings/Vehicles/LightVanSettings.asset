@@ -37,6 +37,10 @@ MonoBehaviour:
   m_collisionDamageMultiplier: 5
   m_maximumCollisionDamage: 55
   m_collisionDamageCooldown: 0.4
+  m_minimumCharacterImpactSpeed: 2.5
+  m_characterImpactDamageMultiplier: 6
+  m_characterKnockbackForce: 12
+  m_characterKnockbackUpwardForce: 2.5
   m_bulletDamageMultiplier: 1.25
   m_criticalHealthThreshold: 0.25
   m_enterHoldDuration: 0.65
