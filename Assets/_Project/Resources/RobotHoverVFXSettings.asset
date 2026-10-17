@@ -15,6 +15,11 @@ MonoBehaviour:
   m_ringRotationSpeed: 135
   m_hoverBobAmplitude: 0.045
   m_hoverBobFrequency: 1.8
+  m_ringBobAmplitude: 0.018
+  m_ringBobFrequency: 2.35
+  m_ringMovementIntensity: 0.7
+  m_ringSprintIntensity: 1.3
+  m_ringMotionResponse: 7
   m_emissionBrightness: 3.2
   m_emissionPulseSpeed: 2.1
   m_rippleSpawnRate: 1.25

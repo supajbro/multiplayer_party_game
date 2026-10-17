@@ -3379,6 +3379,18 @@ namespace CouchGuys.ProceduralGeneration
 
             generatedLot.Initialise(definition, candidate.Anchor);
             m_generatedLots.Add(generatedLot);
+            if (definition == null || definition.LotType == LotType.Residential)
+            {
+                HouseDistanceLodController lodController =
+                    property.GetComponent<HouseDistanceLodController>();
+                if (lodController == null)
+                {
+                    lodController = property.AddComponent<HouseDistanceLodController>();
+                }
+
+                lodController.Initialise(m_selectedRegion);
+            }
+
             if (definition != null && definition.UniquePerMap)
             {
                 m_spawnedUniqueLots.Add(definition);

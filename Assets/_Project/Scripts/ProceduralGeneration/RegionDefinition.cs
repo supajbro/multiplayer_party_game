@@ -37,6 +37,10 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField, Min(0)] private int m_minimumLandmarks;
         [SerializeField, Min(0)] private int m_maximumLandmarks;
 
+        [Header("House LOD")]
+        [SerializeField] private HouseLodDistanceSettings m_houseLod =
+            HouseLodDistanceSettings.SuburbsDefault;
+
         [Header("Environment")]
         [SerializeField] private RegionEnvironmentSettings m_environment =
             RegionEnvironmentSettings.SuburbsDefault;
@@ -67,6 +71,7 @@ namespace CouchGuys.ProceduralGeneration
         public float LotDensity => m_lotDensity;
         public int MinimumLandmarks => m_minimumLandmarks;
         public int MaximumLandmarks => Mathf.Max(m_minimumLandmarks, m_maximumLandmarks);
+        public HouseLodDistanceSettings HouseLod => m_houseLod;
         public RegionSpawnRule[] Props => m_props;
         public RegionEnvironmentSettings Environment => m_environment;
         public RegionSpawnRule[] Hazards => m_hazards;
@@ -81,6 +86,7 @@ namespace CouchGuys.ProceduralGeneration
             m_lotDensity = Mathf.Clamp01(m_lotDensity);
             m_minimumLandmarks = Mathf.Max(0, m_minimumLandmarks);
             m_maximumLandmarks = Mathf.Max(m_minimumLandmarks, m_maximumLandmarks);
+            m_houseLod.Validate();
             m_grid.Validate();
             m_elevation.Validate();
             m_progression.Validate();
@@ -95,6 +101,43 @@ namespace CouchGuys.ProceduralGeneration
             m_environment = settings;
         }
 #endif
+    }
+
+    [Serializable]
+    public struct HouseLodDistanceSettings
+    {
+        [Tooltip("Camera distance in metres where a house changes from LOD0 to LOD1.")]
+        [Min(0.1f)] public float Lod1Distance;
+        [Tooltip("Camera distance in metres where a house changes from LOD1 to LOD2.")]
+        [Min(0.1f)] public float Lod2Distance;
+        [Tooltip("Camera distance in metres where a house changes from LOD2 to LOD3.")]
+        [Min(0.1f)] public float Lod3Distance;
+        [Tooltip("Distance buffer that prevents rapid LOD switching near a threshold.")]
+        [Min(0f)] public float Hysteresis;
+        [Tooltip("Seconds between distance checks. Lower values react faster; higher values use less CPU.")]
+        [Min(0.02f)] public float UpdateInterval;
+
+        public static HouseLodDistanceSettings SuburbsDefault => new HouseLodDistanceSettings
+        {
+            Lod1Distance = 20f,
+            Lod2Distance = 40f,
+            Lod3Distance = 70f,
+            Hysteresis = 2f,
+            UpdateInterval = 0.2f
+        };
+
+        public void Validate()
+        {
+            HouseLodDistanceSettings defaults = SuburbsDefault;
+            Lod1Distance = Lod1Distance > 0f ? Lod1Distance : defaults.Lod1Distance;
+            Lod2Distance = Lod2Distance > 0f ? Lod2Distance : defaults.Lod2Distance;
+            Lod3Distance = Lod3Distance > 0f ? Lod3Distance : defaults.Lod3Distance;
+            UpdateInterval = UpdateInterval > 0f ? UpdateInterval : defaults.UpdateInterval;
+            Lod2Distance = Mathf.Max(Lod1Distance + 0.1f, Lod2Distance);
+            Lod3Distance = Mathf.Max(Lod2Distance + 0.1f, Lod3Distance);
+            Hysteresis = Mathf.Clamp(Hysteresis, 0f, Lod1Distance * 0.5f);
+            UpdateInterval = Mathf.Max(0.02f, UpdateInterval);
+        }
     }
 
     [Serializable]

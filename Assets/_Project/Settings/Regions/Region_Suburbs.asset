@@ -91,6 +91,12 @@ MonoBehaviour:
   m_lotDensity: 1
   m_minimumLandmarks: 0
   m_maximumLandmarks: 0
+  m_houseLod:
+    Lod1Distance: 10
+    Lod2Distance: 20
+    Lod3Distance: 35
+    Hysteresis: 0.05
+    UpdateInterval: 0.2
   m_environment:
     Lighting:
       Enabled: 1

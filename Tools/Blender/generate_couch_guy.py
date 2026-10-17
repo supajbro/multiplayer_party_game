@@ -3,7 +3,7 @@
 
 Builds a concept-faithful, animation-ready robot with layered armour, a digital
 display face, articulated arms, a segmented hover mechanism, three detachable
-weapons and the original 36-action animation library.
+weapons and a directional, weapon-ready animation library.
 
 Blender: Scripting > Run Script
 FBX: -Z Forward, Y Up, Bake Animation, All Actions enabled.
@@ -15,7 +15,7 @@ WARNING: Replaces all objects and Actions in the current Blender scene.
 import math
 from pathlib import Path
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 # Which weapon to display while inspecting the model in Blender.
 # Other weapons still exist and can be exported.
@@ -685,10 +685,20 @@ def create_weapon_models(materials, root):
 
     for name, length, width, height, stock_length in specifications:
         weapon = create_empty(name, root)
+        # Start beside the resting right hand, then retain this offset when the
+        # weapon is bone-parented below. Weapon actions bring Hand_R to
+        # x ~= 0.35, placing the grip near the centred ready position x ~= 0.22.
+        weapon_x = 0.85
+        height_offset = 0.16
+        grip_origin = Vector((weapon_x, -0.58, 0.82 + height_offset))
+        weapon.location = grip_origin
+
+        def local(point):
+            return Vector(point) - grip_origin
 
         body = rounded_box(
             name + "_Body",
-            (0.98, -0.72 - length * 0.38, 0.91),
+            local((weapon_x, -0.72 - length * 0.38, 0.91 + height_offset)),
             (width, length, height),
             materials["gunmetal"],
             bevel=0.055
@@ -696,7 +706,7 @@ def create_weapon_models(materials, root):
 
         grip = rounded_box(
             name + "_Grip",
-            (0.98, -0.58, 0.75),
+            local((weapon_x, -0.58, 0.75 + height_offset)),
             (0.15, 0.24, 0.32),
             materials["joints"],
             bevel=0.05,
@@ -705,8 +715,8 @@ def create_weapon_models(materials, root):
 
         barrel = capsule(
             name + "_Barrel",
-            (0.98, -0.78, 0.94),
-            (0.98, -0.78 - length * 0.58, 0.94),
+            local((weapon_x, -0.78, 0.94 + height_offset)),
+            local((weapon_x, -0.78 - length * 0.58, 0.94 + height_offset)),
             0.075 if name == "Weapon_Shotgun" else 0.055,
             materials["gunmetal"],
             bevel=0.035
@@ -714,7 +724,7 @@ def create_weapon_models(materials, root):
 
         accent = rounded_box(
             name + "_Accent",
-            (0.98, -0.73, 1.025),
+            local((weapon_x, -0.73, 1.025 + height_offset)),
             (
                 width * 0.72,
                 max(0.16, length * 0.28),
@@ -729,7 +739,7 @@ def create_weapon_models(materials, root):
         if name != "Weapon_Pistol":
             stock = rounded_box(
                 name + "_Stock",
-                (0.98, -0.47 + stock_length * 0.35, 0.88),
+                local((weapon_x, -0.47 + stock_length * 0.35, 0.88 + height_offset)),
                 (
                     width * 1.25,
                     stock_length,
@@ -743,7 +753,7 @@ def create_weapon_models(materials, root):
         if name == "Weapon_AssaultRifle":
             magazine = rounded_box(
                 name + "_Magazine",
-                (0.98, -0.76, 0.72),
+                local((weapon_x, -0.76, 0.72 + height_offset)),
                 (0.16, 0.24, 0.34),
                 materials["weapon_accent"],
                 bevel=0.045,
@@ -754,7 +764,7 @@ def create_weapon_models(materials, root):
         elif name == "Weapon_Shotgun":
             pump = rounded_box(
                 name + "_Pump",
-                (0.98, -1.15, 0.91),
+                local((weapon_x, -1.15, 0.91 + height_offset)),
                 (0.24, 0.34, 0.20),
                 materials["weapon_accent"],
                 bevel=0.06
@@ -765,11 +775,7 @@ def create_weapon_models(materials, root):
             parent_to(piece, weapon)
 
         muzzle = create_empty("Muzzle", weapon)
-        muzzle.location = (
-            0.98,
-            -0.82 - length * 0.58,
-            0.94
-        )
+        muzzle.location = local((weapon_x, -0.82 - length * 0.58, 0.94 + height_offset))
 
         weapon["unity_default_active"] = False
         weapons.append(weapon)
@@ -896,6 +902,7 @@ def attach_weapons_to_hand(rig, weapons):
         weapon.parent_type = "BONE"
         weapon.parent_bone = "Hand_R"
         weapon.matrix_world = world_matrix
+        weapon["attachment_point"] = "Hand_R"
 
 
 def set_weapon_preview(weapons, selected=PREVIEW_WEAPON):
@@ -1032,33 +1039,31 @@ CARRY = {
 
 WEAPON_HOLDS = {
     "Pistol": {
-        "Torso": {"rotation": (-4, 0, -7)},
-        "Head": {"rotation": (4, 1, 7)},
-        "UpperArm_R": {"rotation": (-48, 10, -29)},
-        "LowerArm_R": {"rotation": (-22, 0, 0)},
-        "Hand_R": {"rotation": (-10, 0, 0)},
-        "UpperArm_L": {"rotation": (-10, -8, 16)},
-        "LowerArm_L": {"rotation": (-9, 0, 0)}
+        "Torso": {"rotation": (-5, 0, -4)},
+        "Head": {"rotation": (4, 0, 4)},
+        "UpperArm_R": {"rotation": (-55, 5, -22)},
+        "LowerArm_R": {"rotation": (-16, 0, 3)},
+        "Hand_R": {"rotation": (-7, 0, 0)}
     },
     "AssaultRifle": {
-        "Torso": {"rotation": (-8, 0, 0)},
-        "Head": {"rotation": (7, 0, 0)},
-        "UpperArm_R": {"rotation": (-43, 9, -25)},
-        "LowerArm_R": {"rotation": (-29, 0, 0)},
+        "Torso": {"rotation": (-9, 0, -2)},
+        "Head": {"rotation": (7, 0, 2)},
+        "UpperArm_R": {"rotation": (-51, 6, -21)},
+        "LowerArm_R": {"rotation": (-23, 0, 2)},
         "Hand_R": {"rotation": (-9, 0, 0)},
-        "UpperArm_L": {"rotation": (-40, -16, 29)},
-        "LowerArm_L": {"rotation": (-38, 0, 0)},
-        "Hand_L": {"rotation": (8, 0, -8)}
+        "UpperArm_L": {"rotation": (-48, -7, 18)},
+        "LowerArm_L": {"rotation": (-31, 0, -3)},
+        "Hand_L": {"rotation": (7, 0, -6)}
     },
     "Shotgun": {
         "Torso": {"rotation": (-11, 0, -2)},
         "Head": {"rotation": (9, 0, 2)},
-        "UpperArm_R": {"rotation": (-47, 10, -24)},
-        "LowerArm_R": {"rotation": (-32, 0, 0)},
+        "UpperArm_R": {"rotation": (-53, 6, -20)},
+        "LowerArm_R": {"rotation": (-25, 0, 2)},
         "Hand_R": {"rotation": (-9, 0, 0)},
-        "UpperArm_L": {"rotation": (-45, -17, 31)},
-        "LowerArm_L": {"rotation": (-42, 0, 0)},
-        "Hand_L": {"rotation": (7, 0, -8)}
+        "UpperArm_L": {"rotation": (-51, -8, 17)},
+        "LowerArm_L": {"rotation": (-36, 0, -4)},
+        "Hand_L": {"rotation": (7, 0, -7)}
     }
 }
 
@@ -1417,41 +1422,60 @@ def weapon_idle(t, weapon):
     return eyes(p, blink(t, (0.25, 0.85)))
 
 
-def weapon_walk(t, weapon):
+def weapon_move(t, weapon, mode="forward"):
     p = copy_pose(WEAPON_HOLDS[weapon])
 
     s = math.sin(TAU * t)
     bounce = math.cos(2 * TAU * t)
 
+    if mode == "forward":
+        pitch, roll, lateral, intensity = -6, 4 * s, 0, 1.0
+    elif mode == "backward":
+        pitch, roll, lateral, intensity = 7, -3 * s, 0, 0.9
+    elif mode == "sprint":
+        pitch, roll, lateral, intensity = -14, 6 * s, 0, 1.35
+    else:
+        direction = -1 if mode == "left" else 1
+        pitch = -2
+        roll = -13 * direction + 2.5 * s
+        lateral = direction * 0.045
+        intensity = 1.0
+
     add_motion(
         p, "Torso",
-        (-4 + 2 * bounce, 2.5 * s, 4 * s),
-        (0.022 * s, 0, 0.038 * bounce)
+        (pitch + 1.8 * bounce, 1.8 * s, roll),
+        (lateral + 0.018 * s, 0, 0.035 * intensity * bounce)
     )
 
     add_motion(
         p, "Head",
-        (3 - 3 * bounce, -3 * s, -3.6 * s)
+        (-pitch * 0.55 - 2.5 * bounce, -2 * s, -roll * 0.72)
     )
 
+    # Both arms stay locked to the aiming silhouette.  Small opposing offsets
+    # sell weight without letting locomotion pull either hand through the gun.
     add_motion(
         p, "UpperArm_R",
-        (3.5 * s, 0, 1.6 * s)
+        (2.4 * intensity * s, 0, 1.2 * s - roll * 0.08)
     )
     add_motion(
         p, "LowerArm_R",
-        (-2.5 * s, 0, 0)
+        (-1.8 * intensity * s, 0, 0)
     )
     add_motion(
         p, "UpperArm_L",
-        (-5 * s, 0, -3.2 * s)
+        (-2.8 * intensity * s, 0, -1.8 * s - roll * 0.08)
     )
     add_motion(
         p, "LowerArm_L",
-        (3 * s, 0, 0)
+        (2.1 * intensity * s, 0, 0)
     )
 
     return eyes(p, blink(t, (0.46,)))
+
+
+def weapon_walk(t, weapon):
+    return weapon_move(t, weapon, "forward")
 
 
 def recoil_envelope(t):
@@ -1904,7 +1928,7 @@ def exhausted_pose(t):
 # ACTION CREATION
 # ============================================================
 
-def key_pose(rig, frame, transforms):
+def key_pose(rig, frame, transforms, lock_weapon_forward=False):
     for name in ANIMATED_BONES:
         bone = rig.pose.bones[name]
         values = transforms.get(name, {})
@@ -1923,6 +1947,22 @@ def key_pose(rig, frame, transforms):
             "scale", (1, 1, 1)
         )
 
+    if lock_weapon_forward:
+        # The weapon remains bone-parented to Hand_R. Counter-rotate the hand
+        # against the animated torso/arm chain so its armature-space rotation
+        # matches the rest pose. This keeps the attached barrel on the model's
+        # forward axis without decoupling it from the hand.
+        bpy.context.view_layer.update()
+        hand = rig.pose.bones["Hand_R"]
+        rest_rotation = rig.data.bones["Hand_R"].matrix_local.to_quaternion()
+        hand.matrix = (
+            Matrix.Translation(hand.matrix.translation)
+            @ rest_rotation.to_matrix().to_4x4()
+        )
+        bpy.context.view_layer.update()
+
+    for name in ANIMATED_BONES:
+        bone = rig.pose.bones[name]
         bone.keyframe_insert(
             data_path="location",
             frame=frame,
@@ -1971,7 +2011,15 @@ def create_action(
 
     for frame in frames:
         t = (frame - 1) / (frame_end - 1)
-        key_pose(rig, frame, pose_generator(t))
+        weapon_action = name.startswith(
+            ("Pistol_", "AssaultRifle_", "Shotgun_")
+        )
+        key_pose(
+            rig,
+            frame,
+            pose_generator(t),
+            lock_weapon_forward=weapon_action
+        )
 
     return action
 
@@ -2105,7 +2153,31 @@ def create_animation_library(rig):
             (
                 weapon + "_Walk",
                 30,
-                lambda t, w=weapon: weapon_walk(t, w),
+                lambda t, w=weapon: weapon_move(t, w, "forward"),
+                True, 2
+            ),
+            (
+                weapon + "_Backward",
+                30,
+                lambda t, w=weapon: weapon_move(t, w, "backward"),
+                True, 2
+            ),
+            (
+                weapon + "_Strafe_L",
+                30,
+                lambda t, w=weapon: weapon_move(t, w, "left"),
+                True, 2
+            ),
+            (
+                weapon + "_Strafe_R",
+                30,
+                lambda t, w=weapon: weapon_move(t, w, "right"),
+                True, 2
+            ),
+            (
+                weapon + "_Sprint",
+                24,
+                lambda t, w=weapon: weapon_move(t, w, "sprint"),
                 True, 2
             ),
             (
@@ -2196,15 +2268,58 @@ def validate_character(rig, geometry, weapons):
         "Idle", "HoverMove", "Pickup",
         "Carry_Move", "Drop",
         "Pistol_Idle", "Pistol_Walk", "Pistol_Shoot",
+        "Pistol_Backward", "Pistol_Strafe_L", "Pistol_Strafe_R", "Pistol_Sprint",
         "AssaultRifle_Idle",
         "AssaultRifle_Walk",
+        "AssaultRifle_Backward", "AssaultRifle_Strafe_L", "AssaultRifle_Strafe_R",
+        "AssaultRifle_Sprint",
         "AssaultRifle_Shoot",
-        "Shotgun_Idle", "Shotgun_Walk", "Shotgun_Shoot"
+        "Shotgun_Idle", "Shotgun_Walk", "Shotgun_Backward",
+        "Shotgun_Strafe_L", "Shotgun_Strafe_R", "Shotgun_Sprint", "Shotgun_Shoot"
     }
 
     missing_actions = (
         required_actions - set(bpy.data.actions.keys())
     )
+
+    weapon_animation_errors = []
+    weapon_suffixes = (
+        "Idle", "Walk", "Backward", "Strafe_L", "Strafe_R",
+        "Sprint", "Shoot", "Reload"
+    )
+    for weapon in weapons:
+        if (
+            weapon.parent != rig
+            or weapon.parent_type != "BONE"
+            or weapon.parent_bone != "Hand_R"
+        ):
+            weapon_animation_errors.append(
+                "%s is not attached to Hand_R" % weapon.name
+            )
+            continue
+
+        weapon_name = weapon.name.removeprefix("Weapon_")
+        for suffix in weapon_suffixes:
+            action_name = weapon_name + "_" + suffix
+            action = bpy.data.actions.get(action_name)
+            if action is None:
+                continue
+
+            rig.animation_data.action = action
+            first = round(action.frame_range[0])
+            last = round(action.frame_range[1])
+            for frame in range(first, last + 1):
+                bpy.context.scene.frame_set(frame)
+                forward = (
+                    weapon.matrix_world.to_quaternion()
+                    @ Vector((0, -1, 0))
+                )
+                if -forward.y < 0.999:
+                    weapon_animation_errors.append(
+                        "%s frame %d does not face forward" %
+                        (action_name, frame)
+                    )
+                    break
 
     errors = []
 
@@ -2224,6 +2339,11 @@ def validate_character(rig, geometry, weapons):
             "Actions: " + ", ".join(sorted(missing_actions))
         )
 
+    if weapon_animation_errors:
+        errors.append(
+            "Weapon animation: " + " | ".join(weapon_animation_errors)
+        )
+
     if errors:
         raise RuntimeError(
             "CouchGuy validation failed: "
@@ -2232,7 +2352,8 @@ def validate_character(rig, geometry, weapons):
 
     print(
         "Validation passed: digital face, segmented hover ring, both arms, "
-        "both hands, three weapons and all required animation Actions."
+        "both hands, hand-attached forward-facing weapons and all required "
+        "animation Actions."
     )
 
 
@@ -2438,7 +2559,7 @@ def setup_character():
     root["face_graphic_material"] = "FaceDisplay_Emission"
     root["hover_outer_pivot"] = "HoverRotor_Outer"
     root["hover_inner_pivot"] = "HoverRotor_Inner"
-    root["generator_version"] = "Concept Redesign v3"
+    root["generator_version"] = "Fluid Weapon Animation v4"
 
     print("Couch Guy generated successfully.")
     print(

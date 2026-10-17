@@ -25,12 +25,14 @@ namespace CouchGuys.Editor
             "HoverMove_Backward",
             "Strafe_L",
             "Strafe_R",
+            "Sprint",
             "Carry_Idle",
             "Carry_Move",
+            "Carry_Sprint",
             "Hold_Item",
-            "Pistol_Idle", "Pistol_Walk",
-            "AssaultRifle_Idle", "AssaultRifle_Walk",
-            "Shotgun_Idle", "Shotgun_Walk"
+            "Pistol_Idle", "Pistol_Walk", "Pistol_Backward", "Pistol_Strafe_L", "Pistol_Strafe_R", "Pistol_Sprint",
+            "AssaultRifle_Idle", "AssaultRifle_Walk", "AssaultRifle_Backward", "AssaultRifle_Strafe_L", "AssaultRifle_Strafe_R", "AssaultRifle_Sprint",
+            "Shotgun_Idle", "Shotgun_Walk", "Shotgun_Backward", "Shotgun_Strafe_L", "Shotgun_Strafe_R", "Shotgun_Sprint"
         };
 
         [InitializeOnLoadMethod]
@@ -42,11 +44,14 @@ namespace CouchGuys.Editor
             }
 
             GameObject playerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
-            bool controllerMissing = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath) == null;
+            AnimatorController existingController = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
+            bool controllerMissing = existingController == null;
+            bool controllerNeedsDirectionalUpgrade = existingController != null &&
+                !ContainsBlendTree(existingController, "Pistol Directional Locomotion");
             bool modelMissingFromPlayer = playerPrefab == null ||
                 playerPrefab.transform.Find("Visual/CouchGuy") == null ||
                 playerPrefab.GetComponent<CouchGuys.Player.CouchGuyAnimationDriver>() == null;
-            if (!controllerMissing && !modelMissingFromPlayer)
+            if (!controllerMissing && !controllerNeedsDirectionalUpgrade && !modelMissingFromPlayer)
             {
                 return;
             }
@@ -64,11 +69,26 @@ namespace CouchGuys.Editor
             };
         }
 
-        [MenuItem("Couch Guys/Animation/Build and Install Couch Guy")]
+        private static bool ContainsBlendTree(AnimatorController controller, string blendTreeName)
+        {
+            foreach (AnimatorControllerLayer layer in controller.layers)
+            {
+                foreach (ChildAnimatorState childState in layer.stateMachine.states)
+                {
+                    if (childState.state.motion is BlendTree tree && tree.name == blendTreeName)
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        [MenuItem("Couch Guys/Animation/Build and Install Couch Guy %#&F12")]
         public static void BuildAndInstall()
         {
-            BuildAnimatorController();
-            PlayerPrefabBuilder.BuildPlayerPrefab();
+            // The visual installer edits the existing prefab in place, preserving
+            // weapon definitions, VFX prefabs, reticles, network IDs and tuning.
+            // Rebuilding the whole Player prefab here silently reset those assets.
+            CouchGuyPlayerVisualInstaller.Install();
         }
 
         public static void BuildAnimatorController()
@@ -126,15 +146,31 @@ namespace CouchGuys.Editor
                 changed = true;
             }
 
-            ModelImporterClipAnimation[] animations = importer.clipAnimations;
-            if (animations == null || animations.Length == 0)
+            // Always seed from the FBX takes. Using the previously serialised
+            // clipAnimations array here hid newly-authored Blender actions forever:
+            // Unity kept reimporting the old 36-clip list even though the FBX had 48.
+            ModelImporterClipAnimation[] animations = importer.defaultClipAnimations;
+            ModelImporterClipAnimation[] configuredAnimations = importer.clipAnimations;
+            HashSet<string> configuredNames = new(StringComparer.Ordinal);
+            if (configuredAnimations != null)
             {
-                animations = importer.defaultClipAnimations;
+                foreach (ModelImporterClipAnimation configured in configuredAnimations)
+                    configuredNames.Add(NormaliseClipName(configured.name));
+            }
+
+            if (animations == null || animations.Length == 0)
+                throw new UnityException("The Couch Guy FBX contains no animation takes.");
+
+            if (configuredNames.Count != animations.Length)
+            {
+                changed = true;
             }
 
             foreach (ModelImporterClipAnimation animation in animations)
             {
                 string clipName = NormaliseClipName(animation.name);
+                if (!configuredNames.Contains(clipName))
+                    changed = true;
                 bool shouldLoop = LoopingClips.Contains(clipName);
                 if (animation.loopTime == shouldLoop)
                 {
@@ -146,7 +182,7 @@ namespace CouchGuys.Editor
                 changed = true;
             }
 
-            if (changed || importer.clipAnimations == null || importer.clipAnimations.Length == 0)
+            if (changed || configuredAnimations == null || configuredAnimations.Length == 0)
             {
                 importer.clipAnimations = animations;
                 importer.SaveAndReimport();
@@ -174,11 +210,11 @@ namespace CouchGuys.Editor
             string[] required =
             {
                 "Idle", "HoverMove", "HoverMove_Backward", "Strafe_L", "Strafe_R",
-                "Pickup", "Carry_Idle", "Carry_Move", "Drop", "Hold_Item",
+                "Pickup", "Carry_Idle", "Carry_Move", "Carry_Sprint", "Drop", "Hold_Item",
                 "Point", "Hit_Reaction", "Jump"
-                , "Pistol_Idle", "Pistol_Walk", "Pistol_Shoot"
-                , "AssaultRifle_Idle", "AssaultRifle_Walk", "AssaultRifle_Shoot"
-                , "Shotgun_Idle", "Shotgun_Walk", "Shotgun_Shoot"
+                , "Pistol_Idle", "Pistol_Walk", "Pistol_Backward", "Pistol_Strafe_L", "Pistol_Strafe_R", "Pistol_Sprint", "Pistol_Shoot"
+                , "AssaultRifle_Idle", "AssaultRifle_Walk", "AssaultRifle_Backward", "AssaultRifle_Strafe_L", "AssaultRifle_Strafe_R", "AssaultRifle_Sprint", "AssaultRifle_Shoot"
+                , "Shotgun_Idle", "Shotgun_Walk", "Shotgun_Backward", "Shotgun_Strafe_L", "Shotgun_Strafe_R", "Shotgun_Sprint", "Shotgun_Shoot"
             };
 
             List<string> missing = new();
@@ -238,9 +274,6 @@ namespace CouchGuys.Editor
                 "AssaultRifle"), new Vector3(1020f, 20f));
             AnimatorState shotgun = AddState(machine, "Shotgun", CreateWeaponTree(controller, clips,
                 "Shotgun"), new Vector3(1020f, 160f));
-            AnimatorState pistolShoot = AddState(machine, "Pistol Shoot", clips["Pistol_Shoot"], new Vector3(1270f, -120f));
-            AnimatorState rifleShoot = AddState(machine, "Assault Rifle Shoot", clips["AssaultRifle_Shoot"], new Vector3(1270f, 20f));
-            AnimatorState shotgunShoot = AddState(machine, "Shotgun Shoot", clips["Shotgun_Shoot"], new Vector3(1270f, 160f));
             machine.defaultState = locomotion;
 
             AddConditionTransition(locomotion, pickup, "Pickup", AnimatorConditionMode.If, 0f, false);
@@ -249,12 +282,9 @@ namespace CouchGuys.Editor
             AddConditionTransition(locomotion, pointing, "Pointing", AnimatorConditionMode.If, 0f, false);
             AddConditionTransition(locomotion, jump, "Grounded", AnimatorConditionMode.IfNot, 0f, false);
             AddWeaponTransitions(locomotion, pistol, rifle, shotgun, carrying);
-            AddWeaponShotTransitions(pistol, pistolShoot);
-            AddWeaponShotTransitions(rifle, rifleShoot);
-            AddWeaponShotTransitions(shotgun, shotgunShoot);
-            AddExitTransition(pistolShoot, pistol, 0.8f);
-            AddExitTransition(rifleShoot, rifle, 0.8f);
-            AddExitTransition(shotgunShoot, shotgun, 0.8f);
+            // Recoil is applied procedurally by CouchGuyAnimationDriver from the
+            // authoritative shot event.  It therefore layers over this directional
+            // locomotion instead of restarting a full-body state on every rifle round.
 
             AddConditionTransition(pickup, carrying, "IsCarrying", AnimatorConditionMode.If, 0f, true, 0.72f);
             AddConditionTransition(pickup, locomotion, "IsCarrying", AnimatorConditionMode.IfNot, 0f, true, 0.72f);
@@ -290,6 +320,7 @@ namespace CouchGuys.Editor
             tree.AddChild(clips["HoverMove_Backward"], Vector2.down);
             tree.AddChild(clips["Strafe_L"], Vector2.left);
             tree.AddChild(clips["Strafe_R"], Vector2.right);
+            tree.AddChild(clips["Sprint"], new Vector2(0f, 1.65f));
             return tree;
         }
 
@@ -307,6 +338,7 @@ namespace CouchGuys.Editor
             AssetDatabase.AddObjectToAsset(tree, controller);
             tree.AddChild(clips["Carry_Idle"], 0f);
             tree.AddChild(clips["Carry_Move"], 1f);
+            tree.AddChild(clips["Carry_Sprint"], 1.65f);
             return tree;
         }
 
@@ -315,14 +347,19 @@ namespace CouchGuys.Editor
         {
             BlendTree tree = new()
             {
-                name = $"{prefix} Locomotion",
-                blendType = BlendTreeType.Simple1D,
-                blendParameter = "Speed",
+                name = $"{prefix} Directional Locomotion",
+                blendType = BlendTreeType.FreeformCartesian2D,
+                blendParameter = "MoveX",
+                blendParameterY = "MoveY",
                 useAutomaticThresholds = false
             };
             AssetDatabase.AddObjectToAsset(tree, controller);
-            tree.AddChild(clips[$"{prefix}_Idle"], 0f);
-            tree.AddChild(clips[$"{prefix}_Walk"], 1f);
+            tree.AddChild(clips[$"{prefix}_Idle"], Vector2.zero);
+            tree.AddChild(clips[$"{prefix}_Walk"], Vector2.up);
+            tree.AddChild(clips[$"{prefix}_Backward"], Vector2.down);
+            tree.AddChild(clips[$"{prefix}_Strafe_L"], Vector2.left);
+            tree.AddChild(clips[$"{prefix}_Strafe_R"], Vector2.right);
+            tree.AddChild(clips[$"{prefix}_Sprint"], new Vector2(0f, 1.65f));
             return tree;
         }
 
@@ -346,11 +383,6 @@ namespace CouchGuys.Editor
                     AddConditionTransition(from, carrying, "IsCarrying", AnimatorConditionMode.If, 0f, false);
                 }
             }
-        }
-
-        private static void AddWeaponShotTransitions(AnimatorState holding, AnimatorState shooting)
-        {
-            AddConditionTransition(holding, shooting, "WeaponShoot", AnimatorConditionMode.If, 0f, false);
         }
 
         private static AnimatorState AddState(
@@ -393,7 +425,7 @@ namespace CouchGuys.Editor
             transition.hasExitTime = hasExitTime;
             transition.exitTime = exitTime;
             transition.hasFixedDuration = true;
-            transition.duration = 0.12f;
+            transition.duration = 0.16f;
             transition.canTransitionToSelf = false;
         }
 

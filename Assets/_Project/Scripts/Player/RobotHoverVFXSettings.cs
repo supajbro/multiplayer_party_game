@@ -9,6 +9,12 @@ namespace CouchGuys.Player
         [SerializeField] private float m_ringRotationSpeed = 135f;
         [SerializeField, Range(0.03f, 0.06f)] private float m_hoverBobAmplitude = 0.045f;
         [SerializeField, Min(0.01f)] private float m_hoverBobFrequency = 1.8f;
+        [Header("Independent Ring Motion")]
+        [SerializeField, Range(0.005f, 0.06f)] private float m_ringBobAmplitude = 0.018f;
+        [SerializeField, Min(0.01f)] private float m_ringBobFrequency = 2.35f;
+        [SerializeField, Range(0f, 2f)] private float m_ringMovementIntensity = 0.7f;
+        [SerializeField, Range(1f, 2f)] private float m_ringSprintIntensity = 1.3f;
+        [SerializeField, Min(0.01f)] private float m_ringMotionResponse = 7f;
         [SerializeField, Min(0f)] private float m_emissionBrightness = 3.2f;
         [SerializeField, Min(0f)] private float m_emissionPulseSpeed = 2.1f;
         [SerializeField, Min(0f)] private float m_rippleSpawnRate = 1.25f;
@@ -18,6 +24,11 @@ namespace CouchGuys.Player
         public float RingRotationSpeed => m_ringRotationSpeed;
         public float HoverBobAmplitude => m_hoverBobAmplitude;
         public float HoverBobFrequency => m_hoverBobFrequency;
+        public float RingBobAmplitude => m_ringBobAmplitude;
+        public float RingBobFrequency => m_ringBobFrequency;
+        public float RingMovementIntensity => m_ringMovementIntensity;
+        public float RingSprintIntensity => m_ringSprintIntensity;
+        public float RingMotionResponse => m_ringMotionResponse;
         public float EmissionBrightness => m_emissionBrightness;
         public float EmissionPulseSpeed => m_emissionPulseSpeed;
         public float RippleSpawnRate => m_rippleSpawnRate;
@@ -29,6 +40,11 @@ namespace CouchGuys.Player
         {
             m_hoverBobAmplitude = Mathf.Clamp(m_hoverBobAmplitude, 0.03f, 0.06f);
             m_hoverBobFrequency = Mathf.Max(0.01f, m_hoverBobFrequency);
+            m_ringBobAmplitude = Mathf.Clamp(m_ringBobAmplitude, 0.005f, 0.06f);
+            m_ringBobFrequency = Mathf.Max(0.01f, m_ringBobFrequency);
+            m_ringMovementIntensity = Mathf.Clamp(m_ringMovementIntensity, 0f, 2f);
+            m_ringSprintIntensity = Mathf.Clamp(m_ringSprintIntensity, 1f, 2f);
+            m_ringMotionResponse = Mathf.Max(0.01f, m_ringMotionResponse);
             m_emissionBrightness = Mathf.Max(0f, m_emissionBrightness);
             m_emissionPulseSpeed = Mathf.Max(0f, m_emissionPulseSpeed);
             m_rippleSpawnRate = Mathf.Max(0f, m_rippleSpawnRate);

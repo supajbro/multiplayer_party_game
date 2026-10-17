@@ -83,20 +83,18 @@ namespace CouchGuys.Editor
                 }
 
                 Transform oldModel = visual.Find("CouchGuy");
-                Bounds oldBounds = oldModel != null
-                    ? CalculateRobotBounds(oldModel)
-                    : new Bounds(new Vector3(0f, 0.9f, 0f), new Vector3(1f, 1.8f, 1f));
-                Vector3 desiredForward = oldModel != null
-                    ? MeasureFaceDirection(oldModel, visual, "FaceDisplay", "Visor")
-                    : Vector3.forward;
-                if (desiredForward.sqrMagnitude < 0.25f)
-                {
-                    desiredForward = Vector3.forward;
-                }
-
                 Animator oldAnimator = oldModel != null
                     ? oldModel.GetComponentInChildren<Animator>(true)
                     : null;
+                Vector3 preservedLocalPosition = oldModel != null
+                    ? oldModel.localPosition
+                    : Vector3.zero;
+                Quaternion preservedLocalRotation = oldModel != null
+                    ? oldModel.localRotation
+                    : Quaternion.identity;
+                Vector3 preservedLocalScale = oldModel != null
+                    ? oldModel.localScale
+                    : Vector3.one;
                 if (oldAnimator != null && oldAnimator.runtimeAnimatorController != null)
                 {
                     controller = oldAnimator.runtimeAnimatorController;
@@ -120,10 +118,11 @@ namespace CouchGuys.Editor
                 }
 
                 model.name = "CouchGuy";
-                model.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
-                model.transform.localScale = Vector3.one;
+                model.transform.SetLocalPositionAndRotation(
+                    preservedLocalPosition,
+                    preservedLocalRotation);
+                model.transform.localScale = preservedLocalScale;
                 SetWeaponsInactive(model.transform);
-                AlignAndFitModel(model.transform, visual, oldBounds, desiredForward);
 
                 Animator animator = model.GetComponent<Animator>();
                 if (animator == null)
@@ -238,80 +237,6 @@ namespace CouchGuys.Editor
             {
                 Debug.LogException(exception);
             }
-        }
-
-        private static void AlignAndFitModel(
-            Transform model, Transform visual, Bounds targetBounds, Vector3 desiredForward)
-        {
-            Vector3 newForward = MeasureFaceDirection(model, visual, "FaceDisplay");
-            if (newForward.sqrMagnitude > 0.25f)
-            {
-                float yaw = Vector3.SignedAngle(newForward, desiredForward, Vector3.up);
-                model.localRotation = Quaternion.AngleAxis(yaw, Vector3.up) * model.localRotation;
-            }
-
-            Bounds bounds = CalculateRobotBounds(model);
-            float targetHeight = Mathf.Max(0.25f, targetBounds.size.y);
-            float scale = targetHeight / Mathf.Max(0.001f, bounds.size.y);
-            model.localScale = Vector3.one * scale;
-
-            bounds = CalculateRobotBounds(model);
-            float verticalOffset = targetBounds.min.y - bounds.min.y;
-            model.localPosition += visual.InverseTransformVector(Vector3.up * verticalOffset);
-        }
-
-        private static Vector3 MeasureFaceDirection(
-            Transform model, Transform visual, params string[] faceNames)
-        {
-            Transform face = null;
-            foreach (string faceName in faceNames)
-            {
-                face = FindDescendant(model, faceName);
-                if (face != null) break;
-            }
-
-            if (face == null)
-            {
-                return Vector3.zero;
-            }
-
-            Bounds robotBounds = CalculateRobotBounds(model);
-            Renderer faceRenderer = face.GetComponent<Renderer>();
-            Vector3 facePosition = faceRenderer != null ? faceRenderer.bounds.center : face.position;
-            Vector3 direction = visual.InverseTransformPoint(facePosition) -
-                visual.InverseTransformPoint(robotBounds.center);
-            direction.y = 0f;
-            return direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector3.zero;
-        }
-
-        private static Bounds CalculateRobotBounds(Transform root)
-        {
-            Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
-            bool found = false;
-            Bounds bounds = default;
-            foreach (Renderer renderer in renderers)
-            {
-                if (renderer is ParticleSystemRenderer || IsInsideWeapon(renderer.transform, root))
-                {
-                    continue;
-                }
-
-                if (!found)
-                {
-                    bounds = renderer.bounds;
-                    found = true;
-                }
-                else
-                {
-                    bounds.Encapsulate(renderer.bounds);
-                }
-            }
-
-            if (!found)
-            {
-                throw new UnityException("Couch Guy model contains no non-weapon renderers.");
-            }
-            return bounds;
         }
 
         private static bool IsInsideWeapon(Transform transform, Transform modelRoot)

@@ -33,6 +33,7 @@ namespace CouchGuys.Player
         [SerializeField, Min(0.1f)] private float m_fullMoveSpeed = 3.5f;
         [SerializeField, Min(0f)] private float m_movementDampTime = 0.12f;
         [SerializeField, Min(1f)] private float m_teleportSpeed = 15f;
+        [SerializeField, Min(1f)] private float m_maximumAnimatedSpeed = 1.75f;
 
         private Vector3 m_previousPosition;
         private bool m_wasCarrying;
@@ -40,8 +41,19 @@ namespace CouchGuys.Player
         private bool m_pointing;
         private bool m_hasPositionSample;
         private bool m_hasWeaponParameters;
+        private Transform m_torsoBone;
+        private Transform m_headBone;
+        private Transform m_upperArmLeft;
+        private Transform m_lowerArmLeft;
+        private Transform m_upperArmRight;
+        private Transform m_lowerArmRight;
+        private float m_recoilAmount;
+        private float m_recoilRecovery = 12f;
+        private float m_recoilRoll;
+        private int m_recoilDirection = 1;
 
         public Animator Animator => m_animator;
+        public float NormalizedMovementSpeed { get; private set; }
 
         private void Awake()
         {
@@ -81,6 +93,7 @@ namespace CouchGuys.Player
 
             UpdateMovementParameters();
             UpdateCarryingParameters();
+            ApplyProceduralRecoil();
         }
 
         /// <summary>Allows weapon/gameplay code to enter and leave the pointing pose.</summary>
@@ -117,9 +130,33 @@ namespace CouchGuys.Player
 
         public void PlayWeaponShot(PlayerWeaponType weapon)
         {
-            if (m_animator == null || !m_hasWeaponParameters) return;
-            m_animator.SetInteger(EquippedWeaponHash, (int)weapon + 1);
-            m_animator.SetTrigger(WeaponShootHash);
+            if (m_animator != null && m_hasWeaponParameters)
+                m_animator.SetInteger(EquippedWeaponHash, (int)weapon + 1);
+
+            float impulse;
+            float maximum;
+            switch (weapon)
+            {
+                case PlayerWeaponType.AssaultRifle:
+                    impulse = 0.38f;
+                    maximum = 1.05f;
+                    m_recoilRecovery = 8.5f;
+                    break;
+                case PlayerWeaponType.Shotgun:
+                    impulse = 1.7f;
+                    maximum = 1.7f;
+                    m_recoilRecovery = 4.8f;
+                    break;
+                default:
+                    impulse = 1f;
+                    maximum = 1f;
+                    m_recoilRecovery = 11.5f;
+                    break;
+            }
+
+            m_recoilAmount = Mathf.Min(maximum, m_recoilAmount + impulse);
+            m_recoilDirection = -m_recoilDirection;
+            m_recoilRoll = m_recoilDirection * (weapon == PlayerWeaponType.Shotgun ? 1f : 0.45f);
         }
 
         private void UpdateMovementParameters()
@@ -145,7 +182,8 @@ namespace CouchGuys.Player
             Vector3 localVelocity = transform.InverseTransformDirection(worldVelocity);
             Vector2 normalizedMovement = Vector2.ClampMagnitude(
                 new Vector2(localVelocity.x, localVelocity.z) / m_fullMoveSpeed,
-                1f);
+                m_maximumAnimatedSpeed);
+            NormalizedMovementSpeed = normalizedMovement.magnitude;
 
             m_animator.SetFloat(
                 MoveXHash,
@@ -185,6 +223,48 @@ namespace CouchGuys.Player
             m_playerController ??= GetComponent<ThirdPersonPlayerController>();
             m_couchCarrier ??= GetComponent<PlayerCouchCarrier>();
             m_animator ??= GetComponentInChildren<Animator>(true);
+            if (m_animator != null && m_torsoBone == null)
+            {
+                m_torsoBone = FindDescendant(m_animator.transform, "Torso");
+                m_headBone = FindDescendant(m_animator.transform, "Head");
+                m_upperArmLeft = FindDescendant(m_animator.transform, "UpperArm_L");
+                m_lowerArmLeft = FindDescendant(m_animator.transform, "LowerArm_L");
+                m_upperArmRight = FindDescendant(m_animator.transform, "UpperArm_R");
+                m_lowerArmRight = FindDescendant(m_animator.transform, "LowerArm_R");
+            }
+        }
+
+        private void ApplyProceduralRecoil()
+        {
+            if (m_recoilAmount <= 0.0001f || (m_couchCarrier != null && m_couchCarrier.IsCarrying))
+            {
+                m_recoilAmount = 0f;
+                return;
+            }
+
+            float recoil = m_recoilAmount;
+            ApplyAdditiveRotation(m_torsoBone, new Vector3(7.5f * recoil, 0f, 2.2f * m_recoilRoll * recoil));
+            ApplyAdditiveRotation(m_headBone, new Vector3(-5.2f * recoil, 0f, -1.7f * m_recoilRoll * recoil));
+            ApplyAdditiveRotation(m_upperArmRight, new Vector3(10.5f * recoil, 0f, 1.8f * m_recoilRoll * recoil));
+            ApplyAdditiveRotation(m_lowerArmRight, new Vector3(6.5f * recoil, 0f, 0f));
+            ApplyAdditiveRotation(m_upperArmLeft, new Vector3(7.2f * recoil, 0f, -1.2f * m_recoilRoll * recoil));
+            ApplyAdditiveRotation(m_lowerArmLeft, new Vector3(4.5f * recoil, 0f, 0f));
+
+            m_recoilAmount = Mathf.MoveTowards(m_recoilAmount, 0f, m_recoilRecovery * Time.deltaTime);
+            m_recoilRoll = Mathf.MoveTowards(m_recoilRoll, 0f, m_recoilRecovery * 0.75f * Time.deltaTime);
+        }
+
+        private static void ApplyAdditiveRotation(Transform bone, Vector3 euler)
+        {
+            if (bone != null)
+                bone.localRotation *= Quaternion.Euler(euler);
+        }
+
+        private static Transform FindDescendant(Transform root, string name)
+        {
+            foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
+                if (child.name == name) return child;
+            return null;
         }
 
         private void CacheWeaponParameterSupport()
@@ -207,6 +287,7 @@ namespace CouchGuys.Player
             m_fullMoveSpeed = Mathf.Max(0.1f, m_fullMoveSpeed);
             m_movementDampTime = Mathf.Max(0f, m_movementDampTime);
             m_teleportSpeed = Mathf.Max(1f, m_teleportSpeed);
+            m_maximumAnimatedSpeed = Mathf.Max(1f, m_maximumAnimatedSpeed);
             CacheReferences();
         }
 #endif

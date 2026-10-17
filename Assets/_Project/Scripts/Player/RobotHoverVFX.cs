@@ -11,7 +11,6 @@ namespace CouchGuys.Player
     [DisallowMultipleComponent]
     public sealed class RobotHoverVFX : MonoBehaviour
     {
-        private const float RingBobScale = 0.28f;
         private const float GroundCastHeight = 0.45f;
         private const float GroundCastDistance = 4f;
         private const float NearDetailDistance = 24f;
@@ -45,11 +44,13 @@ namespace CouchGuys.Player
         private MaterialPropertyBlock[][] m_ringBlocks = Array.Empty<MaterialPropertyBlock[]>();
         private MaterialPropertyBlock m_groundBlock;
         private Camera m_viewCamera;
+        private CouchGuyAnimationDriver m_animationDriver;
         private Vector3 m_robotBaseLocalPosition;
         private Vector3 m_ringPivotBaseLocalPosition;
         private Quaternion m_ringBaseLocalRotation;
         private float m_ringAngle;
         private float m_phase;
+        private float m_ringMovementBlend;
         private float m_groundAlpha;
         private float m_nextGroundCastTime;
         private int m_detailLevel = -1;
@@ -121,12 +122,23 @@ namespace CouchGuys.Player
                 VisualWorldOffset = m_robotVisual.parent.TransformVector(Vector3.up * bob);
             }
 
-            if (m_ringPivot != null)
-            {
-                float ringBob = Mathf.Sin(Time.time * m_settings.HoverBobFrequency + m_phase + 0.22f) *
-                    m_settings.HoverBobAmplitude * RingBobScale;
-                m_ringPivot.localPosition = m_ringPivotBaseLocalPosition + Vector3.up * ringBob;
-            }
+            if (m_ringPivot == null) return;
+
+            float movementSpeed = m_animationDriver != null
+                ? m_animationDriver.NormalizedMovementSpeed
+                : 0f;
+            float targetMovementBlend = Mathf.Clamp01(movementSpeed);
+            m_ringMovementBlend = Mathf.MoveTowards(
+                m_ringMovementBlend,
+                targetMovementBlend,
+                m_settings.RingMotionResponse * Time.deltaTime);
+            float sprintBlend = Mathf.InverseLerp(1f, 1.65f, movementSpeed);
+            float amplitude = m_settings.RingBobAmplitude *
+                (1f + m_ringMovementBlend * m_settings.RingMovementIntensity) *
+                Mathf.Lerp(1f, m_settings.RingSprintIntensity, sprintBlend);
+            float frequency = m_settings.RingBobFrequency * Mathf.Lerp(1f, 1.18f, m_ringMovementBlend);
+            float ringBob = Mathf.Sin(Time.time * frequency + m_phase + 1.17f) * amplitude;
+            m_ringPivot.localPosition = m_ringPivotBaseLocalPosition + Vector3.up * ringBob;
         }
 
         private void AnimateRing()
@@ -263,6 +275,7 @@ namespace CouchGuys.Player
         private void CacheReferences()
         {
             m_settings ??= Resources.Load<RobotHoverVFXSettings>("RobotHoverVFXSettings");
+            m_animationDriver ??= GetComponent<CouchGuyAnimationDriver>();
             m_robotVisual ??= transform.Find("Visual/CouchGuy");
             m_hoverRing ??= FindDescendant(transform, "HoverRing");
             m_ringPivot ??= transform.Find("Visual/HoverVFX/HoverRingPivot");
