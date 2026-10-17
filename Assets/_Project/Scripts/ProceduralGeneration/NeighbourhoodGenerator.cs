@@ -377,7 +377,9 @@ namespace CouchGuys.ProceduralGeneration
             AnalyseDeliveryDestinations();
             if (m_createDeliveryNpc) CreateDeliveryNpc();
             CalculateWorldBounds();
-            LastValidationSucceeded = ValidateLayout();
+            // The first asynchronous pass has a deterministic retry path. Do not
+            // report a retryable layout as a hard error before that path runs.
+            LastValidationSucceeded = ValidateLayout(false);
             if (!LastValidationSucceeded)
             {
                 // Preserve the established deterministic repair behaviour on the rare
@@ -504,12 +506,12 @@ namespace CouchGuys.ProceduralGeneration
                 CreateDeliveryNpc();
             }
             CalculateWorldBounds();
-            LastValidationSucceeded = ValidateLayout();
+            int maximumAttempts = Mathf.Max(1, m_progression.MaximumGenerationAttempts);
+            LastValidationSucceeded = ValidateLayout(attemptIndex + 1 >= maximumAttempts);
             if (!LastValidationSucceeded)
             {
                 stopwatch.Stop();
                 LastGenerationMilliseconds = stopwatch.Elapsed.TotalMilliseconds;
-                int maximumAttempts = Mathf.Max(1, m_progression.MaximumGenerationAttempts);
                 if (attemptIndex + 1 < maximumAttempts)
                 {
                     int retrySeed = DeriveSeed(seed, 0x51ED270B + attemptIndex);
@@ -3146,18 +3148,6 @@ namespace CouchGuys.ProceduralGeneration
                 return false;
             }
 
-            PropertyCandidate candidate = candidates[0];
-            float nearestRoadDistance = HorizontalSqrDistance(GridToWorld(candidate.Road), m_gridOrigin);
-            for (int index = 1; index < candidates.Count; index++)
-            {
-                float roadDistance = HorizontalSqrDistance(GridToWorld(candidates[index].Road), m_gridOrigin);
-                if (roadDistance < nearestRoadDistance)
-                {
-                    candidate = candidates[index];
-                    nearestRoadDistance = roadDistance;
-                }
-            }
-
             List<GridCoordinate> cells = new List<GridCoordinate>(m_blockWidth * m_blockHeight);
             for (int localY = minimumY; localY <= maximumY; localY++)
             {
@@ -3181,38 +3171,62 @@ namespace CouchGuys.ProceduralGeneration
             GameObject fallbackPrefab = lotDefinition != null
                 ? ValidateLotPrefab(lotDefinition.Prefab)
                 : SelectHousePrefab(random);
-            SuburbZone zone = m_roadZones.TryGetValue(candidate.Road, out SuburbZone roadZone)
-                ? roadZone
-                : CalculateZone(GridToLocal(candidate.Road).y);
-            GameObject mansionPrefab = zone == SuburbZone.Outer
-                ? ValidateLotPrefab(m_mansionPrefab)
-                : null;
-            GameObject prefab = mansionPrefab != null ? mansionPrefab : fallbackPrefab;
-            bool roadOnFrontOrBack =
-                candidate.PropertyToRoad == m_startDirection ||
-                candidate.PropertyToRoad == Opposite(m_startDirection);
-            Vector2Int footprint = roadOnFrontOrBack
-                ? new Vector2Int(m_blockWidth, m_blockHeight)
-                : new Vector2Int(m_blockHeight, m_blockWidth);
-            if (!TrySpawnLot(
-                    lotDefinition,
-                    prefab,
-                    candidate,
-                    footprint,
-                    CalculateCellCentre(cells),
-                    m_housesRoot,
-                    $"Lot_{houseIndex:000}",
-                    true))
+            SuburbZone blockZone = CalculateZone((minimumY + maximumY) / 2);
+            candidates.Sort((first, second) =>
             {
-                return false;
+                SuburbZone firstZone = m_roadZones.TryGetValue(first.Road, out SuburbZone firstRoadZone)
+                    ? firstRoadZone
+                    : CalculateZone(GridToLocal(first.Road).y);
+                SuburbZone secondZone = m_roadZones.TryGetValue(second.Road, out SuburbZone secondRoadZone)
+                    ? secondRoadZone
+                    : CalculateZone(GridToLocal(second.Road).y);
+                int zoneComparison = (firstZone == blockZone ? 0 : 1).CompareTo(
+                    secondZone == blockZone ? 0 : 1);
+                if (zoneComparison != 0) return zoneComparison;
+
+                int distanceComparison = HorizontalSqrDistance(GridToWorld(first.Road), m_gridOrigin)
+                    .CompareTo(HorizontalSqrDistance(GridToWorld(second.Road), m_gridOrigin));
+                if (distanceComparison != 0) return distanceComparison;
+                int xComparison = first.Road.X.CompareTo(second.Road.X);
+                return xComparison != 0 ? xComparison : first.Road.Y.CompareTo(second.Road.Y);
+            });
+
+            Vector3 centre = CalculateCellCentre(cells);
+            for (int candidateIndex = 0; candidateIndex < candidates.Count; candidateIndex++)
+            {
+                PropertyCandidate candidate = candidates[candidateIndex];
+                SuburbZone zone = m_roadZones.TryGetValue(candidate.Road, out SuburbZone roadZone)
+                    ? roadZone
+                    : CalculateZone(GridToLocal(candidate.Road).y);
+                GameObject mansionPrefab = zone == SuburbZone.Outer
+                    ? ValidateLotPrefab(m_mansionPrefab)
+                    : null;
+                GameObject prefab = mansionPrefab != null ? mansionPrefab : fallbackPrefab;
+                bool roadOnFrontOrBack =
+                    candidate.PropertyToRoad == m_startDirection ||
+                    candidate.PropertyToRoad == Opposite(m_startDirection);
+                Vector2Int footprint = roadOnFrontOrBack
+                    ? new Vector2Int(m_blockWidth, m_blockHeight)
+                    : new Vector2Int(m_blockHeight, m_blockWidth);
+                if (!TrySpawnLot(
+                        lotDefinition,
+                        prefab,
+                        candidate,
+                        footprint,
+                        centre,
+                        m_housesRoot,
+                        $"Lot_{houseIndex:000}",
+                        true))
+                {
+                    continue;
+                }
+
+                for (int index = 0; index < cells.Count; index++)
+                    m_propertyCells.Add(cells[index]);
+                return true;
             }
 
-            for (int index = 0; index < cells.Count; index++)
-            {
-                m_propertyCells.Add(cells[index]);
-            }
-
-            return true;
+            return false;
         }
 
         private static float HorizontalSqrDistance(Vector3 a, Vector3 b)
@@ -4916,7 +4930,7 @@ namespace CouchGuys.ProceduralGeneration
             return centre / cells.Count;
         }
 
-        private bool ValidateLayout()
+        private bool ValidateLayout(bool logErrors = true)
         {
             if (GeneratedTerrain == null ||
                 GeneratedTerrain.VertexCount < 4 ||
@@ -5099,10 +5113,13 @@ namespace CouchGuys.ProceduralGeneration
                 if (roadsPerZone[zoneIndex] == 0 ||
                     destinationsPerZone[zoneIndex] < m_progression.MinimumDestinationsPerZone)
                 {
-                    Debug.LogError(
-                        $"Generated zone {(SuburbZone)zoneIndex} is missing roads or has only " +
-                        $"{destinationsPerZone[zoneIndex]} delivery destinations.",
-                        this);
+                    if (logErrors)
+                    {
+                        Debug.LogError(
+                            $"Generated zone {(SuburbZone)zoneIndex} is missing roads or has only " +
+                            $"{destinationsPerZone[zoneIndex]} delivery destinations.",
+                            this);
+                    }
                     return false;
                 }
             }

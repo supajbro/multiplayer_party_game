@@ -11,6 +11,8 @@ Shader "Couch Guys/Robot Digital Face"
         [HideInInspector] _Blink ("Blink", Range(0, 1)) = 1
         [HideInInspector] _LookOffset ("Look Offset", Vector) = (0, 0, 0, 0)
         [HideInInspector] _Pulse ("Pulse", Range(0, 2)) = 1
+        [HideInInspector] _SingleEye ("Single Eye Mesh", Float) = 0
+        [HideInInspector] _EyeSide ("Eye Side", Float) = 0
     }
 
     HLSLINCLUDE
@@ -32,24 +34,29 @@ Shader "Couch Guys/Robot Digital Face"
         return float2(c * p.x - s * p.y, s * p.x + c * p.y);
     }
 
-    float eyeDistance(float2 p, float expression)
+    float eyeDistance(float2 p, float expression, float singleEye, float eyeSide)
     {
-        float side = p.x < 0.0 ? -1.0 : 1.0;
-        float2 eye = p - float2(side * 0.38, 0.0);
-        float normalEye = sdEllipse(eye, float2(0.17, 0.225));
+        float side = singleEye > 0.5 ? eyeSide : (p.x < 0.0 ? -1.0 : 1.0);
+        float2 eye = singleEye > 0.5 ? p : p - float2(side * 0.38, 0.0);
+        float2 normalRadius = singleEye > 0.5 ? float2(0.62, 0.43) : float2(0.17, 0.225);
+        float normalEye = sdEllipse(eye, normalRadius);
 
-        float happyCurve = abs(eye.y - (0.075 - 1.65 * eye.x * eye.x)) - 0.045;
-        float happyEye = max(happyCurve, abs(eye.x) - 0.19);
+        float happyWidth = singleEye > 0.5 ? 0.64 : 0.19;
+        float happyCurve = abs(eye.y - (0.11 - (singleEye > 0.5 ? 0.72 : 1.65) * eye.x * eye.x)) -
+            (singleEye > 0.5 ? 0.075 : 0.045);
+        float happyEye = max(happyCurve, abs(eye.x) - happyWidth);
 
         float angryAngle = side * 0.48;
         float angryEye = sdBox(rotatePoint(eye - float2(0.0, -0.005), angryAngle),
-            float2(0.205, 0.072));
+            singleEye > 0.5 ? float2(0.65, 0.115) : float2(0.205, 0.072));
 
-        float surprisedEye = abs(sdEllipse(eye, float2(0.235, 0.285))) - 0.052;
+        float surprisedEye = abs(sdEllipse(eye,
+            singleEye > 0.5 ? float2(0.66, 0.52) : float2(0.235, 0.285))) -
+            (singleEye > 0.5 ? 0.10 : 0.052);
 
         float focusedAngle = side * 0.20;
         float focusedEye = sdBox(rotatePoint(eye - float2(0.0, -0.015), focusedAngle),
-            float2(0.205, 0.045));
+            singleEye > 0.5 ? float2(0.65, 0.075) : float2(0.205, 0.045));
 
         float d = normalEye;
         d = lerp(d, happyEye, step(0.5, expression));
@@ -59,16 +66,17 @@ Shader "Couch Guys/Robot Digital Face"
         return d;
     }
 
-    float expressionMask(float2 p, float expression)
+    float expressionMask(float2 p, float expression, float singleEye, float eyeSide)
     {
-        float distanceToEye = eyeDistance(p, expression);
+        float distanceToEye = eyeDistance(p, expression, singleEye, eyeSide);
         float aa = max(fwidth(distanceToEye) * 1.25, 0.004);
         return 1.0 - smoothstep(-aa, aa, distanceToEye);
     }
 
     float3 renderFace(float2 uv, float4 eyeColor, float4 screenColor,
         float glowIntensity, float expressionFrom, float expressionTo,
-        float expressionBlend, float blink, float2 lookOffset, float pulse)
+        float expressionBlend, float blink, float2 lookOffset, float pulse,
+        float singleEye, float eyeSide)
     {
         // Evaluate at LED cell centres. The fine grid remains readable at distance,
         // while the cell gap gives a subtle electronic display texture up close.
@@ -82,16 +90,16 @@ Shader "Couch Guys/Robot Digital Face"
         float openAmount = max(0.045, blink);
         p.y /= openAmount;
 
-        float fromMask = expressionMask(p, expressionFrom);
-        float toMask = expressionMask(p, expressionTo);
+        float fromMask = expressionMask(p, expressionFrom, singleEye, eyeSide);
+        float toMask = expressionMask(p, expressionTo, singleEye, eyeSide);
         float eyeMask = lerp(fromMask, toMask, expressionBlend) * cellDot;
         eyeMask *= smoothstep(0.0, 0.16, blink);
 
         // A second, non-quantised evaluation makes a restrained halo around the LEDs.
         float2 smoothP = (uv - 0.5) * float2(2.0, 1.65) - lookOffset;
         smoothP.y /= openAmount;
-        float fromHalo = exp2(-abs(eyeDistance(smoothP, expressionFrom)) * 34.0);
-        float toHalo = exp2(-abs(eyeDistance(smoothP, expressionTo)) * 34.0);
+        float fromHalo = exp2(-abs(eyeDistance(smoothP, expressionFrom, singleEye, eyeSide)) * 34.0);
+        float toHalo = exp2(-abs(eyeDistance(smoothP, expressionTo, singleEye, eyeSide)) * 34.0);
         float halo = lerp(fromHalo, toHalo, expressionBlend) * 0.22 *
             smoothstep(0.0, 0.18, blink);
 
@@ -111,7 +119,7 @@ Shader "Couch Guys/Robot Digital Face"
     {
         Tags { "RenderType"="Opaque" "Queue"="Geometry" "RenderPipeline"="UniversalPipeline" }
         LOD 100
-        Cull Back
+        Cull Off
         ZWrite On
 
         Pass
@@ -149,6 +157,8 @@ Shader "Couch Guys/Robot Digital Face"
                 float _ExpressionBlend;
                 float _Blink;
                 float _Pulse;
+                float _SingleEye;
+                float _EyeSide;
             CBUFFER_END
 
             Varyings vert(Attributes input)
@@ -165,7 +175,7 @@ Shader "Couch Guys/Robot Digital Face"
             {
                 return half4(renderFace(input.uv, _EyeColor, _ScreenColor,
                     _GlowIntensity, _ExpressionFrom, _ExpressionTo, _ExpressionBlend,
-                    _Blink, _LookOffset.xy, _Pulse), 1.0);
+                    _Blink, _LookOffset.xy, _Pulse, _SingleEye, _EyeSide), 1.0);
             }
             ENDHLSL
         }
@@ -175,7 +185,7 @@ Shader "Couch Guys/Robot Digital Face"
     {
         Tags { "RenderType"="Opaque" "Queue"="Geometry" }
         LOD 100
-        Cull Back
+        Cull Off
         ZWrite On
 
         Pass
@@ -195,6 +205,8 @@ Shader "Couch Guys/Robot Digital Face"
             float _ExpressionBlend;
             float _Blink;
             float _Pulse;
+            float _SingleEye;
+            float _EyeSide;
 
             struct appdata
             {
@@ -220,7 +232,7 @@ Shader "Couch Guys/Robot Digital Face"
             {
                 return float4(renderFace(input.uv, _EyeColor, _ScreenColor,
                     _GlowIntensity, _ExpressionFrom, _ExpressionTo, _ExpressionBlend,
-                    _Blink, _LookOffset.xy, _Pulse), 1.0);
+                    _Blink, _LookOffset.xy, _Pulse, _SingleEye, _EyeSide), 1.0);
             }
             ENDHLSL
         }

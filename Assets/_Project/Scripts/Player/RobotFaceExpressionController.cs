@@ -28,6 +28,8 @@ namespace CouchGuys.Player
         private static readonly int BlinkId = Shader.PropertyToID("_Blink");
         private static readonly int LookOffsetId = Shader.PropertyToID("_LookOffset");
         private static readonly int PulseId = Shader.PropertyToID("_Pulse");
+        private static readonly int SingleEyeId = Shader.PropertyToID("_SingleEye");
+        private static readonly int EyeSideId = Shader.PropertyToID("_EyeSide");
 
         [Header("Face Screen")]
         [SerializeField] private Renderer m_faceRenderer;
@@ -54,6 +56,9 @@ namespace CouchGuys.Player
 
         private PlayerCouchCarrier m_carrier;
         private MaterialPropertyBlock m_propertyBlock;
+        private Renderer[] m_activeRenderers = System.Array.Empty<Renderer>();
+        private int[] m_activeMaterialIndices = System.Array.Empty<int>();
+        private float[] m_activeEyeSides = System.Array.Empty<float>();
         private RobotFaceExpression m_fromExpression = RobotFaceExpression.Normal;
         private RobotFaceExpression m_toExpression = RobotFaceExpression.Normal;
         private float m_transitionStartedAt;
@@ -159,16 +164,26 @@ namespace CouchGuys.Player
                 Mathf.Sin(slowTime * 0.51f + 1.7f) * m_eyeDrift * 0.55f);
             float pulse = 0.94f + Mathf.Sin(slowTime * 2.1f) * 0.06f;
 
-            m_faceRenderer.GetPropertyBlock(m_propertyBlock, m_materialIndex);
-            m_propertyBlock.SetColor(EyeColourId, m_eyeColour);
-            m_propertyBlock.SetFloat(GlowIntensityId, m_glowIntensity);
-            m_propertyBlock.SetFloat(FromExpressionId, (float)m_fromExpression);
-            m_propertyBlock.SetFloat(ToExpressionId, (float)m_toExpression);
-            m_propertyBlock.SetFloat(ExpressionBlendId, transition);
-            m_propertyBlock.SetFloat(BlinkId, blink);
-            m_propertyBlock.SetVector(LookOffsetId, lookOffset);
-            m_propertyBlock.SetFloat(PulseId, pulse);
-            m_faceRenderer.SetPropertyBlock(m_propertyBlock, m_materialIndex);
+            bool singleEye = m_activeRenderers.Length == 2;
+            for (int index = 0; index < m_activeRenderers.Length; index++)
+            {
+                Renderer faceRenderer = m_activeRenderers[index];
+                if (faceRenderer == null) continue;
+
+                int materialIndex = m_activeMaterialIndices[index];
+                faceRenderer.GetPropertyBlock(m_propertyBlock, materialIndex);
+                m_propertyBlock.SetColor(EyeColourId, m_eyeColour);
+                m_propertyBlock.SetFloat(GlowIntensityId, m_glowIntensity);
+                m_propertyBlock.SetFloat(FromExpressionId, (float)m_fromExpression);
+                m_propertyBlock.SetFloat(ToExpressionId, (float)m_toExpression);
+                m_propertyBlock.SetFloat(ExpressionBlendId, transition);
+                m_propertyBlock.SetFloat(BlinkId, blink);
+                m_propertyBlock.SetVector(LookOffsetId, lookOffset);
+                m_propertyBlock.SetFloat(PulseId, pulse);
+                m_propertyBlock.SetFloat(SingleEyeId, singleEye ? 1f : 0f);
+                m_propertyBlock.SetFloat(EyeSideId, m_activeEyeSides[index]);
+                faceRenderer.SetPropertyBlock(m_propertyBlock, materialIndex);
+            }
         }
 
         private float CalculateBlink(float now)
@@ -191,33 +206,94 @@ namespace CouchGuys.Player
 
         private void ResolveFaceScreen()
         {
-            if (m_faceRenderer == null)
-                FindBestFaceRenderer(out m_faceRenderer, out m_materialIndex);
-
             if (m_faceMaterial == null)
                 m_faceMaterial = Resources.Load<Material>("RobotDigitalFace");
 
-            if (m_faceRenderer == null || m_faceMaterial == null)
+            if (m_faceMaterial == null)
             {
                 m_ready = false;
                 return;
             }
 
-            Material[] sharedMaterials = m_faceRenderer.sharedMaterials;
-            if (sharedMaterials.Length == 0)
+            // The current CouchGuy FBX uses two independent emissive meshes for its
+            // face graphics. Drive both of them; selecting only the first one leaves
+            // half of the face blank and maps a two-eye shader into a single-eye UV.
+            Renderer leftEye = null;
+            Renderer rightEye = null;
+            Renderer[] renderers = GetComponentsInChildren<Renderer>(true);
+            for (int index = 0; index < renderers.Length; index++)
             {
-                m_ready = false;
-                return;
+                Renderer candidate = renderers[index];
+                if (candidate is ParticleSystemRenderer) continue;
+
+                string rendererName = candidate.name;
+                if (rendererName.IndexOf("FaceGraphic_L", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    leftEye = candidate;
+                else if (rendererName.IndexOf("FaceGraphic_R", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    rightEye = candidate;
             }
 
-            m_materialIndex = Mathf.Clamp(m_materialIndex, 0, sharedMaterials.Length - 1);
-            if (sharedMaterials[m_materialIndex] != m_faceMaterial)
+            if (leftEye != null && rightEye != null)
             {
-                sharedMaterials[m_materialIndex] = m_faceMaterial;
-                m_faceRenderer.sharedMaterials = sharedMaterials;
+                m_activeRenderers = new[] { leftEye, rightEye };
+                m_activeMaterialIndices = new[]
+                {
+                    FindFaceMaterialIndex(leftEye), FindFaceMaterialIndex(rightEye)
+                };
+                m_activeEyeSides = new[] { -1f, 1f };
+                m_faceRenderer = leftEye;
+                m_materialIndex = m_activeMaterialIndices[0];
+            }
+            else
+            {
+                if (m_faceRenderer == null)
+                    FindBestFaceRenderer(out m_faceRenderer, out m_materialIndex);
+
+                if (m_faceRenderer == null)
+                {
+                    m_ready = false;
+                    return;
+                }
+
+                m_activeRenderers = new[] { m_faceRenderer };
+                m_activeMaterialIndices = new[] { m_materialIndex };
+                m_activeEyeSides = new[] { 0f };
             }
 
             m_ready = true;
+            for (int index = 0; index < m_activeRenderers.Length; index++)
+                m_ready &= AssignFaceMaterial(m_activeRenderers[index], ref m_activeMaterialIndices[index]);
+        }
+
+        private int FindFaceMaterialIndex(Renderer faceRenderer)
+        {
+            Material[] materials = faceRenderer.sharedMaterials;
+            int bestIndex = 0;
+            int bestScore = int.MinValue;
+            for (int index = 0; index < materials.Length; index++)
+            {
+                int score = NameScore(materials[index]?.name);
+                if (score <= bestScore) continue;
+                bestScore = score;
+                bestIndex = index;
+            }
+
+            return bestIndex;
+        }
+
+        private bool AssignFaceMaterial(Renderer faceRenderer, ref int materialIndex)
+        {
+            Material[] materials = faceRenderer.sharedMaterials;
+            if (materials.Length == 0) return false;
+
+            materialIndex = Mathf.Clamp(materialIndex, 0, materials.Length - 1);
+            if (materials[materialIndex] != m_faceMaterial)
+            {
+                materials[materialIndex] = m_faceMaterial;
+                faceRenderer.sharedMaterials = materials;
+            }
+
+            return true;
         }
 
         private void FindBestFaceRenderer(out Renderer bestRenderer, out int bestMaterialIndex)

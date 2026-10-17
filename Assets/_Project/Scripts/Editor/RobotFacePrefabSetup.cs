@@ -13,7 +13,16 @@ namespace CouchGuys.Editor
         [InitializeOnLoadMethod]
         private static void ConfigureMissingPrefabReference()
         {
-            EditorApplication.delayCall += () =>
+            // A few project builders also use delayCall and can throw before later
+            // callbacks run. Use a one-shot editor update so face setup is isolated.
+            EditorApplication.update -= ConfigureOnNextEditorUpdate;
+            EditorApplication.update += ConfigureOnNextEditorUpdate;
+        }
+
+        private static void ConfigureOnNextEditorUpdate()
+        {
+            EditorApplication.update -= ConfigureOnNextEditorUpdate;
+            try
             {
                 GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
                 RobotFaceExpressionController controller =
@@ -23,7 +32,11 @@ namespace CouchGuys.Editor
                 SerializedObject serializedController = new(controller);
                 if (serializedController.FindProperty("m_faceRenderer").objectReferenceValue == null)
                     ConfigurePlayerPrefab();
-            };
+            }
+            catch (System.Exception exception)
+            {
+                Debug.LogException(exception);
+            }
         }
 
         [MenuItem("Couch Guys/Art/Configure Robot Digital Face %#9")]
