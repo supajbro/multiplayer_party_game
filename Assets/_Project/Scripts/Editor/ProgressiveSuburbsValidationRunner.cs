@@ -100,6 +100,7 @@ namespace CouchGuys.EditorTools
                         generator.GeneratedBorder.TunnelCount <
                             generator.TrafficRoadPortals.Count + 1 ||
                         generator.GeneratedBorder.SceneryItemCount <= 0 ||
+                        !AllTrafficTunnelsClearSummit(generator) ||
                         !TryGetBestDifficulty(generator, 0, out float earlyDifficulty) ||
                         !TryGetBestDifficulty(generator, 6, out float finalDifficulty))
                     {
@@ -151,6 +152,20 @@ namespace CouchGuys.EditorTools
             }
 
             Debug.Log(result, generator);
+        }
+
+        private static bool AllTrafficTunnelsClearSummit(NeighbourhoodGenerator generator)
+        {
+            for (int index = 0; index < generator.TrafficRoadPortals.Count; index++)
+            {
+                if (!generator.IsTrafficPortalClearOfSummit(
+                        generator.TrafficRoadPortals[index]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static bool TryGetBestDifficulty(

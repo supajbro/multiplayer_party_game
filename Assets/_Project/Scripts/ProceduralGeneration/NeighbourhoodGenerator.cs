@@ -5246,6 +5246,14 @@ namespace CouchGuys.ProceduralGeneration
                         Debug.LogError("Normal traffic was assigned to the next-region uphill exit.", this);
                         return false;
                     }
+
+                    if (!IsTrafficPortalClearOfSummit(m_trafficRoadPortals[index]))
+                    {
+                        Debug.LogError(
+                            "A standard boundary tunnel overlaps the reserved summit road corridor.",
+                            this);
+                        return false;
+                    }
                 }
 
                 if (m_borderSettings.Enabled &&

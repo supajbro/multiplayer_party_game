@@ -11,6 +11,14 @@ namespace CouchGuys.ProceduralGeneration
         public bool IsUphillRoad(GridCoordinate coordinate) =>
             m_uphillRoadCells.Contains(coordinate);
 
+        public bool IsTrafficPortalClearOfSummit(TrafficRoadPortal portal)
+        {
+            Vector2Int local = GridToLocal(portal.Coordinate);
+            return HasStandardTunnelClearanceFromSummit(local.x);
+        }
+
+        public float SummitTunnelExclusionHalfWidth => GetSummitTunnelExclusionHalfWidth();
+
         public TrafficRoadPortal SummitExitPortal
         {
             get

@@ -112,7 +112,13 @@ namespace CouchGuys.ProceduralGeneration
                 int colliderCountBeforeEdge = PerimeterColliderCount;
                 List<float> gaps = GetPortalDistances(generator, edge);
                 float cursor = 0f;
-                float halfGap = generator.TileSize * 0.7f;
+                // Keep the invisible containment wall out of the complete tunnel shell,
+                // including fallback pillars. A tile-based gap could cut into wider tunnels.
+                float pillarWidth = Mathf.Max(1.2f, settings.TunnelWidth * 0.16f);
+                float halfGap = Mathf.Max(
+                    generator.TileSize * 0.7f,
+                    settings.TunnelWidth * 0.5f + pillarWidth +
+                    settings.ColliderThickness * 0.5f);
                 for (int gapIndex = 0; gapIndex < gaps.Count; gapIndex++)
                 {
                     float gapStart = Mathf.Clamp(gaps[gapIndex] - halfGap, 0f, edge.Length);
@@ -366,6 +372,15 @@ namespace CouchGuys.ProceduralGeneration
             tunnelRoot.SetParent(transform, false);
             for (int index = 0; index < generator.TrafficRoadPortals.Count; index++)
             {
+                if (!generator.IsTrafficPortalClearOfSummit(
+                        generator.TrafficRoadPortals[index]))
+                {
+                    Debug.LogError(
+                        "Skipped a boundary tunnel whose reserved footprint overlaps the summit corridor.",
+                        generator);
+                    continue;
+                }
+
                 CreateTunnel(generator, tunnelRoot, generator.TrafficRoadPortals[index],
                     settings.StandardTunnelPrefab, settings, false, index);
             }

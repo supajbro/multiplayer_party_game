@@ -73,16 +73,16 @@ MonoBehaviour:
   m_border:
     Enabled: 1
     BorderWidth: 18
-    EnabledTypes: 7
+    EnabledTypes: -1
     SceneryDensity: 0.65
     MinimumSectionLength: 28
     MaximumSectionLength: 65
-    HillHeight: 24
+    HillHeight: 12
     HillDepth: 38
-    SlopeSmoothness: 1.35
-    HillNoiseAmount: 5
+    SlopeSmoothness: 4
+    HillNoiseAmount: 2
     HillNoiseFrequency: 0.018
-    HillVariation: 0.55
+    HillVariation: 0.4
     TreeDensity: 0.62
     MinimumTreeSpacing: 8
     MaximumTreeSpacing: 15

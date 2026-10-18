@@ -463,7 +463,9 @@ namespace CouchGuys.ProceduralGeneration
             for (int index = 0; index < m_roadOrder.Count && count < settings.MaximumCount; index++)
             {
                 GridCoordinate road = m_roadOrder[index];
-                if (CountConnections(m_logicalRoads[road]) >= 3 || IsNearIntersection(road, settings.MinimumDistanceFromIntersections)) continue;
+                if (IsTunnelApproachRoad(road) ||
+                    CountConnections(m_logicalRoads[road]) >= 3 ||
+                    IsNearIntersection(road, settings.MinimumDistanceFromIntersections)) continue;
                 travelled += m_roadTileSize;
                 if (travelled < nextSpacing) continue;
                 List<CardinalDirection> openSides = GetOpenRoadSides(road);
@@ -595,7 +597,8 @@ namespace CouchGuys.ProceduralGeneration
             {
                 if (random.NextDouble() > 0.12) continue;
                 GridCoordinate road = m_roadOrder[index];
-                if (CountConnections(m_logicalRoads[road]) >= 3) continue;
+                if (IsTunnelApproachRoad(road) ||
+                    CountConnections(m_logicalRoads[road]) >= 3) continue;
                 List<CardinalDirection> sides = GetOpenRoadSides(road);
                 if (sides.Count == 0) continue;
                 Vector3 outward = DirectionVector(sides[random.Next(sides.Count)]);

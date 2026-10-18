@@ -30,6 +30,18 @@ namespace CouchGuys.Tests.Editor
             Assert.That(region.LandmarkRoads.UphillLengthTiles, Is.GreaterThanOrEqualTo(12));
             Assert.That(region.LandmarkRoads.SummitHeight, Is.GreaterThan(40f));
             Assert.That(region.LandmarkRoads.NextRegionId, Is.Not.Empty);
+
+            float pillarWidth = Mathf.Max(1.2f, region.Border.TunnelWidth * 0.16f);
+            float tunnelOuterHalfWidth = region.Border.TunnelWidth * 0.5f + pillarWidth;
+            float summitCorridorHalfWidth = region.Terrain.RoadHalfWidth + Mathf.Max(
+                region.Terrain.RoadShoulderWidth,
+                region.LandmarkRoads.EmbankmentBlendWidth);
+            float minimumCentreOffset = summitCorridorHalfWidth + tunnelOuterHalfWidth +
+                                        Mathf.Max(1f, region.Border.ColliderThickness);
+            int firstValidParallelExit = region.Grid.BlockWidth + 1;
+            Assert.That(firstValidParallelExit * region.Grid.RoadTileSize,
+                Is.GreaterThanOrEqualTo(minimumCentreOffset),
+                "The first genuine parallel boundary road must clear the summit corridor.");
         }
 
         [Test]

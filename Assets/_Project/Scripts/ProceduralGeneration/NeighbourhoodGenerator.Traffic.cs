@@ -14,6 +14,27 @@ namespace CouchGuys.ProceduralGeneration
         public bool IsTrafficGatewayRoad(GridCoordinate coordinate) =>
             m_trafficGatewayRoads.Contains(coordinate);
 
+        public bool IsTunnelApproachRoad(GridCoordinate coordinate)
+        {
+            if (IsTrafficGatewayRoad(coordinate))
+            {
+                return true;
+            }
+
+            if (!HasSummitExit)
+            {
+                return false;
+            }
+
+            Vector2Int local = GridToLocal(coordinate);
+            int summitLocalY = m_gridHeight * (m_blockHeight + 1) +
+                               m_landmarkRoads.UphillLengthTiles;
+            int clearanceTiles = Mathf.Max(1, Mathf.CeilToInt(
+                (m_borderSettings.TunnelDepth * 0.5f +
+                 m_borderSettings.TunnelClearance) / m_roadTileSize));
+            return local.x == 0 && local.y >= summitLocalY - clearanceTiles;
+        }
+
         private void CreateTrafficBoundaryExtensions()
         {
             m_trafficRoadPortals.Clear();
@@ -21,12 +42,20 @@ namespace CouchGuys.ProceduralGeneration
             m_trafficPortalCoordinates.Clear();
 
             int maximumLocalY = m_gridHeight * (m_blockHeight + 1);
+            GridCoordinate forward = DirectionOffset(m_startDirection);
             List<GridCoordinate> candidates = new List<GridCoordinate>();
             for (int index = 0; index < m_roadOrder.Count; index++)
             {
                 GridCoordinate coordinate = m_roadOrder[index];
                 Vector2Int local = GridToLocal(coordinate);
-                if (local.y == maximumLocalY && local.x != 0)
+                // A boundary road running sideways along the edge is not an exit. Requiring
+                // an inward neighbour limits tunnels to genuine roads that approach the edge.
+                // The lateral clearance also reserves the full summit road/embankment envelope;
+                // merely excluding x == 0 allowed the adjacent tile's tunnel to clip it.
+                if (local.y == maximumLocalY &&
+                    local.x != 0 &&
+                    m_roadCells.Contains(coordinate - forward) &&
+                    HasStandardTunnelClearanceFromSummit(local.x))
                 {
                     candidates.Add(coordinate);
                 }
@@ -53,10 +82,42 @@ namespace CouchGuys.ProceduralGeneration
             }
 
             ExtendTrafficGateway(primary, maximumLocalY);
-            if (secondary != primary && greatestSeparation >= 2)
+            float requiredPortalSpacing = GetRequiredStandardTunnelSpacing();
+            if (secondary != primary &&
+                greatestSeparation * m_roadTileSize >= requiredPortalSpacing)
             {
                 ExtendTrafficGateway(secondary, maximumLocalY);
             }
+        }
+
+        private bool HasStandardTunnelClearanceFromSummit(int localX)
+        {
+            if (!HasSummitExit)
+            {
+                return true;
+            }
+
+            return Mathf.Abs(localX * m_roadTileSize) >= GetSummitTunnelExclusionHalfWidth();
+        }
+
+        private float GetSummitTunnelExclusionHalfWidth()
+        {
+            float summitCorridorHalfWidth = m_terrainSettings.RoadHalfWidth +
+                                            Mathf.Max(
+                                                m_terrainSettings.RoadShoulderWidth,
+                                                m_landmarkRoads.EmbankmentBlendWidth);
+            return summitCorridorHalfWidth + GetTunnelOuterHalfWidth() +
+                   Mathf.Max(1f, m_borderSettings.ColliderThickness);
+        }
+
+        private float GetRequiredStandardTunnelSpacing() =>
+            GetTunnelOuterHalfWidth() * 2f +
+            Mathf.Max(1f, m_borderSettings.ColliderThickness);
+
+        private float GetTunnelOuterHalfWidth()
+        {
+            float pillarWidth = Mathf.Max(1.2f, m_borderSettings.TunnelWidth * 0.16f);
+            return m_borderSettings.TunnelWidth * 0.5f + pillarWidth;
         }
 
         private void ExtendTrafficGateway(GridCoordinate boundaryRoad, int maximumLocalY)
