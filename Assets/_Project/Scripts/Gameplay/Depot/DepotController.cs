@@ -23,6 +23,8 @@ namespace CouchGuys.Gameplay.Depot
         [SerializeField] private Quaternion[] m_openRotations = Array.Empty<Quaternion>();
         [SerializeField] private BoxCollider m_blockingCollider;
         [SerializeField] private BoxCollider m_safetyVolume;
+        [SerializeField] private GameObject m_animationRoot;
+        [SerializeField] private AnimationClip m_authoredAnimation;
 
         [NonSerialized] public float Progress;
         [NonSerialized] public bool TargetOpen;
@@ -62,19 +64,30 @@ namespace CouchGuys.Gameplay.Depot
 
         private void ApplyPose()
         {
-            float eased = Progress * Progress * (3f - 2f * Progress);
-            int count = Mathf.Min(m_slats.Length,
-                Mathf.Min(m_closedPositions.Length, m_openPositions.Length));
-            count = Mathf.Min(count,
-                Mathf.Min(m_closedRotations.Length, m_openRotations.Length));
-            for (int index = 0; index < count; index++)
+            if (m_animationRoot != null && m_authoredAnimation != null)
             {
-                Transform slat = m_slats[index];
-                if (slat == null) continue;
-                slat.localPosition = Vector3.LerpUnclamped(
-                    m_closedPositions[index], m_openPositions[index], eased);
-                slat.localRotation = Quaternion.SlerpUnclamped(
-                    m_closedRotations[index], m_openRotations[index], eased);
+                // Progress is still driven by the existing synchronized door state.
+                // Sampling lets the authored Blender curves supply the intermediate
+                // rolling motion while preserving immediate state restoration and reversal.
+                m_authoredAnimation.SampleAnimation(
+                    m_animationRoot, m_authoredAnimation.length * Progress);
+            }
+            else
+            {
+                float eased = Progress * Progress * (3f - 2f * Progress);
+                int count = Mathf.Min(m_slats.Length,
+                    Mathf.Min(m_closedPositions.Length, m_openPositions.Length));
+                count = Mathf.Min(count,
+                    Mathf.Min(m_closedRotations.Length, m_openRotations.Length));
+                for (int index = 0; index < count; index++)
+                {
+                    Transform slat = m_slats[index];
+                    if (slat == null) continue;
+                    slat.localPosition = Vector3.LerpUnclamped(
+                        m_closedPositions[index], m_openPositions[index], eased);
+                    slat.localRotation = Quaternion.SlerpUnclamped(
+                        m_closedRotations[index], m_openRotations[index], eased);
+                }
             }
 
             // The animated slats are decorative. One cheap blocker supplies reliable

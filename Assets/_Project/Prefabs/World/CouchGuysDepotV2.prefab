@@ -22462,6 +22462,8 @@ MonoBehaviour:
     - {x: 1, y: 0, z: -0, w: 0.0000000754979}
     m_blockingCollider: {fileID: 3694208383283950383}
     m_safetyVolume: {fileID: 5968484233577341037}
+    m_animationRoot: {fileID: 6214421459500774573}
+    m_authoredAnimation: {fileID: 7400000, guid: 378580085e72cba49a0d13531abf6060, type: 2}
   m_vehicleGarageDoor:
     m_slats:
     - {fileID: 1455600812842882307}
@@ -22530,6 +22532,8 @@ MonoBehaviour:
     - {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
     m_blockingCollider: {fileID: 133732019808810819}
     m_safetyVolume: {fileID: 6793121337300425898}
+    m_animationRoot: {fileID: 6214421459500774573}
+    m_authoredAnimation: {fileID: 7400000, guid: cd5e881aada68f6428bbb98bc3cc3096, type: 2}
   m_doorButtons:
   - {fileID: 4101813109141832610}
   - {fileID: 4472372988313806364}
