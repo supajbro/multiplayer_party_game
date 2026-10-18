@@ -34,6 +34,8 @@ namespace CouchGuys.Player
         [SerializeField, Range(0f, 89f)] private float m_minimumUphillSlopeAngle = 4f;
         [Tooltip("Inclines at or above this angle receive the full uphill slowdown.")]
         [SerializeField, Range(0f, 89f)] private float m_maximumUphillSlopeAngle = 40f;
+        [Tooltip("Uphill input is removed above this angle; players may still move sideways or downhill.")]
+        [SerializeField, Range(0f, 89f)] private float m_maximumWalkableUphillAngle = 24f;
         [Tooltip("The maximum portion of speed removed while moving directly uphill.")]
         [SerializeField, Range(0f, 0.95f)] private float m_uphillSlowdownStrength = 0.45f;
 
@@ -325,15 +327,6 @@ namespace CouchGuys.Player
             }
 
             float slopeAngle = Vector3.Angle(m_groundNormal, Vector3.up);
-            float slopeProgress = Mathf.InverseLerp(
-                m_minimumUphillSlopeAngle,
-                m_maximumUphillSlopeAngle,
-                slopeAngle);
-            if (slopeProgress <= 0f)
-            {
-                return 1f;
-            }
-
             Vector3 uphill = Vector3.ProjectOnPlane(Vector3.up, m_groundNormal);
             Vector3 horizontalUphill = Vector3.ProjectOnPlane(uphill, Vector3.up);
             if (horizontalUphill.sqrMagnitude < 0.0001f)
@@ -344,6 +337,20 @@ namespace CouchGuys.Player
             float uphillAmount = Mathf.Max(0f, Vector3.Dot(
                 movementDirection.normalized,
                 horizontalUphill.normalized));
+            if (slopeAngle >= m_maximumWalkableUphillAngle && uphillAmount > 0.001f)
+            {
+                return 0f;
+            }
+
+            float slopeProgress = Mathf.InverseLerp(
+                m_minimumUphillSlopeAngle,
+                m_maximumUphillSlopeAngle,
+                slopeAngle);
+            if (slopeProgress <= 0f)
+            {
+                return 1f;
+            }
+
             float slowdown = m_uphillSlowdownStrength * slopeProgress * uphillAmount;
             return 1f - slowdown;
         }
@@ -532,6 +539,10 @@ namespace CouchGuys.Player
             m_maximumUphillSlopeAngle = Mathf.Max(
                 m_minimumUphillSlopeAngle + 0.01f,
                 m_maximumUphillSlopeAngle);
+            m_maximumWalkableUphillAngle = Mathf.Clamp(
+                m_maximumWalkableUphillAngle,
+                m_minimumUphillSlopeAngle,
+                89f);
         }
 #endif
     }

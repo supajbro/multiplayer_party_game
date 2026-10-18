@@ -53,6 +53,8 @@ namespace CouchGuys.Gameplay.Vehicles
         private float m_doorOpenProgress;
         private float m_doorStateChangedServerTime;
         private readonly Collider[] m_clearanceHits = new Collider[32];
+        private Vector3 m_groundNormal = Vector3.up;
+        private float m_lastGroundContactTime = float.NegativeInfinity;
 
         public VanSettings Settings => m_settings;
         public float Fuel => m_fuel.Value; public float Health => m_health.Value;
@@ -384,6 +386,28 @@ namespace CouchGuys.Gameplay.Vehicles
             ApplyDamageServer(damage);
         }
 
+        private void OnCollisionStay(Collision collision)
+        {
+            Vector3 bestNormal = Vector3.zero;
+            float bestUp = 0.25f;
+            for (int index = 0; index < collision.contactCount; index++)
+            {
+                Vector3 normal = collision.GetContact(index).normal;
+                float up = Vector3.Dot(normal, Vector3.up);
+                if (up > bestUp)
+                {
+                    bestUp = up;
+                    bestNormal = normal;
+                }
+            }
+
+            if (bestNormal.sqrMagnitude > 0.5f)
+            {
+                m_groundNormal = bestNormal.normalized;
+                m_lastGroundContactTime = Time.time;
+            }
+        }
+
         [Server]
         private void ApplyCharacterImpactServer(
             Collision collision,
@@ -489,9 +513,20 @@ namespace CouchGuys.Gameplay.Vehicles
             {
                 bool braking = (forwardSpeed > 0.5f && throttle < 0f) || (forwardSpeed < -0.5f && throttle > 0f);
                 float acceleration = braking ? m_settings.BrakingForce : throttle > 0f ? m_settings.Acceleration : m_settings.ReverseAcceleration;
-                float slope = Mathf.Clamp01(Vector3.Dot(transform.forward * Mathf.Sign(throttle), Vector3.up));
-                float slopePower = Mathf.Lerp(1f, m_settings.UphillPowerMultiplier, slope);
-                m_rigidbody.AddForce(transform.forward * Mathf.Sign(throttle) * acceleration * slopePower, ForceMode.Acceleration);
+                Vector3 groundNormal = Time.time - m_lastGroundContactTime <= 0.2f
+                    ? m_groundNormal
+                    : Vector3.up;
+                Vector3 driveDirection = Vector3.ProjectOnPlane(
+                    transform.forward * Mathf.Sign(throttle), groundNormal).normalized;
+                if (driveDirection.sqrMagnitude < 0.5f)
+                    driveDirection = transform.forward * Mathf.Sign(throttle);
+                float uphill = Mathf.Clamp01(Vector3.Dot(driveDirection, Vector3.up) /
+                                               Mathf.Sin(30f * Mathf.Deg2Rad));
+                float slopePower = braking
+                    ? 1f
+                    : Mathf.Lerp(1f, m_settings.UphillPowerMultiplier, uphill);
+                m_rigidbody.AddForce(driveDirection * acceleration * slopePower,
+                    ForceMode.Acceleration);
             }
             else
             {

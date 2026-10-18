@@ -25,7 +25,8 @@ namespace CouchGuys.ProceduralGeneration
             for (int index = 0; index < m_roadOrder.Count; index++)
             {
                 GridCoordinate coordinate = m_roadOrder[index];
-                if (GridToLocal(coordinate).y == maximumLocalY)
+                Vector2Int local = GridToLocal(coordinate);
+                if (local.y == maximumLocalY && local.x != 0)
                 {
                     candidates.Add(coordinate);
                 }

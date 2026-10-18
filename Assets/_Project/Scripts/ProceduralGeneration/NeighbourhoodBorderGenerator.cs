@@ -18,11 +18,13 @@ namespace CouchGuys.ProceduralGeneration
         private Material m_rockMaterial;
         private Material m_barrierMaterial;
         private Material m_warningMaterial;
+        private Material m_gatewayMaterial;
 
         public int PerimeterColliderCount { get; private set; }
         public int ProtectedPerimeterEdgeCount { get; private set; }
         public int SceneryItemCount { get; private set; }
         public int RoadClosureCount { get; private set; }
+        public int TunnelCount { get; private set; }
 
         private struct Edge
         {
@@ -43,14 +45,24 @@ namespace CouchGuys.ProceduralGeneration
             float outerOffset = clearWidth + settings.BorderWidth;
             Edge[] edges = CreateEdges(playableBounds, outerOffset);
             CreateCollisionPerimeter(generator, edges, settings);
+            CreateUphillCorridorContainment(generator, playableBounds, settings);
+            CreateTunnels(generator, settings);
             CreateScenery(generator, edges, settings, random);
             CreateRoadClosures(generator, playableBounds, settings, random);
 
+            float recoveryMaximumZ = playableBounds.yMax + outerOffset - settings.ColliderThickness;
+            if (generator.HasSummitExit)
+            {
+                Vector3 summitLocal = transform.InverseTransformPoint(
+                    generator.SummitExitPortal.WorldPosition);
+                recoveryMaximumZ = Mathf.Max(recoveryMaximumZ,
+                    summitLocal.z + generator.TileSize);
+            }
             Rect recoveryBounds = Rect.MinMaxRect(
                 playableBounds.xMin - outerOffset + settings.ColliderThickness,
                 playableBounds.yMin - outerOffset + settings.ColliderThickness,
                 playableBounds.xMax + outerOffset - settings.ColliderThickness,
-                playableBounds.yMax + outerOffset - settings.ColliderThickness);
+                recoveryMaximumZ);
             NeighbourhoodOutOfBoundsRecovery recovery =
                 gameObject.AddComponent<NeighbourhoodOutOfBoundsRecovery>();
             recovery.Initialise(generator, recoveryBounds, settings.FallRecoveryDepth);
@@ -151,6 +163,50 @@ namespace CouchGuys.ProceduralGeneration
             PerimeterColliderCount++;
         }
 
+        private void CreateUphillCorridorContainment(
+            NeighbourhoodGenerator generator,
+            Rect playableBounds,
+            NeighbourhoodBorderSettings settings)
+        {
+            if (!generator.HasSummitExit) return;
+
+            Vector3 summitLocal = transform.InverseTransformPoint(
+                generator.SummitExitPortal.WorldPosition);
+            float start = playableBounds.yMax;
+            float end = summitLocal.z + settings.TunnelDepth * 0.5f;
+            if (end <= start) return;
+
+            Transform root = new GameObject("UphillEmbankmentContainment").transform;
+            root.SetParent(transform, false);
+            float segmentLength = generator.TileSize * 4f;
+            float sideClearance = Mathf.Max(settings.TunnelClearance,
+                settings.TunnelWidth * 0.65f);
+            for (int side = -1; side <= 1; side += 2)
+            {
+                for (float cursor = start; cursor < end; cursor += segmentLength)
+                {
+                    float segmentEnd = Mathf.Min(end, cursor + segmentLength);
+                    float midpoint = (cursor + segmentEnd) * 0.5f;
+                    Vector3 localBottom = new Vector3(side * sideClearance, 0f, midpoint);
+                    Vector3 worldBottom = transform.TransformPoint(localBottom);
+                    worldBottom.y = generator.SampleTerrainHeight(worldBottom) -
+                                    settings.ColliderDepthBelowTerrain;
+                    float height = settings.ColliderHeightAboveTerrain +
+                                   settings.ColliderDepthBelowTerrain + settings.HillHeight;
+                    GameObject wall = new GameObject(
+                        $"UphillHillCollider_{side}_{Mathf.RoundToInt(cursor):000}");
+                    wall.transform.SetParent(root, true);
+                    wall.transform.SetPositionAndRotation(
+                        worldBottom + Vector3.up * (height * 0.5f),
+                        transform.rotation);
+                    BoxCollider collider = wall.AddComponent<BoxCollider>();
+                    collider.size = new Vector3(settings.ColliderThickness, height,
+                        segmentEnd - cursor + 0.1f);
+                    PerimeterColliderCount++;
+                }
+            }
+        }
+
         private List<float> GetPortalDistances(NeighbourhoodGenerator generator, Edge edge)
         {
             List<float> distances = new List<float>(2);
@@ -171,6 +227,21 @@ namespace CouchGuys.ProceduralGeneration
                 }
             }
 
+            if (generator.HasSummitExit)
+            {
+                TrafficRoadPortal portal = generator.SummitExitPortal;
+                Vector3 localOutward = transform.InverseTransformDirection(portal.WorldOutward);
+                if (Vector3.Dot(localOutward, edge.Outward) >= 0.8f)
+                {
+                    Vector3 local = transform.InverseTransformPoint(portal.WorldPosition);
+                    float distance = Vector3.Dot(local - edge.Start, edge.Tangent);
+                    if (distance >= 0f && distance <= edge.Length)
+                    {
+                        distances.Add(distance);
+                    }
+                }
+            }
+
             distances.Sort();
             return distances;
         }
@@ -183,54 +254,51 @@ namespace CouchGuys.ProceduralGeneration
         {
             Transform sceneryRoot = new GameObject("Scenery").transform;
             sceneryRoot.SetParent(transform, false);
-            float spacing = Mathf.Lerp(16f, 7f, settings.SceneryDensity);
+            float spacing = Mathf.Lerp(
+                settings.MaximumTreeSpacing,
+                settings.MinimumTreeSpacing,
+                settings.TreeDensity);
             for (int edgeIndex = 0; edgeIndex < edges.Length; edgeIndex++)
             {
                 Edge edge = edges[edgeIndex];
                 List<float> portalDistances = GetPortalDistances(generator, edge);
-                float distance = spacing * 0.5f;
-                float sectionRemaining = 0f;
-                NeighbourhoodBorderType type = NeighbourhoodBorderType.None;
-                while (distance < edge.Length - spacing * 0.25f)
+                int depthRows = Mathf.Max(2, Mathf.CeilToInt(settings.BorderWidth / spacing));
+                for (int row = 0; row < depthRows; row++)
                 {
-                    if (sectionRemaining <= 0f)
+                    float distance = spacing * (0.35f + (float)random.NextDouble() * 0.5f);
+                    while (distance < edge.Length - spacing * 0.25f)
                     {
-                        type = SelectType(settings.EnabledTypes, random);
-                        sectionRemaining = RandomRange(
-                            random,
-                            settings.MinimumSectionLength,
-                            settings.MaximumSectionLength);
-                    }
-
-                    float jitter = RandomRange(random, -spacing * 0.25f, spacing * 0.25f);
-                    bool blocksPortal = false;
-                    for (int portalIndex = 0; portalIndex < portalDistances.Count; portalIndex++)
-                    {
-                        if (Mathf.Abs(distance + jitter - portalDistances[portalIndex]) < generator.TileSize)
+                        float jitter = RandomRange(random, -spacing * 0.35f, spacing * 0.35f);
+                        bool blocksPortal = false;
+                        for (int portalIndex = 0; portalIndex < portalDistances.Count; portalIndex++)
                         {
-                            blocksPortal = true;
-                            break;
+                            if (Mathf.Abs(distance + jitter - portalDistances[portalIndex]) <
+                                Mathf.Max(settings.TunnelClearance, generator.TileSize))
+                            {
+                                blocksPortal = true;
+                                break;
+                            }
                         }
-                    }
-                    if (blocksPortal)
-                    {
+                        if (!blocksPortal && random.NextDouble() <= settings.TreeDensity)
+                        {
+                            float rowDepth = (row + 0.35f + (float)random.NextDouble() * 0.3f) /
+                                             depthRows * settings.BorderWidth;
+                            Vector3 localPosition = edge.Start + edge.Tangent * (distance + jitter) -
+                                                    edge.Outward * rowDepth;
+                            Quaternion rotation = Quaternion.Euler(
+                                0f, RandomRange(random, 0f, 360f), 0f);
+                            if (PlaceScenery(generator, sceneryRoot,
+                                    NeighbourhoodBorderType.Forest, localPosition,
+                                    rotation, settings, random))
+                                SceneryItemCount++;
+                        }
                         distance += spacing;
-                        sectionRemaining -= spacing;
-                        continue;
                     }
-                    float inset = RandomRange(random, 0.5f, settings.BorderWidth * 0.55f);
-                    Vector3 localPosition = edge.Start + edge.Tangent * (distance + jitter) -
-                                            edge.Outward * inset;
-                    Quaternion rotation = Quaternion.Euler(0f, RandomRange(random, 0f, 360f), 0f);
-                    PlaceScenery(generator, sceneryRoot, type, localPosition, rotation, settings, random);
-                    SceneryItemCount++;
-                    distance += spacing;
-                    sectionRemaining -= spacing;
                 }
             }
         }
 
-        private void PlaceScenery(
+        private bool PlaceScenery(
             NeighbourhoodGenerator generator,
             Transform parent,
             NeighbourhoodBorderType type,
@@ -242,9 +310,15 @@ namespace CouchGuys.ProceduralGeneration
             Vector3 world = transform.TransformPoint(localPosition);
             world.y = generator.SampleTerrainHeight(world);
             localPosition = transform.InverseTransformPoint(world);
+            Vector3 normal = SampleTerrainNormal(generator, world, 0.75f);
+            if (Vector3.Angle(normal, Vector3.up) > settings.MaximumTreeSlope)
+                return false;
             GameObject[] prefabs = type switch
             {
-                NeighbourhoodBorderType.Forest => settings.ForestPrefabs,
+                NeighbourhoodBorderType.Forest => settings.TreePrefabs != null &&
+                                                  settings.TreePrefabs.Length > 0
+                    ? settings.TreePrefabs
+                    : settings.ForestPrefabs,
                 NeighbourhoodBorderType.Mountain => settings.MountainPrefabs,
                 _ => settings.ConstructionPrefabs
             };
@@ -254,22 +328,178 @@ namespace CouchGuys.ProceduralGeneration
                 GameObject instance = Instantiate(prefab, parent);
                 instance.name = $"{type}_{prefab.name}";
                 instance.transform.localPosition = localPosition;
-                instance.transform.localRotation = rotation;
-                return;
+                Quaternion slopeRotation = Quaternion.FromToRotation(Vector3.up, normal);
+                instance.transform.rotation = slopeRotation * transform.rotation * rotation;
+                float scale = RandomRange(random, settings.TreeScaleRange.x,
+                    settings.TreeScaleRange.y);
+                instance.transform.localScale *= scale;
+                ConfigureInstancedTree(instance);
+                return true;
             }
 
+            GameObject fallback;
             switch (type)
             {
                 case NeighbourhoodBorderType.Mountain:
-                    CreateFallbackRock(parent, localPosition, rotation, random, true);
+                    fallback = CreateFallbackRock(parent, localPosition, rotation, random, true);
                     break;
                 case NeighbourhoodBorderType.Construction:
-                    CreateFallbackBarrier(parent, localPosition, rotation, random, false);
+                    fallback = CreateFallbackBarrier(parent, localPosition, rotation, random, false);
                     break;
                 default:
-                    CreateFallbackTree(parent, localPosition, rotation, random);
+                    fallback = CreateFallbackTree(parent, localPosition, rotation, random);
                     break;
             }
+            fallback.transform.rotation = Quaternion.FromToRotation(Vector3.up, normal) *
+                                          fallback.transform.rotation;
+            float fallbackScale = RandomRange(random, settings.TreeScaleRange.x,
+                settings.TreeScaleRange.y);
+            fallback.transform.localScale *= fallbackScale;
+            return true;
+        }
+
+        private void CreateTunnels(
+            NeighbourhoodGenerator generator,
+            NeighbourhoodBorderSettings settings)
+        {
+            Transform tunnelRoot = new GameObject("RoadTunnels").transform;
+            tunnelRoot.SetParent(transform, false);
+            for (int index = 0; index < generator.TrafficRoadPortals.Count; index++)
+            {
+                CreateTunnel(generator, tunnelRoot, generator.TrafficRoadPortals[index],
+                    settings.StandardTunnelPrefab, settings, false, index);
+            }
+
+            if (generator.HasSummitExit)
+            {
+                CreateTunnel(generator, tunnelRoot, generator.SummitExitPortal,
+                    settings.SummitGatewayPrefab, settings, true,
+                    generator.TrafficRoadPortals.Count);
+            }
+        }
+
+        private void CreateTunnel(
+            NeighbourhoodGenerator generator,
+            Transform parent,
+            TrafficRoadPortal portal,
+            GameObject prefab,
+            NeighbourhoodBorderSettings settings,
+            bool summit,
+            int index)
+        {
+            Vector3 position = portal.WorldPosition;
+            position.y = generator.SampleTerrainHeight(position);
+            Vector3 previous = portal.WorldPosition - portal.WorldOutward * generator.TileSize;
+            previous.y = generator.SampleTerrainHeight(previous);
+            Vector3 roadDirection = position - previous;
+            if (roadDirection.sqrMagnitude < 0.01f) roadDirection = portal.WorldOutward;
+            Quaternion rotation = Quaternion.LookRotation(roadDirection.normalized, Vector3.up);
+            GameObject tunnel;
+            if (prefab != null)
+            {
+                tunnel = Instantiate(prefab, position, rotation, parent);
+                tunnel.name = summit ? "SummitRegionGateway" : $"BoundaryTunnel_{index + 1:00}";
+            }
+            else
+            {
+                tunnel = CreateFallbackTunnel(parent, position, rotation, settings, summit, index);
+            }
+
+            if (summit)
+            {
+                RegionTransitionTrigger trigger = tunnel.GetComponentInChildren<RegionTransitionTrigger>();
+                if (trigger == null)
+                {
+                    GameObject triggerObject = new GameObject("RegionTransitionTrigger");
+                    triggerObject.transform.SetParent(tunnel.transform, false);
+                    triggerObject.transform.localPosition = Vector3.forward *
+                                                            (settings.TunnelDepth * 0.35f);
+                    BoxCollider collider = triggerObject.AddComponent<BoxCollider>();
+                    collider.isTrigger = true;
+                    collider.size = new Vector3(settings.TunnelWidth * 0.8f,
+                        settings.TunnelHeight * 0.8f,
+                        generator.LandmarkRoads.TransitionTriggerDepth);
+                    trigger = triggerObject.AddComponent<RegionTransitionTrigger>();
+                }
+                trigger.Initialise(generator.LandmarkRoads.NextRegionId);
+            }
+
+            TunnelCount++;
+        }
+
+        private GameObject CreateFallbackTunnel(
+            Transform parent,
+            Vector3 position,
+            Quaternion rotation,
+            NeighbourhoodBorderSettings settings,
+            bool summit,
+            int index)
+        {
+            GameObject root = new GameObject(summit
+                ? "Placeholder_SummitRegionGateway"
+                : $"Placeholder_BoundaryTunnel_{index + 1:00}");
+            root.transform.SetParent(parent, true);
+            root.transform.SetPositionAndRotation(position, rotation);
+            Material stone = GetMaterial(ref m_rockMaterial,
+                summit ? "Summit Gateway Stone" : "Tunnel Stone",
+                summit ? new Color(0.28f, 0.32f, 0.42f) : new Color(0.34f, 0.33f, 0.31f));
+            float pillarWidth = Mathf.Max(1.2f, settings.TunnelWidth * 0.16f);
+            CreatePrimitive(root.transform, PrimitiveType.Cube, "LeftPillar",
+                new Vector3(-(settings.TunnelWidth + pillarWidth) * 0.5f,
+                    settings.TunnelHeight * 0.5f, 0f),
+                new Vector3(pillarWidth, settings.TunnelHeight, settings.TunnelDepth), stone, true);
+            CreatePrimitive(root.transform, PrimitiveType.Cube, "RightPillar",
+                new Vector3((settings.TunnelWidth + pillarWidth) * 0.5f,
+                    settings.TunnelHeight * 0.5f, 0f),
+                new Vector3(pillarWidth, settings.TunnelHeight, settings.TunnelDepth), stone, true);
+            CreatePrimitive(root.transform, PrimitiveType.Cube, "Lintel",
+                new Vector3(0f, settings.TunnelHeight + pillarWidth * 0.5f, 0f),
+                new Vector3(settings.TunnelWidth + pillarWidth * 2f,
+                    pillarWidth, settings.TunnelDepth), stone, true);
+            if (summit)
+            {
+                CreatePrimitive(root.transform, PrimitiveType.Cube, "PlaceholderGatewayField",
+                    new Vector3(0f, settings.TunnelHeight * 0.5f,
+                        settings.TunnelDepth * 0.55f),
+                    new Vector3(settings.TunnelWidth, settings.TunnelHeight, 0.5f),
+                    GetMaterial(ref m_gatewayMaterial, "Summit Gateway Field",
+                        new Color(0.08f, 0.55f, 0.95f)), true);
+            }
+            return root;
+        }
+
+        private static Vector3 SampleTerrainNormal(
+            NeighbourhoodGenerator generator,
+            Vector3 world,
+            float distance)
+        {
+            Vector3 left = world - Vector3.right * distance;
+            Vector3 right = world + Vector3.right * distance;
+            Vector3 back = world - Vector3.forward * distance;
+            Vector3 forward = world + Vector3.forward * distance;
+            left.y = generator.SampleTerrainHeight(left);
+            right.y = generator.SampleTerrainHeight(right);
+            back.y = generator.SampleTerrainHeight(back);
+            forward.y = generator.SampleTerrainHeight(forward);
+            return Vector3.Cross(forward - back, right - left).normalized;
+        }
+
+        private static void ConfigureInstancedTree(GameObject instance)
+        {
+            Renderer[] renderers = instance.GetComponentsInChildren<Renderer>(true);
+            for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
+            {
+                Material[] materials = renderers[rendererIndex].sharedMaterials;
+                for (int materialIndex = 0; materialIndex < materials.Length; materialIndex++)
+                {
+                    if (materials[materialIndex] != null)
+                        materials[materialIndex].enableInstancing = true;
+                }
+            }
+
+            Collider[] colliders = instance.GetComponentsInChildren<Collider>(true);
+            for (int colliderIndex = 0; colliderIndex < colliders.Length; colliderIndex++)
+                colliders[colliderIndex].enabled = false;
         }
 
         private void CreateRoadClosures(
@@ -292,6 +522,9 @@ namespace CouchGuys.ProceduralGeneration
                 else if (Mathf.Abs(local.z - playableBounds.yMin) <= edgeTolerance) outward = Vector3.back;
                 else if (Mathf.Abs(local.z - playableBounds.yMax) <= edgeTolerance) outward = Vector3.forward;
                 else continue;
+                if (generator.HasSummitExit && road.Role == GeneratedRoadRole.Primary &&
+                    Vector3.Dot(outward, Vector3.forward) > 0.9f)
+                    continue;
 
                 Vector3 barrierLocal = local + outward * (generator.TileSize * 0.48f);
                 Vector3 world = transform.TransformPoint(barrierLocal);
@@ -402,7 +635,8 @@ namespace CouchGuys.ProceduralGeneration
             string name,
             Vector3 localPosition,
             Vector3 localScale,
-            Material material)
+            Material material,
+            bool keepCollider = false)
         {
             GameObject primitive = GameObject.CreatePrimitive(type);
             primitive.name = name;
@@ -411,7 +645,7 @@ namespace CouchGuys.ProceduralGeneration
             primitive.transform.localScale = localScale;
             primitive.GetComponent<Renderer>().sharedMaterial = material;
             Collider collider = primitive.GetComponent<Collider>();
-            if (collider != null)
+            if (collider != null && !keepCollider)
             {
                 if (Application.isPlaying) Object.Destroy(collider);
                 else Object.DestroyImmediate(collider);

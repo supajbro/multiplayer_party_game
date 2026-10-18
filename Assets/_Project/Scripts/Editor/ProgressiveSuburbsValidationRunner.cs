@@ -51,6 +51,11 @@ namespace CouchGuys.EditorTools
             int minimumEarlyPool = int.MaxValue;
             int minimumFinalPool = int.MaxValue;
             float smallestDifficultyIncrease = float.PositiveInfinity;
+            int minimumUphillRoads = int.MaxValue;
+            int minimumTunnelCount = int.MaxValue;
+            int minimumHillTrees = int.MaxValue;
+            int maximumTerrainVertices = 0;
+            double slowestGenerationMilliseconds = 0d;
 
             try
             {
@@ -70,8 +75,31 @@ namespace CouchGuys.EditorTools
                     int finalPool = generator.GetStrictDestinationCountForStage(6);
                     minimumEarlyPool = Mathf.Min(minimumEarlyPool, earlyPool);
                     minimumFinalPool = Mathf.Min(minimumFinalPool, finalPool);
+                    minimumUphillRoads = Mathf.Min(minimumUphillRoads,
+                        generator.UphillRoadCount);
+                    minimumTunnelCount = Mathf.Min(minimumTunnelCount,
+                        generator.GeneratedBorder != null
+                            ? generator.GeneratedBorder.TunnelCount
+                            : 0);
+                    minimumHillTrees = Mathf.Min(minimumHillTrees,
+                        generator.GeneratedBorder != null
+                            ? generator.GeneratedBorder.SceneryItemCount
+                            : 0);
+                    maximumTerrainVertices = Mathf.Max(maximumTerrainVertices,
+                        generator.GeneratedTerrain != null
+                            ? generator.GeneratedTerrain.VertexCount
+                            : 0);
+                    slowestGenerationMilliseconds = Math.Max(
+                        slowestGenerationMilliseconds,
+                        generator.LastGenerationMilliseconds);
                     if (!generator.HasGeneratedNeighbourhood || !generator.LastValidationSucceeded ||
                         !generator.IsDeliveryDifficultyReady || earlyPool <= 0 || finalPool <= 0 ||
+                        !generator.HasSummitExit ||
+                        generator.UphillRoadCount != generator.LandmarkRoads.UphillLengthTiles ||
+                        generator.GeneratedBorder == null ||
+                        generator.GeneratedBorder.TunnelCount <
+                            generator.TrafficRoadPortals.Count + 1 ||
+                        generator.GeneratedBorder.SceneryItemCount <= 0 ||
                         !TryGetBestDifficulty(generator, 0, out float earlyDifficulty) ||
                         !TryGetBestDifficulty(generator, 6, out float finalDifficulty))
                     {
@@ -107,7 +135,10 @@ namespace CouchGuys.EditorTools
                 $"Progressive Suburbs validation: {SeedCount - failureCount}/{SeedCount} seeds passed; " +
                 $"determinism failures={determinismFailures}; minimum Stage 1 pool={minimumEarlyPool}; " +
                 $"minimum final pool={minimumFinalPool}; smallest final difficulty increase=" +
-                $"{smallestDifficultyIncrease:F1}.";
+                $"{smallestDifficultyIncrease:F1}; minimum uphill roads={minimumUphillRoads}; " +
+                $"minimum tunnels={minimumTunnelCount}; minimum hill trees={minimumHillTrees}; " +
+                $"maximum terrain vertices={maximumTerrainVertices}; slowest generation=" +
+                $"{slowestGenerationMilliseconds:F1} ms.";
             if (failureCount > 0 || determinismFailures > 0)
             {
                 Debug.LogError(result, generator);

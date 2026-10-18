@@ -19,6 +19,8 @@ namespace CouchGuys.UI
         [SerializeField] private Image m_actionBackground;
         [SerializeField] private TMP_Text m_actionLabel;
 
+        [Header("Editable State Colours")]
+        [SerializeField] private Color m_deliveryBaseColour = new(0.09f, 0.14f, 0.21f, 0.98f);
         [SerializeField] private Color m_shopBaseColour = new(0.08f, 0.14f, 0.22f, 0.98f);
         [SerializeField] private Color m_availableColour = new(1f, 0.48f, 0.06f, 1f);
         [SerializeField] private Color m_lockedColour = new(0.28f, 0.3f, 0.36f, 1f);

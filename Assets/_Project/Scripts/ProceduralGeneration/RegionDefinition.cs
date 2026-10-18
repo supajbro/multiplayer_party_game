@@ -18,6 +18,7 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private RegionGridSettings m_grid = RegionGridSettings.SuburbsDefault;
         [SerializeField] private RegionElevationSettings m_elevation = RegionElevationSettings.SuburbsDefault;
         [SerializeField] private RegionProgressionSettings m_progression = RegionProgressionSettings.SuburbsDefault;
+        [SerializeField] private LandmarkRoadSettings m_landmarkRoads = LandmarkRoadSettings.SuburbsDefault;
         [SerializeField] private GeneratedTerrainSettings m_terrain = GeneratedTerrainSettings.SuburbsDefault;
         [SerializeField] private SuburbsGrassSettings m_grass;
         [SerializeField] private NeighbourhoodBorderSettings m_border =
@@ -59,6 +60,7 @@ namespace CouchGuys.ProceduralGeneration
         public RegionGridSettings Grid => m_grid;
         public RegionElevationSettings Elevation => m_elevation;
         public RegionProgressionSettings Progression => m_progression;
+        public LandmarkRoadSettings LandmarkRoads => m_landmarkRoads;
         public GeneratedTerrainSettings Terrain => m_terrain;
         public SuburbsGrassSettings Grass => m_grass;
         public NeighbourhoodBorderSettings Border => m_border;
@@ -90,6 +92,7 @@ namespace CouchGuys.ProceduralGeneration
             m_grid.Validate();
             m_elevation.Validate();
             m_progression.Validate();
+            m_landmarkRoads.Validate();
             m_terrain.Validate();
             m_border.Validate();
             m_environment.Validate();

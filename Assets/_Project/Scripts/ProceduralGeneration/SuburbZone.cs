@@ -13,6 +13,7 @@ namespace CouchGuys.ProceduralGeneration
     public enum GeneratedRoadRole
     {
         Primary,
-        Residential
+        Residential,
+        UphillExit
     }
 }

@@ -32,7 +32,7 @@ MonoBehaviour:
     MinimumStep: 2
     MaximumStep: 4
     MaximumElevation: 30
-    MaximumRoadSlope: 20
+    MaximumRoadSlope: 30
   m_progression:
     Enabled: 1
     EasyEndNormalized: 0.28
@@ -47,6 +47,18 @@ MonoBehaviour:
     ResidentialRoadMaximumSlope: 18
     MinimumDestinationsPerZone: 2
     MaximumGenerationAttempts: 3
+  m_landmarkRoads:
+    Enabled: 1
+    UphillLengthTiles: 24
+    SummitHeight: 100
+    MaximumSlope: 30
+    ElevationCurveExponent: 1.35
+    EmbankmentBlendWidth: 22
+    GenerateGuardRails: 1
+    GuardRailHeight: 1.1
+    GuardRailPostIntervalTiles: 2
+    TransitionTriggerDepth: 6
+    NextRegionId: countryside
   m_terrain:
     VertexSpacing: 2
     MapBorder: 8
@@ -65,6 +77,25 @@ MonoBehaviour:
     SceneryDensity: 0.65
     MinimumSectionLength: 28
     MaximumSectionLength: 65
+    HillHeight: 24
+    HillDepth: 38
+    SlopeSmoothness: 1.35
+    HillNoiseAmount: 5
+    HillNoiseFrequency: 0.018
+    HillVariation: 0.55
+    TreeDensity: 0.62
+    MinimumTreeSpacing: 8
+    MaximumTreeSpacing: 15
+    TunnelClearance: 8
+    MaximumTreeSlope: 38
+    TreeScaleRange: {x: 0.8, y: 1.35}
+    TreePrefabs:
+    - {fileID: 2434878322216428374, guid: 08e366ff13ab27b4f9671159a0b8eb5e, type: 3}
+    StandardTunnelPrefab: {fileID: 0}
+    SummitGatewayPrefab: {fileID: 0}
+    TunnelWidth: 12
+    TunnelHeight: 8
+    TunnelDepth: 12
     ForestPrefabs: []
     MountainPrefabs: []
     ConstructionPrefabs: []

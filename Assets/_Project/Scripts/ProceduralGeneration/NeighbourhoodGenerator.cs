@@ -91,6 +91,7 @@ namespace CouchGuys.ProceduralGeneration
 
         [Header("Suburbs Progression")]
         [SerializeField] private RegionProgressionSettings m_progression = RegionProgressionSettings.SuburbsDefault;
+        [SerializeField] private LandmarkRoadSettings m_landmarkRoads = LandmarkRoadSettings.SuburbsDefault;
 
         [Header("Continuous Terrain")]
         [SerializeField] private GeneratedTerrainSettings m_terrainSettings =
@@ -145,6 +146,7 @@ namespace CouchGuys.ProceduralGeneration
         private readonly Dictionary<Vector2Int, float> m_roadSurfaceHeightCache =
             new Dictionary<Vector2Int, float>();
         private readonly HashSet<GridCoordinate> m_primaryRoadCells = new HashSet<GridCoordinate>();
+        private readonly HashSet<GridCoordinate> m_uphillRoadCells = new HashSet<GridCoordinate>();
         private readonly List<OrientedFootprint> m_placedHouseFootprints =
             new List<OrientedFootprint>();
         private readonly List<OrientedFootprint> m_reservedDrivewayFootprints =
@@ -306,6 +308,7 @@ namespace CouchGuys.ProceduralGeneration
             ApplyRegionConfiguration(region);
             ApplyEnvironmentAtmosphere();
             m_progression.Validate();
+            m_landmarkRoads.Validate();
             m_terrainSettings.Validate();
             m_borderSettings.Validate();
             EnsureDifficultySettings();
@@ -442,6 +445,7 @@ namespace CouchGuys.ProceduralGeneration
             ApplyRegionConfiguration(region);
             ApplyEnvironmentAtmosphere();
             m_progression.Validate();
+            m_landmarkRoads.Validate();
             m_terrainSettings.Validate();
             m_borderSettings.Validate();
             EnsureDifficultySettings();
@@ -629,6 +633,7 @@ namespace CouchGuys.ProceduralGeneration
             m_maximumElevation = elevation.MaximumElevation;
             m_maximumRoadSlope = elevation.MaximumRoadSlope;
             m_progression = region.Progression;
+            m_landmarkRoads = region.LandmarkRoads;
             m_terrainSettings = region.Terrain;
             m_grassSettings = region.Grass;
             m_borderSettings = region.Border;
@@ -775,6 +780,7 @@ namespace CouchGuys.ProceduralGeneration
             m_roadZones.Clear();
             m_roadSurfaceHeightCache.Clear();
             m_primaryRoadCells.Clear();
+            m_uphillRoadCells.Clear();
             m_placedHouseFootprints.Clear();
             m_reservedDrivewayFootprints.Clear();
             m_propertySpatialIndex.Clear();
@@ -1156,6 +1162,7 @@ namespace CouchGuys.ProceduralGeneration
                 m_terrainSettings.MapBorder,
                 m_borderSettings,
                 new System.Random(DeriveSeed(CurrentSeed, 0x36A9F17D)));
+            CreateUphillGuardRails(borderRoot.transform);
         }
 
         private Bounds CalculateWorldBounds(Rect localBounds)
@@ -1237,6 +1244,11 @@ namespace CouchGuys.ProceduralGeneration
 
         private void GenerateRoadLayout(System.Random random)
         {
+            // Landmark roads are reserved first so every strategy grows around the same
+            // central route and cannot displace the progression climb.
+            GenerateGuaranteedCentralRoad();
+            GenerateUphillExitRoad();
+
             if (m_selectedRegion != null && m_selectedRegion.RoadStrategy != null)
             {
                 RegionGridSettings grid = m_selectedRegion.Grid;
@@ -1272,6 +1284,52 @@ namespace CouchGuys.ProceduralGeneration
                 {
                     AddRoad(LocalToGrid(localX, localY), CalculateProgressiveElevation(localX, localY));
                 }
+            }
+        }
+
+        private void GenerateGuaranteedCentralRoad()
+        {
+            int maximumLocalY = m_gridHeight * (m_blockHeight + 1);
+            for (int localY = 0; localY <= maximumLocalY; localY++)
+            {
+                GridCoordinate coordinate = LocalToGrid(0, localY);
+                AddRoad(coordinate, CalculateProgressiveElevation(0f, localY));
+                m_primaryRoadCells.Add(coordinate);
+            }
+        }
+
+        private void GenerateUphillExitRoad()
+        {
+            if (!m_landmarkRoads.Enabled)
+            {
+                return;
+            }
+
+            int baseLocalY = m_gridHeight * (m_blockHeight + 1);
+            float baseHeight = CalculateProgressiveElevation(0f, baseLocalY);
+            float maximumRisePerTile = Mathf.Tan(m_landmarkRoads.MaximumSlope * Mathf.Deg2Rad) *
+                                       m_roadTileSize;
+            float summitRise = Mathf.Min(
+                m_landmarkRoads.SummitHeight,
+                maximumRisePerTile * m_landmarkRoads.UphillLengthTiles * 0.98f);
+            float previousRise = 0f;
+            for (int step = 1; step <= m_landmarkRoads.UphillLengthTiles; step++)
+            {
+                float progress = step / (float)m_landmarkRoads.UphillLengthTiles;
+                // Smooth start/end tangents with a configurable bias toward a longer climb.
+                float smooth = progress * progress * (3f - 2f * progress);
+                float curved = Mathf.Pow(smooth, m_landmarkRoads.ElevationCurveExponent);
+                int remainingSteps = m_landmarkRoads.UphillLengthTiles - step;
+                float minimumRiseNeeded = summitRise - remainingSteps * maximumRisePerTile;
+                float resolvedRise = Mathf.Clamp(
+                    Mathf.Max(summitRise * curved, minimumRiseNeeded),
+                    previousRise,
+                    previousRise + maximumRisePerTile);
+                GridCoordinate coordinate = LocalToGrid(0, baseLocalY + step);
+                AddRoad(coordinate, baseHeight + resolvedRise);
+                m_primaryRoadCells.Add(coordinate);
+                m_uphillRoadCells.Add(coordinate);
+                previousRise = resolvedRise;
             }
         }
 
@@ -1471,6 +1529,12 @@ namespace CouchGuys.ProceduralGeneration
 
         private float MaximumRoadRise(GridCoordinate first, GridCoordinate second)
         {
+            if (m_uphillRoadCells.Contains(first) || m_uphillRoadCells.Contains(second))
+            {
+                float summitSlope = Mathf.Min(m_maximumRoadSlope, m_landmarkRoads.MaximumSlope);
+                return Mathf.Tan(summitSlope * Mathf.Deg2Rad) * m_roadTileSize;
+            }
+
             bool primaryConnection = m_primaryRoadCells.Contains(first) &&
                                      m_primaryRoadCells.Contains(second);
             float configuredSlope = primaryConnection
@@ -1570,7 +1634,9 @@ namespace CouchGuys.ProceduralGeneration
                     connections,
                     m_roadZones[coordinate],
                     m_primaryRoadCells.Contains(coordinate)
-                        ? GeneratedRoadRole.Primary
+                        ? m_uphillRoadCells.Contains(coordinate)
+                            ? GeneratedRoadRole.UphillExit
+                            : GeneratedRoadRole.Primary
                         : GeneratedRoadRole.Residential,
                     m_roadHeights[coordinate],
                     GetMaximumConnectedGrade(coordinate));
@@ -2147,7 +2213,11 @@ namespace CouchGuys.ProceduralGeneration
                 ? GeneratedStartingArea.GridFootprint.y
                 : m_placeholderStartingAreaFootprint.y;
             float minimumLocalY = -(depotDepth + borderTiles);
-            float maximumLocalY = m_gridHeight * (m_blockHeight + 1) + borderTiles;
+            float summitExtension = m_landmarkRoads.Enabled
+                ? m_landmarkRoads.UphillLengthTiles
+                : 0f;
+            float maximumLocalY = m_gridHeight * (m_blockHeight + 1) +
+                                  summitExtension + borderTiles;
             List<float> xCoordinates = BuildTerrainAxis(minimumLocalX, maximumLocalX, true);
             List<float> zCoordinates = BuildTerrainAxis(minimumLocalY, maximumLocalY, false);
             int vertexCountX = xCoordinates.Count;
@@ -2569,6 +2639,7 @@ namespace CouchGuys.ProceduralGeneration
             Vector3 flatWorldPosition)
         {
             float height = CalculateProgressiveElevation(localX, localY);
+            height = ApplyHillyPerimeter(height, localX, localY);
             height = BlendHousePads(height, flatWorldPosition);
             height = BlendDrivewayGrades(height, flatWorldPosition);
             return ApplyDepotAndRoadHeights(height, localX, localY, flatWorldPosition);
@@ -2580,6 +2651,7 @@ namespace CouchGuys.ProceduralGeneration
             Vector3 flatWorldPosition)
         {
             float height = CalculateProgressiveElevation(localX, localY);
+            height = ApplyHillyPerimeter(height, localX, localY);
             return ApplyDepotAndRoadHeights(height, localX, localY, flatWorldPosition);
         }
 
@@ -2595,7 +2667,10 @@ namespace CouchGuys.ProceduralGeneration
                     out float roadHeight,
                     out float distanceToRoad))
             {
-                float shoulderEdge = m_terrainSettings.RoadShoulderWidth;
+                float shoulderEdge = localY > m_gridHeight * (m_blockHeight + 1)
+                    ? Mathf.Max(m_terrainSettings.RoadShoulderWidth,
+                        m_landmarkRoads.EmbankmentBlendWidth)
+                    : m_terrainSettings.RoadShoulderWidth;
                 if (distanceToRoad <= 0.0001f)
                 {
                     height = roadHeight;
@@ -5140,6 +5215,48 @@ namespace CouchGuys.ProceduralGeneration
                 return false;
             }
 
+            for (int localY = 0; localY <= maximumLocalY; localY++)
+            {
+                GridCoordinate centralRoad = LocalToGrid(0, localY);
+                if (!reachable.Contains(centralRoad) || !m_primaryRoadCells.Contains(centralRoad))
+                {
+                    Debug.LogError(
+                        $"Guaranteed central road is missing or disconnected at local row {localY}.",
+                        this);
+                    return false;
+                }
+            }
+
+            if (m_landmarkRoads.Enabled)
+            {
+                GridCoordinate summit = GetSummitRoadCoordinate();
+                if (m_uphillRoadCells.Count != m_landmarkRoads.UphillLengthTiles ||
+                    !reachable.Contains(summit) ||
+                    !m_roadHeights.TryGetValue(summit, out float summitHeight) ||
+                    summitHeight < m_roadHeights[outerSpine] + 5f)
+                {
+                    Debug.LogError("The massive uphill exit road is incomplete or lacks elevation.", this);
+                    return false;
+                }
+
+                for (int index = 0; index < m_trafficRoadPortals.Count; index++)
+                {
+                    if (GridToLocal(m_trafficRoadPortals[index].Coordinate).x == 0)
+                    {
+                        Debug.LogError("Normal traffic was assigned to the next-region uphill exit.", this);
+                        return false;
+                    }
+                }
+
+                if (m_borderSettings.Enabled &&
+                    (GeneratedBorder == null ||
+                     GeneratedBorder.TunnelCount < m_trafficRoadPortals.Count + 1))
+                {
+                    Debug.LogError("One or more boundary roads is missing a tunnel entrance.", this);
+                    return false;
+                }
+            }
+
             float easyAverage = elevationPerZone[(int)SuburbZone.Easy] /
                                 Mathf.Max(1, roadsPerZone[(int)SuburbZone.Easy]);
             float outerAverage = elevationPerZone[(int)SuburbZone.Outer] /
@@ -5408,6 +5525,7 @@ namespace CouchGuys.ProceduralGeneration
             m_maximumElevation = Mathf.Max(0f, m_maximumElevation);
             m_maximumRoadSlope = Mathf.Clamp(m_maximumRoadSlope, 1f, 60f);
             m_progression.Validate();
+            m_landmarkRoads.Validate();
             m_terrainSettings.Validate();
             m_borderSettings.Validate();
             EnsureDifficultySettings();
