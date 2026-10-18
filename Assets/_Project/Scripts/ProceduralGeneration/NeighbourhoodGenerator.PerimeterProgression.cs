@@ -57,11 +57,19 @@ namespace CouchGuys.ProceduralGeneration
             float maximumY = m_gridHeight * (m_blockHeight + 1) * m_roadTileSize;
             float worldX = localX * m_roadTileSize;
             float worldY = localY * m_roadTileSize;
-            float edgeDistance = Mathf.Min(
-                Mathf.Min(worldX - minimumX, maximumX - worldX),
-                Mathf.Min(worldY - minimumY, maximumY - worldY));
+            // Perimeter terrain must never raise the playable suburb. Measure only the
+            // distance outside its bounds, so the grass beside boundary roads remains at
+            // its original generated height and the embankment grows outward from there.
+            float outsideX = Mathf.Max(minimumX - worldX, worldX - maximumX, 0f);
+            float outsideY = Mathf.Max(minimumY - worldY, worldY - maximumY, 0f);
+            float outsideDistance = Mathf.Sqrt(outsideX * outsideX + outsideY * outsideY);
+            if (outsideDistance <= 0.0001f)
+            {
+                return terrainHeight;
+            }
+
             float depth = Mathf.Max(4f, m_borderSettings.HillDepth);
-            float normalized = 1f - Mathf.Clamp01(edgeDistance / depth);
+            float normalized = Mathf.Clamp01(outsideDistance / depth);
             float hillMask = Mathf.Pow(
                 Mathf.SmoothStep(0f, 1f, normalized),
                 m_borderSettings.SlopeSmoothness);

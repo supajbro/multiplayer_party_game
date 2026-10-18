@@ -42,7 +42,11 @@ namespace CouchGuys.ProceduralGeneration
             System.Random random)
         {
             settings.Validate();
-            float outerOffset = clearWidth + settings.BorderWidth;
+            // Keep containment and hill scenery beyond the playable terrain. HillDepth is
+            // the outward transition distance, never an inward playable-area influence.
+            float outerOffset = Mathf.Max(
+                clearWidth + settings.BorderWidth,
+                settings.HillDepth);
             Edge[] edges = CreateEdges(playableBounds, outerOffset);
             CreateCollisionPerimeter(generator, edges, settings);
             CreateUphillCorridorContainment(generator, playableBounds, settings);

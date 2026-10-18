@@ -170,6 +170,8 @@ namespace CouchGuys.ProceduralGeneration
         private Transform m_propsRoot;
         private Transform m_hazardsRoot;
         private GeneratedTerrainMesh m_generatedRoadCollider;
+        private MeshCollider m_generatedTerrainCollider;
+        private Rect m_sidewalkPlayableBounds;
         private Vector3 m_gridOrigin;
         private CardinalDirection m_startDirection;
         private bool m_warnedAboutRoadPlaceholders;
@@ -758,6 +760,7 @@ namespace CouchGuys.ProceduralGeneration
             m_residentialDecorationsRoot = null;
             m_roadsideDecorationsRoot = null;
             m_generatedRoadCollider = null;
+            m_generatedTerrainCollider = null;
             GeneratedStartingArea = null;
             GeneratedTerrain = null;
             GeneratedDrivewaySurface = null;
@@ -2205,6 +2208,12 @@ namespace CouchGuys.ProceduralGeneration
         {
             float extendedBorder = m_terrainSettings.MapBorder +
                                    (m_borderSettings.Enabled ? m_borderSettings.BorderWidth : 0f);
+            if (m_borderSettings.Enabled)
+            {
+                // The hill now grows outside the playable rectangle, so the terrain mesh
+                // must extend far enough to contain the complete gradual profile.
+                extendedBorder = Mathf.Max(extendedBorder, m_borderSettings.HillDepth);
+            }
             float borderTiles = extendedBorder / m_roadTileSize;
             float minimumLocalX = m_minimumLocalX - borderTiles;
             float maximumLocalX = m_minimumLocalX +
@@ -2332,6 +2341,7 @@ namespace CouchGuys.ProceduralGeneration
 
             meshRenderer.sharedMaterial = surfaceMaterial;
             meshCollider.sharedMesh = mesh;
+            m_generatedTerrainCollider = meshCollider;
             GeneratedTerrain = terrainObject.GetComponent<GeneratedTerrainMesh>();
             GeneratedTerrain.Initialise(mesh, runtimeMaterial);
         }
@@ -2409,6 +2419,8 @@ namespace CouchGuys.ProceduralGeneration
             {
                 return;
             }
+
+            m_sidewalkPlayableBounds = CalculatePlayableLocalBounds();
 
             List<Vector3> vertices = m_sidewalkPrefab == null
                 ? new List<Vector3>(m_roadCells.Count * 16)
@@ -2537,6 +2549,12 @@ namespace CouchGuys.ProceduralGeneration
             List<Vector2> uvs,
             ref int pieceIndex)
         {
+            if (!ClipSidewalkPieceToPlayableBounds(
+                    ref first, ref second, ref third, ref fourth))
+            {
+                return;
+            }
+
             SetSidewalkHeight(ref first);
             SetSidewalkHeight(ref second);
             SetSidewalkHeight(ref third);
@@ -2552,23 +2570,84 @@ namespace CouchGuys.ProceduralGeneration
                 return;
             }
 
-            int vertex = vertices.Count;
-            vertices.Add(m_sidewalksRoot.InverseTransformPoint(first));
-            vertices.Add(m_sidewalksRoot.InverseTransformPoint(second));
-            vertices.Add(m_sidewalksRoot.InverseTransformPoint(third));
-            vertices.Add(m_sidewalksRoot.InverseTransformPoint(fourth));
-            triangles.Add(vertex);
-            triangles.Add(vertex + 1);
-            triangles.Add(vertex + 2);
-            triangles.Add(vertex);
-            triangles.Add(vertex + 2);
-            triangles.Add(vertex + 3);
-            float uvScale = 1f / Mathf.Max(0.1f, m_sidewalkWidth);
-            uvs.Add(new Vector2(0f, 0f));
-            uvs.Add(new Vector2(1f, 0f));
-            uvs.Add(new Vector2(1f, uvScale));
-            uvs.Add(new Vector2(0f, uvScale));
+            // A single four-corner quad cuts through curved/noisy terrain between its
+            // corners. Match the road mesh approach by sampling a grid at the configured
+            // terrain resolution, producing a surface that follows every slope change.
+            float spacing = Mathf.Max(0.5f, m_terrainSettings.VertexSpacing);
+            float length = Mathf.Max(
+                Vector3.Distance(first, second),
+                Vector3.Distance(fourth, third));
+            float width = Mathf.Max(
+                Vector3.Distance(first, fourth),
+                Vector3.Distance(second, third));
+            int countAlong = Mathf.Max(1, Mathf.CeilToInt(length / spacing));
+            int countAcross = Mathf.Max(1, Mathf.CeilToInt(width / spacing));
+            int firstVertex = vertices.Count;
+            for (int across = 0; across <= countAcross; across++)
+            {
+                float acrossT = across / (float)countAcross;
+                for (int along = 0; along <= countAlong; along++)
+                {
+                    float alongT = along / (float)countAlong;
+                    Vector3 inner = Vector3.Lerp(first, second, alongT);
+                    Vector3 outer = Vector3.Lerp(fourth, third, alongT);
+                    Vector3 point = Vector3.Lerp(inner, outer, acrossT);
+                    SetSidewalkHeight(ref point);
+                    vertices.Add(m_sidewalksRoot.InverseTransformPoint(point));
+                    uvs.Add(new Vector2(
+                        alongT * length / Mathf.Max(0.1f, m_sidewalkWidth),
+                        acrossT));
+                }
+            }
+
+            int row = countAlong + 1;
+            for (int across = 0; across < countAcross; across++)
+            {
+                for (int along = 0; along < countAlong; along++)
+                {
+                    int bottomLeft = firstVertex + across * row + along;
+                    int bottomRight = bottomLeft + 1;
+                    int topLeft = bottomLeft + row;
+                    int topRight = topLeft + 1;
+                    triangles.Add(bottomLeft);
+                    triangles.Add(bottomRight);
+                    triangles.Add(topRight);
+                    triangles.Add(bottomLeft);
+                    triangles.Add(topRight);
+                    triangles.Add(topLeft);
+                }
+            }
+
             pieceIndex++;
+        }
+
+        private bool ClipSidewalkPieceToPlayableBounds(
+            ref Vector3 first,
+            ref Vector3 second,
+            ref Vector3 third,
+            ref Vector3 fourth)
+        {
+            ClampSidewalkPointToPlayableBounds(ref first);
+            ClampSidewalkPointToPlayableBounds(ref second);
+            ClampSidewalkPointToPlayableBounds(ref third);
+            ClampSidewalkPointToPlayableBounds(ref fourth);
+            float length = Mathf.Max(
+                Vector3.Distance(first, second),
+                Vector3.Distance(fourth, third));
+            float width = Mathf.Max(
+                Vector3.Distance(first, fourth),
+                Vector3.Distance(second, third));
+            return length > 0.01f && width > 0.01f;
+        }
+
+        private void ClampSidewalkPointToPlayableBounds(ref Vector3 world)
+        {
+            Vector3 local = WorldToMapLocal(world);
+            local.x = Mathf.Clamp(local.x,
+                m_sidewalkPlayableBounds.xMin, m_sidewalkPlayableBounds.xMax);
+            local.z = Mathf.Clamp(local.z,
+                m_sidewalkPlayableBounds.yMin, m_sidewalkPlayableBounds.yMax);
+            world = MapLocalToWorld(local);
         }
 
         private void CreateSidewalkPrefabPiece(
@@ -2622,9 +2701,29 @@ namespace CouchGuys.ProceduralGeneration
 
         private void SetSidewalkHeight(ref Vector3 position)
         {
-            position.y = TrySampleDrivewaySurface(position, out float drivewayHeight)
-                ? drivewayHeight
-                : SamplePlacementTerrainHeight(position) + m_sidewalkSurfaceOffset;
+            if (TrySampleDrivewaySurface(position, out float drivewayHeight))
+            {
+                position.y = drivewayHeight + m_sidewalkSurfaceOffset;
+                return;
+            }
+
+            // Query the generated mesh itself so the sidewalk agrees with the rendered
+            // terrain triangulation, not just the pre-mesh analytical height function.
+            if (m_generatedTerrainCollider != null)
+            {
+                Bounds bounds = m_generatedTerrainCollider.bounds;
+                Ray ray = new Ray(
+                    new Vector3(position.x, bounds.max.y + 2f, position.z),
+                    Vector3.down);
+                if (m_generatedTerrainCollider.Raycast(
+                        ray, out RaycastHit hit, bounds.size.y + 4f))
+                {
+                    position.y = hit.point.y + m_sidewalkSurfaceOffset;
+                    return;
+                }
+            }
+
+            position.y = SamplePlacementTerrainHeight(position) + m_sidewalkSurfaceOffset;
         }
 
         private static Vector3 DirectionVector(CardinalDirection direction)

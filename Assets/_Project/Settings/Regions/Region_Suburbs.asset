@@ -78,8 +78,8 @@ MonoBehaviour:
     MinimumSectionLength: 28
     MaximumSectionLength: 65
     HillHeight: 12
-    HillDepth: 38
-    SlopeSmoothness: 4
+    HillDepth: 90
+    SlopeSmoothness: 1.25
     HillNoiseAmount: 2
     HillNoiseFrequency: 0.018
     HillVariation: 0.4

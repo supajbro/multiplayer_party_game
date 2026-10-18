@@ -69,7 +69,7 @@ namespace CouchGuys.ProceduralGeneration
                 MinimumSectionLength = 28f,
                 MaximumSectionLength = 65f,
                 HillHeight = 24f,
-                HillDepth = 38f,
+                HillDepth = 80f,
                 SlopeSmoothness = 1.35f,
                 HillNoiseAmount = 5f,
                 HillNoiseFrequency = 0.018f,

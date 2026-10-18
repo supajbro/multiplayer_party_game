@@ -474,11 +474,14 @@ namespace CouchGuys.ProceduralGeneration
                 Vector3 outward = DirectionVector(side);
                 Vector3 position = GridToWorld(road) + outward *
                     (m_roadTileSize * 0.5f + m_sidewalkWidth + settings.SidewalkOffset);
-                position.y = SamplePlacementTerrainHeight(position);
+                position.y = TrySampleGeneratedTerrain(position, out RaycastHit groundHit)
+                    ? groundHit.point.y
+                    : SamplePlacementTerrainHeight(position);
                 if (IsNearDriveway(position, settings.MinimumClearanceFromDriveways)) continue;
                 if (!TryPlaceEnvironmentPrefab(settings.Prefab, position,
                         Quaternion.LookRotation(-outward, Vector3.up), m_streetlightsRoot, true, out GameObject instance)) continue;
                 RemoveCollidersFromHierarchy(instance);
+                GroundStreetlightToGeneratedTerrain(instance);
                 StreetlightPlaceholder light = instance.GetComponent<StreetlightPlaceholder>();
                 if (light != null) light.Configure(settings.LightingEnabled, settings.LightColour,
                     settings.LightIntensity, settings.LightRange);
@@ -660,6 +663,68 @@ namespace CouchGuys.ProceduralGeneration
             for (int i = 0; i < m_placedHouseFootprints.Count; i++)
                 if (FootprintsOverlap(candidate, m_placedHouseFootprints[i], 0.15f)) return false;
             return true;
+        }
+
+        private void GroundStreetlightToGeneratedTerrain(GameObject instance)
+        {
+            if (instance == null)
+            {
+                return;
+            }
+
+            Vector3 position = instance.transform.position;
+            EnvironmentPlacementMetadata metadata =
+                instance.GetComponent<EnvironmentPlacementMetadata>();
+            Vector2 footprint = metadata != null ? metadata.Footprint : Vector2.one;
+            Vector3 right = instance.transform.right;
+            Vector3 forward = instance.transform.forward;
+            float groundHeight = float.PositiveInfinity;
+            for (int x = -1; x <= 1; x += 2)
+            {
+                for (int z = -1; z <= 1; z += 2)
+                {
+                    Vector3 sample = position + right * (x * footprint.x * 0.5f) +
+                                     forward * (z * footprint.y * 0.5f);
+                    if (TrySampleGeneratedTerrain(sample, out RaycastHit hit))
+                    {
+                        groundHeight = Mathf.Min(groundHeight, hit.point.y);
+                    }
+                }
+            }
+
+            if (TrySampleGeneratedTerrain(position, out RaycastHit centreHit))
+                groundHeight = Mathf.Min(groundHeight, centreHit.point.y);
+            if (float.IsPositiveInfinity(groundHeight))
+                groundHeight = SamplePlacementTerrainHeight(position);
+
+            Renderer[] renderers = instance.GetComponentsInChildren<Renderer>(true);
+            if (TryCalculateRendererBounds(renderers, out Bounds renderedBounds))
+            {
+                // Ground the visible model rather than assuming a replacement prefab's
+                // root pivot is exactly at the bottom of its pole.
+                position.y += groundHeight - renderedBounds.min.y;
+            }
+            else
+            {
+                position.y = groundHeight;
+            }
+
+            instance.transform.position = position;
+        }
+
+        private bool TrySampleGeneratedTerrain(Vector3 position, out RaycastHit hit)
+        {
+            hit = default;
+            if (m_generatedTerrainCollider == null)
+            {
+                return false;
+            }
+
+            Bounds bounds = m_generatedTerrainCollider.bounds;
+            Ray ray = new Ray(
+                new Vector3(position.x, bounds.max.y + 2f, position.z),
+                Vector3.down);
+            return m_generatedTerrainCollider.Raycast(ray, out hit, bounds.size.y + 4f);
         }
 
         private bool IsNearDriveway(Vector3 position, float clearance)
