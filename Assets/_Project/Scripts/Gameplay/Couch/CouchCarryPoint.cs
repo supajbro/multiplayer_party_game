@@ -16,7 +16,8 @@ namespace CouchGuys.Gameplay.Couch
 
         public int PointIndex => m_pointIndex;
         public CouchCarryController Couch => m_couch != null ? m_couch : m_couch = GetComponentInParent<CouchCarryController>();
-        public bool IsAvailable => Couch != null && !Couch.IsPointOccupied(m_pointIndex);
+        public bool IsAvailable => Couch != null && Couch.IsPickupAvailable &&
+                                   !Couch.IsPointOccupied(m_pointIndex);
 
 #if UNITY_EDITOR
         private void OnDrawGizmos()

@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using Debug = UnityEngine.Debug;
 using CouchGuys.UI;
+using CouchGuys.Gameplay.Depot;
 
 namespace CouchGuys.ProceduralGeneration
 {
@@ -985,7 +986,9 @@ namespace CouchGuys.ProceduralGeneration
 
         private StartingArea CreateStartingArea()
         {
-            if (m_startingAreaPrefab != null)
+            // Use Unity's bool operator: a stale serialized object reference is not a
+            // CLR null, but Unity still considers it missing.
+            if (m_startingAreaPrefab)
             {
                 StartingArea definition = m_startingAreaPrefab.GetComponent<StartingArea>();
                 if (definition != null && definition.RoadConnection != null)
@@ -994,6 +997,14 @@ namespace CouchGuys.ProceduralGeneration
                     instance.name = "StartingArea";
                     return instance.GetComponent<StartingArea>();
                 }
+
+                GameObject importedDepot = Instantiate(m_startingAreaPrefab,
+                    transform.position, transform.rotation, m_generatedRoot);
+                importedDepot.name = "StartingArea";
+                if (DepotController.TryConfigureImportedModel(importedDepot,
+                        out StartingArea importedStartingArea))
+                    return importedStartingArea;
+                Destroy(importedDepot);
 
                 Debug.LogWarning("The assigned Starting Area prefab is missing a StartingArea component or RoadConnection; using the placeholder.", this);
             }
@@ -1090,6 +1101,12 @@ namespace CouchGuys.ProceduralGeneration
             }
 
             deliveryNpc.SetDeliveryManager(GetComponent<DeliveryManager>());
+            if (GeneratedStartingArea.Depot != null)
+            {
+                deliveryNpc.SetDispatchPoints(
+                    GeneratedStartingArea.Depot.CouchHiddenSpawn,
+                    GeneratedStartingArea.Depot.VehicleArrival);
+            }
         }
 
         private void CalculateWorldBounds()
@@ -2947,7 +2964,8 @@ namespace CouchGuys.ProceduralGeneration
                     0f,
                     1f,
                     distance / m_terrainSettings.DepotBlendWidth);
-            float depotHeight = GeneratedStartingArea.transform.position.y - m_gridOrigin.y;
+            float depotHeight = GeneratedStartingArea.transform.position.y - m_gridOrigin.y -
+                                m_terrainSettings.DepotSurfaceClearance;
             return Mathf.Lerp(terrainHeight, depotHeight, influence);
         }
 

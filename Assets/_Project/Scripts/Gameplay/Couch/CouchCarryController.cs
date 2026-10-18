@@ -87,6 +87,7 @@ namespace CouchGuys.Gameplay.Couch
         private readonly SyncVar<int> m_modelVariantIndex = new(-1);
         private readonly SyncVar<NetworkObject> m_loadedVan = new();
         private readonly SyncVar<int> m_loadedCargoSlot = new(-1);
+        private readonly SyncVar<bool> m_depotTransportActive = new();
         private readonly ICouchCarrierServer[] m_serverOccupants = new ICouchCarrierServer[MaximumCarryPoints];
         private readonly Vector3[] m_debugHorizontalForces = new Vector3[MaximumCarryPoints];
         private readonly Vector3[] m_debugLiftForces = new Vector3[MaximumCarryPoints];
@@ -130,6 +131,7 @@ namespace CouchGuys.Gameplay.Couch
         public bool IsLoaded => m_loadedVan.Value != null;
         public NetworkObject LoadedVanObject => m_loadedVan.Value;
         public int LoadedCargoSlot => m_loadedCargoSlot.Value;
+        public bool IsPickupAvailable => !m_depotTransportActive.Value;
         // Delivery completion still requires a player carrier; thieves contribute to
         // physics but cannot accidentally complete the job for the party.
         internal int ServerCarrierCount => IsServerInitialized ? CountPlayerCarriers() : 0;
@@ -492,7 +494,7 @@ namespace CouchGuys.Gameplay.Couch
 
         internal bool TryGrabPointServer(ICouchCarrierServer carrier, int pointIndex)
         {
-            if (!IsServerInitialized || IsLoaded || carrier == null || !carrier.IsCarrierAvailable ||
+            if (!IsServerInitialized || !IsPickupAvailable || IsLoaded || carrier == null || !carrier.IsCarrierAvailable ||
                 !IsValidPointIndex(pointIndex) || GetPoint(pointIndex) == null || IsPointOccupied(pointIndex))
             {
                 return false;
@@ -510,6 +512,18 @@ namespace CouchGuys.Gameplay.Couch
             SetOccupantObjectId(pointIndex, carrier.CarrierNetworkObject.ObjectId);
             carrier.SetCarriedCouchServer(this, pointIndex);
             return true;
+        }
+
+        /// <summary>Temporarily hands authoritative motion to the depot conveyor.</summary>
+        [Server]
+        public void SetDepotTransportActiveServer(bool active)
+        {
+            if (!IsServerInitialized || m_rigidbody == null) return;
+            if (active) ReleaseAllOccupantsServer();
+            m_depotTransportActive.Value = active;
+            m_rigidbody.linearVelocity = Vector3.zero;
+            m_rigidbody.angularVelocity = Vector3.zero;
+            m_rigidbody.isKinematic = active;
         }
 
         internal PlayerCouchCarrier GetFirstHumanCarrierServer(PlayerCouchCarrier excludedCarrier)

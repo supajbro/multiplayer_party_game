@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Couch;
+using CouchGuys.Gameplay.Depot;
 using CouchGuys.Gameplay.Shop;
 using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Player;
@@ -8,6 +9,7 @@ using CouchGuys.ProceduralGeneration;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using UnityEngine;
+using System.Collections;
 
 namespace CouchGuys.Gameplay.Delivery
 {
@@ -60,6 +62,8 @@ namespace CouchGuys.Gameplay.Delivery
         private readonly SyncVar<float> m_deliveryDuration = new();
         private readonly SyncVar<int> m_deliveryFailureSequence = new();
         private readonly SyncVar<int> m_activeTierIndex = new(-1);
+        private readonly SyncVar<bool> m_exitDoorOpen = new();
+        private readonly SyncVar<bool> m_vehicleGarageDoorOpen = new();
 
         private GameObject m_collectionMarker;
         private Material m_runtimeMarkerMaterial;
@@ -74,6 +78,8 @@ namespace CouchGuys.Gameplay.Delivery
         private uint m_lastShopPurchaseRequestId;
         private bool m_candidatesReady;
         private readonly Collider[] m_vehicleClearanceHits = new Collider[64];
+        private DepotController m_depot;
+        private Coroutine m_conveyorDispatch;
 
         public event Action<int> CurrencyChanged;
         public event Action<DeliveryState> StateChanged;
@@ -126,6 +132,8 @@ namespace CouchGuys.Gameplay.Delivery
             m_currency.OnChange += OnCurrencyChanged;
             m_state.OnChange += OnStateChanged;
             m_objectiveStep.OnChange += OnObjectiveStepChanged;
+            m_exitDoorOpen.OnChange += OnExitDoorOpenChanged;
+            m_vehicleGarageDoorOpen.OnChange += OnVehicleGarageDoorOpenChanged;
             m_generator.RegionGenerated += OnRegionGenerated;
             m_generator.RegionClearing += OnRegionClearing;
         }
@@ -136,6 +144,8 @@ namespace CouchGuys.Gameplay.Delivery
             m_currency.OnChange -= OnCurrencyChanged;
             m_state.OnChange -= OnStateChanged;
             m_objectiveStep.OnChange -= OnObjectiveStepChanged;
+            m_exitDoorOpen.OnChange -= OnExitDoorOpenChanged;
+            m_vehicleGarageDoorOpen.OnChange -= OnVehicleGarageDoorOpenChanged;
             if (m_generator != null)
             {
                 m_generator.RegionGenerated -= OnRegionGenerated;
@@ -163,6 +173,8 @@ namespace CouchGuys.Gameplay.Delivery
         {
             base.OnStartServer();
             m_usedDestinationIndices.Clear();
+            m_exitDoorOpen.Value = false;
+            m_vehicleGarageDoorOpen.Value = false;
             m_state.Value = DeliveryState.Available;
             m_objectiveStep.Value = DeliveryObjectiveStep.AcceptDelivery;
             m_activeStageIndex.Value = -1;
@@ -190,6 +202,15 @@ namespace CouchGuys.Gameplay.Delivery
                  m_dialogueMaximumDistance))
             {
                 ReleaseDialogueLockServer(m_dialoguePlayer, true, "You moved too far from the Delivery Manager.");
+            }
+            if (IsServerInitialized && m_depot != null)
+            {
+                if (!m_exitDoorOpen.Value &&
+                    m_depot.IsDoorwayBlocked(DepotDoorKind.Exit))
+                    m_exitDoorOpen.Value = true;
+                if (!m_vehicleGarageDoorOpen.Value &&
+                    m_depot.IsDoorwayBlocked(DepotDoorKind.VehicleGarage))
+                    m_vehicleGarageDoorOpen.Value = true;
             }
         }
 
@@ -346,13 +367,20 @@ namespace CouchGuys.Gameplay.Delivery
             m_lastReward.Value = 0;
             m_activeTierIndex.Value = tierIndex;
             m_destinationIndex.Value = destinationIndex;
-            NetworkObject couch = Instantiate(m_couchPrefab, npc.CouchSpawnPosition, npc.CouchSpawnRotation);
+            ResolveDepot();
+            Vector3 couchSpawnPosition = m_depot != null && m_depot.HasConveyor
+                ? m_depot.CouchHiddenSpawn.position
+                : npc.CouchSpawnPosition;
+            Quaternion couchSpawnRotation = m_depot != null && m_depot.HasConveyor
+                ? m_depot.CouchHiddenSpawn.rotation
+                : npc.CouchSpawnRotation;
+            NetworkObject couch = Instantiate(m_couchPrefab, couchSpawnPosition, couchSpawnRotation);
             Spawn(couch);
-            couch.GetComponent<CouchCarryController>().SelectRandomModelVariantServer();
+            CouchCarryController couchController = couch.GetComponent<CouchCarryController>();
+            couchController.SelectRandomModelVariantServer();
             m_activeCouch.Value = couch;
             m_currency.Value -= tier.PurchasePrice;
             m_usedDestinationIndices.Add(destinationIndex);
-            StartDeliveryTimerServer(m_generator.DeliveryDestinations[destinationIndex], tier);
             DeliveryRouteMetrics selectedMetrics = m_generator.DeliveryDestinations[destinationIndex].RouteMetrics;
             if (selectedMetrics != null)
             {
@@ -366,7 +394,18 @@ namespace CouchGuys.Gameplay.Delivery
                     this);
             }
             SetStateServer(DeliveryState.CouchSpawned, DeliveryObjectiveStep.CarryCouch);
-            SetStateServer(DeliveryState.Transport, DeliveryObjectiveStep.DeliverCouch);
+            if (m_depot != null && m_depot.HasConveyor)
+            {
+                couchController.SetDepotTransportActiveServer(true);
+                if (m_conveyorDispatch != null) StopCoroutine(m_conveyorDispatch);
+                m_conveyorDispatch = StartCoroutine(DispatchCouchAlongConveyorServer(
+                    couchController, m_generator.DeliveryDestinations[destinationIndex], tier));
+            }
+            else
+            {
+                StartDeliveryTimerServer(m_generator.DeliveryDestinations[destinationIndex], tier);
+                SetStateServer(DeliveryState.Transport, DeliveryObjectiveStep.DeliverCouch);
+            }
             ReleaseDialogueLockServer(player, true, $"{tier.DisplayName} started.");
             return true;
         }
@@ -466,6 +505,7 @@ namespace CouchGuys.Gameplay.Delivery
             }
 
             Spawn(vehicle);
+            m_vehicleGarageDoorOpen.Value = true;
             failureReason = string.Empty;
             return true;
         }
@@ -478,6 +518,18 @@ namespace CouchGuys.Gameplay.Delivery
             position = default;
             rotation = default;
             if (npc == null) return false;
+
+            ResolveDepot();
+            if (m_depot != null)
+            {
+                foreach (Transform marker in m_depot.EnumerateVehicleSpawnMarkers())
+                {
+                    if (TryValidateVehicleSpawnPose(marker.position, marker.rotation, npc,
+                            out position, out rotation))
+                        return true;
+                }
+                return false;
+            }
 
             Vector3 primary = npc.VehicleSpawnPosition;
             Vector3 right = Vector3.ProjectOnPlane(npc.transform.right, Vector3.up).normalized;
@@ -495,40 +547,45 @@ namespace CouchGuys.Gameplay.Delivery
                              (ring * m_vehicleSpawnSearchStep);
                 }
 
-                Vector3 probeOrigin = primary + offset + Vector3.up * m_vehicleGroundProbeHeight;
-                if (!TryFindVehicleGround(probeOrigin, npc, out RaycastHit ground) ||
-                    Vector3.Angle(ground.normal, Vector3.up) > m_vehicleMaximumSlope)
-                {
-                    continue;
-                }
-
-                Quaternion candidateRotation = Quaternion.FromToRotation(Vector3.up, ground.normal) * heading;
-                Vector3 candidatePosition = ground.point + ground.normal * m_vehicleGroundOffset;
-                Vector3 halfExtents = Vector3.Max(m_vehicleClearanceSize * 0.5f, Vector3.one * 0.1f);
-                Vector3 centre = candidatePosition + candidateRotation * (Vector3.up * halfExtents.y);
-                int hitCount = Physics.OverlapBoxNonAlloc(
-                    centre,
-                    new Vector3(halfExtents.x, Mathf.Max(0.05f, halfExtents.y - 0.08f), halfExtents.z),
-                    m_vehicleClearanceHits,
-                    candidateRotation,
-                    m_vehicleObstructionMask,
-                    QueryTriggerInteraction.Ignore);
-                bool blocked = hitCount >= m_vehicleClearanceHits.Length;
-                for (int hitIndex = 0; hitIndex < hitCount; hitIndex++)
-                {
-                    Collider hit = m_vehicleClearanceHits[hitIndex];
-                    if (hit == null) continue;
-                    blocked = true;
-                    break;
-                }
-
-                if (blocked) continue;
-                position = candidatePosition;
-                rotation = candidateRotation;
-                return true;
+                if (TryValidateVehicleSpawnPose(primary + offset, heading, npc,
+                        out position, out rotation)) return true;
             }
 
             return false;
+        }
+
+        private bool TryValidateVehicleSpawnPose(Vector3 markerPosition,
+            Quaternion markerRotation, DeliveryNPC npc, out Vector3 position,
+            out Quaternion rotation)
+        {
+            position = default;
+            rotation = default;
+            Vector3 probeOrigin = markerPosition + Vector3.up * m_vehicleGroundProbeHeight;
+            if (!TryFindVehicleGround(probeOrigin, npc, out RaycastHit ground) ||
+                Vector3.Angle(ground.normal, Vector3.up) > m_vehicleMaximumSlope)
+                return false;
+
+            Quaternion heading = Quaternion.Euler(0f, markerRotation.eulerAngles.y, 0f);
+            Quaternion candidateRotation = Quaternion.FromToRotation(Vector3.up, ground.normal) * heading;
+            Vector3 candidatePosition = ground.point + ground.normal * m_vehicleGroundOffset;
+            Vector3 halfExtents = Vector3.Max(m_vehicleClearanceSize * 0.5f, Vector3.one * 0.1f);
+            Vector3 centre = candidatePosition + candidateRotation * (Vector3.up * halfExtents.y);
+            int hitCount = Physics.OverlapBoxNonAlloc(centre,
+                new Vector3(halfExtents.x, Mathf.Max(0.05f, halfExtents.y - 0.08f), halfExtents.z),
+                m_vehicleClearanceHits, candidateRotation, m_vehicleObstructionMask,
+                QueryTriggerInteraction.Ignore);
+            bool blocked = hitCount >= m_vehicleClearanceHits.Length;
+            for (int hitIndex = 0; hitIndex < hitCount; hitIndex++)
+            {
+                Collider hit = m_vehicleClearanceHits[hitIndex];
+                if (hit == null || hit.isTrigger) continue;
+                blocked = true;
+                break;
+            }
+            if (blocked) return false;
+            position = candidatePosition;
+            rotation = candidateRotation;
+            return true;
         }
 
         private bool TryFindVehicleGround(
@@ -625,6 +682,67 @@ namespace CouchGuys.Gameplay.Delivery
             return true;
         }
 
+        [Server]
+        public bool TryToggleNearbyDepotDoorServer(PlayerCouchCarrier player, float maximumDistance)
+        {
+            ResolveDepot();
+            if (!IsServerInitialized || player == null || m_depot == null ||
+                !m_depot.HasNearbyButton(player.transform.position, maximumDistance,
+                    out DepotDoorKind kind))
+                return false;
+
+            if (kind == DepotDoorKind.Exit)
+            {
+                bool open = !m_exitDoorOpen.Value;
+                if (!open && m_depot.IsDoorwayBlocked(kind)) return false;
+                m_exitDoorOpen.Value = open;
+            }
+            else
+            {
+                bool open = !m_vehicleGarageDoorOpen.Value;
+                if (!open && m_depot.IsDoorwayBlocked(kind)) return false;
+                m_vehicleGarageDoorOpen.Value = open;
+            }
+            return true;
+        }
+
+        [Server]
+        private IEnumerator DispatchCouchAlongConveyorServer(
+            CouchCarryController couch, DeliveryDestination destination,
+            DeliveryTierConfig tier)
+        {
+            if (m_depot == null || couch == null) yield break;
+            if (m_depot.ArrivalDelay > 0f)
+                yield return new WaitForSeconds(m_depot.ArrivalDelay);
+
+            IReadOnlyList<Transform> path = m_depot.ConveyorPath;
+            for (int index = 0; index < path.Count; index++)
+            {
+                Transform waypoint = path[index];
+                if (waypoint == null) continue;
+                while (couch != null && couch.IsSpawned &&
+                       Vector3.Distance(couch.transform.position, waypoint.position) > 0.015f)
+                {
+                    Vector3 next = Vector3.MoveTowards(couch.transform.position,
+                        waypoint.position, m_depot.ConveyorSpeed * Time.fixedDeltaTime);
+                    Quaternion rotation = Quaternion.RotateTowards(couch.transform.rotation,
+                        waypoint.rotation, 120f * Time.fixedDeltaTime);
+                    couch.CouchRigidbody.MovePosition(next);
+                    couch.CouchRigidbody.MoveRotation(rotation);
+                    yield return new WaitForFixedUpdate();
+                }
+                if (couch == null || !couch.IsSpawned) yield break;
+                couch.CouchRigidbody.position = waypoint.position;
+                couch.CouchRigidbody.rotation = waypoint.rotation;
+            }
+
+            if (couch == null || !couch.IsSpawned) yield break;
+            couch.SetDepotTransportActiveServer(false);
+            StartDeliveryTimerServer(destination, tier);
+            SetStateServer(DeliveryState.Transport, DeliveryObjectiveStep.DeliverCouch);
+            m_conveyorDispatch = null;
+        }
+
         private void CompleteDeliveryServer(CouchCarryController couch)
         {
             if (!IsServerInitialized || m_state.Value != DeliveryState.Transport ||
@@ -635,6 +753,7 @@ namespace CouchGuys.Gameplay.Delivery
             }
 
             m_isCompletingDelivery = true;
+            StopConveyorDispatchServer();
             StopDeliveryTimerServer();
             SetStateServer(DeliveryState.DestinationReached, DeliveryObjectiveStep.DeliverCouch);
             NetworkObject deliveredCouch = m_activeCouch.Value;
@@ -687,6 +806,7 @@ namespace CouchGuys.Gameplay.Delivery
             }
 
             StopDeliveryTimerServer();
+            StopConveyorDispatchServer();
             m_deliveryFailureSequence.Value++;
             SetStateServer(DeliveryState.Failed, DeliveryObjectiveStep.None);
             NetworkObject failedCouch = m_activeCouch.Value;
@@ -740,13 +860,33 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void OnRegionGenerated(NeighbourhoodGenerator generator)
         {
+            ResolveDepot();
+            m_depot?.ApplyDoorStates(m_exitDoorOpen.Value,
+                m_vehicleGarageDoorOpen.Value, true);
             RebuildCandidateCache();
         }
 
         private void OnRegionClearing(NeighbourhoodGenerator generator)
         {
+            StopConveyorDispatchServer();
+            m_depot = null;
             m_candidatesReady = false;
             for (int i = 0; i < m_tierCandidates.Length; i++) m_tierCandidates[i].Clear();
+        }
+
+        private void ResolveDepot()
+        {
+            m_depot = m_generator != null && m_generator.GeneratedStartingArea != null
+                ? m_generator.GeneratedStartingArea.Depot
+                : null;
+        }
+
+        [Server]
+        private void StopConveyorDispatchServer()
+        {
+            if (m_conveyorDispatch == null) return;
+            StopCoroutine(m_conveyorDispatch);
+            m_conveyorDispatch = null;
         }
 
         private void EnsureCandidateCache()
@@ -856,6 +996,18 @@ namespace CouchGuys.Gameplay.Delivery
             bool asServer)
         {
             ObjectiveStepChanged?.Invoke(next);
+        }
+
+        private void OnExitDoorOpenChanged(bool previous, bool next, bool asServer)
+        {
+            ResolveDepot();
+            m_depot?.ApplyDoorStates(next, m_vehicleGarageDoorOpen.Value);
+        }
+
+        private void OnVehicleGarageDoorOpenChanged(bool previous, bool next, bool asServer)
+        {
+            ResolveDepot();
+            m_depot?.ApplyDoorStates(m_exitDoorOpen.Value, next);
         }
 
         private void RefreshCollectionMarker()

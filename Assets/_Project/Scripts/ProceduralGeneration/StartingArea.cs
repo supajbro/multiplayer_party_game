@@ -1,4 +1,5 @@
 using UnityEngine;
+using CouchGuys.Gameplay.Depot;
 
 namespace CouchGuys.ProceduralGeneration
 {
@@ -10,11 +11,13 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private Transform[] m_playerSpawnPoints = new Transform[4];
         [SerializeField] private Transform m_deliveryNpcSpawnPoint;
         [SerializeField] private Vector2Int m_gridFootprint = new Vector2Int(3, 3);
+        [SerializeField] private DepotController m_depot;
 
         public Transform RoadConnection => m_roadConnection;
         public Transform[] PlayerSpawnPoints => m_playerSpawnPoints;
         public Transform DeliveryNpcSpawnPoint => m_deliveryNpcSpawnPoint;
         public Vector2Int GridFootprint => m_gridFootprint;
+        public DepotController Depot => m_depot;
 
         public void Initialise(
             Transform roadConnection,
@@ -31,6 +34,11 @@ namespace CouchGuys.ProceduralGeneration
         public void SetDeliveryNpcSpawnPoint(Transform spawnPoint)
         {
             m_deliveryNpcSpawnPoint = spawnPoint;
+        }
+
+        public void SetDepot(DepotController depot)
+        {
+            m_depot = depot;
         }
     }
 }

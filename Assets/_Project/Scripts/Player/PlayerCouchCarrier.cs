@@ -1,5 +1,6 @@
 using CouchGuys.Gameplay.Couch;
 using CouchGuys.Gameplay.Delivery;
+using CouchGuys.Gameplay.Depot;
 using CouchGuys.Gameplay.Shop;
 using CouchGuys.Gameplay.Sled;
 using CouchGuys.Input;
@@ -498,6 +499,17 @@ namespace CouchGuys.Player
                 }
             }
 
+            bool depotDoorButton = false;
+            DepotController depot = FindFirstObjectByType<DepotController>();
+            if (depot != null && depot.HasNearbyButton(transform.position,
+                    Mathf.Sqrt(closestDistanceSquared), out _))
+            {
+                depotDoorButton = true;
+                closestPoint = null;
+                closestSledPoint = null;
+                closestNpc = null;
+            }
+
             if (closestPoint != null)
             {
                 RequestGrabServerRpc(closestPoint.Couch.NetworkObject, closestPoint.PointIndex);
@@ -509,6 +521,10 @@ namespace CouchGuys.Player
             else if (closestNpc != null)
             {
                 RequestDeliveryServerRpc();
+            }
+            else if (depotDoorButton)
+            {
+                RequestDepotDoorServerRpc();
             }
         }
 
@@ -524,6 +540,13 @@ namespace CouchGuys.Player
                 m_sledInteractionPrompt = string.Empty;
                 return;
             }
+            DepotController depot = FindFirstObjectByType<DepotController>();
+            if (depot != null && depot.HasNearbyButton(
+                    transform.position, m_interactionRange, out _))
+            {
+                m_sledInteractionPrompt = "Press E to operate roller door";
+                return;
+            }
             float rangeSquared = m_interactionRange * m_interactionRange;
             foreach (SledGrabPoint point in FindObjectsByType<SledGrabPoint>(
                          FindObjectsInactive.Exclude, FindObjectsSortMode.None))
@@ -536,6 +559,14 @@ namespace CouchGuys.Player
                 }
             }
             m_sledInteractionPrompt = string.Empty;
+        }
+
+        [ServerRpc]
+        private void RequestDepotDoorServerRpc()
+        {
+            DeliveryManager deliveryManager = FindFirstObjectByType<DeliveryManager>();
+            deliveryManager?.TryToggleNearbyDepotDoorServer(
+                this, m_interactionRange + m_serverRangeTolerance);
         }
 
         [ServerRpc]

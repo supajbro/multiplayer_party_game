@@ -185,6 +185,8 @@ namespace CouchGuys.ProceduralGeneration
         [Min(1f)] public float RoadHalfWidth;
         [Min(0f)] public float RoadShoulderWidth;
         [Min(0f)] public float DepotBlendWidth;
+        [Tooltip("Vertical gap between the depot floor and terrain beneath it.")]
+        [Min(0f)] public float DepotSurfaceClearance;
         [Min(0f)] public float HousePadBlendWidth;
         [Min(0f)] public float RoadSurfaceOffset;
         [Min(0.1f)] public float TextureScale;
@@ -197,6 +199,7 @@ namespace CouchGuys.ProceduralGeneration
             RoadHalfWidth = 4f,
             RoadShoulderWidth = 4f,
             DepotBlendWidth = 4f,
+            DepotSurfaceClearance = 0.2f,
             HousePadBlendWidth = 3f,
             RoadSurfaceOffset = 0.035f,
             TextureScale = 16f,
@@ -210,6 +213,7 @@ namespace CouchGuys.ProceduralGeneration
             RoadHalfWidth = Mathf.Max(1f, RoadHalfWidth);
             RoadShoulderWidth = Mathf.Max(0f, RoadShoulderWidth);
             DepotBlendWidth = Mathf.Max(0f, DepotBlendWidth);
+            DepotSurfaceClearance = Mathf.Max(0f, DepotSurfaceClearance);
             HousePadBlendWidth = Mathf.Max(0f, HousePadBlendWidth);
             RoadSurfaceOffset = Mathf.Max(0f, RoadSurfaceOffset);
             TextureScale = Mathf.Max(0.1f, TextureScale);

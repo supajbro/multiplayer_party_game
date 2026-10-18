@@ -66,7 +66,9 @@ namespace CouchGuys.ProceduralGeneration
         public NeighbourhoodBorderSettings Border => m_border;
         public GameObject[] RoadPrefabs => m_roadPrefabs;
         public GameObject GroundPrefab => m_groundPrefab;
-        public GameObject StartingAreaPrefab => m_startingAreaPrefab;
+        // Unity can retain a serialized "missing" object after an imported model changes.
+        // Normalize that fake-null value so consumers never dereference it.
+        public GameObject StartingAreaPrefab => m_startingAreaPrefab ? m_startingAreaPrefab : null;
         public GameObject DeliveryNpcPrefab => m_deliveryNpcPrefab;
         public GameObject MansionPrefab => m_mansionPrefab;
         public WeightedLot[] Lots => m_lots;
