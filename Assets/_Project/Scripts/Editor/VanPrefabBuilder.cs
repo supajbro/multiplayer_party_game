@@ -13,9 +13,10 @@ using UnityEngine.SceneManagement;
 
 namespace CouchGuys.Editor
 {
-    /// <summary>Builds three network-ready vans from the imported Blender/FBX hierarchies.</summary>
+    /// <summary>Builds the network-ready vehicle variants around the shared delivery truck visual.</summary>
     public static class VanPrefabBuilder
     {
+        private const float SeatedPlayerRootDrop = .8f;
         private const string SettingsFolder = "Assets/_Project/Settings/Vehicles";
         private const string PrefabFolder = "Assets/_Project/Prefabs/Vehicles";
         private const string ScenePath = "Assets/Scenes/SampleScene.unity";
@@ -24,8 +25,9 @@ namespace CouchGuys.Editor
         private static void BuildMissingVanAssetsAfterImport()
         {
             GameObject light = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/LightVan.prefab");
-            Transform imported = light != null ? FindDescendant(light.transform, "ImportedVanModel") : null;
-            if (light == null || imported == null || imported.localScale.x < 50f || !AreVanPrefabsRegistered())
+            Transform imported = light != null ? FindDescendant(light.transform, "ImportedTruckModel") : null;
+            if (light == null || imported == null || FindDescendant(light.transform, "Seat_00_Driver") == null ||
+                !AreVanPrefabsRegistered())
                 EditorApplication.delayCall += BuildVanSystem;
         }
 
@@ -47,7 +49,7 @@ namespace CouchGuys.Editor
             AddTestVanToScene();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("Couch Guys imported van models, rear doors, cargo points, networking, and SampleScene test van built.");
+            Debug.Log("Couch Guys truck visual, four seats, cargo points, networking, and SampleScene test vehicle built.");
         }
 
         public static void BuildFromCommandLine() => BuildVanSystem();
@@ -85,61 +87,66 @@ namespace CouchGuys.Editor
             try
             {
                 Rigidbody rb = root.AddComponent<Rigidbody>(); rb.mass = settings.VehicleMass; rb.interpolation = RigidbodyInterpolation.Interpolate; rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-                rb.centerOfMass = new Vector3(0f, .65f, 0f); rb.maxAngularVelocity = 5f;
+                rb.centerOfMass = new Vector3(0f, 1.05f, -.1f); rb.maxAngularVelocity = 5f;
                 NetworkObject networkObject = root.AddComponent<NetworkObject>();
                 NetworkTransform networkTransform = root.AddComponent<NetworkTransform>();
                 VanController controller = root.AddComponent<VanController>();
 
                 GameObject visual = Child(root.transform, "VisualModel", Vector3.zero);
-                string modelName = settings.Quality == VanQuality.Light ? "van_light" : settings.Quality == VanQuality.Good ? "van_good" : "van_best";
-                GameObject modelPrefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/_Project/Models/Vans/{modelName}.fbx");
-                if (modelPrefab == null) throw new UnityException($"Missing imported van model: {modelName}.fbx");
+                GameObject modelPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Models/truck/truck.fbx");
+                if (modelPrefab == null) throw new UnityException("Missing imported truck model: truck.fbx");
                 GameObject imported = (GameObject)PrefabUtility.InstantiatePrefab(modelPrefab, visual.transform);
-                imported.name = "ImportedVanModel";
-                // These FBX files contain centimetre-sized mesh data in Blender's Z-up
-                // orientation. Normalize once at the imported root: Blender -Y becomes
-                // Unity +Z, Z becomes +Y, and one authored metre becomes one Unity metre.
-                imported.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.Euler(-90f, 0f, 0f));
+                imported.name = "ImportedTruckModel";
+                // Unity imports this FBX's centimetre-sized, Z-up hierarchy without
+                // baking its authored axes. Convert it once at the visual root:
+                // source +Z becomes Unity +Y and the imported -X nose becomes +Z.
+                imported.transform.SetLocalPositionAndRotation(
+                    Vector3.zero,
+                    Quaternion.LookRotation(Vector3.up, Vector3.left));
                 imported.transform.localScale = Vector3.one * 100f;
                 foreach (Animator animator in imported.GetComponentsInChildren<Animator>(true)) animator.enabled = false;
                 Bounds bounds = CalculateRendererBounds(imported);
                 GameObject colliders = Child(root.transform, "Colliders", Vector3.zero);
-                Transform loadingAnchor = RequireDescendant(imported.transform, "CargoLoadingAnchor");
+                Transform loadingAnchor = Child(root.transform, "CargoLoadingPoint", new Vector3(0f, 1.32f, -4.23f)).transform;
                 Vector3 rearDirection = Vector3.ProjectOnPlane(loadingAnchor.position - root.transform.position, Vector3.up).normalized;
                 AddCompoundColliders(colliders, bounds, rearDirection);
                 Transform[] wheelTransforms =
                 {
-                    RequireDescendant(imported.transform, "Wheel_FL"),
-                    RequireDescendant(imported.transform, "Wheel_FR"),
-                    RequireDescendant(imported.transform, "Wheel_RL"),
-                    RequireDescendant(imported.transform, "Wheel_RR")
+                    RequireDescendant(imported.transform, "Tire_Front_Left"),
+                    RequireDescendant(imported.transform, "Tire_Front_Right"),
+                    RequireDescendant(imported.transform, "Tire_Rear_Left"),
+                    RequireDescendant(imported.transform, "Tire_Rear_Right")
                 };
-                Transform driverSeat = RequireDescendant(imported.transform, "DriverSeatAnchor");
+                Transform seats = Child(root.transform, "Seats", Vector3.zero).transform;
+                Transform[] seatAnchors =
+                {
+                    CreateSeatAnchor(seats, "Seat_00_Driver", RequireDescendant(imported.transform, "SeatAnchor_Front_Right"), root.transform),
+                    CreateSeatAnchor(seats, "Seat_01_FrontPassenger", RequireDescendant(imported.transform, "SeatAnchor_Front_Left"), root.transform),
+                    CreateSeatAnchor(seats, "Seat_02_RearPassenger", RequireDescendant(imported.transform, "SeatAnchor_Rear_Right"), root.transform),
+                    CreateSeatAnchor(seats, "Seat_03_RearPassenger", RequireDescendant(imported.transform, "SeatAnchor_Rear_Left"), root.transform)
+                };
                 Transform cameraTarget = Child(root.transform, "CameraTarget", new Vector3(0f, Mathf.Clamp(bounds.size.y * .68f, 1.45f, 2f), 0f)).transform;
-                Transform leftExit = Child(root.transform, "ExitPointLeft", new Vector3(bounds.min.x - .7f, .2f, bounds.center.z)).transform;
-                Transform rightExit = Child(root.transform, "ExitPointRight", new Vector3(bounds.max.x + .7f, .2f, bounds.center.z)).transform;
-                Transform leftDoor = RequireDescendant(imported.transform, "RearDoorHinge_L");
-                Transform rightDoor = RequireDescendant(imported.transform, "RearDoorHinge_R");
-                Transform rearInteraction = RequireDescendant(imported.transform, "RearDoorInteractionAnchor");
-                Transform storageAnchor = RequireDescendant(imported.transform, "CargoStorageAnchor");
+                Transform leftExit = Child(root.transform, "ExitPointLeft", new Vector3(-1.65f, .95f, 1.25f)).transform;
+                Transform rightExit = Child(root.transform, "ExitPointRight", new Vector3(1.65f, .95f, 1.25f)).transform;
+                Transform rearInteraction = Child(root.transform, "RearDoorInteractionPoint", new Vector3(.8f, 1.65f, -4.36f)).transform;
                 GameObject cargo = Child(root.transform, "Cargo", Vector3.zero);
                 int capacity = settings.CargoCapacity;
                 Transform[] cargoPoints = new Transform[capacity];
                 for (int index = 0; index < capacity; index++)
                 {
-                    GameObject point = Child(cargo.transform, $"CargoPoint_{index + 1:00}", root.transform.InverseTransformPoint(storageAnchor.position));
-                    point.transform.localPosition -= Vector3.up * .45f;
-                    point.transform.localPosition += Vector3.up * (.92f * index);
+                    Vector3 position = index == 0
+                        ? new Vector3(0f, .89f, -1.22f)
+                        : new Vector3(0f, .89f, -2.75f);
+                    GameObject point = Child(cargo.transform, $"CargoPoint_{index + 1:00}", position);
                     point.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
                     cargoPoints[index] = point.transform;
                 }
-                Renderer renderer = RequireDescendant(imported.transform, "MainVanBody").GetComponent<Renderer>();
+                Renderer renderer = RequireDescendant(imported.transform, "Cab_FrontNose").GetComponent<Renderer>();
 
                 SetReference(controller, "m_settings", settings); SetReference(controller, "m_rigidbody", rb);
                 SetReference(controller, "m_visualModel", visual.transform); SetReference(controller, "m_cameraTarget", cameraTarget);
-                SetReference(controller, "m_driverSeat", driverSeat); SetReference(controller, "m_destroyedRenderer", renderer);
+                SetArray(controller, "m_seatAnchors", seatAnchors); SetReference(controller, "m_destroyedRenderer", renderer);
                 SetArray(controller, "m_exitPoints", new Object[] { leftExit, rightExit }); SetArray(controller, "m_wheels", wheelTransforms);
-                SetReference(controller, "m_leftDoorPivot", leftDoor); SetReference(controller, "m_rightDoorPivot", rightDoor);
                 SetReference(controller, "m_rearDoorInteractionPoint", rearInteraction); SetReference(controller, "m_cargoLoadingPoint", loadingAnchor);
                 SetArray(controller, "m_cargoPoints", cargoPoints);
 
@@ -196,6 +203,19 @@ namespace CouchGuys.Editor
                 if (found != null) return found;
             }
             return null;
+        }
+
+        private static Transform CreateSeatAnchor(
+            Transform parent,
+            string name,
+            Transform modelMarker,
+            Transform vehicleRoot)
+        {
+            Vector3 seatPosition = vehicleRoot.InverseTransformPoint(modelMarker.position) -
+                Vector3.up * SeatedPlayerRootDrop;
+            GameObject anchor = Child(parent, name, seatPosition);
+            anchor.transform.localRotation = Quaternion.identity;
+            return anchor.transform;
         }
 
         private static void ConfigureNetworkBehaviours(NetworkObject no, NetworkTransform nt, VanController controller)

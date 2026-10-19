@@ -87,6 +87,8 @@ namespace CouchGuys.Player
         {
             m_nextGroundCastTime = 0f;
             m_detailLevel = -1;
+            foreach (Renderer ringRenderer in m_ringRenderers)
+                if (ringRenderer != null) ringRenderer.enabled = true;
             if (m_floatingParticles != null && !m_floatingParticles.isPlaying) m_floatingParticles.Play();
             if (m_energyRipples != null && !m_energyRipples.isPlaying) m_energyRipples.Play();
         }
@@ -109,6 +111,10 @@ namespace CouchGuys.Player
             if (m_robotVisual != null) m_robotVisual.localPosition = m_robotBaseLocalPosition;
             if (m_ringPivot != null) m_ringPivot.localPosition = m_ringPivotBaseLocalPosition;
             if (m_hoverRing != null) m_hoverRing.localRotation = m_ringBaseLocalRotation;
+            foreach (Renderer ringRenderer in m_ringRenderers)
+                if (ringRenderer != null) ringRenderer.enabled = false;
+            if (m_floatingParticles != null) m_floatingParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            if (m_energyRipples != null) m_energyRipples.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             if (m_groundGlow != null) m_groundGlow.enabled = false;
         }
 

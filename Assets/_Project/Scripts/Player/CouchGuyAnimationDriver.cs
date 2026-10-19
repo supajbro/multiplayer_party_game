@@ -51,6 +51,8 @@ namespace CouchGuys.Player
         private float m_recoilRecovery = 12f;
         private float m_recoilRoll;
         private int m_recoilDirection = 1;
+        private bool m_vehicleSeated;
+        private bool m_vehicleDriver;
 
         public Animator Animator => m_animator;
         public float NormalizedMovementSpeed { get; private set; }
@@ -97,7 +99,23 @@ namespace CouchGuys.Player
 
             UpdateMovementParameters();
             UpdateCarryingParameters();
-            ApplyProceduralRecoil();
+            if (m_vehicleSeated) ApplyVehicleSeatPose();
+            else ApplyProceduralRecoil();
+        }
+
+        public void SetVehicleSeated(bool seated, bool driver)
+        {
+            if (m_vehicleSeated == seated && m_vehicleDriver == driver) return;
+            m_vehicleSeated = seated;
+            m_vehicleDriver = driver;
+            m_recoilAmount = 0f;
+            m_recoilRoll = 0f;
+            m_hasPositionSample = false;
+            if (m_animator == null) return;
+            m_animator.SetFloat(MoveXHash, 0f);
+            m_animator.SetFloat(MoveYHash, 0f);
+            m_animator.SetFloat(SpeedHash, 0f);
+            m_animator.SetBool(GroundedHash, true);
         }
 
         /// <summary>Allows weapon/gameplay code to enter and leave the pointing pose.</summary>
@@ -167,6 +185,17 @@ namespace CouchGuys.Player
         {
             Vector3 currentPosition = transform.position;
             float deltaTime = Mathf.Max(Time.deltaTime, 0.0001f);
+            if (m_vehicleSeated)
+            {
+                m_previousPosition = currentPosition;
+                m_hasPositionSample = true;
+                NormalizedMovementSpeed = 0f;
+                m_animator.SetFloat(MoveXHash, 0f);
+                m_animator.SetFloat(MoveYHash, 0f);
+                m_animator.SetFloat(SpeedHash, 0f);
+                m_animator.SetBool(GroundedHash, true);
+                return;
+            }
             Vector3 worldVelocity = m_hasPositionSample
                 ? (currentPosition - m_previousPosition) / deltaTime
                 : Vector3.zero;
@@ -256,6 +285,24 @@ namespace CouchGuys.Player
 
             m_recoilAmount = Mathf.MoveTowards(m_recoilAmount, 0f, m_recoilRecovery * Time.deltaTime);
             m_recoilRoll = Mathf.MoveTowards(m_recoilRoll, 0f, m_recoilRecovery * 0.75f * Time.deltaTime);
+        }
+
+        private void ApplyVehicleSeatPose()
+        {
+            if (m_vehicleDriver)
+            {
+                ApplyAdditiveRotation(m_upperArmLeft, new Vector3(22f, -12f, -18f));
+                ApplyAdditiveRotation(m_lowerArmLeft, new Vector3(-48f, 0f, 0f));
+                ApplyAdditiveRotation(m_upperArmRight, new Vector3(22f, 12f, 18f));
+                ApplyAdditiveRotation(m_lowerArmRight, new Vector3(-48f, 0f, 0f));
+            }
+            else
+            {
+                ApplyAdditiveRotation(m_upperArmLeft, new Vector3(8f, -4f, -7f));
+                ApplyAdditiveRotation(m_lowerArmLeft, new Vector3(-18f, 0f, 0f));
+                ApplyAdditiveRotation(m_upperArmRight, new Vector3(8f, 4f, 7f));
+                ApplyAdditiveRotation(m_lowerArmRight, new Vector3(-18f, 0f, 0f));
+            }
         }
 
         private static void ApplyAdditiveRotation(Transform bone, Vector3 euler)

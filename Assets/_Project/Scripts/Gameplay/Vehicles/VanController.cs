@@ -13,6 +13,7 @@ namespace CouchGuys.Gameplay.Vehicles
     [DisallowMultipleComponent]
     public sealed class VanController : NetworkBehaviour
     {
+        public const int MaximumSeats = 4;
         public static readonly HashSet<VanController> ActiveVans = new();
 
         [Header("Configuration")]
@@ -21,7 +22,7 @@ namespace CouchGuys.Gameplay.Vehicles
         [SerializeField] private Rigidbody m_rigidbody;
         [SerializeField] private Transform m_visualModel;
         [SerializeField] private Transform m_cameraTarget;
-        [SerializeField] private Transform m_driverSeat;
+        [SerializeField] private Transform[] m_seatAnchors;
         [SerializeField] private Transform[] m_exitPoints;
         [SerializeField] private Transform[] m_wheels;
         [SerializeField] private Renderer m_destroyedRenderer;
@@ -34,6 +35,9 @@ namespace CouchGuys.Gameplay.Vehicles
         private readonly SyncVar<float> m_fuel = new();
         private readonly SyncVar<float> m_health = new();
         private readonly SyncVar<NetworkObject> m_driver = new();
+        private readonly SyncVar<NetworkObject> m_frontPassenger = new();
+        private readonly SyncVar<NetworkObject> m_rearPassengerLeft = new();
+        private readonly SyncVar<NetworkObject> m_rearPassengerRight = new();
         private readonly SyncVar<bool> m_destroyed = new();
         private readonly SyncVar<bool> m_rearDoorsOpen = new();
         private readonly SyncList<NetworkObject> m_loadedCouches = new();
@@ -60,8 +64,20 @@ namespace CouchGuys.Gameplay.Vehicles
         public float Fuel => m_fuel.Value; public float Health => m_health.Value;
         public float FuelFraction => m_settings != null ? m_fuel.Value / m_settings.MaxFuel : 0f;
         public float HealthFraction => m_settings != null ? m_health.Value / m_settings.MaxHealth : 0f;
-        public bool IsDestroyed => m_destroyed.Value; public bool IsOccupied => m_driver.Value != null;
+        public bool IsDestroyed => m_destroyed.Value;
+        public bool IsOccupied => OccupantCount > 0;
+        public bool HasAvailableSeat => !IsDestroyed && OccupantCount < MaximumSeats;
         public NetworkObject Driver => m_driver.Value; public Transform CameraTarget => m_cameraTarget != null ? m_cameraTarget : transform;
+        public int OccupantCount
+        {
+            get
+            {
+                int count = 0;
+                for (int index = 0; index < MaximumSeats; index++)
+                    if (GetOccupant(index) != null) count++;
+                return count;
+            }
+        }
         public float SpeedKph => m_rigidbody != null ? m_rigidbody.linearVelocity.magnitude * 3.6f : 0f;
         public bool RearDoorsOpen => m_rearDoorsOpen.Value;
         public float RearDoorOpenProgress => m_doorOpenProgress;
@@ -133,10 +149,17 @@ namespace CouchGuys.Gameplay.Vehicles
             m_health.Value = m_settings.MaxHealth;
             m_destroyed.Value = false;
             m_rearDoorsOpen.Value = false;
+            for (int index = 0; index < MaximumSeats; index++) SetOccupant(index, null);
             m_loadedCouches.Clear();
             int capacity = Mathf.Min(m_settings.CargoCapacity, m_cargoPoints != null ? m_cargoPoints.Length : 0);
             for (int index = 0; index < capacity; index++) m_loadedCouches.Add(null);
             m_rigidbody.isKinematic = false;
+        }
+
+        public override void OnStopServer()
+        {
+            ReleaseAllOccupantsServer();
+            base.OnStopServer();
         }
 
         public override void OnStartClient()
@@ -156,9 +179,11 @@ namespace CouchGuys.Gameplay.Vehicles
         private void LateUpdate() => UpdateVisuals(Time.deltaTime);
 
         [Server]
-        public bool TryEnterServer(PlayerVanInteractor player)
+        public bool TryEnterServer(PlayerVanInteractor player, out int seatIndex)
         {
-            if (player == null || IsOccupied || IsDestroyed || m_settings == null) return false;
+            seatIndex = -1;
+            if (player == null || !HasAvailableSeat || m_settings == null ||
+                GetSeatIndex(player.NetworkObject) >= 0) return false;
             if ((player.transform.position - transform.position).sqrMagnitude > m_settings.InteractionRange * m_settings.InteractionRange) return false;
             if (m_rearDoorsOpen.Value && !m_settings.AllowDrivingWithDoorsOpen)
             {
@@ -167,8 +192,15 @@ namespace CouchGuys.Gameplay.Vehicles
                 if (IsDoorwayObstructed()) return false;
                 SetRearDoorsServer(false);
             }
-            m_driver.Value = player.NetworkObject;
-            m_driveInput = Vector2.zero;
+            for (int index = 0; index < MaximumSeats; index++)
+            {
+                if (GetOccupant(index) != null) continue;
+                seatIndex = index;
+                SetOccupant(index, player.NetworkObject);
+                break;
+            }
+            if (seatIndex < 0) return false;
+            if (seatIndex == 0) m_driveInput = Vector2.zero;
             return true;
         }
 
@@ -183,8 +215,45 @@ namespace CouchGuys.Gameplay.Vehicles
         [Server]
         public void LeaveServer(PlayerVanInteractor player)
         {
-            if (player != null && m_driver.Value == player.NetworkObject)
-            { m_driver.Value = null; m_driveInput = Vector2.zero; }
+            if (player == null) return;
+            int seatIndex = GetSeatIndex(player.NetworkObject);
+            if (seatIndex < 0) return;
+            SetOccupant(seatIndex, null);
+            if (seatIndex == 0) m_driveInput = Vector2.zero;
+        }
+
+        public Transform GetSeatAnchor(int seatIndex) =>
+            m_seatAnchors != null && seatIndex >= 0 && seatIndex < m_seatAnchors.Length
+                ? m_seatAnchors[seatIndex]
+                : null;
+
+        public NetworkObject GetOccupant(int seatIndex) => seatIndex switch
+        {
+            0 => m_driver.Value,
+            1 => m_frontPassenger.Value,
+            2 => m_rearPassengerLeft.Value,
+            3 => m_rearPassengerRight.Value,
+            _ => null
+        };
+
+        private int GetSeatIndex(NetworkObject player)
+        {
+            if (player == null) return -1;
+            for (int index = 0; index < MaximumSeats; index++)
+                if (GetOccupant(index) == player) return index;
+            return -1;
+        }
+
+        [Server]
+        private void SetOccupant(int seatIndex, NetworkObject occupant)
+        {
+            switch (seatIndex)
+            {
+                case 0: m_driver.Value = occupant; break;
+                case 1: m_frontPassenger.Value = occupant; break;
+                case 2: m_rearPassengerLeft.Value = occupant; break;
+                case 3: m_rearPassengerRight.Value = occupant; break;
+            }
         }
 
         public Transform GetCargoPoint(int slot) => m_cargoPoints != null && slot >= 0 && slot < m_cargoPoints.Length
@@ -338,10 +407,23 @@ namespace CouchGuys.Gameplay.Vehicles
             m_destroyed.Value = true;
             m_driveInput = Vector2.zero;
             RecoverLoadedCouchesServer();
-            NetworkObject previousDriver = m_driver.Value;
-            m_driver.Value = null;
-            if (previousDriver != null && previousDriver.TryGetComponent(out PlayerVanInteractor interactor)) interactor.ForceExitServer(this);
+            ReleaseAllOccupantsServer();
             SetDestroyedObserversRpc();
+        }
+
+        [Server]
+        private void ReleaseAllOccupantsServer()
+        {
+            NetworkObject[] occupants = new NetworkObject[MaximumSeats];
+            for (int index = 0; index < MaximumSeats; index++)
+            {
+                occupants[index] = GetOccupant(index);
+                SetOccupant(index, null);
+            }
+            m_driveInput = Vector2.zero;
+            for (int index = 0; index < occupants.Length; index++)
+                if (occupants[index] != null && occupants[index].TryGetComponent(out PlayerVanInteractor interactor))
+                    interactor.ForceExitServer(this);
         }
 
         [ObserversRpc(RunLocally = true)]
@@ -493,13 +575,32 @@ namespace CouchGuys.Gameplay.Vehicles
             if (m_exitPoints != null) foreach (Transform point in m_exitPoints)
             {
                 if (point == null) continue;
-                Collider[] hits = Physics.OverlapSphere(point.position, m_settings.ExitClearanceRadius, ~0, QueryTriggerInteraction.Ignore);
-                bool clear = true;
-                foreach (Collider hit in hits) if (!hit.transform.IsChildOf(transform) && (player == null || !hit.transform.IsChildOf(player.transform))) { clear = false; break; }
-                if (clear) { position = point.position; return true; }
+                if (IsExitClear(point.position, player)) { position = point.position; return true; }
+            }
+
+            // Preserve the two configured exits as the preferred locations, then fan
+            // additional occupants out beside the rear half of the truck.
+            Vector3[] overflowOffsets =
+            {
+                new(-1.65f, .95f, -1.25f),
+                new(1.65f, .95f, -1.25f)
+            };
+            foreach (Vector3 offset in overflowOffsets)
+            {
+                Vector3 candidate = transform.TransformPoint(offset);
+                if (IsExitClear(candidate, player)) { position = candidate; return true; }
             }
             position = transform.position + transform.right * 2.2f + Vector3.up * 0.2f;
             return false;
+        }
+
+        private bool IsExitClear(Vector3 position, NetworkObject player)
+        {
+            Collider[] hits = Physics.OverlapSphere(position, m_settings.ExitClearanceRadius, ~0, QueryTriggerInteraction.Ignore);
+            foreach (Collider hit in hits)
+                if (!hit.transform.IsChildOf(transform) && (player == null || !hit.transform.IsChildOf(player.transform)))
+                    return false;
+            return true;
         }
 
         private void SimulateDriving(float dt)
@@ -507,7 +608,7 @@ namespace CouchGuys.Gameplay.Vehicles
             Vector3 localVelocity = transform.InverseTransformDirection(m_rigidbody.linearVelocity);
             float forwardSpeed = localVelocity.z;
             float throttle = m_driveInput.y;
-            bool powered = IsOccupied && !IsDestroyed && m_fuel.Value > 0f &&
+            bool powered = m_driver.Value != null && !IsDestroyed && m_fuel.Value > 0f &&
                 (!m_rearDoorsOpen.Value || m_settings.AllowDrivingWithDoorsOpen);
             if (powered && Mathf.Abs(throttle) > 0.01f)
             {
@@ -555,7 +656,7 @@ namespace CouchGuys.Gameplay.Vehicles
 
         private void ConsumeFuel(float dt)
         {
-            if (!IsOccupied || IsDestroyed || m_fuel.Value <= 0f) return;
+            if (m_driver.Value == null || IsDestroyed || m_fuel.Value <= 0f) return;
             float speed01 = Mathf.Clamp01(SpeedKph / m_settings.MaxForwardSpeed);
             float rate = m_settings.FuelConsumptionIdle + m_settings.FuelConsumptionDriving * speed01 +
                 m_settings.AccelerationFuelMultiplier * Mathf.Max(0f, m_driveInput.y);

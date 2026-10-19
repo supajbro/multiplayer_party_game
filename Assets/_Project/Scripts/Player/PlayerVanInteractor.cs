@@ -21,6 +21,7 @@ namespace CouchGuys.Player
         [SerializeField] private Camera m_playerCamera;
 
         private readonly SyncVar<NetworkObject> m_currentVanObject = new();
+        private readonly SyncVar<int> m_currentSeatIndex = new(-1);
         private VanController m_nearbyVan;
         private VanController m_rearInteractionVan;
         private float m_holdProgress;
@@ -30,10 +31,14 @@ namespace CouchGuys.Player
         private string m_worldInteractionPrompt;
         private string m_vehicleFeedback;
         private float m_vehicleFeedbackUntil;
+        private CouchGuyAnimationDriver m_animationDriver;
+        private RobotHoverVFX m_hoverVfx;
 
         public VanController CurrentVan => m_currentVanObject.Value != null &&
             m_currentVanObject.Value.TryGetComponent(out VanController van) ? van : null;
         public VanController NearbyVan => m_nearbyVan;
+        public int CurrentSeatIndex => m_currentSeatIndex.Value;
+        public bool IsDriver => CurrentVan != null && m_currentSeatIndex.Value == 0;
         public float HoldProgress => m_holdProgress;
         public string WorldInteractionPrompt => Time.unscaledTime < m_vehicleFeedbackUntil
             ? m_vehicleFeedback : m_worldInteractionPrompt;
@@ -46,11 +51,18 @@ namespace CouchGuys.Player
             m_visualRoot ??= transform.Find("Visual");
             m_cameraController ??= GetComponentInChildren<ThirdPersonCameraController>(true);
             m_playerCamera ??= GetComponentInChildren<Camera>(true);
+            m_animationDriver = GetComponent<CouchGuyAnimationDriver>();
+            m_hoverVfx = GetComponent<RobotHoverVFX>();
             if (m_playerCamera != null) m_originalFieldOfView = m_playerCamera.fieldOfView;
             m_currentVanObject.OnChange += OnCurrentVanChanged;
+            m_currentSeatIndex.OnChange += OnCurrentSeatIndexChanged;
         }
 
-        private void OnDestroy() => m_currentVanObject.OnChange -= OnCurrentVanChanged;
+        private void OnDestroy()
+        {
+            m_currentVanObject.OnChange -= OnCurrentVanChanged;
+            m_currentSeatIndex.OnChange -= OnCurrentSeatIndexChanged;
+        }
 
         public override void OnStartClient()
         {
@@ -62,6 +74,7 @@ namespace CouchGuys.Player
         {
             VanController van = CurrentVan;
             if (van != null) van.LeaveServer(this);
+            m_currentSeatIndex.Value = -1;
             m_currentVanObject.Value = null;
             base.OnStopServer();
         }
@@ -73,7 +86,7 @@ namespace CouchGuys.Player
             if (current != null)
             {
                 m_nearbyVan = null;
-                SendDrivingInput(current);
+                if (m_currentSeatIndex.Value == 0) SendDrivingInput(current);
                 UpdateHold(current.Settings.ExitHoldDuration, RequestExitServerRpc);
             }
             else
@@ -161,7 +174,7 @@ namespace CouchGuys.Player
             float closest = float.PositiveInfinity;
             foreach (VanController van in VanController.ActiveVans)
             {
-                if (van == null || van.Settings == null || van.IsOccupied || van.IsDestroyed) continue;
+                if (van == null || van.Settings == null || !van.HasAvailableSeat) continue;
                 float distance = (van.transform.position - transform.position).sqrMagnitude;
                 float range = van.Settings.InteractionRange;
                 if (distance <= range * range && distance < closest) { closest = distance; m_nearbyVan = van; }
@@ -181,7 +194,8 @@ namespace CouchGuys.Player
             if (CurrentVan != null || vanObject == null || !vanObject.TryGetComponent(out VanController van)) return;
             if (TryGetComponent(out PlayerHealth health) && (!health.IsAlive || health.IsKnockedDown)) return;
             if (TryGetComponent(out PlayerCouchCarrier carrier) && carrier.IsCarrying) return;
-            if (!van.TryEnterServer(this)) return;
+            if (!van.TryEnterServer(this, out int seatIndex)) return;
+            m_currentSeatIndex.Value = seatIndex;
             m_currentVanObject.Value = vanObject;
         }
 
@@ -218,6 +232,7 @@ namespace CouchGuys.Player
             van.TryGetExitPosition(NetworkObject, out Vector3 exitPosition, out Quaternion exitRotation);
             van.LeaveServer(this);
             m_currentVanObject.Value = null;
+            m_currentSeatIndex.Value = -1;
             m_controller.Teleport(exitPosition, exitRotation);
         }
 
@@ -227,15 +242,30 @@ namespace CouchGuys.Player
             ApplyVehicleState(van);
         }
 
+        private void OnCurrentSeatIndexChanged(int previous, int next, bool asServer)
+        {
+            ApplyVehicleState(CurrentVan);
+        }
+
+        private void LateUpdate()
+        {
+            VanController van = CurrentVan;
+            if (van == null) return;
+            Transform seat = van.GetSeatAnchor(m_currentSeatIndex.Value);
+            if (seat != null) transform.SetPositionAndRotation(seat.position, seat.rotation);
+        }
+
         private void ApplyVehicleState(VanController van)
         {
-            bool driving = van != null;
-            if (m_visualRoot != null) m_visualRoot.gameObject.SetActive(!driving);
-            m_controller?.SetExternalControlPaused(driving);
-            if (m_characterController != null) m_characterController.enabled = !driving;
+            bool seated = van != null;
+            if (m_visualRoot != null) m_visualRoot.gameObject.SetActive(true);
+            m_controller?.SetExternalControlPaused(seated);
+            if (m_characterController != null) m_characterController.enabled = !seated;
+            m_animationDriver?.SetVehicleSeated(seated, m_currentSeatIndex.Value == 0);
+            if (m_hoverVfx != null) m_hoverVfx.enabled = !seated;
             if (!IsOwner) return;
-            m_input?.SetGameplaySuppressed(driving);
-            if (driving)
+            m_input?.SetGameplaySuppressed(seated);
+            if (seated)
             {
                 m_cameraController?.FollowVehicle(van.CameraTarget, van.Settings.CameraFollowOffset,
                     van.Settings.CameraFollowSmoothness, van.Settings.CameraRotationSmoothness,
