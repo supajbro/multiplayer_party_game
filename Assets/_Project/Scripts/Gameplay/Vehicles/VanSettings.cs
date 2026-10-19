@@ -68,7 +68,11 @@ namespace CouchGuys.Gameplay.Vehicles
         [SerializeField, Tooltip("Align loaded couches to the prefab's CargoPoint transforms.")] private bool m_autoPositionLoadedCouches = true;
 
         [Header("Camera")]
-        [SerializeField, Tooltip("Local-space offset from CameraTarget.")] private Vector3 m_cameraFollowOffset = new(0f, 2.4f, -6.5f);
+        [SerializeField, Min(0.1f)] private float m_cameraDistance = 6.5f;
+        [SerializeField] private float m_cameraHeight = 2.4f;
+        [SerializeField, Min(0f)] private float m_cameraLookSensitivity = 0.12f;
+        [SerializeField, Range(-89f, 0f)] private float m_cameraMinimumPitch = -35f;
+        [SerializeField, Range(0f, 89f)] private float m_cameraMaximumPitch = 65f;
         [SerializeField, Min(0.01f)] private float m_cameraFollowSmoothness = 9f;
         [SerializeField, Min(0.01f)] private float m_cameraRotationSmoothness = 7f;
         [SerializeField, Range(30f, 110f)] private float m_cameraFieldOfView = 70f;
@@ -100,12 +104,15 @@ namespace CouchGuys.Gameplay.Vehicles
         public float BulletDamageMultiplier => m_bulletDamageMultiplier; public float CriticalHealthThreshold => m_criticalHealthThreshold;
         public float EnterHoldDuration => m_enterHoldDuration; public float ExitHoldDuration => m_exitHoldDuration;
         public float InteractionRange => m_interactionRange; public float ExitClearanceRadius => m_exitClearanceRadius;
-        public float InteractionCooldown => m_interactionCooldown; public Vector3 CameraFollowOffset => m_cameraFollowOffset;
+        public float InteractionCooldown => m_interactionCooldown;
         public float DoorInteractionRange => m_doorInteractionRange; public float DoorOpenAngle => m_doorOpenAngle;
         public float DoorAnimationDuration => m_doorAnimationDuration; public bool AllowDrivingWithDoorsOpen => m_allowDrivingWithDoorsOpen;
         public int CargoCapacity => m_cargoCapacity; public float CouchLoadingRange => m_couchLoadingRange;
         public float CouchLoadingDuration => m_couchLoadingDuration; public float CouchUnloadingDuration => m_couchUnloadingDuration;
         public bool AutoPositionLoadedCouches => m_autoPositionLoadedCouches;
+        public float CameraDistance => m_cameraDistance; public float CameraHeight => m_cameraHeight;
+        public float CameraLookSensitivity => m_cameraLookSensitivity;
+        public float CameraMinimumPitch => m_cameraMinimumPitch; public float CameraMaximumPitch => m_cameraMaximumPitch;
         public float CameraFollowSmoothness => m_cameraFollowSmoothness; public float CameraRotationSmoothness => m_cameraRotationSmoothness;
         public float CameraFieldOfView => m_cameraFieldOfView; public float CameraCollisionRadius => m_cameraCollisionRadius;
         public float WheelRotationMultiplier => m_wheelRotationMultiplier; public float MaxWheelSteeringAngle => m_maxWheelSteeringAngle;

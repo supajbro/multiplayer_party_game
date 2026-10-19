@@ -34,6 +34,8 @@ namespace CouchGuys.Input
         public Vector2 Move => !m_gameplaySuppressed ? m_moveAction?.ReadValue<Vector2>() ?? Vector2.zero : Vector2.zero;
         /// <summary>Unfiltered movement intent for a system which has temporarily taken gameplay control.</summary>
         public Vector2 VehicleMove => m_moveAction?.ReadValue<Vector2>() ?? Vector2.zero;
+        /// <summary>Unfiltered look intent while seated in a vehicle.</summary>
+        public Vector2 VehicleLook => m_lookAction?.ReadValue<Vector2>() ?? Vector2.zero;
         /// <summary>Unfiltered interact state used to support hold-to-enter/exit while player gameplay is suppressed.</summary>
         public bool VehicleInteractHeld => m_interactAction?.IsPressed() ?? false;
         public bool VehicleInteractPressedThisFrame => m_interactAction?.WasPressedThisFrame() ?? false;

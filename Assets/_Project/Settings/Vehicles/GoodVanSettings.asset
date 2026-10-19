@@ -57,7 +57,11 @@ MonoBehaviour:
   m_couchLoadingDuration: 0.72
   m_couchUnloadingDuration: 0.65
   m_autoPositionLoadedCouches: 1
-  m_cameraFollowOffset: {x: 0, y: 2.4, z: -6.5}
+  m_cameraDistance: 6.5
+  m_cameraHeight: 2.4
+  m_cameraLookSensitivity: 0.12
+  m_cameraMinimumPitch: -35
+  m_cameraMaximumPitch: 65
   m_cameraFollowSmoothness: 9
   m_cameraRotationSmoothness: 7
   m_cameraFieldOfView: 70

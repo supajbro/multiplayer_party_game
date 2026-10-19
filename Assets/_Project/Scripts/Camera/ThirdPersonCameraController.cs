@@ -43,20 +43,33 @@ namespace CouchGuys.CameraSystem
         private bool m_hasPreviousPivotPosition;
         private readonly RaycastHit[] m_collisionHits = new RaycastHit[16];
         private Transform m_vehicleTarget;
-        private Vector3 m_vehicleOffset;
+        private float m_vehicleDistance;
+        private float m_vehicleHeight;
+        private float m_vehicleLookSensitivity;
+        private float m_vehicleMinimumPitch;
+        private float m_vehicleMaximumPitch;
         private float m_vehicleFollowSmoothing;
         private float m_vehicleRotationSmoothing;
         private float m_vehicleCollisionRadius;
 
         public void FollowVehicle(
             Transform target,
-            Vector3 offset,
+            float distance,
+            float height,
+            float lookSensitivity,
+            float minimumPitch,
+            float maximumPitch,
             float followSmoothing,
             float rotationSmoothing,
             float collisionRadius)
         {
             m_vehicleTarget = target;
-            m_vehicleOffset = offset;
+            m_vehicleDistance = Mathf.Max(0.1f, distance);
+            m_vehicleHeight = height;
+            m_vehicleLookSensitivity = Mathf.Max(0f, lookSensitivity);
+            m_vehicleMinimumPitch = Mathf.Clamp(minimumPitch, -89f, 0f);
+            m_vehicleMaximumPitch = Mathf.Clamp(maximumPitch, 0f, 89f);
+            m_pitch = Mathf.Clamp(m_pitch, m_vehicleMinimumPitch, m_vehicleMaximumPitch);
             m_vehicleFollowSmoothing = Mathf.Max(0.01f, followSmoothing);
             m_vehicleRotationSmoothing = Mathf.Max(0.01f, rotationSmoothing);
             m_vehicleCollisionRadius = Mathf.Max(0.01f, collisionRadius);
@@ -133,13 +146,20 @@ namespace CouchGuys.CameraSystem
 
         private void UpdateVehicleCamera()
         {
-            Vector3 pivot = m_vehicleTarget.position;
-            Vector3 desiredOffset = m_vehicleTarget.TransformDirection(m_vehicleOffset);
-            float distance = desiredOffset.magnitude;
-            Vector3 direction = distance > 0.001f ? desiredOffset / distance : -m_vehicleTarget.forward;
-            float clearDistance = distance;
+            Vector2 lookInput = m_input != null ? m_input.VehicleLook : Vector2.zero;
+            m_yaw += lookInput.x * m_vehicleLookSensitivity;
+            m_pitch = Mathf.Clamp(
+                m_pitch - lookInput.y * m_vehicleLookSensitivity,
+                m_vehicleMinimumPitch,
+                m_vehicleMaximumPitch);
+
+            // World-up framing keeps vehicle roll and pitch from tilting the camera.
+            Vector3 pivot = m_vehicleTarget.position + Vector3.up * m_vehicleHeight;
+            Quaternion desiredRotation = Quaternion.Euler(m_pitch, m_yaw, 0f);
+            Vector3 direction = desiredRotation * Vector3.back;
+            float clearDistance = m_vehicleDistance;
             int hitCount = Physics.SphereCastNonAlloc(
-                pivot, m_vehicleCollisionRadius, direction, m_collisionHits, distance,
+                pivot, m_vehicleCollisionRadius, direction, m_collisionHits, m_vehicleDistance,
                 m_collisionLayers, QueryTriggerInteraction.Ignore);
             for (int index = 0; index < hitCount; index++)
             {
@@ -149,10 +169,6 @@ namespace CouchGuys.CameraSystem
             }
 
             Vector3 desiredPosition = pivot + direction * Mathf.Max(0f, clearDistance - m_collisionPadding);
-            Vector3 lookDirection = pivot - desiredPosition;
-            Quaternion desiredRotation = lookDirection.sqrMagnitude > 0.001f
-                ? Quaternion.LookRotation(lookDirection.normalized, Vector3.up)
-                : transform.rotation;
             float positionBlend = 1f - Mathf.Exp(-m_vehicleFollowSmoothing * Time.deltaTime);
             float rotationBlend = 1f - Mathf.Exp(-m_vehicleRotationSmoothing * Time.deltaTime);
             transform.position = Vector3.Lerp(transform.position, desiredPosition, positionBlend);

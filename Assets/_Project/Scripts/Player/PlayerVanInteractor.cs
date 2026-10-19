@@ -267,7 +267,10 @@ namespace CouchGuys.Player
             m_input?.SetGameplaySuppressed(seated);
             if (seated)
             {
-                m_cameraController?.FollowVehicle(van.CameraTarget, van.Settings.CameraFollowOffset,
+                m_cameraController?.FollowVehicle(van.CameraTarget,
+                    van.Settings.CameraDistance, van.Settings.CameraHeight,
+                    van.Settings.CameraLookSensitivity,
+                    van.Settings.CameraMinimumPitch, van.Settings.CameraMaximumPitch,
                     van.Settings.CameraFollowSmoothness, van.Settings.CameraRotationSmoothness,
                     van.Settings.CameraCollisionRadius);
                 if (m_playerCamera != null) m_playerCamera.fieldOfView = van.Settings.CameraFieldOfView;
