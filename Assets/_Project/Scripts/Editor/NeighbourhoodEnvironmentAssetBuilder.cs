@@ -14,6 +14,7 @@ namespace CouchGuys.Editor
     public static class NeighbourhoodEnvironmentAssetBuilder
     {
         private const string PrefabFolder = "Assets/_Project/Prefabs/Environment/Placeholders";
+        private const string TreePrefabFolder = "Assets/_Project/Prefabs/Environment/Trees";
         private const string MaterialFolder = "Assets/_Project/Materials/Environment";
         private const string SettingsFolder = "Assets/_Project/Settings/Environment";
         private const string RegionPath = "Assets/_Project/Settings/Regions/Region_Suburbs.asset";
@@ -224,11 +225,17 @@ namespace CouchGuys.Editor
             GameObject smallPark = ParkRoot("SmallPark_Placeholder", new Vector2(20f, 20f));
             GameObject mediumPark = ParkRoot("MediumPark_Placeholder", new Vector2(40f, 40f));
             GameObject largePark = ParkRoot("LargePark_Placeholder", new Vector2(60f, 60f));
+            GameObject[] treePrefabs =
+            {
+                AssetDatabase.LoadAssetAtPath<GameObject>($"{TreePrefabFolder}/tree_01.prefab") ?? tree,
+                AssetDatabase.LoadAssetAtPath<GameObject>($"{TreePrefabFolder}/tree_02.prefab") ?? tree,
+                AssetDatabase.LoadAssetAtPath<GameObject>($"{TreePrefabFolder}/tree_03.prefab") ?? tree
+            };
 
             return new EnvironmentPrefabLibrary
             {
                 SmallPark = smallPark, MediumPark = mediumPark, LargePark = largePark,
-                Tree = tree, Bench = bench, Bin = bin, PublicBin = publicBin, Mailbox = mailbox,
+                TreePrefabs = treePrefabs, Bench = bench, Bin = bin, PublicBin = publicBin, Mailbox = mailbox,
                 FlowerCluster = flowers, Bush = bush, Fountain = fountain, Statue = statue,
                 Playground = playground, Gazebo = gazebo, BusStop = busStop, ParkSign = parkSign,
                 ParkPath = path, ParkBoundary = boundary, NoticeBoard = noticeBoard, PicnicArea = picnic,

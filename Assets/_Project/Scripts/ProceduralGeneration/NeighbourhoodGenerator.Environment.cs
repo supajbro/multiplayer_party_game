@@ -350,7 +350,8 @@ namespace CouchGuys.ProceduralGeneration
                 for (int i = 0; i < treeCount; i++)
                 {
                     Vector3 local = RandomParkPoint(park, random, 0.38f, 0.46f);
-                    TryPlaceEnvironmentPrefab(prefabs.Tree, local, RandomYaw(random), park.Root, true);
+                    TryPlaceEnvironmentPrefab(SelectTreePrefab(prefabs.TreePrefabs, local),
+                        local, RandomYaw(random), park.Root, true);
                 }
                 for (int i = 0; i < benchCount; i++)
                 {
@@ -564,9 +565,13 @@ namespace CouchGuys.ProceduralGeneration
                     TryPlaceEnvironmentPrefab(decoration, position, RandomYaw(random), m_residentialDecorationsRoot, true);
                 }
                 if (random.NextDouble() < settings.OrnamentalTreeProbability)
-                    TryPlaceEnvironmentPrefab(prefabs.Tree,
-                        houseCentre - front * (ProjectedHalfExtent(house, front) + 1.35f) + right * side * halfWidth * 0.32f,
-                        RandomYaw(random), m_residentialDecorationsRoot, true);
+                {
+                    Vector3 treePosition =
+                        houseCentre - front * (ProjectedHalfExtent(house, front) + 1.35f) +
+                        right * side * halfWidth * 0.32f;
+                    TryPlaceEnvironmentPrefab(SelectTreePrefab(prefabs.TreePrefabs, treePosition),
+                        treePosition, RandomYaw(random), m_residentialDecorationsRoot, true);
+                }
             }
         }
 
@@ -652,6 +657,30 @@ namespace CouchGuys.ProceduralGeneration
             instance = Instantiate(prefab, position, rotation, parent);
             if (reserve && (metadata == null || metadata.BlocksPlacement)) m_environmentFootprints.Add(footprint);
             return true;
+        }
+
+        private static GameObject SelectTreePrefab(GameObject[] prefabs, Vector3 position)
+        {
+            if (prefabs == null || prefabs.Length == 0) return null;
+
+            // Derive the variation from the existing spawn position instead of consuming
+            // the generation RNG, keeping all later placement and rotation rolls unchanged.
+            unchecked
+            {
+                uint hash = (uint)Mathf.RoundToInt(position.x * 100f) * 73856093u ^
+                            (uint)Mathf.RoundToInt(position.z * 100f) * 19349663u;
+                hash ^= hash >> 16;
+                hash *= 0x7FEB352Du;
+                hash ^= hash >> 15;
+                int first = (int)(hash % (uint)prefabs.Length);
+                for (int offset = 0; offset < prefabs.Length; offset++)
+                {
+                    GameObject prefab = prefabs[(first + offset) % prefabs.Length];
+                    if (prefab != null) return prefab;
+                }
+            }
+
+            return null;
         }
 
         private bool CanPlaceEnvironmentFootprint(OrientedFootprint candidate)

@@ -273,7 +273,8 @@ namespace CouchGuys.ProceduralGeneration
         public GameObject SmallPark;
         public GameObject MediumPark;
         public GameObject LargePark;
-        public GameObject Tree;
+        [Tooltip("Tree prefabs selected deterministically for park and residential tree spawns.")]
+        public GameObject[] TreePrefabs;
         public GameObject Bench;
         public GameObject Bin;
         public GameObject PublicBin;
@@ -296,7 +297,14 @@ namespace CouchGuys.ProceduralGeneration
         public GameObject UtilityBox;
         public GameObject PlantingBed;
 
-        public static EnvironmentPrefabLibrary Empty => new EnvironmentPrefabLibrary();
-        public void Validate() { }
+        public static EnvironmentPrefabLibrary Empty => new EnvironmentPrefabLibrary
+        {
+            TreePrefabs = Array.Empty<GameObject>()
+        };
+
+        public void Validate()
+        {
+            TreePrefabs ??= Array.Empty<GameObject>();
+        }
     }
 }

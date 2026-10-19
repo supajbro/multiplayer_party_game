@@ -91,7 +91,9 @@ MonoBehaviour:
     MaximumTreeSlope: 38
     TreeScaleRange: {x: 0.8, y: 1.35}
     TreePrefabs:
-    - {fileID: 2434878322216428374, guid: 08e366ff13ab27b4f9671159a0b8eb5e, type: 3}
+    - {fileID: 1001001, guid: f19c7a1d8e23456789abcdef01234567, type: 3}
+    - {fileID: 1001001, guid: a27d8b2e9f34567890abcdef12345678, type: 3}
+    - {fileID: 1001001, guid: b38e9c3fa045678901bcdef234567890, type: 3}
     StandardTunnelPrefab: {fileID: 0}
     SummitGatewayPrefab: {fileID: 0}
     TunnelWidth: 12
@@ -223,7 +225,10 @@ MonoBehaviour:
       SmallPark: {fileID: 2519029726287221801, guid: 7d6d51777551537499ffdfb59c062f70, type: 3}
       MediumPark: {fileID: 7676956951616722985, guid: 218f5360217fb19489cdd559f160a8dc, type: 3}
       LargePark: {fileID: 3969060068999570681, guid: a3cc6ea8b200a2a40b1ddfe5c8f1d5ef, type: 3}
-      Tree: {fileID: 2434878322216428374, guid: 08e366ff13ab27b4f9671159a0b8eb5e, type: 3}
+      TreePrefabs:
+      - {fileID: 1001001, guid: f19c7a1d8e23456789abcdef01234567, type: 3}
+      - {fileID: 1001001, guid: a27d8b2e9f34567890abcdef12345678, type: 3}
+      - {fileID: 1001001, guid: b38e9c3fa045678901bcdef234567890, type: 3}
       Bench: {fileID: 4910921757220290626, guid: bea4b1ee7af8c9648ac0a649b7bac297, type: 3}
       Bin: {fileID: 4903883153855092555, guid: 6c9ef0645a455124aa614fec96b02fac, type: 3}
       PublicBin: {fileID: 2397117203645329998, guid: 9d4d3c2a06d328b4dacac146800c2366, type: 3}
