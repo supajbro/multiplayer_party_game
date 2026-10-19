@@ -33,7 +33,6 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] private Transform[] m_muzzles = new Transform[WeaponCount];
         [SerializeField] private PlayerWeaponEffects m_effects;
         [SerializeField] private WeaponAudioEmitter m_audio;
-        [SerializeField] private NeighbourhoodMap m_map;
         private RobotHoverVFX m_hoverVfx;
         private RobotFaceExpressionController m_faceExpression;
 
@@ -93,7 +92,6 @@ namespace CouchGuys.Gameplay.Weapons
             m_aimCamera ??= GetComponentInChildren<Camera>(true);
             m_effects ??= GetComponent<PlayerWeaponEffects>();
             m_audio ??= GetComponent<WeaponAudioEmitter>();
-            m_map ??= GetComponent<NeighbourhoodMap>();
             m_hoverVfx ??= GetComponent<RobotHoverVFX>();
             m_faceExpression ??= GetComponent<RobotFaceExpressionController>();
             if (m_effects == null) m_effects = gameObject.AddComponent<PlayerWeaponEffects>();
@@ -198,8 +196,7 @@ namespace CouchGuys.Gameplay.Weapons
             bool wantsFire = weapon != null &&
                 (weapon.Automatic ? m_input.ShootHeld : m_input.ShootPressedThisFrame);
             if (!wantsFire || m_localReloading || Time.time < m_nextLocalRequestTime ||
-                (m_couchCarrier != null && m_couchCarrier.IsCarrying) ||
-                (m_map != null && m_map.IsOpen))
+                (m_couchCarrier != null && m_couchCarrier.IsCarrying))
             {
                 return;
             }
@@ -658,8 +655,7 @@ namespace CouchGuys.Gameplay.Weapons
             bool interrupted = m_input == null || !m_input.isActiveAndEnabled || !m_input.ShootHeld ||
                 m_health == null || !m_health.IsAlive || m_health.IsKnockedDown ||
                 m_equippedIndex.Value != (int)PlayerWeaponType.AssaultRifle || m_localReloading ||
-                (m_couchCarrier != null && m_couchCarrier.IsCarrying) ||
-                (m_map != null && m_map.IsOpen);
+                (m_couchCarrier != null && m_couchCarrier.IsCarrying);
             if (interrupted)
                 EndLocalRifleBurst();
         }

@@ -20,7 +20,7 @@ namespace CouchGuys.Editor
         private const string BodyMaterialPath = SettingsDirectory + "/TrafficCarBody.mat";
         private const string TrimMaterialPath = SettingsDirectory + "/TrafficCarTrim.mat";
         private const string SpawnablesPath = "Assets/_Project/Settings/NetworkSpawnablePrefabs.asset";
-        private const float ImportedCarVisualScale = 25f;
+        private const float ImportedCarVisualScale = 100f;
         private static readonly Quaternion ImportedCarVisualRotation = Quaternion.Euler(-90f, 0f, 0f);
 
         [InitializeOnLoadMethod]

@@ -51,15 +51,6 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Map",
-                    "type": "Button",
-                    "id": "62f9a2e8-705a-46a1-9f71-1c48f7e52ceb",
-                    "expectedControlType": "Button",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
                     "name": "Teleport To Delivery",
                     "type": "Button",
                     "id": "d7f8a645-af4a-4fe7-b66d-b82de64ed61d",
@@ -211,17 +202,6 @@
                     "processors": "",
                     "groups": "Keyboard&Mouse",
                     "action": "Interact",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "fddfc073-ef47-4fa7-986b-72a41500426f",
-                    "path": "<Keyboard>/m",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "Keyboard&Mouse",
-                    "action": "Map",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

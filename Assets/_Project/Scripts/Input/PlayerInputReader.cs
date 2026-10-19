@@ -21,7 +21,6 @@ namespace CouchGuys.Input
         private InputAction m_jumpAction;
         private InputAction m_sprintAction;
         private InputAction m_interactAction;
-        private InputAction m_mapAction;
         private InputAction m_shootAction;
         private InputAction m_reloadAction;
         private InputAction m_pistolAction;
@@ -43,7 +42,6 @@ namespace CouchGuys.Input
         public bool JumpPressedThisFrame => !m_gameplaySuppressed && (m_jumpAction?.WasPressedThisFrame() ?? false);
         public bool SprintHeld => !m_gameplaySuppressed && (m_sprintAction?.IsPressed() ?? false);
         public bool InteractPressedThisFrame => !m_gameplaySuppressed && (m_interactAction?.WasPressedThisFrame() ?? false);
-        public bool MapPressedThisFrame => !m_gameplaySuppressed && (m_mapAction?.WasPressedThisFrame() ?? false);
         public bool ShootHeld => !m_gameplaySuppressed && (m_shootAction?.IsPressed() ?? false);
         public bool ShootPressedThisFrame => !m_gameplaySuppressed && (m_shootAction?.WasPressedThisFrame() ?? false);
         public bool ReloadPressedThisFrame => !m_gameplaySuppressed && (m_reloadAction?.WasPressedThisFrame() ?? false);
@@ -118,7 +116,6 @@ namespace CouchGuys.Input
             m_jumpAction = m_playerMap.FindAction("Jump", true);
             m_sprintAction = m_playerMap.FindAction("Sprint", true);
             m_interactAction = m_playerMap.FindAction("Interact", true);
-            m_mapAction = m_playerMap.FindAction("Map", true);
             m_shootAction = m_playerMap.FindAction("Shoot", true);
             m_reloadAction = m_playerMap.FindAction("Reload", true);
             m_pistolAction = m_playerMap.FindAction("Equip Pistol", true);
