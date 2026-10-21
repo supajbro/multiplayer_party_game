@@ -37,7 +37,16 @@ checks = {
         name in bpy.data.objects
         for name in ("HoverRotor_Outer", "HoverRotor_Inner")
     ),
-    "animation_library": len(bpy.data.actions) == 36,
+    "animation_library": len(bpy.data.actions) == 54,
+    "hand_attached_weapons": all(
+        weapon.parent == rig and weapon.parent_type == 'BONE' and weapon.parent_bone == 'Hand_L'
+        for weapon in weapons
+    ),
+    "weapon_carry_actions": all(
+        name + '_' + state in bpy.data.actions
+        for name in ('Pistol', 'AssaultRifle', 'Shotgun')
+        for state in ('Idle', 'Walk', 'Backward', 'Strafe_L', 'Strafe_R', 'Run', 'Raise', 'Sprint', 'Shoot')
+    ),
 }
 
 for name, passed in checks.items():

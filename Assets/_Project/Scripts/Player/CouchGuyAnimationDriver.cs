@@ -23,6 +23,7 @@ namespace CouchGuys.Player
         private static readonly int HitHash = Animator.StringToHash("Hit");
         private static readonly int EquippedWeaponHash = Animator.StringToHash("EquippedWeapon");
         private static readonly int WeaponShootHash = Animator.StringToHash("WeaponShoot");
+        private static readonly int WeaponAimHash = Animator.StringToHash("WeaponAim");
 
         [Header("References")]
         [SerializeField] private Animator m_animator;
@@ -41,12 +42,17 @@ namespace CouchGuys.Player
         private bool m_pointing;
         private bool m_hasPositionSample;
         private bool m_hasWeaponParameters;
+        private bool m_hasWeaponAimParameter;
+        private int m_equippedWeapon;
+        private float m_weaponAimUntil;
+        private PlayerWeaponType m_recoilWeapon;
         private Transform m_torsoBone;
         private Transform m_headBone;
         private Transform m_upperArmLeft;
         private Transform m_lowerArmLeft;
         private Transform m_upperArmRight;
         private Transform m_lowerArmRight;
+        private Transform m_weaponHand;
         private float m_recoilAmount;
         private float m_recoilRecovery = 12f;
         private float m_recoilRoll;
@@ -84,6 +90,18 @@ namespace CouchGuys.Player
                 m_animator.SetBool(HoldingItemHash, m_holdingItem);
                 m_animator.SetBool(PointingHash, m_pointing);
             }
+        }
+
+        private void Update()
+        {
+            if (m_animator == null || !m_hasWeaponAimParameter) return;
+            bool aiming = m_equippedWeapon > 0 && !m_vehicleSeated &&
+                !(m_couchCarrier != null && m_couchCarrier.IsCarrying) &&
+                Time.time < m_weaponAimUntil;
+            // Feed before Animator evaluation; all observers use the existing shot
+            // callback and replicated movement, with no cosmetic RPC or SyncVar.
+            m_animator.SetFloat(WeaponAimHash, aiming ? 1f : 0f,
+                aiming ? 0.045f : 0.18f, Time.deltaTime);
         }
 
         private void LateUpdate()
@@ -146,12 +164,22 @@ namespace CouchGuys.Player
 
         public void SetEquippedWeapon(int weaponIndex)
         {
+            if (m_equippedWeapon != weaponIndex)
+            {
+                m_weaponAimUntil = 0f;
+                m_recoilAmount = 0f;
+                m_recoilRoll = 0f;
+            }
+            m_equippedWeapon = weaponIndex;
             if (m_animator != null && m_hasWeaponParameters)
                 m_animator.SetInteger(EquippedWeaponHash, weaponIndex);
         }
 
         public void PlayWeaponShot(PlayerWeaponType weapon)
         {
+            m_recoilWeapon = weapon;
+            m_weaponAimUntil = Time.time + (weapon == PlayerWeaponType.Shotgun ? 0.55f :
+                weapon == PlayerWeaponType.AssaultRifle ? 0.22f : 0.34f);
             if (m_animator != null && m_hasWeaponParameters)
                 m_animator.SetInteger(EquippedWeaponHash, (int)weapon + 1);
 
@@ -258,12 +286,17 @@ namespace CouchGuys.Player
             m_animator ??= GetComponentInChildren<Animator>(true);
             if (m_animator != null && m_torsoBone == null)
             {
-                m_torsoBone = FindDescendant(m_animator.transform, "Torso");
-                m_headBone = FindDescendant(m_animator.transform, "Head");
-                m_upperArmLeft = FindDescendant(m_animator.transform, "UpperArm_L");
-                m_lowerArmLeft = FindDescendant(m_animator.transform, "LowerArm_L");
-                m_upperArmRight = FindDescendant(m_animator.transform, "UpperArm_R");
-                m_lowerArmRight = FindDescendant(m_animator.transform, "LowerArm_R");
+                // Mesh objects share these names with the bones. Recoil must act
+                // on the animated skeleton, not accumulate on static mesh pivots.
+                Transform skeleton = FindDescendant(m_animator.transform, "CouchGuy_Rig") ?? m_animator.transform;
+                m_torsoBone = FindDescendant(skeleton, "Torso");
+                m_headBone = FindDescendant(skeleton, "Head");
+                m_upperArmLeft = FindDescendant(skeleton, "UpperArm_L");
+                m_lowerArmLeft = FindDescendant(skeleton, "LowerArm_L");
+                m_upperArmRight = FindDescendant(skeleton, "UpperArm_R");
+                m_lowerArmRight = FindDescendant(skeleton, "LowerArm_R");
+                // Imported FBX Hand_L is on the player's physical right side.
+                m_weaponHand = FindDescendant(skeleton, "Hand_L");
             }
         }
 
@@ -278,11 +311,22 @@ namespace CouchGuys.Player
             float recoil = m_recoilAmount;
             ApplyAdditiveRotation(m_torsoBone, new Vector3(7.5f * recoil, 0f, 2.2f * m_recoilRoll * recoil));
             ApplyAdditiveRotation(m_headBone, new Vector3(-5.2f * recoil, 0f, -1.7f * m_recoilRoll * recoil));
-            ApplyAdditiveRotation(m_upperArmRight, new Vector3(10.5f * recoil, 0f, 1.8f * m_recoilRoll * recoil));
-            ApplyAdditiveRotation(m_lowerArmRight, new Vector3(6.5f * recoil, 0f, 0f));
-            ApplyAdditiveRotation(m_upperArmLeft, new Vector3(7.2f * recoil, 0f, -1.2f * m_recoilRoll * recoil));
-            ApplyAdditiveRotation(m_lowerArmLeft, new Vector3(4.5f * recoil, 0f, 0f));
+            ApplyAdditiveRotation(m_upperArmLeft, new Vector3(10.5f * recoil, 0f, -1.8f * m_recoilRoll * recoil));
+            ApplyAdditiveRotation(m_lowerArmLeft, new Vector3(6.5f * recoil, 0f, 0f));
+            ApplyAdditiveRotation(m_upperArmRight, new Vector3(7.2f * recoil, 0f, 1.2f * m_recoilRoll * recoil));
+            ApplyAdditiveRotation(m_lowerArmRight, new Vector3(4.5f * recoil, 0f, 0f));
 
+            // Keep the existing per-weapon visual impulses and pistol wrist flick.
+            // Backward shotgun travel already lives on the weapon's restored local
+            // pose. Never translate the torso here: constant imported position
+            // channels can be optimised out, allowing additive offsets to accumulate.
+            if (m_weaponHand != null)
+            {
+                float kick = m_recoilWeapon == PlayerWeaponType.Pistol ? 11f :
+                    m_recoilWeapon == PlayerWeaponType.AssaultRifle ? 2.5f : 4f;
+                m_weaponHand.rotation = Quaternion.AngleAxis(-kick * recoil, transform.right) *
+                    m_weaponHand.rotation;
+            }
             m_recoilAmount = Mathf.MoveTowards(m_recoilAmount, 0f, m_recoilRecovery * Time.deltaTime);
             m_recoilRoll = Mathf.MoveTowards(m_recoilRoll, 0f, m_recoilRecovery * 0.75f * Time.deltaTime);
         }
@@ -321,6 +365,7 @@ namespace CouchGuys.Player
         private void CacheWeaponParameterSupport()
         {
             m_hasWeaponParameters = false;
+            m_hasWeaponAimParameter = false;
             if (m_animator == null) return;
             bool hasEquipped = false;
             bool hasShoot = false;
@@ -328,6 +373,7 @@ namespace CouchGuys.Player
             {
                 hasEquipped |= parameter.nameHash == EquippedWeaponHash;
                 hasShoot |= parameter.nameHash == WeaponShootHash;
+                m_hasWeaponAimParameter |= parameter.nameHash == WeaponAimHash;
             }
             m_hasWeaponParameters = hasEquipped && hasShoot;
         }
