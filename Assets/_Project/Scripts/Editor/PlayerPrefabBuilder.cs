@@ -113,6 +113,7 @@ namespace CouchGuys.Editor
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
+            PlayerWeaponHudPrefabBuilder.AssignToPlayer();
             VerifyPlayerPrefab();
             Debug.Log($"Couch Guys player prefab built successfully at {PrefabPath}.");
         }
