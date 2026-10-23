@@ -12,6 +12,8 @@ namespace CouchGuys.Editor
     {
         public const string HouseModelPath =
             "Assets/_Project/Models/Houses/CouchGuys_House_01.fbx";
+        public const string House02ModelPath =
+            "Assets/_Project/Models/Houses/CouchGuys_House_02.fbx";
         public const string House01PrefabPath = "Assets/_Project/Prefabs/Houses/House_01.prefab";
         public const string House02PrefabPath = "Assets/_Project/Prefabs/Houses/House_02.prefab";
         private const string GeneratedLodMeshFolder = "Assets/_Project/Generated/HouseLods";
@@ -33,10 +35,9 @@ namespace CouchGuys.Editor
             EnsureFolder("Assets/_Project/Prefabs", "Houses");
             EnsureFolder("Assets/_Project", "Generated");
             EnsureFolder("Assets/_Project/Generated", "HouseLods");
-            // Keep both wrapper assets (and therefore all existing lot/scene references) while
-            // intentionally sourcing them from the same approved Couch Guys house model.
-            BuildWrapper(HouseModelPath, House01PrefabPath, "House_01");
-            BuildWrapper(HouseModelPath, House02PrefabPath, "House_02");
+            if (!PrefabUsesCurrentModel(House01PrefabPath))
+                BuildWrapper(HouseModelPath, House01PrefabPath, "House_01");
+            BuildWrapper(House02ModelPath, House02PrefabPath, "House_02");
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
         }
@@ -79,8 +80,26 @@ namespace CouchGuys.Editor
                 modelInstance.name = model.name;
                 modelInstance.transform.SetParent(visualRoot, false);
                 modelInstance.transform.localPosition = Vector3.zero;
-                modelInstance.transform.localRotation = Quaternion.identity;
-                modelInstance.transform.localScale = Vector3.one;
+                // House 02 retains the FBX root's axis/unit conversion. House 01 was
+                // authored with those conversions baked into the source geometry.
+                modelInstance.transform.localRotation = modelPath == House02ModelPath
+                    ? model.transform.localRotation : Quaternion.identity;
+                modelInstance.transform.localScale = modelPath == House02ModelPath
+                    ? model.transform.localScale : Vector3.one;
+                if (modelPath == House02ModelPath)
+                {
+                    Dictionary<string, Material> palette = new Dictionary<string, Material>();
+                    foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath(HouseModelPath))
+                        if (asset is Material material) palette[material.name] = material;
+                    foreach (Renderer renderer in modelInstance.GetComponentsInChildren<Renderer>(true))
+                    {
+                        Material[] materials = renderer.sharedMaterials;
+                        for (int i = 0; i < materials.Length; i++)
+                            if (materials[i] != null && palette.TryGetValue(materials[i].name, out Material shared))
+                                materials[i] = shared;
+                        renderer.sharedMaterials = materials;
+                    }
+                }
 
                 LogModelInspection(modelPath, modelInstance);
                 CorrectModelOrientationAndPivot(visualRoot, modelInstance);
@@ -96,6 +115,7 @@ namespace CouchGuys.Editor
                 Transform roadConnection = CreatePoint(root.transform, "RoadConnection", new Vector3(0f, 0f, 10f));
                 Transform deliveryPoint = CreatePoint(root.transform, "DeliveryPoint", new Vector3(0f, 0f, 10.5f));
                 GeneratedProperty property = root.AddComponent<GeneratedProperty>();
+                property.SetEasyDeliveryHouse(modelPath == House02ModelPath);
                 property.ConfigurePrefab(
                     new Vector2Int(2, 2),
                     roadConnection,
@@ -255,6 +275,13 @@ namespace CouchGuys.Editor
                 for (int rendererIndex = 0; rendererIndex < sourceRenderers.Length; rendererIndex++)
                 {
                     MeshRenderer sourceRenderer = sourceRenderers[rendererIndex];
+                    // House 02 sheds small trim at distance, while its silhouette, windows,
+                    // entrance and garage remain present at every level.
+                    if (lod0Model.name.StartsWith("CouchGuys_House_02") &&
+                        sourceRenderer.name.StartsWith("Detail_") &&
+                        (level >= 3 || (level >= 2 && !sourceRenderer.name.StartsWith("Detail_Shrub_")) ||
+                         (level >= 1 && sourceRenderer.name.StartsWith("Detail_RoofSeam_"))))
+                        continue;
                     if (!sourceRenderer.TryGetComponent(out MeshFilter meshFilter) ||
                         meshFilter.sharedMesh == null)
                     {
@@ -863,7 +890,7 @@ namespace CouchGuys.Editor
             bool usesCombinedLods = false;
             for (int index = 0; index < dependencies.Length; index++)
             {
-                if (dependencies[index] == HouseModelPath)
+                if (dependencies[index] == (prefabPath == House02PrefabPath ? House02ModelPath : HouseModelPath))
                 {
                     usesSourceModel = true;
                 }

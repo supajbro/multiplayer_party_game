@@ -138,7 +138,9 @@ namespace CouchGuys.Player
                 {
                     m_exhausted.Value = true;
                     m_serverSprintRequested = false;
-                    if (carrying) m_carrier.ReleaseForStaminaServer();
+                    // Couch exhaustion weakens the grip; preserve sled exhaustion behaviour.
+                    if (carrying && m_carrier.GetCarriedCouchServer() == null)
+                        m_carrier.ReleaseForStaminaServer();
                 }
             }
             else if (!carrying && Time.time >= m_lastDrainTime + m_recoveryDelay)

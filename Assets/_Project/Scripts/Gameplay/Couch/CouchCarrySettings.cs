@@ -18,6 +18,10 @@ namespace CouchGuys.Gameplay.Couch
         [SerializeField, InspectorName("4 Player Move Speed"), Min(0.1f)]
         private float m_fourPlayerMoveSpeed = 5.5f;
 
+        [SerializeField, Range(0f, 1f), Tooltip("Fraction of carry speed lost by an exhausted player.")]
+        private float m_exhaustedSpeedReduction = 0.75f;
+
+        public float ExhaustedSpeedMultiplier => 1f - Mathf.Clamp01(m_exhaustedSpeedReduction);
         public float MaxCarryDistance => m_maxCarryDistance;
 
         public float GetMoveSpeed(int carrierCount)

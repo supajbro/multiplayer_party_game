@@ -362,7 +362,14 @@ namespace CouchGuys.Player
         internal float CalculateCarryingSpeedMultiplier(CouchCarryController couch)
         {
             return couch != null
-                ? couch.CalculateCarrierMovementSpeedMultiplier()
+                ? couch.CalculateCarrierMovementSpeedMultiplier() * GetCouchStaminaSpeedMultiplier(couch)
+                : 1f;
+        }
+
+        internal float GetCouchStaminaSpeedMultiplier(CouchCarryController couch)
+        {
+            return TryGetComponent(out PlayerStamina stamina) && stamina.IsExhausted
+                ? couch.ExhaustedSpeedMultiplier
                 : 1f;
         }
 

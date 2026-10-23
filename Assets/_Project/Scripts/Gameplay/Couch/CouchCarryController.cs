@@ -37,7 +37,7 @@ namespace CouchGuys.Gameplay.Couch
         [SerializeField] private GameObject[] m_modelPrefabs;
         [SerializeField] private CouchCarrySettings m_settings;
 
-        // The five designer controls live in CouchCarrySettings. The remaining
+        // The designer controls live in CouchCarrySettings. The remaining
         // physical response is deliberately kept internal so each setting has one job.
         private const float CouchWeight = 35f;
         private const float CarryForce = 500f;
@@ -120,6 +120,9 @@ namespace CouchGuys.Gameplay.Couch
 
         public Rigidbody CouchRigidbody => m_rigidbody;
         public float Weight => CouchWeight;
+        internal float ExhaustedSpeedMultiplier => m_settings != null
+            ? m_settings.ExhaustedSpeedMultiplier
+            : 0.25f;
         public float MaxCarryDistance => m_settings != null
             ? m_settings.MaxCarryDistance
             : DefaultMaxCarryDistance;
@@ -302,6 +305,7 @@ namespace CouchGuys.Gameplay.Couch
                 ? weightForce * totalSupportFraction / carrierCount
                 : 0f;
 
+            float downhillResistance = 0f;
             for (int index = 0; index < MaximumCarryPoints; index++)
             {
                 ClearDebugForces(index);
@@ -328,15 +332,21 @@ namespace CouchGuys.Gameplay.Couch
                 Vector3 pointVelocity = m_rigidbody.GetPointVelocity(pointPosition);
                 Vector3 movementIntent = carrier.GetServerMovementIntent();
 
+                float staminaSpeed = GetCarrierStaminaSpeedMultiplier(carrier);
+                // Exhausted grips cannot pin the couch uphill. Healthy grips retain
+                // their full share of braking even with an exhausted teammate.
+                float gripDownhillResistance = staminaSpeed < 1f ? 0f : 1f;
+                downhillResistance += gripDownhillResistance;
                 Vector3 horizontalError = Vector3.ProjectOnPlane(targetPosition - pointPosition, Vector3.up);
                 Vector3 horizontalVelocity = Vector3.ProjectOnPlane(pointVelocity, Vector3.up);
                 Vector3 horizontalForce = CalculateHorizontalCarryForce(
                     horizontalError,
                     horizontalVelocity,
                     movementIntent,
-                    configuredSpeed,
-                    perCarrierEfficiency,
+                    configuredSpeed * staminaSpeed,
+                    perCarrierEfficiency * staminaSpeed,
                     cooperationForceScale);
+                horizontalForce = PreserveDownhillMotion(horizontalForce, gripDownhillResistance);
 
                 float heightError = targetPosition.y - pointPosition.y;
                 float liftForce = supportPerCarrier + Mathf.Max(0f, heightError) * LiftForce -
@@ -400,6 +410,8 @@ namespace CouchGuys.Gameplay.Couch
             Vector3 movementAcceleration = velocityChange / Time.fixedDeltaTime;
             if (carrierCount > 0)
             {
+                movementAcceleration = PreserveDownhillMotion(
+                    movementAcceleration, downhillResistance / carrierCount);
                 m_rigidbody.AddForce(movementAcceleration, ForceMode.Acceleration);
                 ApplyStepAssistance(averageIntent);
                 ApplyCarriedUprightTorque();
@@ -980,15 +992,38 @@ namespace CouchGuys.Gameplay.Couch
                 }
 
                 Vector3 intent = carrier.GetServerMovementIntent();
-                combinedIntent += intent;
-                totalIntentMagnitude += intent.magnitude;
+                // Count raw input so each stamina contribution is scaled once,
+                // including when the configured multiplier is zero.
                 if (intent.sqrMagnitude > 0.01f)
                 {
                     movingCarrierCount++;
                 }
+                intent *= GetCarrierStaminaSpeedMultiplier(carrier);
+                combinedIntent += intent;
+                totalIntentMagnitude += intent.magnitude;
             }
 
             return combinedIntent;
+        }
+
+        private float GetCarrierStaminaSpeedMultiplier(ICouchCarrierServer carrier)
+        {
+            return carrier is PlayerCouchCarrier player
+                ? player.GetCouchStaminaSpeedMultiplier(this)
+                : 1f;
+        }
+
+        private Vector3 PreserveDownhillMotion(Vector3 force, float resistance)
+        {
+            if (resistance >= 1f ||
+                Time.fixedTime - m_lastGroundContactTime > Time.fixedDeltaTime * 1.5f ||
+                Vector3.Angle(m_groundNormal, Vector3.up) <= MinimumSlopeAngle)
+                return force;
+
+            Vector3 downhill = Vector3.ProjectOnPlane(
+                Vector3.ProjectOnPlane(Physics.gravity, m_groundNormal), Vector3.up).normalized;
+            float opposingForce = Mathf.Min(0f, Vector3.Dot(force, downhill));
+            return force - downhill * opposingForce * (1f - Mathf.Clamp01(resistance));
         }
 
         private static float CalculateCooperationEfficiency(

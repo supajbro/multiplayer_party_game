@@ -3517,6 +3517,10 @@ namespace CouchGuys.ProceduralGeneration
             string instanceName,
             bool centreInLot = false)
         {
+            SuburbZone zone = m_roadZones.TryGetValue(candidate.Road, out SuburbZone roadZone)
+                ? roadZone
+                : CalculateZone(GridToLocal(candidate.Road).y);
+            SelectHouseForZone(zone, ref definition, ref prefab);
             GameObject property = prefab != null
                 ? Instantiate(prefab, centre, Quaternion.identity, parent)
                 : CreatePlaceholderHouse(centre, footprint);
@@ -3546,9 +3550,6 @@ namespace CouchGuys.ProceduralGeneration
                 deliveryPoint = property.transform.Find("DeliveryPoint");
             }
 
-            SuburbZone zone = m_roadZones.TryGetValue(candidate.Road, out SuburbZone roadZone)
-                ? roadZone
-                : CalculateZone(GridToLocal(candidate.Road).y);
             float roadElevation = m_roadHeights.TryGetValue(
                 candidate.Road,
                 out float sampledRoadElevation)
@@ -3945,6 +3946,56 @@ namespace CouchGuys.ProceduralGeneration
             first.y = 0f;
             second.y = 0f;
             return Vector3.Distance(first, second);
+        }
+
+        private void SelectHouseForZone(SuburbZone zone, ref LotDefinition definition, ref GameObject prefab)
+        {
+            if (prefab == m_mansionPrefab || (definition != null && definition.LotType != LotType.Residential))
+                return;
+
+            // Use the already chosen road zone; consume no extra random values so every peer
+            // keeps the same layout and destination order. Regions without House 02 are unchanged.
+            WeightedLot[] lots = m_selectedRegion != null ? m_selectedRegion.Lots : null;
+            bool hasEasyHouse = false;
+            if (lots != null)
+            {
+                foreach (WeightedLot lot in lots)
+                    if (lot.Definition != null && lot.Definition.Prefab != null &&
+                        lot.Definition.Prefab.TryGetComponent(out GeneratedProperty p) && p.IsEasyDeliveryHouse)
+                        hasEasyHouse = true;
+            }
+            else if (m_housePrefabs != null)
+            {
+                foreach (GameObject house in m_housePrefabs)
+                    if (house != null && house.TryGetComponent(out GeneratedProperty p) && p.IsEasyDeliveryHouse)
+                        hasEasyHouse = true;
+            }
+            if (!hasEasyHouse) return;
+
+            bool useEasyHouse = zone <= SuburbZone.Easy;
+            if (lots != null)
+            {
+                foreach (WeightedLot lot in lots)
+                {
+                    LotDefinition choice = lot.Definition;
+                    if (choice != null && choice.LotType == LotType.Residential && !choice.UniquePerMap &&
+                        ValidateLotPrefab(choice.Prefab) != null &&
+                        choice.Prefab.TryGetComponent(out GeneratedProperty p) && p.IsEasyDeliveryHouse == useEasyHouse)
+                    {
+                        definition = choice;
+                        prefab = choice.Prefab;
+                        return;
+                    }
+                }
+            }
+            else if (m_housePrefabs != null)
+                foreach (GameObject choice in m_housePrefabs)
+                    if (ValidateLotPrefab(choice) != null && choice.TryGetComponent(out GeneratedProperty p) &&
+                        p.IsEasyDeliveryHouse == useEasyHouse)
+                    {
+                        prefab = choice;
+                        return;
+                    }
         }
 
         private LotDefinition SelectLotDefinition(System.Random random, bool landmarkOnly)
@@ -4423,6 +4474,9 @@ namespace CouchGuys.ProceduralGeneration
             float uniformScale = Mathf.Min(
                 availableWidth / (renderedHalfSize.x * 2f),
                 availableDepth / (renderedHalfSize.y * 2f));
+            // Preserve the modest home's smaller silhouette instead of enlarging every
+            // house variant to occupy the same fraction of its procedural lot.
+            if (property.IsEasyDeliveryHouse) uniformScale *= 0.78f;
             property.VisualRoot.localScale *= uniformScale;
 
             if (!TryCalculateRendererBounds(renderers, out Bounds bounds) ||

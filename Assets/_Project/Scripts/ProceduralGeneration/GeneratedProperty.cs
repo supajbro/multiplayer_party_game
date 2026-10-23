@@ -6,6 +6,9 @@ namespace CouchGuys.ProceduralGeneration
     [DisallowMultipleComponent]
     public sealed class GeneratedProperty : MonoBehaviour
     {
+        [SerializeField] private bool m_easyDeliveryHouse;
+        public bool IsEasyDeliveryHouse => m_easyDeliveryHouse;
+        public void SetEasyDeliveryHouse(bool value) => m_easyDeliveryHouse = value;
         [SerializeField] private Transform m_roadConnection;
         [SerializeField] private Transform m_deliveryPoint;
         [Tooltip("Optional point immediately outside the garage or parking entrance. Its forward axis should point out toward the road.")]

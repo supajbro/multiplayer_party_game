@@ -13,9 +13,21 @@ namespace CouchGuys.Editor
     {
         private const int MaximumMeshLod = 3;
 
+        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets,
+            string[] movedAssets, string[] movedFromAssetPaths)
+        {
+            if (!importedAssets.Contains(HousePrefabBuilder.House02ModelPath)) return;
+            EditorApplication.delayCall += () =>
+            {
+                if (!EditorApplication.isPlayingOrWillChangePlaymode)
+                    HousePrefabBuilder.EnsureHousePrefabs();
+            };
+        }
+
         private void OnPreprocessModel()
         {
-            if (assetPath != HousePrefabBuilder.HouseModelPath)
+            if (assetPath != HousePrefabBuilder.HouseModelPath &&
+                assetPath != HousePrefabBuilder.House02ModelPath)
             {
                 return;
             }
@@ -29,10 +41,18 @@ namespace CouchGuys.Editor
         [MenuItem("Couch Guys/Optimisation/Reimport And Audit House LODs")]
         public static void ReimportAndAudit()
         {
-            ModelImporter importer = AssetImporter.GetAtPath(HousePrefabBuilder.HouseModelPath) as ModelImporter;
+            Reimport(HousePrefabBuilder.HouseModelPath);
+            Reimport(HousePrefabBuilder.House02ModelPath);
+            HousePrefabBuilder.EnsureHousePrefabs();
+            LogTriangleAudit();
+        }
+
+        private static void Reimport(string path)
+        {
+            ModelImporter importer = AssetImporter.GetAtPath(path) as ModelImporter;
             if (importer == null)
             {
-                Debug.LogError($"House model importer not found at {HousePrefabBuilder.HouseModelPath}.");
+                Debug.LogError($"House model importer not found at {path}.");
                 return;
             }
 
@@ -40,13 +60,17 @@ namespace CouchGuys.Editor
             importer.meshLodGenerationFlags = 0;
             importer.maximumMeshLod = MaximumMeshLod;
             importer.SaveAndReimport();
-            HousePrefabBuilder.EnsureHousePrefabs();
-            LogTriangleAudit();
         }
 
         public static void LogTriangleAudit()
         {
-            Mesh[] meshes = AssetDatabase.LoadAllAssetsAtPath(HousePrefabBuilder.HouseModelPath)
+            LogTriangleAudit(HousePrefabBuilder.HouseModelPath);
+            LogTriangleAudit(HousePrefabBuilder.House02ModelPath);
+        }
+
+        private static void LogTriangleAudit(string path)
+        {
+            Mesh[] meshes = AssetDatabase.LoadAllAssetsAtPath(path)
                 .OfType<Mesh>()
                 .ToArray();
             long[] triangleTotals = new long[MaximumMeshLod + 1];
@@ -76,7 +100,7 @@ namespace CouchGuys.Editor
                   $"LOD2={100d * triangleTotals[2] / triangleTotals[0]:F1}%, " +
                   $"LOD3={100d * triangleTotals[3] / triangleTotals[0]:F1}%";
             Debug.Log(
-                $"House LOD triangle audit: meshes={meshes.Length}, " +
+                $"House LOD triangle audit ({path}): meshes={meshes.Length}, " +
                 $"meshesWithFourLevels={meshesWithAllLevels}, " +
                 $"LOD0={triangleTotals[0]:N0}, LOD1={triangleTotals[1]:N0}, " +
                 $"LOD2={triangleTotals[2]:N0}, LOD3={triangleTotals[3]:N0}; {ratios}.");
