@@ -14,8 +14,11 @@ namespace CouchGuys.UI
             public Sprite Sprite;
         }
 
+        [SerializeField] private GameObject m_prefab;
         [SerializeField] private SpriteEntry[] m_sprites = Array.Empty<SpriteEntry>();
         private Dictionary<string, Sprite> m_lookup;
+
+        public GameObject Prefab => m_prefab;
 
         public Sprite Get(string spriteName)
         {
@@ -33,6 +36,8 @@ namespace CouchGuys.UI
         }
 
 #if UNITY_EDITOR
+        public void SetPrefab(GameObject prefab) => m_prefab = prefab;
+
         public void SetSprites(SpriteEntry[] sprites)
         {
             m_sprites = sprites ?? Array.Empty<SpriteEntry>();

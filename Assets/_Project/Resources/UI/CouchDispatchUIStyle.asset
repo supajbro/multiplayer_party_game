@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb6905792b0eba24eb514f49e2240643, type: 3}
   m_Name: CouchDispatchUIStyle
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.UI.CouchDispatchUIStyle
+  m_prefab: {fileID: 1660258702545914945, guid: c71d164ca14962349908f8cf3bc0a300, type: 3}
   m_sprites:
   - Name: WindowFull
     Sprite: {fileID: 7678817348688644565, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}

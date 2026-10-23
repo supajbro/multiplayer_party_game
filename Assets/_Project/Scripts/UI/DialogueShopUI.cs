@@ -73,7 +73,7 @@ namespace CouchGuys.UI
     /// </summary>
     public sealed class DialogueShopUI : MonoBehaviour
     {
-        private const string PrefabResource = "UI/CouchDispatchUI";
+        private const string StyleResource = "UI/CouchDispatchUIStyle";
         private static DialogueShopUI s_instance;
 
         [Header("Prefab-authored Root")]
@@ -117,10 +117,11 @@ namespace CouchGuys.UI
             get
             {
                 if (s_instance != null) return s_instance;
-                GameObject prefab = Resources.Load<GameObject>(PrefabResource);
+                CouchDispatchUIStyle style = Resources.Load<CouchDispatchUIStyle>(StyleResource);
+                GameObject prefab = style != null ? style.Prefab : null;
                 if (prefab == null)
                 {
-                    Debug.LogError($"Missing Resources/{PrefabResource}.prefab. Rebuild it from Tools > Couch Guys > UI.");
+                    Debug.LogError($"Missing Couch Dispatch prefab reference in Resources/{StyleResource}. Rebuild it from Couch Guys > UI > Rebuild Couch Dispatch UI.");
                     return new GameObject("MissingCouchDispatchUI").AddComponent<DialogueShopUI>();
                 }
                 return Instantiate(prefab).GetComponent<DialogueShopUI>();

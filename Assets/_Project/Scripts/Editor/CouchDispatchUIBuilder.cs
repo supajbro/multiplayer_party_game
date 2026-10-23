@@ -20,7 +20,8 @@ namespace CouchGuys.Editor
         private const string SheetPath = "Assets/_Project/UI/Couch Dispatch UI Sprite Kit.png";
         private const string ResourceFolder = "Assets/_Project/Resources/UI";
         private const string StylePath = ResourceFolder + "/CouchDispatchUIStyle.asset";
-        private const string PrefabPath = ResourceFolder + "/CouchDispatchUI.prefab";
+        private const string PrefabFolder = "Assets/_Project/Prefabs/UI";
+        private const string PrefabPath = PrefabFolder + "/CouchDispatchUI.prefab";
         private const string AtlasPath = "Assets/_Project/UI/CouchDispatchUI.spriteatlas";
         private const int SheetHeight = 1536;
 
@@ -95,6 +96,7 @@ namespace CouchGuys.Editor
 
             ConfigureAndSliceSheet();
             EnsureFolder(ResourceFolder);
+            EnsureFolder(PrefabFolder);
             CouchDispatchUIStyle style = BuildStyleAsset();
             BuildAtlas();
             BuildPrefab(style);
@@ -290,7 +292,9 @@ namespace CouchGuys.Editor
                 deliveryCardsRoot, deliveryCards, shopCardsRoot, shopTemplate, filtersRoot.gameObject,
                 filters, style, eventSystemObject, eventSystem);
             canvasRoot.SetActive(false);
-            PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
+            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
+            style.SetPrefab(prefab);
+            EditorUtility.SetDirty(style);
             UnityEngine.Object.DestroyImmediate(root);
         }
 
@@ -308,6 +312,8 @@ namespace CouchGuys.Editor
             VerticalLayoutGroup layout = root.GetComponent<VerticalLayoutGroup>();
             layout.spacing = 8f;
             layout.padding = new RectOffset(8, 8, 7, 7);
+            layout.childControlWidth = true;
+            layout.childForceExpandWidth = true;
             layout.childControlHeight = true;
             layout.childForceExpandHeight = false;
             root.GetComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
