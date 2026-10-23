@@ -493,6 +493,14 @@ namespace CouchGuys.Gameplay.Vehicles
                 collision.contactCount == 0)
                 return;
 
+            var pedestrian = collision.collider.GetComponentInParent<CouchGuys.Gameplay.Pedestrians.PedestrianController>();
+            if (pedestrian != null)
+            {
+                pedestrian.ApplyVehicleImpactServer(Mathf.Max(collision.relativeVelocity.magnitude,
+                    Vector3.ProjectOnPlane(m_rigidbody.linearVelocity, Vector3.up).magnitude));
+                return;
+            }
+
             PlayerHealth player = collision.collider.GetComponentInParent<PlayerHealth>();
             ThiefHealth thief = collision.collider.GetComponentInParent<ThiefHealth>();
             if (player != null || thief != null)

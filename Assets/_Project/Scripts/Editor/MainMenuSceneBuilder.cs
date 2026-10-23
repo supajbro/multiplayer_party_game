@@ -18,10 +18,9 @@ namespace CouchGuys.Editor
         private const string MainMenuScenePath = "Assets/Scenes/MainMenu.unity";
         private const string LogoPath = "Assets/_Project/Concepts/logo.png";
         private const string BackgroundPath = "Assets/_Project/Concepts/Couch_Guys_Concept_01.png";
-        private const string ButtonBackgroundPath = "Assets/_Project/UI/Button_Background.png";
-        private const string SoloOverlayPath = "Assets/_Project/UI/Button_Overlay_white.png";
-        private const string MultiplayerOverlayPath = "Assets/_Project/UI/Button_Overlay_yellow.png";
-        private const string SettingsOverlayPath = "Assets/_Project/UI/Button_Overlay_orange.png";
+        private const string SoloButtonPath = "Assets/_Project/UI/button_solo.png";
+        private const string MultiplayerButtonPath = "Assets/_Project/UI/button_multiplayer.png";
+        private const string SettingsButtonPath = "Assets/_Project/UI/button_settings.png";
         private const string VolumeProfilePath = "Assets/_Project/Settings/MainMenuVolumeProfile.asset";
 
         [InitializeOnLoadMethod]
@@ -43,10 +42,9 @@ namespace CouchGuys.Editor
         {
             ConfigureSingleSprite(LogoPath);
             ConfigureSingleSprite(BackgroundPath);
-            ConfigureSingleSprite(ButtonBackgroundPath);
-            ConfigureSingleSprite(SoloOverlayPath);
-            ConfigureSingleSprite(MultiplayerOverlayPath);
-            ConfigureSingleSprite(SettingsOverlayPath);
+            ConfigureSingleSprite(SoloButtonPath);
+            ConfigureSingleSprite(MultiplayerButtonPath);
+            ConfigureSingleSprite(SettingsButtonPath);
 
             Scene menuScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             SceneManager.SetActiveScene(menuScene);
@@ -125,17 +123,13 @@ namespace CouchGuys.Editor
             CreateLeftScrim(canvas.transform);
             CreateLogo(canvas.transform);
 
-            Sprite background = AssetDatabase.LoadAssetAtPath<Sprite>(ButtonBackgroundPath);
-            Sprite solo = AssetDatabase.LoadAssetAtPath<Sprite>(SoloOverlayPath);
-            Sprite multiplayer = AssetDatabase.LoadAssetAtPath<Sprite>(MultiplayerOverlayPath);
-            Sprite settings = AssetDatabase.LoadAssetAtPath<Sprite>(SettingsOverlayPath);
-            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            Sprite solo = AssetDatabase.LoadAssetAtPath<Sprite>(SoloButtonPath);
+            Sprite multiplayer = AssetDatabase.LoadAssetAtPath<Sprite>(MultiplayerButtonPath);
+            Sprite settings = AssetDatabase.LoadAssetAtPath<Sprite>(SettingsButtonPath);
 
-            Button soloButton = CreateButton(canvas.transform, "Solo Button", "Solo", -405f, background, solo, font);
-            Button multiplayerButton = CreateButton(canvas.transform, "Multiplayer Button", "Multiplayer", -600f,
-                background, multiplayer, font);
-            Button settingsButton = CreateButton(canvas.transform, "Settings Button", "Settings", -795f, background,
-                settings, font);
+            Button soloButton = CreateButton(canvas.transform, "Solo Button", -405f, solo);
+            Button multiplayerButton = CreateButton(canvas.transform, "Multiplayer Button", -600f, multiplayer);
+            Button settingsButton = CreateButton(canvas.transform, "Settings Button", -795f, settings);
 
             GameObject managerObject = new GameObject("MainMenuManager", typeof(MainMenuManager));
             SceneManager.MoveGameObjectToScene(managerObject, scene);
@@ -195,11 +189,8 @@ namespace CouchGuys.Editor
         private static Button CreateButton(
             Transform parent,
             string objectName,
-            string label,
             float anchoredY,
-            Sprite background,
-            Sprite overlay,
-            Font font)
+            Sprite sprite)
         {
             GameObject root = new GameObject(objectName, typeof(RectTransform), typeof(Image), typeof(Button),
                 typeof(MainMenuButtonFeedback));
@@ -211,7 +202,7 @@ namespace CouchGuys.Editor
             rootRect.sizeDelta = new Vector2(570f, 180f);
 
             Image backgroundImage = root.GetComponent<Image>();
-            backgroundImage.sprite = background;
+            backgroundImage.sprite = sprite;
             backgroundImage.preserveAspect = true;
 
             Button button = root.GetComponent<Button>();
@@ -225,36 +216,6 @@ namespace CouchGuys.Editor
             colors.fadeDuration = 0.08f;
             button.colors = colors;
 
-            GameObject overlayObject = new GameObject("Colour Overlay", typeof(RectTransform), typeof(Image));
-            overlayObject.transform.SetParent(root.transform, false);
-            RectTransform overlayRect = (RectTransform)overlayObject.transform;
-            overlayRect.anchorMin = Vector2.zero;
-            overlayRect.anchorMax = Vector2.one;
-            overlayRect.offsetMin = new Vector2(24f, 22f);
-            overlayRect.offsetMax = new Vector2(-24f, -22f);
-            Image overlayImage = overlayObject.GetComponent<Image>();
-            overlayImage.sprite = overlay;
-            overlayImage.preserveAspect = true;
-            overlayImage.raycastTarget = false;
-
-            GameObject labelObject = new GameObject("Label", typeof(RectTransform), typeof(Text), typeof(Shadow));
-            labelObject.transform.SetParent(root.transform, false);
-            RectTransform labelRect = (RectTransform)labelObject.transform;
-            labelRect.anchorMin = Vector2.zero;
-            labelRect.anchorMax = Vector2.one;
-            labelRect.offsetMin = new Vector2(32f, 18f);
-            labelRect.offsetMax = new Vector2(-32f, -18f);
-            Text text = labelObject.GetComponent<Text>();
-            text.text = label;
-            text.font = font;
-            text.fontSize = label == "Multiplayer" ? 49 : 56;
-            text.fontStyle = FontStyle.Bold;
-            text.color = new Color(0.19f, 0.065f, 0.025f);
-            text.alignment = TextAnchor.MiddleCenter;
-            text.raycastTarget = false;
-            Shadow shadow = labelObject.GetComponent<Shadow>();
-            shadow.effectColor = new Color(1f, 0.78f, 0.33f, 0.42f);
-            shadow.effectDistance = new Vector2(2f, -3f);
             return button;
         }
 

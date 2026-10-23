@@ -41,6 +41,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         private readonly Dictionary<PlayerHealth, float> m_damageByPlayer = new();
         private readonly Dictionary<VanController, float> m_damageByVan = new();
+        private readonly Dictionary<CouchGuys.Gameplay.Pedestrians.PedestrianController, float> m_damageByPedestrian = new();
         private readonly List<Vector3> m_tracerEnds = new(12);
         private readonly RaycastHit[] m_hits = new RaycastHit[24];
         private PlayerHealth m_target;
@@ -132,6 +133,7 @@ namespace CouchGuys.Gameplay.Enemies
         private void FireServer()
         {
             Vector3 origin = GetMuzzlePosition();
+            CouchGuys.Gameplay.Pedestrians.PedestrianManager.ReportGunshotServer(origin);
             float distance01 = Mathf.Clamp01(Vector3.Distance(origin, m_target.AimPoint) / m_range);
             bool moving = m_agent != null && m_agent.enabled && m_agent.velocity.sqrMagnitude > 0.2f;
             float accuracy = Mathf.Clamp01(m_baseAccuracy - distance01 * m_distanceAccuracyPenalty -
@@ -140,18 +142,27 @@ namespace CouchGuys.Gameplay.Enemies
 
             m_damageByPlayer.Clear();
             m_damageByVan.Clear();
+            m_damageByPedestrian.Clear();
             m_tracerEnds.Clear();
             for (int pellet = 0; pellet < m_pelletsPerShot; pellet++)
             {
                 Vector3 direction = ApplySpread(m_aimDirection, spread);
                 Vector3 end = origin + direction * m_range;
-                int count = Physics.RaycastNonAlloc(origin, direction, m_hits, m_range, m_hitMask, QueryTriggerInteraction.Ignore);
+                int count = Physics.RaycastNonAlloc(origin, direction, m_hits, m_range, m_hitMask, QueryTriggerInteraction.Collide);
                 SortHits(count);
                 for (int i = 0; i < count; i++)
                 {
                     RaycastHit hit = m_hits[i];
-                    if (hit.collider.transform.root == transform.root) continue;
+                    if (!CouchGuys.Gameplay.Pedestrians.PedestrianController.IsBulletHit(hit.collider) ||
+                        hit.collider.transform.root == transform.root) continue;
                     end = hit.point;
+                    var pedestrian = hit.collider.GetComponentInParent<CouchGuys.Gameplay.Pedestrians.PedestrianController>();
+                    if (pedestrian != null)
+                    {
+                        m_damageByPedestrian.TryGetValue(pedestrian, out float total);
+                        m_damageByPedestrian[pedestrian] = total + m_damagePerPellet;
+                        break;
+                    }
                     PlayerHealth health = hit.collider.GetComponentInParent<PlayerHealth>();
                     if (health != null && health.IsAlive)
                     {
@@ -178,6 +189,8 @@ namespace CouchGuys.Gameplay.Enemies
                 damage.Key.ApplyDamageServer(damage.Value, impact, m_knockbackForce);
             }
             foreach (KeyValuePair<VanController, float> damage in m_damageByVan)
+                damage.Key.ApplyBulletDamageServer(damage.Value);
+            foreach (var damage in m_damageByPedestrian)
                 damage.Key.ApplyBulletDamageServer(damage.Value);
             if (m_weaponType == EnemyWeaponType.AssaultRifle)
                 m_rifleBurstActive = true;

@@ -406,6 +406,7 @@ namespace CouchGuys.ProceduralGeneration
                 gameObject.AddComponent<CouchGuys.Gameplay.Traffic.TrafficManager>();
             ReportGenerationProgress(1f, "Spawning Couches...");
             IsGenerating = false;
+            EnsurePedestrians();
             RegionGenerated?.Invoke(this);
         }
 
@@ -561,6 +562,7 @@ namespace CouchGuys.ProceduralGeneration
             {
                 gameObject.AddComponent<CouchGuys.Gameplay.Traffic.TrafficManager>();
             }
+            EnsurePedestrians();
             RegionGenerated?.Invoke(this);
         }
 
@@ -2432,6 +2434,7 @@ namespace CouchGuys.ProceduralGeneration
 
         private void CreateSidewalks()
         {
+            m_pedestrianSidewalks.Clear();
             if (m_sidewalkWidth <= 0.001f)
             {
                 return;
@@ -2469,6 +2472,11 @@ namespace CouchGuys.ProceduralGeneration
                     float inner = m_roadTileSize * 0.5f;
                     float outer = inner + m_sidewalkWidth;
                     float along = m_roadTileSize * 0.5f;
+                    RecordPedestrianSidewalk(
+                        centre + outward * inner - tangent * along,
+                        centre + outward * inner + tangent * along,
+                        centre + outward * outer + tangent * along,
+                        centre + outward * outer - tangent * along);
                     AddSidewalkSidePieces(
                         roadCell,
                         centre,
@@ -2496,6 +2504,11 @@ namespace CouchGuys.ProceduralGeneration
                     Vector3 second = DirectionVector((CardinalDirection)nextDirection);
                     float inner = m_roadTileSize * 0.5f;
                     float outer = inner + m_sidewalkWidth;
+                    RecordPedestrianSidewalk(
+                        centre + first * inner + second * inner,
+                        centre + first * outer + second * inner,
+                        centre + first * outer + second * outer,
+                        centre + first * inner + second * outer);
                     AddSidewalkPiece(
                         centre + first * inner + second * inner,
                         centre + first * outer + second * inner,

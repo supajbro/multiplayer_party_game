@@ -52,6 +52,7 @@ namespace CouchGuys.Gameplay.Weapons
         private readonly RaycastHit[] m_hits = new RaycastHit[RaycastBufferSize];
         private readonly Dictionary<PlayerHealth, float> m_playerDamage = new(8);
         private readonly Dictionary<ThiefHealth, float> m_thiefDamage = new(8);
+        private readonly Dictionary<CouchGuys.Gameplay.Pedestrians.PedestrianController, float> m_pedestrianDamage = new(8);
         private readonly Dictionary<VanController, float> m_vanDamage = new(4);
         private readonly Dictionary<TrafficVehicleController, float> m_trafficVehicleDamage = new(4);
         private float m_switchCompleteAt;
@@ -390,6 +391,7 @@ namespace CouchGuys.Gameplay.Weapons
             m_nextServerFireTime[index] = Time.time + weapon.FireInterval;
             m_magazine[index]--;
             Vector3 muzzle = GetMuzzlePosition(index, m_health.AimPoint);
+            CouchGuys.Gameplay.Pedestrians.PedestrianManager.ReportGunshotServer(muzzle);
             Vector3 cameraDirection = aimDirection.normalized;
             // Find the farthest point on the reticle ray that is still within range of
             // the muzzle. Using weapon.Range from both origins made the muzzle ray
@@ -441,6 +443,7 @@ namespace CouchGuys.Gameplay.Weapons
         {
             m_playerDamage.Clear();
             m_thiefDamage.Clear();
+            m_pedestrianDamage.Clear();
             m_vanDamage.Clear();
             m_trafficVehicleDamage.Clear();
             Vector3[] ends = new Vector3[weapon.Pellets];
@@ -461,6 +464,13 @@ namespace CouchGuys.Gameplay.Weapons
                 normals[pellet] = nearest.normal;
                 surfaces[pellet] = (byte)ClassifySurface(nearest.collider);
                 float damage = weapon.DamageAtDistance(nearest.distance);
+                var pedestrian = nearest.collider.GetComponentInParent<CouchGuys.Gameplay.Pedestrians.PedestrianController>();
+                if (pedestrian != null)
+                {
+                    m_pedestrianDamage.TryGetValue(pedestrian, out float total);
+                    m_pedestrianDamage[pedestrian] = total + damage;
+                    continue;
+                }
                 PlayerHealth player = nearest.collider.GetComponentInParent<PlayerHealth>();
                 if (player != null && player != m_health)
                 {
@@ -513,6 +523,8 @@ namespace CouchGuys.Gameplay.Weapons
             }
             foreach (KeyValuePair<VanController, float> entry in m_vanDamage)
                 entry.Key.ApplyBulletDamageServer(entry.Value);
+            foreach (var entry in m_pedestrianDamage)
+                entry.Key.ApplyBulletDamageServer(entry.Value);
             foreach (KeyValuePair<TrafficVehicleController, float> entry in m_trafficVehicleDamage)
                 entry.Key.ApplyBulletDamageServer(entry.Value);
             return ends;
@@ -522,7 +534,8 @@ namespace CouchGuys.Gameplay.Weapons
         {
             if (collider == null) return WeaponImpactSurface.None;
             if (collider.GetComponentInParent<PlayerHealth>() != null ||
-                collider.GetComponentInParent<ThiefHealth>() != null)
+                collider.GetComponentInParent<ThiefHealth>() != null ||
+                collider.GetComponentInParent<CouchGuys.Gameplay.Pedestrians.PedestrianController>() != null)
                 return WeaponImpactSurface.Enemy;
             if (collider.GetComponentInParent<VanController>() != null)
                 return WeaponImpactSurface.Metal;
@@ -544,14 +557,15 @@ namespace CouchGuys.Gameplay.Weapons
             out RaycastHit nearest)
         {
             int hitCount = Physics.RaycastNonAlloc(origin, direction, m_hits, range,
-                m_hitMask, QueryTriggerInteraction.Ignore);
+                m_hitMask, QueryTriggerInteraction.Collide);
             float nearestDistance = float.PositiveInfinity;
             nearest = default;
             bool found = false;
             for (int hitIndex = 0; hitIndex < hitCount; hitIndex++)
             {
                 RaycastHit hit = m_hits[hitIndex];
-                if (hit.collider == null || hit.collider.GetComponentInParent<PlayerWeaponController>() == this ||
+                if (!CouchGuys.Gameplay.Pedestrians.PedestrianController.IsBulletHit(hit.collider) ||
+                    hit.collider.GetComponentInParent<PlayerWeaponController>() == this ||
                     hit.distance >= nearestDistance) continue;
                 nearestDistance = hit.distance;
                 nearest = hit;
