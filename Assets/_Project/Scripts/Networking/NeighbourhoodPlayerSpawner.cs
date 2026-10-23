@@ -119,6 +119,20 @@ namespace CouchGuys.Networking
                 yield break;
             }
 
+            // The initial connection callback can run while the client is still in
+            // the lobby. Wait for FishNet's gameplay-scene acknowledgement before
+            // spawning owned objects (owners can bypass observer conditions).
+            while (connection.IsActive && !connection.Scenes.Contains(generator.gameObject.scene) &&
+                   Time.realtimeSinceStartup < sceneTimeoutAt)
+                yield return null;
+            if (!connection.IsActive || !connection.Scenes.Contains(generator.gameObject.scene))
+            {
+                m_pendingConnections.Remove(connection.ClientId);
+                if (connection.IsActive)
+                    Debug.LogError($"Client {connection.ClientId} did not finish loading the gameplay scene.", this);
+                yield break;
+            }
+
             NeighbourhoodSeedSynchroniser seedSynchroniser =
                 generator.GetComponent<NeighbourhoodSeedSynchroniser>();
             if (seedSynchroniser != null)

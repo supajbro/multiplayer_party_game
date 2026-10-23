@@ -60,7 +60,7 @@ namespace CouchGuys.UI
         private Button m_returnButton;
         private float m_displayedProgress;
         private float m_visualProgress;
-        private bool m_finishing;
+        private bool m_tracking;
 
         public static void Show(string initialStatus)
         {
@@ -71,6 +71,11 @@ namespace CouchGuys.UI
             }
             s_instance.m_status.text = initialStatus;
             s_instance.gameObject.SetActive(true);
+            if (!s_instance.m_tracking)
+            {
+                s_instance.m_tracking = true;
+                s_instance.StartCoroutine(s_instance.TrackReadiness());
+            }
         }
 
         private void Awake()
@@ -79,12 +84,10 @@ namespace CouchGuys.UI
             s_instance = this;
             DontDestroyOnLoad(gameObject);
             BuildUi();
-            SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
         private void OnDestroy()
         {
-            SceneManager.sceneLoaded -= OnSceneLoaded;
             if (s_instance == this) s_instance = null;
         }
 
@@ -101,20 +104,23 @@ namespace CouchGuys.UI
                 input.SetGameplaySuppressed(true);
         }
 
-        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-        {
-            if (scene.name != "SampleScene" || m_finishing) return;
-            StartCoroutine(TrackReadiness());
-        }
-
         private IEnumerator TrackReadiness()
         {
-            m_displayedProgress = 0.12f;
+            // Steam lobby data and FishNet scene messages arrive independently.
+            // Poll scene state so showing this UI after sceneLoaded is also supported.
             float deadline = Time.realtimeSinceStartup + 120f;
+            while (!SceneManager.GetSceneByName("SampleScene").isLoaded && Time.realtimeSinceStartup < deadline)
+                yield return null;
+            if (!SceneManager.GetSceneByName("SampleScene").isLoaded)
+            { Fail("The gameplay scene did not finish loading."); yield break; }
+
+            m_displayedProgress = 0.12f;
+            deadline = Time.realtimeSinceStartup + 120f;
             NeighbourhoodGenerator generator = null;
             while (generator == null && Time.realtimeSinceStartup < deadline)
             {
-                generator = FindFirstObjectByType<NeighbourhoodGenerator>();
+                foreach (NeighbourhoodGenerator candidate in FindObjectsByType<NeighbourhoodGenerator>(FindObjectsSortMode.None))
+                    if (candidate.gameObject.scene.name == "SampleScene") { generator = candidate; break; }
                 yield return null;
             }
 
@@ -129,6 +135,7 @@ namespace CouchGuys.UI
 
             m_displayedProgress = 0.9f;
             m_status.text = "Spawning Couches...";
+            deadline = Time.realtimeSinceStartup + 120f;
             while (!HasLocalPlayer() && Time.realtimeSinceStartup < deadline)
                 yield return null;
             if (!HasLocalPlayer()) { Fail("Player spawning timed out."); yield break; }
@@ -139,6 +146,7 @@ namespace CouchGuys.UI
                 if (lobby == null) { Fail("The multiplayer session was lost while loading."); yield break; }
                 lobby.SetLocalPlayerReady();
                 m_status.text = "Waiting for other players...";
+                deadline = Time.realtimeSinceStartup + 120f;
                 while (!lobby.IsGamePlaying && Time.realtimeSinceStartup < deadline)
                 {
                     if (lobby.IsLocalLobbyOwner && lobby.AreAllLobbyMembersReady()) lobby.ReleasePlayers();
@@ -147,8 +155,7 @@ namespace CouchGuys.UI
                 }
                 if (!lobby.IsGamePlaying)
                 {
-                    if (lobby.IsLocalLobbyOwner) lobby.ReleasePlayers();
-                    else { Fail("The host did not finish loading the session."); yield break; }
+                    Fail("Not all players finished loading the session."); yield break;
                 }
             }
 
@@ -161,7 +168,6 @@ namespace CouchGuys.UI
 
         private void Finish()
         {
-            m_finishing = true;
             foreach (PlayerInputReader input in FindObjectsByType<PlayerInputReader>(FindObjectsSortMode.None))
                 input.SetGameplaySuppressed(false);
             Destroy(gameObject);
@@ -179,6 +185,7 @@ namespace CouchGuys.UI
 
         private void Fail(string message)
         {
+            Debug.LogError(message);
             m_status.text = message;
             m_returnButton.gameObject.SetActive(true);
         }

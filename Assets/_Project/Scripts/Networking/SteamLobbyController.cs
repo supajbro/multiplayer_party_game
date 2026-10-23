@@ -44,6 +44,7 @@ namespace CouchGuys.Networking
         private CSteamID m_currentLobby;
         private bool m_callbacksRegistered;
         private bool m_isCreatingLobby;
+        private bool m_loadingRequested;
         private ELobbyType m_pendingLobbyType = ELobbyType.k_ELobbyTypeFriendsOnly;
         private int m_pendingMaximumPlayers = DefaultMaximumPlayers;
         private string m_status = "Starting Steam...";
@@ -181,12 +182,14 @@ namespace CouchGuys.Networking
 
         public void StartGame()
         {
+            if (m_loadingRequested) return;
             if (!IsLocalLobbyOwner || m_networkManager == null || !m_networkManager.ServerManager.Started)
             {
                 SetStatus("Only the lobby host can start the game.", true);
                 return;
             }
 
+            m_loadingRequested = true;
             SteamMatchmaking.SetLobbyJoinable(m_currentLobby, false);
             int worldSeed = UnityEngine.Random.Range(1, int.MaxValue);
             SteamMatchmaking.SetLobbyData(m_currentLobby, WorldSeedKey, worldSeed.ToString());
@@ -280,6 +283,7 @@ namespace CouchGuys.Networking
 
             m_currentLobby = CSteamID.Nil;
             m_isCreatingLobby = false;
+            m_loadingRequested = false;
             SetStatus("Left multiplayer session.");
         }
 
@@ -369,6 +373,7 @@ namespace CouchGuys.Networking
             }
 
             m_currentLobby = new CSteamID(result.m_ulSteamIDLobby);
+            m_loadingRequested = false;
             string hostAddress = SteamUser.GetSteamID().m_SteamID.ToString();
             SteamMatchmaking.SetLobbyData(m_currentLobby, GameKey, GameValue);
             SteamMatchmaking.SetLobbyData(m_currentLobby, BuildKey, Application.version);
@@ -400,6 +405,8 @@ namespace CouchGuys.Networking
             }
 
             m_currentLobby = new CSteamID(result.m_ulSteamIDLobby);
+            m_loadingRequested = false;
+            SteamMatchmaking.SetLobbyMemberData(m_currentLobby, ReadyKey, "0");
             if (SteamMatchmaking.GetLobbyData(m_currentLobby, GameKey) != GameValue ||
                 SteamMatchmaking.GetLobbyData(m_currentLobby, BuildKey) != Application.version ||
                 SteamMatchmaking.GetLobbyData(m_currentLobby, StateKey) != WaitingState)
@@ -464,8 +471,9 @@ namespace CouchGuys.Networking
         {
             if (!IsInLobby || update.m_ulSteamIDLobby != m_currentLobby.m_SteamID) return;
             string state = SteamMatchmaking.GetLobbyData(m_currentLobby, StateKey);
-            if (state == LoadingState)
+            if (state == LoadingState && !m_loadingRequested)
             {
+                m_loadingRequested = true;
                 int.TryParse(SteamMatchmaking.GetLobbyData(m_currentLobby, WorldSeedKey), out int worldSeed);
                 GameLaunchContext.BeginMultiplayer(worldSeed);
                 LoadingScreenController.Show("Joining the neighbourhood...");

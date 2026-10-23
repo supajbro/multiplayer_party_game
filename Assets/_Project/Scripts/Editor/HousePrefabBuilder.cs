@@ -332,26 +332,45 @@ namespace CouchGuys.Editor
 
         private static Mesh CreateMeshAtLod(Mesh source, int requestedLevel)
         {
-            Mesh lodMesh = Object.Instantiate(source);
-            lodMesh.name = $"{source.name}_BuildLOD{requestedLevel}";
-            if (source.lodCount > 0)
+            // Build an ordinary mesh with only the selected level's indices. Changing
+            // submesh ranges on a clone leaves the imported Mesh LOD ranges behind,
+            // which can extend outside the new submesh and fail validation/serialization.
+            Mesh lodMesh = new Mesh
             {
-                int availableLevel = Mathf.Min(requestedLevel, source.lodCount - 1);
+                name = $"{source.name}_BuildLOD{requestedLevel}",
+                indexFormat = source.indexFormat
+            };
+            try
+            {
+                using (Mesh.MeshDataArray sourceData = Mesh.AcquireReadOnlyMeshData(source))
+                {
+                    lodMesh.SetVertexBufferParams(source.vertexCount, source.GetVertexAttributes());
+                    for (int stream = 0; stream < source.vertexBufferCount; stream++)
+                    {
+                        var vertices = sourceData[0].GetVertexData<byte>(stream);
+                        lodMesh.SetVertexBufferData(vertices, 0, 0, vertices.Length, stream);
+                    }
+                }
+
+                int availableLevel = source.lodCount > 0
+                    ? Mathf.Clamp(requestedLevel, 0, source.lodCount - 1)
+                    : -1;
+                lodMesh.subMeshCount = source.subMeshCount;
                 for (int subMesh = 0; subMesh < source.subMeshCount; subMesh++)
                 {
-                    MeshLodRange lodRange = source.GetLod(subMesh, availableLevel);
-                    SubMeshDescriptor descriptor = source.GetSubMesh(subMesh);
-                    descriptor.indexStart = checked((int)lodRange.indexStart);
-                    descriptor.indexCount = checked((int)lodRange.indexCount);
-                    lodMesh.SetSubMesh(
-                        subMesh,
-                        descriptor,
-                        MeshUpdateFlags.DontRecalculateBounds);
+                    lodMesh.SetIndices(
+                        source.GetIndices(subMesh, availableLevel, true),
+                        source.GetTopology(subMesh), subMesh, false);
                 }
-            }
 
-            lodMesh.RecalculateBounds();
-            return lodMesh;
+                lodMesh.RecalculateBounds();
+                return lodMesh;
+            }
+            catch
+            {
+                Object.DestroyImmediate(lodMesh);
+                throw;
+            }
         }
 
         private static LodCombineGroup FindOrCreateCombineGroup(
