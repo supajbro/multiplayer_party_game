@@ -28,7 +28,7 @@ namespace CouchGuys.Editor
             EditorApplication.delayCall += () =>
             {
                 if (EditorApplication.isPlayingOrWillChangePlaymode ||
-                    AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/StreetLight_Placeholder.prefab") != null)
+                    StreetLightPrefabBuilder.EnsurePrefab() != null)
                     return;
                 BuildAll();
             };
@@ -91,20 +91,7 @@ namespace CouchGuys.Editor
 
         private static EnvironmentPrefabLibrary CreatePrefabLibrary()
         {
-            GameObject streetlight = CreatePrefab("StreetLight_Placeholder", new Vector2(1.1f, 1.1f), 0.35f, root =>
-            {
-                Cube(root, "Pole", new Vector3(0f, 3.1f, 0f), new Vector3(0.28f, 6.2f, 0.28f), "MetalDark");
-                Cube(root, "Arm", new Vector3(0f, 5.95f, 0.72f), new Vector3(0.25f, 0.25f, 1.65f), "MetalDark");
-                Cube(root, "LampHousing", new Vector3(0f, 5.78f, 1.48f), new Vector3(0.7f, 0.35f, 0.75f), "MetalDark");
-                GameObject bulb = Cube(root, "Bulb", new Vector3(0f, 5.55f, 1.48f), new Vector3(0.48f, 0.16f, 0.5f), "WarmGlow");
-                Light light = bulb.AddComponent<Light>();
-                light.type = LightType.Point;
-                light.enabled = false;
-                light.color = new Color(1f, 0.68f, 0.28f);
-                light.intensity = 2.2f;
-                light.range = 11f;
-                root.AddComponent<StreetlightPlaceholder>();
-            });
+            GameObject streetlight = StreetLightPrefabBuilder.EnsurePrefab();
             GameObject bin = CreatePrefab("Bin_Placeholder", new Vector2(0.75f, 0.75f), 0.2f, root =>
             {
                 Cube(root, "Body", new Vector3(0f, 0.55f, 0f), new Vector3(0.68f, 1.1f, 0.62f), "GrassDark");
@@ -301,7 +288,7 @@ namespace CouchGuys.Editor
             settings.Prefabs = library;
             settings.Lighting.SkyboxMaterial = CreateOrUpdateSkybox();
             settings.Lighting.PostProcessingProfile = CreateOrUpdatePostProfile();
-            settings.Streetlights.Prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/StreetLight_Placeholder.prefab");
+            settings.Streetlights.Prefab = AssetDatabase.LoadAssetAtPath<GameObject>(StreetLightPrefabBuilder.PrefabPath);
             settings.Landmarks.Prefabs = new[]
             {
                 new WeightedEnvironmentPrefab { Prefab = library.Fountain, Weight = 1.2f, AllowedInParks = true },

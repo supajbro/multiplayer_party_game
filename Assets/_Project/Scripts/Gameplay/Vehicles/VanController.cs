@@ -259,6 +259,14 @@ namespace CouchGuys.Gameplay.Vehicles
         public Transform GetCargoPoint(int slot) => m_cargoPoints != null && slot >= 0 && slot < m_cargoPoints.Length
             ? m_cargoPoints[slot] : null;
 
+        internal bool IsCouchInLoadingRange(CouchCarryController couch)
+        {
+            if (couch == null || m_settings == null) return false;
+            Vector3 nearest = couch.transform.TransformPoint(couch.CargoBounds.ClosestPoint(
+                couch.transform.InverseTransformPoint(CargoLoadingPoint.position)));
+            return (nearest - CargoLoadingPoint.position).sqrMagnitude <= m_settings.CouchLoadingRange * m_settings.CouchLoadingRange;
+        }
+
         public bool IsPlayerNearRear(Transform player)
         {
             if (player == null || m_settings == null) return false;
@@ -307,10 +315,10 @@ namespace CouchGuys.Gameplay.Vehicles
         [Server]
         private bool TryLoadCouchServer(PlayerVanInteractor player, CouchCarryController couch)
         {
-            if (couch == null || couch.IsLoaded || LoadedCouchCount >= m_loadedCouches.Count) return false;
+            if (couch == null || couch.IsLoaded || !couch.IsPickupAvailable || LoadedCouchCount >= m_loadedCouches.Count) return false;
             float rangeSquared = m_settings.CouchLoadingRange * m_settings.CouchLoadingRange;
             if ((player.transform.position - CargoLoadingPoint.position).sqrMagnitude > rangeSquared ||
-                (couch.transform.position - CargoLoadingPoint.position).sqrMagnitude > rangeSquared) return false;
+                !IsCouchInLoadingRange(couch)) return false;
             int slot = -1;
             for (int index = 0; index < m_loadedCouches.Count; index++)
                 if (m_loadedCouches[index] == null) { slot = index; break; }
@@ -327,11 +335,8 @@ namespace CouchGuys.Gameplay.Vehicles
             {
                 NetworkObject couchObject = m_loadedCouches[slot];
                 if (couchObject == null || !couchObject.TryGetComponent(out CouchCarryController couch)) continue;
-                if (!TryGetSafeCouchUnloadPosition(couch, slot, out Vector3 position, out Quaternion rotation))
-                {
-                    player?.ShowVehicleFeedbackServer("Clear the area behind the van");
-                    return false;
-                }
+                if (couch.IsCargoTransitioning) return false;
+                GetCouchUnloadPose(couch, slot, out Vector3 position, out Quaternion rotation);
                 m_loadedCouches[slot] = null;
                 couch.UnloadFromVanServer(position, rotation, m_settings.CouchUnloadingDuration);
                 return true;
@@ -346,32 +351,74 @@ namespace CouchGuys.Gameplay.Vehicles
             {
                 NetworkObject couchObject = m_loadedCouches[slot];
                 if (couchObject == null || !couchObject.TryGetComponent(out CouchCarryController couch)) continue;
-                Vector3 position = CargoLoadingPoint.position + transform.right * ((slot % 2 == 0 ? 1f : -1f) * (1.5f + slot * .4f));
-                if (Physics.Raycast(position + Vector3.up * 3f, Vector3.down, out RaycastHit ground, 8f, ~0, QueryTriggerInteraction.Ignore))
-                    position.y = ground.point.y + .05f;
+                GetCouchUnloadPose(couch, slot, out Vector3 position, out Quaternion rotation);
                 m_loadedCouches[slot] = null;
-                couch.UnloadFromVanServer(position, Quaternion.Euler(0f, transform.eulerAngles.y, 0f), m_settings.CouchUnloadingDuration);
+                couch.UnloadFromVanServer(position, rotation, m_settings.CouchUnloadingDuration);
             }
         }
 
-        private bool TryGetSafeCouchUnloadPosition(CouchCarryController couch, int slot, out Vector3 position, out Quaternion rotation)
+        internal void GetCouchUnloadPose(CouchCarryController couch, int slot, out Vector3 position, out Quaternion rotation)
         {
-            Vector3 outward = CargoLoadingPoint.position - transform.position;
-            outward = Vector3.ProjectOnPlane(outward, Vector3.up).normalized;
-            if (outward.sqrMagnitude < 0.1f) outward = -transform.forward;
-            position = CargoLoadingPoint.position + outward * (1.25f + slot * .35f);
-            if (Physics.Raycast(position + Vector3.up * 3f, Vector3.down, out RaycastHit ground, 8f, ~0, QueryTriggerInteraction.Ignore))
-                position.y = ground.point.y + .05f;
-            rotation = Quaternion.LookRotation(transform.right, Vector3.up);
-            int count = Physics.OverlapBoxNonAlloc(position + Vector3.up * .45f, new Vector3(1.1f, .45f, .5f),
-                m_clearanceHits, rotation, ~0, QueryTriggerInteraction.Ignore);
-            for (int index = 0; index < count; index++)
+            Physics.SyncTransforms();
+            Vector3 outward = Vector3.ProjectOnPlane(-transform.forward, Vector3.up).normalized;
+            if (outward.sqrMagnitude < .1f) outward = Vector3.back;
+            Vector3 right = Vector3.Cross(outward, Vector3.up).normalized;
+            Bounds bounds = couch.CargoBounds;
+            Vector3 scale = couch.transform.lossyScale;
+            Vector3 extents = Vector3.Scale(bounds.extents, new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z)));
+            Vector3 centreOffset = Vector3.Scale(bounds.center, scale);
+            float spacing = Mathf.Max(extents.x, extents.z) * 2f + .25f;
+            Vector3 rear = CargoLoadingPoint.position + outward * (Mathf.Max(extents.x, extents.z) + .75f + slot * .35f);
+            rotation = Quaternion.LookRotation(right, Vector3.up);
+            position = rear + Vector3.up * .1f;
+            bool hasGroundedFallback = false;
+            // Rear first, then a bounded search around the rear/side of the truck.
+            for (int ring = 0; ring <= 5; ring++)
             {
-                Collider hit = m_clearanceHits[index];
-                if (hit == null || hit.transform.IsChildOf(transform) || hit.transform.IsChildOf(couch.transform)) continue;
-                return false;
+                int samples = ring == 0 ? 1 : ring * 8;
+                for (int sample = 0; sample < samples; sample++)
+                {
+                    float angle = sample * Mathf.PI * 2f / samples;
+                    Vector3 candidate = rear + (outward * Mathf.Cos(angle) + right * Mathf.Sin(angle)) * (ring * spacing);
+                    RaycastHit[] groundHits = Physics.RaycastAll(candidate + Vector3.up * 8f, Vector3.down,
+                        40f, ~0, QueryTriggerInteraction.Ignore);
+                    System.Array.Sort(groundHits, (a, b) => a.distance.CompareTo(b.distance));
+                    foreach (RaycastHit ground in groundHits)
+                    {
+                        if (ground.collider.transform.IsChildOf(transform) ||
+                            ground.collider.GetComponentInParent<CouchCarryController>() != null ||
+                            ground.collider.GetComponentInParent<PlayerVanInteractor>() != null || ground.normal.y < .65f) continue;
+                        for (int turn = 0; turn < 2; turn++)
+                        {
+                            Quaternion candidateRotation = Quaternion.LookRotation(
+                                Vector3.ProjectOnPlane(turn == 0 ? right : outward, ground.normal), ground.normal);
+                            Vector3 candidatePosition = ground.point + ground.normal * (extents.y + .06f) - candidateRotation * centreOffset;
+                            if (!hasGroundedFallback)
+                            {
+                                position = candidatePosition;
+                                rotation = candidateRotation;
+                                hasGroundedFallback = true;
+                            }
+                            bool blocked = false;
+                            // Allocating query deliberately avoids treating a saturated fixed buffer as clear.
+                            foreach (Collider hit in Physics.OverlapBox(candidatePosition + candidateRotation * centreOffset,
+                                extents + Vector3.one * .02f, candidateRotation, ~0, QueryTriggerInteraction.Ignore))
+                            {
+                                if (hit.transform.IsChildOf(couch.transform)) continue;
+                                blocked = true;
+                                break;
+                            }
+                            if (blocked) continue;
+                            position = candidatePosition;
+                            rotation = candidateRotation;
+                            return;
+                        }
+                        break;
+                    }
+                }
             }
-            return true;
+            // Never refuse an unload. The couch ghosts overlapping obstacles at the
+            // grounded fallback until carried clear, then restores those collisions.
         }
 
         private bool IsDoorwayObstructed()

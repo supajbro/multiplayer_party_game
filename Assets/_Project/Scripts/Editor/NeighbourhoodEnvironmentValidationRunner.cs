@@ -20,7 +20,7 @@ namespace CouchGuys.Editor
             {
                 if (EditorApplication.isPlayingOrWillChangePlaymode || SessionState.GetBool(SessionKey, false)) return;
                 if (AssetDatabase.LoadAssetAtPath<GameObject>(
-                        "Assets/_Project/Prefabs/Environment/Placeholders/StreetLight_Placeholder.prefab") == null) return;
+                        StreetLightPrefabBuilder.PrefabPath) == null) return;
                 SessionState.SetBool(SessionKey, true);
                 try { ValidateEnvironment(); }
                 catch (Exception exception) { Debug.LogError($"Neighbourhood environment validation failed: {exception}"); }

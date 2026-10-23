@@ -101,6 +101,8 @@ namespace CouchGuys.Gameplay.Couch
         private Collider[] m_colliders;
         private readonly RaycastHit[] m_stepHits = new RaycastHit[12];
         private Coroutine m_cargoTransition;
+        private Bounds m_cargoBounds;
+        private readonly System.Collections.Generic.List<Collider> m_cargoIgnoredColliders = new();
         private PhysicsMaterial m_runtimePhysicsMaterial;
         private Vector3 m_smoothedCarryVelocity;
         private Vector3 m_visualScale = Vector3.one;
@@ -131,7 +133,9 @@ namespace CouchGuys.Gameplay.Couch
         public bool IsLoaded => m_loadedVan.Value != null;
         public NetworkObject LoadedVanObject => m_loadedVan.Value;
         public int LoadedCargoSlot => m_loadedCargoSlot.Value;
-        public bool IsPickupAvailable => !m_depotTransportActive.Value;
+        public bool IsPickupAvailable => !m_depotTransportActive.Value && m_cargoTransition == null;
+        internal bool IsCargoTransitioning => m_cargoTransition != null;
+        internal Bounds CargoBounds => m_cargoBounds;
         // Delivery completion still requires a player carrier; thieves contribute to
         // physics but cannot accidentally complete the job for the party.
         internal int ServerCarrierCount => IsServerInitialized ? CountPlayerCarriers() : 0;
@@ -155,6 +159,23 @@ namespace CouchGuys.Gameplay.Couch
         {
             m_rigidbody ??= GetComponent<Rigidbody>();
             m_colliders = GetComponentsInChildren<Collider>(true);
+            // Capture geometry before cargo disables the colliders (disabled bounds are empty).
+            bool foundCargoBounds = false;
+            foreach (Collider collider in m_colliders)
+            {
+                if (!collider.enabled || collider.isTrigger) continue;
+                BoxCollider box = collider as BoxCollider;
+                Bounds geometry = box != null ? new Bounds(box.center, box.size) : collider.bounds;
+                for (int corner = 0; corner < 8; corner++)
+                {
+                    Vector3 point = geometry.center + Vector3.Scale(geometry.extents,
+                        new Vector3((corner & 1) == 0 ? -1 : 1, (corner & 2) == 0 ? -1 : 1, (corner & 4) == 0 ? -1 : 1));
+                    Vector3 local = transform.InverseTransformPoint(box != null ? box.transform.TransformPoint(point) : point);
+                    if (!foundCargoBounds) { m_cargoBounds = new Bounds(local, Vector3.zero); foundCargoBounds = true; }
+                    else m_cargoBounds.Encapsulate(local);
+                }
+            }
+            if (!foundCargoBounds) m_cargoBounds = new Bounds(Vector3.up * .45f, new Vector3(2.1f, .9f, .9f));
             if (m_modelRoot != null)
             {
                 m_modelBaseRotation = m_modelRoot.localRotation;
@@ -249,6 +270,7 @@ namespace CouchGuys.Gameplay.Couch
 
         private void FixedUpdate()
         {
+            if (IsServerInitialized) UpdateCargoCollisionRecovery();
             if (!IsServerInitialized || m_rigidbody == null || m_rigidbody.isKinematic)
             {
                 return;
@@ -601,7 +623,7 @@ namespace CouchGuys.Gameplay.Couch
         [Server]
         internal bool LoadIntoVanServer(VanController van, int cargoSlot, float duration)
         {
-            if (!IsServerInitialized || IsLoaded || van == null || van.GetCargoPoint(cargoSlot) == null)
+            if (!IsServerInitialized || IsLoaded || !IsPickupAvailable || van == null || van.GetCargoPoint(cargoSlot) == null)
                 return false;
 
             ReleaseAllOccupantsServer();
@@ -666,6 +688,8 @@ namespace CouchGuys.Gameplay.Couch
 
         private IEnumerator AnimateOutOfCargo(Vector3 position, Quaternion rotation, float duration)
         {
+            VanController sourceVan = m_loadedVan.Value != null
+                ? m_loadedVan.Value.GetComponent<VanController>() : null;
             SetCargoPhysics(true);
             transform.SetParent(null, true);
             Vector3 startPosition = transform.position;
@@ -680,10 +704,79 @@ namespace CouchGuys.Gameplay.Couch
                     Quaternion.Slerp(startRotation, rotation, t));
                 yield return null;
             }
-            transform.SetPositionAndRotation(position, rotation);
-            SetCargoPhysics(false);
-            if (IsServerInitialized) GetComponent<NetworkTransform>()?.Teleport();
+            // Players/vehicles can move into the destination during the animation.
+            // Only the server chooses the final pose and restores simulation.
+            if (IsServerInitialized)
+            {
+                if (sourceVan != null) sourceVan.GetCouchUnloadPose(this, 0, out position, out rotation);
+                FinishCargoUnloadObserversRpc(position, rotation);
+            }
             m_cargoTransition = null;
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void FinishCargoUnloadObserversRpc(Vector3 position, Quaternion rotation)
+        {
+            // A slow client may still be interpolating when the server finishes.
+            if (!IsServerInitialized && m_cargoTransition != null)
+            {
+                StopCoroutine(m_cargoTransition);
+                m_cargoTransition = null;
+            }
+            transform.SetPositionAndRotation(position, rotation);
+            if (IsServerInitialized)
+            {
+                PrepareUnloadCollisionRecovery();
+            }
+            SetCargoPhysics(false);
+            foreach (Collider hit in m_cargoIgnoredColliders) SetCargoCollisionIgnored(hit, true);
+            if (IsServerInitialized) GetComponent<NetworkTransform>()?.Teleport();
+        }
+
+        private void PrepareUnloadCollisionRecovery()
+        {
+            Physics.SyncTransforms();
+            // Only initially overlapping obstacles stay ghosted until carried clear.
+            Bounds bounds = CargoBounds;
+            Collider support = null;
+            float nearestSupport = float.PositiveInfinity;
+            foreach (RaycastHit hit in Physics.RaycastAll(transform.TransformPoint(bounds.center), -transform.up,
+                bounds.extents.y * Mathf.Abs(transform.lossyScale.y) + .2f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.collider.transform.IsChildOf(transform) || hit.normal.y < .65f || hit.distance >= nearestSupport) continue;
+                support = hit.collider;
+                nearestSupport = hit.distance;
+            }
+            foreach (Collider hit in Physics.OverlapBox(transform.TransformPoint(bounds.center),
+                Vector3.Scale(bounds.extents, transform.lossyScale) + Vector3.one * .01f,
+                transform.rotation, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (hit == support || hit.transform.IsChildOf(transform) || m_cargoIgnoredColliders.Contains(hit)) continue;
+                m_cargoIgnoredColliders.Add(hit);
+            }
+        }
+
+        private void SetCargoCollisionIgnored(Collider other, bool ignored)
+        {
+            if (other == null) return;
+            foreach (Collider own in m_colliders)
+                if (own != null && own.enabled) Physics.IgnoreCollision(own, other, ignored);
+        }
+
+        private void UpdateCargoCollisionRecovery()
+        {
+            if (m_cargoIgnoredColliders.Count == 0 || IsLoaded || m_cargoTransition != null) return;
+            Bounds bounds = CargoBounds;
+            Collider[] overlaps = Physics.OverlapBox(transform.TransformPoint(bounds.center),
+                Vector3.Scale(bounds.extents, transform.lossyScale) + Vector3.one * .08f,
+                transform.rotation, ~0, QueryTriggerInteraction.Ignore);
+            for (int index = m_cargoIgnoredColliders.Count - 1; index >= 0; index--)
+            {
+                Collider hit = m_cargoIgnoredColliders[index];
+                if (hit != null && System.Array.IndexOf(overlaps, hit) >= 0) continue;
+                SetCargoCollisionIgnored(hit, false);
+                m_cargoIgnoredColliders.RemoveAt(index);
+            }
         }
 
         private void OnLoadedVanChanged(NetworkObject previous, NetworkObject next, bool asServer)
@@ -720,8 +813,11 @@ namespace CouchGuys.Gameplay.Couch
         {
             if (m_rigidbody != null)
             {
-                m_rigidbody.linearVelocity = Vector3.zero;
-                m_rigidbody.angularVelocity = Vector3.zero;
+                if (!m_rigidbody.isKinematic)
+                {
+                    m_rigidbody.linearVelocity = Vector3.zero;
+                    m_rigidbody.angularVelocity = Vector3.zero;
+                }
                 m_rigidbody.isKinematic = loaded || !IsServerInitialized;
             }
             if (loaded && m_modelRoot != null)

@@ -138,9 +138,7 @@ namespace CouchGuys.Player
             if (!van.RearDoorsOpen) return "Press E to Open Doors";
             PlayerCouchCarrier carrier = GetComponent<PlayerCouchCarrier>();
             CouchGuys.Gameplay.Couch.CouchCarryController couch = carrier != null ? carrier.CarriedCouch : null;
-            float loadingRange = van.Settings.CouchLoadingRange;
-            if (couch != null &&
-                (couch.transform.position - van.CargoLoadingPoint.position).sqrMagnitude <= loadingRange * loadingRange)
+            if (couch != null && van.IsCouchInLoadingRange(couch))
                 return "Press E to Load Couch";
             if (couch == null && van.LoadedCouchCount > 0) return "Press E to Unload Couch";
             return "Press E to Close Doors";
