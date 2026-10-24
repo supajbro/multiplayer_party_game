@@ -283,7 +283,8 @@ namespace CouchGuys.Gameplay.Couch
             UpdateCarriedPhysicsState(carrierCount > 0);
             Vector3 combinedMovementIntent = CalculateCombinedMovementIntent(
                 out float totalIntentMagnitude,
-                out int movingCarrierCount);
+                out int movingCarrierCount,
+                out int sprintingCarrierCount);
             m_movingCarrierCount.Value = movingCarrierCount;
             float cooperationEfficiency = CalculateCooperationEfficiency(
                 movingCarrierCount,
@@ -297,6 +298,9 @@ namespace CouchGuys.Gameplay.Couch
                 1f,
                 cooperationEfficiency);
             float configuredSpeed = carrierCount > 0 ? GetConfiguredMoveSpeed(carrierCount) : 0f;
+            // Average the bonus across all attached carriers; it never stacks per player.
+            if (m_settings != null)
+                configuredSpeed *= m_settings.GetSprintSpeedMultiplier(sprintingCarrierCount, carrierCount);
             float weightForce = CouchWeight * Mathf.Abs(Physics.gravity.y);
             // Static support remains below gravity so the couch cannot float without
             // a positive grip-height error contributing spring lift.
@@ -978,11 +982,13 @@ namespace CouchGuys.Gameplay.Couch
 
         private Vector3 CalculateCombinedMovementIntent(
             out float totalIntentMagnitude,
-            out int movingCarrierCount)
+            out int movingCarrierCount,
+            out int sprintingCarrierCount)
         {
             Vector3 combinedIntent = Vector3.zero;
             totalIntentMagnitude = 0f;
             movingCarrierCount = 0;
+            sprintingCarrierCount = 0;
             for (int index = 0; index < MaximumCarryPoints; index++)
             {
                 ICouchCarrierServer carrier = m_serverOccupants[index];
@@ -997,6 +1003,10 @@ namespace CouchGuys.Gameplay.Couch
                 if (intent.sqrMagnitude > 0.01f)
                 {
                     movingCarrierCount++;
+                    // Reuse the existing server sprint intent and stamina validation.
+                    if (carrier is PlayerCouchCarrier player &&
+                        player.TryGetComponent(out PlayerStamina stamina) && stamina.IsSprintingServer)
+                        sprintingCarrierCount++;
                 }
                 intent *= GetCarrierStaminaSpeedMultiplier(carrier);
                 combinedIntent += intent;

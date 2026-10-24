@@ -17,4 +17,5 @@ MonoBehaviour:
   m_twoPlayerMoveSpeed: 2.5
   m_threePlayerMoveSpeed: 3
   m_fourPlayerMoveSpeed: 4
+  m_sprintSpeedMultiplier: 1.25
   m_exhaustedSpeedReduction: 0.75

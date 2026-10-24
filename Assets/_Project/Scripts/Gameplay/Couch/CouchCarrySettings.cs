@@ -18,11 +18,22 @@ namespace CouchGuys.Gameplay.Couch
         [SerializeField, InspectorName("4 Player Move Speed"), Min(0.1f)]
         private float m_fourPlayerMoveSpeed = 5.5f;
 
+        [SerializeField, Min(1f), Tooltip("Carry speed multiplier when everyone sprints. Each sprinting carrier contributes an equal share of the bonus.")]
+        private float m_sprintSpeedMultiplier = 1.25f;
+
         [SerializeField, Range(0f, 1f), Tooltip("Fraction of carry speed lost by an exhausted player.")]
         private float m_exhaustedSpeedReduction = 0.75f;
 
         public float ExhaustedSpeedMultiplier => 1f - Mathf.Clamp01(m_exhaustedSpeedReduction);
         public float MaxCarryDistance => m_maxCarryDistance;
+        public float SprintSpeedMultiplier => Mathf.Max(1f, m_sprintSpeedMultiplier);
+
+        public float GetSprintSpeedMultiplier(int sprintingCarrierCount, int carrierCount)
+        {
+            return carrierCount > 0
+                ? Mathf.Lerp(1f, SprintSpeedMultiplier, Mathf.Clamp01((float)sprintingCarrierCount / carrierCount))
+                : 1f;
+        }
 
         public float GetMoveSpeed(int carrierCount)
         {
@@ -43,6 +54,7 @@ namespace CouchGuys.Gameplay.Couch
             m_twoPlayerMoveSpeed = Mathf.Max(0.1f, m_twoPlayerMoveSpeed);
             m_threePlayerMoveSpeed = Mathf.Max(0.1f, m_threePlayerMoveSpeed);
             m_fourPlayerMoveSpeed = Mathf.Max(0.1f, m_fourPlayerMoveSpeed);
+            m_sprintSpeedMultiplier = Mathf.Max(1f, m_sprintSpeedMultiplier);
         }
 #endif
     }

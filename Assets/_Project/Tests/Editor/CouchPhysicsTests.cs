@@ -10,6 +10,38 @@ namespace CouchGuys.Tests.Editor
     {
         private const BindingFlags StaticPrivate = BindingFlags.Static | BindingFlags.NonPublic;
 
+        [TestCase(0, 0, 1f)]
+        [TestCase(0, 2, 1f)]
+        [TestCase(1, 1, 1.25f)]
+        [TestCase(1, 2, 1.125f)]
+        [TestCase(1, 4, 1.0625f)]
+        [TestCase(4, 4, 1.25f)]
+        [TestCase(5, 4, 1.25f)]
+        public void CarrySprintBonus_IsSharedAndCapped(int sprinters, int carriers, float expected)
+        {
+            CouchCarrySettings settings = ScriptableObject.CreateInstance<CouchCarrySettings>();
+            try
+            {
+                Assert.That(settings.GetSprintSpeedMultiplier(sprinters, carriers),
+                    Is.EqualTo(expected).Within(0.0001f));
+            }
+            finally { Object.DestroyImmediate(settings); }
+        }
+
+        [Test]
+        public void CarrySprintBonus_UsesConfiguredMultiplier()
+        {
+            CouchCarrySettings settings = ScriptableObject.CreateInstance<CouchCarrySettings>();
+            try
+            {
+                typeof(CouchCarrySettings).GetField("m_sprintSpeedMultiplier", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .SetValue(settings, 1.4f);
+                Assert.That(settings.GetSprintSpeedMultiplier(1, 2), Is.EqualTo(1.2f).Within(0.0001f));
+                Assert.That(settings.GetSprintSpeedMultiplier(2, 2), Is.EqualTo(1.4f).Within(0.0001f));
+            }
+            finally { Object.DestroyImmediate(settings); }
+        }
+
         [Test]
         public void CooperationEfficiency_IsPredictableForAgreementAndConflict()
         {

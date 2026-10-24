@@ -53,6 +53,7 @@ namespace CouchGuys.Player
         public float MaximumStamina => m_maximumStamina;
         public bool IsExhausted => m_exhausted.Value;
         public bool CanSprint => !m_exhausted.Value && CurrentStamina > 0.01f;
+        internal bool IsSprintingServer => IsServerInitialized && m_serverSprintRequested && CanSprint;
         public bool CanAttachToCouch => !m_exhausted.Value && CurrentStamina > 0.01f;
 
         private void Awake()
