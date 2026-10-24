@@ -146,10 +146,11 @@ namespace CouchGuys.Player
             float damage,
             Vector3 impactDirection,
             float knockbackForce,
-            float upwardForce)
+            float upwardForce,
+            bool directionalKnockback = false)
         {
             ApplyDamageInternal(
-                damage, impactDirection, knockbackForce, true, upwardForce, true);
+                damage, impactDirection, knockbackForce, true, upwardForce, true, directionalKnockback);
         }
 
         private void ApplyDamageInternal(
@@ -158,7 +159,8 @@ namespace CouchGuys.Player
             float knockbackForce,
             bool useFullKnockback,
             float explicitUpwardForce = 0f,
-            bool allowPushWithoutDamage = false)
+            bool allowPushWithoutDamage = false,
+            bool directionalKnockback = false)
         {
             if ((!allowPushWithoutDamage && damage <= 0f) ||
                 (damage <= 0f && knockbackForce <= 0f && explicitUpwardForce <= 0f) ||
@@ -191,7 +193,6 @@ namespace CouchGuys.Player
                     ? float.PositiveInfinity
                     : Time.time + m_knockdownDuration;
                 m_knockedDown.Value = true;
-                GetComponent<PlayerCouchCarrier>()?.ReleaseForDamageServer();
                 if (died)
                 {
                     m_respawnAtServerTime = IsAiTeammate
@@ -201,13 +202,16 @@ namespace CouchGuys.Player
                 }
             }
 
+            if (severeHit || directionalKnockback)
+                GetComponent<PlayerCouchCarrier>()?.ReleaseForDamageServer();
+
             if (Owner.IsValid)
             {
-                ApplyImpactTargetRpc(Owner, impulse);
+                ApplyImpactTargetRpc(Owner, impulse, directionalKnockback);
             }
             else
             {
-                GetComponent<DebugCouchBotController>()?.ApplyExternalImpulseServer(impulse);
+                GetComponent<DebugCouchBotController>()?.ApplyExternalImpulseServer(impulse, directionalKnockback);
             }
 
             if (appliedDamage > 0f) PlayHitObserversRpc();
@@ -222,11 +226,11 @@ namespace CouchGuys.Player
         }
 
         [TargetRpc]
-        private void ApplyImpactTargetRpc(NetworkConnection connection, Vector3 impulse)
+        private void ApplyImpactTargetRpc(NetworkConnection connection, Vector3 impulse, bool vehicleImpact)
         {
             if (IsOwner)
             {
-                m_playerController?.ApplyExternalImpulse(impulse);
+                m_playerController?.ApplyExternalImpulse(impulse, vehicleImpact);
             }
         }
 

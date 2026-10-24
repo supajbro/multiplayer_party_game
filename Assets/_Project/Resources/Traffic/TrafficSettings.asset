@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: TrafficSettings
   m_EditorClassIdentifier: 
   m_drivingSide: 0
-  m_maximumActiveVehicles: 24
+  m_maximumActiveVehicles: 50
   m_spawnInterval: 5
   m_minimumPlayerSpawnDistance: 24
   m_despawnDistance: 450

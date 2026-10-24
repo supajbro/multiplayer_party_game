@@ -19,6 +19,7 @@ namespace CouchGuys.Gameplay.Traffic
         private readonly RaycastHit[] m_obstacleHits = new RaycastHit[8];
         private readonly RaycastHit[] m_groundHits = new RaycastHit[8];
         private readonly Collider[] m_intersectionHits = new Collider[8];
+        private readonly Collider[] m_impactHits = new Collider[32];
         private readonly HashSet<int> m_explosionVictims = new HashSet<int>();
 
         [SerializeField] private CarSettings m_settings;
@@ -33,7 +34,6 @@ namespace CouchGuys.Gameplay.Traffic
         private int m_waypointIndex;
         private float m_nextObstacleCheck;
         private bool m_pathObstructed;
-        private bool m_playerBlockingPath;
         private float m_despawnAt = float.PositiveInfinity;
         private MaterialPropertyBlock m_propertyBlock;
         private bool m_serverDriving;
@@ -42,6 +42,8 @@ namespace CouchGuys.Gameplay.Traffic
         private Vector3 m_drivingStartPosition;
         private PhysicsMaterial m_runtimeTyreMaterial;
         private GameObject m_visualInstance;
+        private BoxCollider m_bodyCollider;
+        private Vector3 m_impactVelocity;
 
         public bool IsDestroyed => m_destroyed.Value;
         public float CurrentHealth => m_health.Value;
@@ -160,7 +162,7 @@ namespace CouchGuys.Gameplay.Traffic
 
         private void FixedUpdate()
         {
-            if (!m_serverDriving || m_destroyed.Value || m_settings == null ||
+            if (!IsServerInitialized || !m_serverDriving || m_destroyed.Value || m_settings == null ||
                 m_route == null || m_route.Waypoints.Length < 2) return;
             if (m_rigidbody.isKinematic)
             {
@@ -198,7 +200,7 @@ namespace CouchGuys.Gameplay.Traffic
             if (Time.time >= m_nextObstacleCheck)
             {
                 m_nextObstacleCheck = Time.time + 0.12f;
-                m_pathObstructed = CheckPathObstructed(out m_playerBlockingPath);
+                m_pathObstructed = CheckPathObstructed();
             }
 
             Vector3 planarVelocity = Vector3.ProjectOnPlane(m_rigidbody.linearVelocity, groundNormal);
@@ -209,9 +211,7 @@ namespace CouchGuys.Gameplay.Traffic
             if (Mathf.Abs(turnAngle) > 100f) targetSpeed = 0f;
             float acceleration = forwardSpeed < targetSpeed
                 ? m_settings.Acceleration
-                : m_playerBlockingPath
-                    ? m_settings.PlayerBrakingStrength
-                    : m_settings.BrakingStrength;
+                : m_settings.BrakingStrength;
             float speedError = targetSpeed - forwardSpeed;
             m_rigidbody.AddForce(desiredForward * Mathf.Clamp(speedError, -acceleration, acceleration),
                 ForceMode.Acceleration);
@@ -232,11 +232,37 @@ namespace CouchGuys.Gameplay.Traffic
                 m_rigidbody.AddForce(-groundNormal * Mathf.Clamp(planarVelocity.magnitude * 0.35f, 0f, 5f),
                     ForceMode.Acceleration);
             }
+
+            // Capture travel before the solver can deflect or stop the chassis.
+            m_impactVelocity = Vector3.ProjectOnPlane(m_rigidbody.linearVelocity, Vector3.up);
+            CheckCharacterImpacts();
+        }
+
+        private void CheckCharacterImpacts()
+        {
+            if (m_bodyCollider == null || m_impactVelocity.sqrMagnitude < 0.01f) return;
+            Vector3 travel = m_impactVelocity * Time.fixedDeltaTime;
+            Vector3 localTravel = Quaternion.Inverse(transform.rotation) * travel;
+            Vector3 halfExtents = Vector3.Scale(m_bodyCollider.size, transform.lossyScale) * 0.5f;
+            halfExtents += new Vector3(Mathf.Abs(localTravel.x), Mathf.Abs(localTravel.y),
+                Mathf.Abs(localTravel.z)) * 0.5f + Vector3.one * 0.05f;
+            // A short swept overlap also catches CharacterControllers without relying
+            // on Rigidbody collision callbacks. Reuse the collision damage cooldown.
+            int count = Physics.OverlapBoxNonAlloc(
+                transform.TransformPoint(m_bodyCollider.center) + travel * 0.5f,
+                halfExtents, m_impactHits, transform.rotation, ~0, QueryTriggerInteraction.Ignore);
+            for (int index = 0; index < count; index++)
+            {
+                Collider hit = m_impactHits[index];
+                if (hit == null || hit.attachedRigidbody == m_rigidbody) continue;
+                ApplyCharacterImpact(hit, m_impactVelocity, m_impactVelocity.magnitude);
+            }
         }
 
         private void ConfigureGroundContact()
         {
             BoxCollider bodyCollider = GetComponent<BoxCollider>();
+            m_bodyCollider = bodyCollider;
             if (bodyCollider != null)
             {
                 // Keep the square chassis clear of road-mesh seams. Rounded contacts
@@ -318,9 +344,8 @@ namespace CouchGuys.Gameplay.Traffic
             }
         }
 
-        private bool CheckPathObstructed(out bool playerBlocking)
+        private bool CheckPathObstructed()
         {
-            playerBlocking = false;
             bool obstacleFound = false;
             float speed = Vector3.ProjectOnPlane(m_rigidbody.linearVelocity, Vector3.up).magnitude;
             float distance = m_settings.SafeFollowingDistance + speed * 0.35f;
@@ -332,12 +357,9 @@ namespace CouchGuys.Gameplay.Traffic
                 Collider hit = m_obstacleHits[index].collider;
                 if (hit == null || hit.attachedRigidbody == m_rigidbody ||
                     hit.transform == transform || hit.transform.IsChildOf(transform)) continue;
-                if (hit.GetComponentInParent<PlayerHealth>() != null)
-                {
-                    playerBlocking = true;
-                    obstacleFound = true;
-                }
-                else if (hit.GetComponentInParent<TrafficVehicleController>() != null ||
+                // Players are impact targets, never a reason to yield or brake.
+                if (hit.GetComponentInParent<PlayerHealth>() != null) continue;
+                if (hit.GetComponentInParent<TrafficVehicleController>() != null ||
                          hit.GetComponentInParent<ThiefHealth>() != null)
                 {
                     obstacleFound = true;
@@ -427,11 +449,18 @@ namespace CouchGuys.Gameplay.Traffic
 
         private void OnCollisionEnter(Collision collision)
         {
-            if (!m_serverDriving || m_destroyed.Value || m_settings == null) return;
-            float speed = Mathf.Max(collision.relativeVelocity.magnitude,
-                Vector3.ProjectOnPlane(m_rigidbody.linearVelocity, Vector3.up).magnitude);
-            PlayerHealth player = collision.collider.GetComponentInParent<PlayerHealth>();
-            ThiefHealth thief = collision.collider.GetComponentInParent<ThiefHealth>();
+            if (!IsServerInitialized || !m_serverDriving || m_destroyed.Value || m_settings == null) return;
+            Vector3 velocity = m_impactVelocity.sqrMagnitude > 0.01f
+                ? m_impactVelocity
+                : Vector3.ProjectOnPlane(m_rigidbody.linearVelocity, Vector3.up);
+            ApplyCharacterImpact(collision.collider, velocity,
+                Mathf.Max(collision.relativeVelocity.magnitude, velocity.magnitude));
+        }
+
+        private void ApplyCharacterImpact(Collider collider, Vector3 velocity, float speed)
+        {
+            PlayerHealth player = collider.GetComponentInParent<PlayerHealth>();
+            ThiefHealth thief = collider.GetComponentInParent<ThiefHealth>();
             Object victim = player != null ? (Object)player : thief;
             if (victim == null) return;
             float minimumImpactSpeed = player != null
@@ -443,15 +472,15 @@ namespace CouchGuys.Gameplay.Traffic
             m_nextImpactTime[id] = Time.time + m_settings.CollisionDamageCooldown;
 
             float scale = Mathf.Clamp(speed / Mathf.Max(0.1f, m_settings.MaximumDrivingSpeed), 0.35f, 1.5f);
-            Vector3 direction = m_rigidbody.linearVelocity.sqrMagnitude > 0.1f
-                ? m_rigidbody.linearVelocity.normalized
+            Vector3 direction = velocity.sqrMagnitude > 0.01f
+                ? velocity.normalized
                 : transform.forward;
             if (player != null)
-                player.ApplyDamageWithFullKnockbackServer(m_settings.CollisionDamage * scale, direction,
-                    m_settings.CollisionKnockbackStrength * scale);
+                player.ApplyVehicleImpactServer(m_settings.CollisionDamage * scale, direction,
+                    m_settings.CollisionKnockbackStrength * scale, 0f, true);
             else
-                thief.ApplyDamageServer(m_settings.CollisionDamage * scale, direction,
-                    m_settings.CollisionKnockbackStrength * scale);
+                thief.ApplyVehicleImpactServer(m_settings.CollisionDamage * scale, direction,
+                    m_settings.CollisionKnockbackStrength * scale, 0f, true);
         }
 
         [ObserversRpc(RunLocally = true)]

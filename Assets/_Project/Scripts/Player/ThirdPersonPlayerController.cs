@@ -69,6 +69,7 @@ namespace CouchGuys.Player
         // retaining it avoids an additional ground raycast every frame.
         private Vector3 m_groundNormal = Vector3.up;
         private Vector3 m_externalVelocity;
+        private float m_vehicleImpactUntil;
         private bool m_movementLocked;
         private bool m_externalControlPaused;
         private bool m_externalRotationLocked;
@@ -94,9 +95,17 @@ namespace CouchGuys.Player
             MovementIntent = Vector3.zero;
         }
 
-        public void ApplyExternalImpulse(Vector3 impulse)
+        public void ApplyExternalImpulse(Vector3 impulse, bool vehicleImpact = false)
         {
-            m_externalVelocity += impulse;
+            if (vehicleImpact)
+            {
+                // A vehicle establishes a new travel direction; old impulses and
+                // opposing input must not cancel it during the initial impact.
+                m_externalVelocity = impulse;
+                m_currentSpeed = 0f;
+                m_vehicleImpactUntil = Time.time + 0.25f;
+            }
+            else m_externalVelocity += impulse;
         }
 
         /// <summary>
@@ -205,7 +214,7 @@ namespace CouchGuys.Player
                 return;
             }
             UpdateVerticalMovement();
-            if (m_movementLocked)
+            if (m_movementLocked || Time.time < m_vehicleImpactUntil)
             {
                 UpdateLockedMovement();
             }

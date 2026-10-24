@@ -27,6 +27,7 @@ namespace CouchGuys.Gameplay.Enemies
         public event Action<float, float> HealthChanged;
         public bool IsAlive => !m_dead.Value;
         public float CurrentHealth => m_currentHealth.Value;
+        public bool IsBeingKnockedBack => Time.time < m_resumeNavigationAt;
 
         private void Awake()
         {
@@ -98,9 +99,10 @@ namespace CouchGuys.Gameplay.Enemies
             float damage,
             Vector3 impactDirection,
             float knockbackForce,
-            float upwardForce)
+            float upwardForce,
+            bool directionalKnockback = false)
         {
-            ApplyImpactServer(damage, impactDirection, knockbackForce, upwardForce, true);
+            ApplyImpactServer(damage, impactDirection, knockbackForce, upwardForce, true, directionalKnockback);
         }
 
         private void ApplyImpactServer(
@@ -108,7 +110,8 @@ namespace CouchGuys.Gameplay.Enemies
             Vector3 impactDirection,
             float knockbackForce,
             float upwardForce,
-            bool allowPushWithoutDamage)
+            bool allowPushWithoutDamage,
+            bool directionalKnockback = false)
         {
             if ((!allowPushWithoutDamage && damage <= 0f) ||
                 (damage <= 0f && knockbackForce <= 0f && upwardForce <= 0f) ||
@@ -120,8 +123,10 @@ namespace CouchGuys.Gameplay.Enemies
             float appliedDamage = Mathf.Max(0f, damage);
             m_currentHealth.Value = Mathf.Max(0f, m_currentHealth.Value - appliedDamage);
             Vector3 direction = Vector3.ProjectOnPlane(impactDirection, Vector3.up).normalized;
-            m_knockbackVelocity += direction * Mathf.Max(0f, knockbackForce) +
-                                   Vector3.up * Mathf.Max(0f, upwardForce);
+            Vector3 impulse = direction * Mathf.Max(0f, knockbackForce) +
+                              Vector3.up * Mathf.Max(0f, upwardForce);
+            if (directionalKnockback) m_knockbackVelocity = impulse;
+            else m_knockbackVelocity += impulse;
             m_resumeNavigationAt = Time.time + m_knockbackDuration;
             if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh)
             {

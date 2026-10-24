@@ -60,6 +60,7 @@ namespace CouchGuys.Player
         private SledGrabPoint m_targetSledPoint;
         private ThiefHealth m_combatTarget;
         private Vector3 m_externalVelocity;
+        private float m_vehicleImpactUntil;
         private float m_nextDestinationTime;
         private float m_nextGrabAttemptTime;
         private float m_nextEnemyScanTime;
@@ -111,11 +112,16 @@ namespace CouchGuys.Player
             ConfigureAgent();
         }
 
-        internal void ApplyExternalImpulseServer(Vector3 impulse)
+        internal void ApplyExternalImpulseServer(Vector3 impulse, bool vehicleImpact = false)
         {
             if (m_isInitialised && m_health != null && m_health.IsAlive)
             {
-                m_externalVelocity += impulse;
+                if (vehicleImpact)
+                {
+                    m_externalVelocity = impulse;
+                    m_vehicleImpactUntil = Time.time + 0.25f;
+                }
+                else m_externalVelocity += impulse;
             }
         }
 
@@ -139,7 +145,7 @@ namespace CouchGuys.Player
             }
 
             m_deadStateApplied = false;
-            if (m_health.IsKnockedDown)
+            if (m_health.IsKnockedDown || Time.time < m_vehicleImpactUntil)
             {
                 State = AiState.FollowPlayer;
                 m_carrier.SetDebugBotMovementIntentServer(Vector3.zero);

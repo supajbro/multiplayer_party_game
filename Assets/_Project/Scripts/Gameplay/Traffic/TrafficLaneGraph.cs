@@ -57,9 +57,8 @@ namespace CouchGuys.Gameplay.Traffic
                 }
             }
 
-            // A shortest portal-to-portal path only uses the road-map spine. Build
-            // additional trips through every road coordinate, in every available
-            // starting direction, so side streets and loops receive traffic too.
+            // Add trips through side streets and loops where the forward-first
+            // driving rules permit them. Preserve the arrival heading at the join.
             List<GridCoordinate> coverageTargets = new List<GridCoordinate>(m_roads.Keys);
             coverageTargets.Sort((left, right) =>
             {
@@ -74,8 +73,12 @@ namespace CouchGuys.Gameplay.Traffic
                     int endOffset = 1 + targetIndex % (portals.Count - 1);
                     GridCoordinate start = portals[startIndex];
                     GridCoordinate end = portals[(startIndex + endOffset) % portals.Count];
-                    if (!TryFindPath(start, target, out List<GridCoordinate> outbound) ||
-                        !TryFindPath(target, end, out List<GridCoordinate> inbound))
+                    if (!TryFindPath(start, target, out List<GridCoordinate> outbound))
+                        continue;
+                    CardinalDirection? incoming = outbound.Count > 1
+                        ? Direction(outbound[outbound.Count - 1] - outbound[outbound.Count - 2])
+                        : null;
+                    if (!TryFindPath(target, end, out List<GridCoordinate> inbound, incoming))
                         continue;
 
                     List<GridCoordinate> combined = new List<GridCoordinate>(
@@ -97,37 +100,55 @@ namespace CouchGuys.Gameplay.Traffic
         private bool TryFindPath(
             GridCoordinate start,
             GridCoordinate end,
-            out List<GridCoordinate> coordinates)
+            out List<GridCoordinate> coordinates,
+            CardinalDirection? incoming = null)
         {
             coordinates = null;
-            Queue<GridCoordinate> frontier = new Queue<GridCoordinate>();
-            Dictionary<GridCoordinate, GridCoordinate> previous =
-                new Dictionary<GridCoordinate, GridCoordinate>();
-            HashSet<GridCoordinate> visited = new HashSet<GridCoordinate> { start };
-            frontier.Enqueue(start);
+            // Heading is part of the search state: reaching a junction from another
+            // road can permit a different exit. All searches still run only at build time.
+            var initial = (Coordinate: start, Heading: incoming.HasValue ? (int)incoming.Value : -1);
+            var frontier = new Queue<(GridCoordinate Coordinate, int Heading)>();
+            var previous = new Dictionary<(GridCoordinate Coordinate, int Heading),
+                (GridCoordinate Coordinate, int Heading)>();
+            var visited = new HashSet<(GridCoordinate Coordinate, int Heading)> { initial };
+            var destination = initial;
+            bool found = false;
+            frontier.Enqueue(initial);
             while (frontier.Count > 0)
             {
-                GridCoordinate current = frontier.Dequeue();
-                if (current == end)
+                var current = frontier.Dequeue();
+                if (current.Coordinate == end)
                 {
+                    destination = current;
+                    found = true;
                     break;
                 }
 
-                if (!m_roads.TryGetValue(current, out GeneratedRoad road))
+                if (!m_roads.ContainsKey(current.Coordinate))
                 {
                     continue;
                 }
 
+                bool straight = current.Heading >= 0 &&
+                    CanTravel(current.Coordinate, (CardinalDirection)current.Heading);
+                int reverse = current.Heading >= 0 ? (current.Heading + 2) % 4 : -1;
+                bool hasTurn = current.Heading >= 0 &&
+                    (CanTravel(current.Coordinate, (CardinalDirection)((current.Heading + 1) % 4)) ||
+                     CanTravel(current.Coordinate, (CardinalDirection)((current.Heading + 3) % 4)));
                 for (int directionIndex = 0; directionIndex < 4; directionIndex++)
                 {
                     CardinalDirection direction = (CardinalDirection)directionIndex;
-                    if ((road.Connections & Connection(direction)) == 0)
+                    // Never trade a valid straight road for a shorter trip, and only
+                    // reverse when there is no connected forward or side road.
+                    if ((straight && directionIndex != current.Heading) ||
+                        (directionIndex == reverse && (straight || hasTurn)) ||
+                        !CanTravel(current.Coordinate, direction))
                     {
                         continue;
                     }
 
-                    GridCoordinate neighbour = current + Offset(direction);
-                    if (!m_roads.ContainsKey(neighbour) || !visited.Add(neighbour))
+                    var neighbour = (Coordinate: current.Coordinate + Offset(direction), Heading: directionIndex);
+                    if (!visited.Add(neighbour))
                     {
                         continue;
                     }
@@ -137,23 +158,36 @@ namespace CouchGuys.Gameplay.Traffic
                 }
             }
 
-            if (!visited.Contains(end))
+            if (!found)
             {
                 return false;
             }
 
             coordinates = new List<GridCoordinate>();
-            GridCoordinate cursor = end;
-            coordinates.Add(cursor);
-            while (cursor != start)
+            var cursor = destination;
+            coordinates.Add(cursor.Coordinate);
+            while (cursor != initial)
             {
                 cursor = previous[cursor];
-                coordinates.Add(cursor);
+                coordinates.Add(cursor.Coordinate);
             }
             coordinates.Reverse();
 
             return coordinates.Count > 0;
         }
+
+        private bool CanTravel(GridCoordinate coordinate, CardinalDirection direction)
+        {
+            return m_roads.TryGetValue(coordinate, out GeneratedRoad road) &&
+                   (road.Connections & Connection(direction)) != 0 &&
+                   m_roads.TryGetValue(coordinate + Offset(direction), out GeneratedRoad neighbour) &&
+                   (neighbour.Connections & Connection((CardinalDirection)(((int)direction + 2) % 4))) != 0;
+        }
+
+        private static CardinalDirection Direction(GridCoordinate offset) => offset.X > 0
+            ? CardinalDirection.East
+            : offset.X < 0 ? CardinalDirection.West
+            : offset.Y > 0 ? CardinalDirection.North : CardinalDirection.South;
 
         private void AddRoute(
             List<GridCoordinate> coordinates,

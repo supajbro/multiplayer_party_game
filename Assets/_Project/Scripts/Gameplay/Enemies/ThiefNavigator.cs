@@ -135,6 +135,13 @@ namespace CouchGuys.Gameplay.Enemies
         private void Update()
         {
             if (!IsServerInitialized || (m_health != null && !m_health.IsAlive)) return;
+            if (m_health != null && m_health.IsBeingKnockedBack)
+            {
+                ReleaseCarriedCouchServer();
+                SetConstrainedCarryMovement(false);
+                m_carryIntent = Vector3.zero;
+                return;
+            }
 
             CouchCarryController couch = GetActiveCouch();
             if (m_carriedCouch != null && m_carriedCouch != couch)
