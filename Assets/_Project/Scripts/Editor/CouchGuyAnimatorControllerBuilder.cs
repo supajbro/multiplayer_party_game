@@ -258,6 +258,7 @@ namespace CouchGuys.Editor
             AnimatorController controller = AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
             AddParameters(controller);
             BuildStateMachine(controller, clips);
+            WeaponOwnershipAssetBuilder.InstallPunchLayer();
 
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();

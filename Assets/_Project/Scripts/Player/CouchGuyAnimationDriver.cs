@@ -57,6 +57,8 @@ namespace CouchGuys.Player
         private float m_recoilRecovery = 12f;
         private float m_recoilRoll;
         private int m_recoilDirection = 1;
+        private float m_punchUntil;
+        private int m_punchLayer = -1;
         private bool m_vehicleSeated;
         private bool m_vehicleDriver;
 
@@ -94,6 +96,13 @@ namespace CouchGuys.Player
 
         private void Update()
         {
+            if (m_animator != null && m_punchLayer >= 0)
+            {
+                bool punching = Time.time < m_punchUntil && m_equippedWeapon == 0 && !m_vehicleSeated &&
+                    !(m_couchCarrier != null && m_couchCarrier.IsCarrying);
+                m_animator.SetLayerWeight(m_punchLayer, Mathf.MoveTowards(m_animator.GetLayerWeight(m_punchLayer),
+                    punching ? 1f : 0f, Time.deltaTime * (punching ? 20f : 12f)));
+            }
             if (m_animator == null || !m_hasWeaponAimParameter) return;
             bool aiming = m_equippedWeapon > 0 && !m_vehicleSeated &&
                 !(m_couchCarrier != null && m_couchCarrier.IsCarrying) &&
@@ -173,6 +182,15 @@ namespace CouchGuys.Player
             m_equippedWeapon = weaponIndex;
             if (m_animator != null && m_hasWeaponParameters)
                 m_animator.SetInteger(EquippedWeaponHash, weaponIndex);
+        }
+
+        public void PlayPunch(bool right)
+        {
+            if (m_animator == null) return;
+            m_punchLayer = m_animator.GetLayerIndex("Punches");
+            if (m_punchLayer < 0) return;
+            m_punchUntil = Time.time + 0.48f;
+            m_animator.CrossFadeInFixedTime(right ? "Punch_Right" : "Punch_Left", 0.04f, m_punchLayer, 0f);
         }
 
         public void PlayWeaponShot(PlayerWeaponType weapon)

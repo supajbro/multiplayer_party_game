@@ -14,6 +14,7 @@ namespace CouchGuys.Gameplay.Enemies
         [SerializeField, Min(0.05f)] private float m_knockbackDuration = 0.22f;
         [SerializeField, Min(0f)] private float m_knockbackDamping = 14f;
         [SerializeField, Min(0f)] private float m_deathDespawnDelay = 2.5f;
+        [SerializeField, Range(0f, 100f)] private float m_weaponDropChance = 35f;
         [SerializeField] private NavMeshAgent m_agent;
         [SerializeField] private Collider m_collider;
 
@@ -137,6 +138,10 @@ namespace CouchGuys.Gameplay.Enemies
             if (m_currentHealth.Value <= 0f)
             {
                 m_dead.Value = true;
+                if (TryGetComponent(out EnemyWeapon weapon) && UnityEngine.Random.value * 100f < m_weaponDropChance)
+                    CouchGuys.Gameplay.Weapons.WeaponPickup.SpawnServer(
+                        (CouchGuys.Gameplay.Weapons.PlayerWeaponType)weapon.WeaponType,
+                        transform.position + Vector3.up, transform.rotation, Vector3.up * 1.5f);
                 m_despawnAt = Time.time + m_deathDespawnDelay;
             }
             else if (appliedDamage > 0f)

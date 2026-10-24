@@ -44,6 +44,7 @@ namespace CouchGuys.Input
         public bool InteractPressedThisFrame => !m_gameplaySuppressed && (m_interactAction?.WasPressedThisFrame() ?? false);
         public bool ShootHeld => !m_gameplaySuppressed && (m_shootAction?.IsPressed() ?? false);
         public bool ShootPressedThisFrame => !m_gameplaySuppressed && (m_shootAction?.WasPressedThisFrame() ?? false);
+        public bool DropWeaponPressedThisFrame => !m_gameplaySuppressed && (Keyboard.current?.qKey.wasPressedThisFrame ?? false);
         public bool ReloadPressedThisFrame => !m_gameplaySuppressed && (m_reloadAction?.WasPressedThisFrame() ?? false);
         public int HotbarSelectionPressedThisFrame
         {

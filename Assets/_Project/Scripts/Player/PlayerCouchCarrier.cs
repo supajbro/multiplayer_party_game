@@ -1,4 +1,5 @@
 using CouchGuys.Gameplay.Couch;
+using CouchGuys.Gameplay.Weapons;
 using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Gameplay.Depot;
 using CouchGuys.Gameplay.Shop;
@@ -506,12 +507,25 @@ namespace CouchGuys.Player
                 }
             }
 
+            WeaponPickup closestWeapon = null;
+            foreach (WeaponPickup pickup in FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None))
+            {
+                float distance = (pickup.transform.position - transform.position).sqrMagnitude;
+                if (!pickup.IsSpawned || distance > closestDistanceSquared) continue;
+                closestDistanceSquared = distance;
+                closestWeapon = pickup;
+                closestPoint = null;
+                closestSledPoint = null;
+                closestNpc = null;
+            }
+
             bool depotDoorButton = false;
             DepotController depot = FindFirstObjectByType<DepotController>();
             if (depot != null && depot.HasNearbyButton(transform.position,
                     Mathf.Sqrt(closestDistanceSquared), out _))
             {
                 depotDoorButton = true;
+                closestWeapon = null;
                 closestPoint = null;
                 closestSledPoint = null;
                 closestNpc = null;
@@ -529,10 +543,21 @@ namespace CouchGuys.Player
             {
                 RequestDeliveryServerRpc();
             }
+            else if (closestWeapon != null)
+            {
+                RequestWeaponPickupServerRpc(closestWeapon.NetworkObject);
+            }
             else if (depotDoorButton)
             {
                 RequestDepotDoorServerRpc();
             }
+        }
+
+        [ServerRpc]
+        private void RequestWeaponPickupServerRpc(NetworkObject pickupObject)
+        {
+            if (pickupObject != null && pickupObject.TryGetComponent(out WeaponPickup pickup) &&
+                TryGetComponent(out PlayerWeaponController weapons)) pickup.TryPickupServer(weapons);
         }
 
         private void UpdateSledInteractionPrompt()
@@ -566,6 +591,14 @@ namespace CouchGuys.Player
                 }
             }
             m_sledInteractionPrompt = string.Empty;
+            foreach (WeaponPickup pickup in FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None))
+            {
+                if (pickup.IsSpawned && (pickup.transform.position - transform.position).sqrMagnitude <= rangeSquared)
+                {
+                    m_sledInteractionPrompt = $"Press E to pick up {pickup.DisplayName}";
+                    break;
+                }
+            }
         }
 
         [ServerRpc]
