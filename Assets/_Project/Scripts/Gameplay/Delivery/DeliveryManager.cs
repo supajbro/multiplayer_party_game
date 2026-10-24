@@ -524,7 +524,9 @@ namespace CouchGuys.Gameplay.Delivery
             {
                 foreach (Transform marker in m_depot.EnumerateVehicleSpawnMarkers())
                 {
-                    if (TryValidateVehicleSpawnPose(marker.position, marker.rotation, npc,
+                    Quaternion depotHeading = m_depot.VehicleArrival != null
+                        ? m_depot.VehicleArrival.rotation : marker.rotation;
+                    if (TryValidateVehicleSpawnPose(marker.position, depotHeading, npc,
                             out position, out rotation))
                         return true;
                 }

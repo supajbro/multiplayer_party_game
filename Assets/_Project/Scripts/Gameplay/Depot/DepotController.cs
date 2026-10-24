@@ -4,6 +4,8 @@ using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Player;
 using CouchGuys.ProceduralGeneration;
 using UnityEngine;
+using UnityEngine.Animations;
+using UnityEngine.Playables;
 
 namespace CouchGuys.Gameplay.Depot
 {
@@ -28,8 +30,15 @@ namespace CouchGuys.Gameplay.Depot
 
         [NonSerialized] public float Progress;
         [NonSerialized] public bool TargetOpen;
+        [NonSerialized] private PlayableGraph m_graph;
+        [NonSerialized] private AnimationClipPlayable m_clipPlayable;
 
         public BoxCollider SafetyVolume => m_safetyVolume;
+
+        public void Dispose()
+        {
+            if (m_graph.IsValid()) m_graph.Destroy();
+        }
 
         public void Configure(Transform[] slats, Vector3[] closedPositions,
             Quaternion[] closedRotations, Vector3[] openPositions,
@@ -66,11 +75,27 @@ namespace CouchGuys.Gameplay.Depot
         {
             if (m_animationRoot != null && m_authoredAnimation != null)
             {
-                // Progress is still driven by the existing synchronized door state.
-                // Sampling lets the authored Blender curves supply the intermediate
-                // rolling motion while preserving immediate state restoration and reversal.
-                m_authoredAnimation.SampleAnimation(
-                    m_animationRoot, m_authoredAnimation.length * Progress);
+                // Use the compiled Mecanim clip in players, rather than relying on
+                // editor sampling data. Each door has its own binding root so evaluating
+                // one door cannot restore the other door's transforms to a default pose.
+                if (!m_graph.IsValid())
+                {
+                    Animator animator = m_animationRoot.GetComponent<Animator>();
+                    if (animator == null) animator = m_animationRoot.AddComponent<Animator>();
+                    animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+                    animator.applyRootMotion = false;
+                    m_graph = PlayableGraph.Create(m_animationRoot.name);
+                    m_graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
+                    m_clipPlayable = AnimationClipPlayable.Create(m_graph, m_authoredAnimation);
+                    m_clipPlayable.SetSpeed(0);
+                    m_clipPlayable.SetApplyFootIK(false);
+                    AnimationPlayableOutput output = AnimationPlayableOutput.Create(
+                        m_graph, "Roller door", animator);
+                    output.SetSourcePlayable(m_clipPlayable);
+                    m_graph.Play();
+                }
+                m_clipPlayable.SetTime(m_authoredAnimation.length * Progress);
+                m_graph.Evaluate(0f);
             }
             else
             {
@@ -107,6 +132,8 @@ namespace CouchGuys.Gameplay.Depot
         [Header("Dispatch Markers")]
         [SerializeField] private Transform m_deliveryNpc;
         [SerializeField] private Transform m_vehicleArrival;
+        [Tooltip("Purchased trucks use this transform's position and heading. Local +Z faces the exit.")]
+        [SerializeField] private Transform m_truckSpawnPoint;
         [SerializeField] private Transform[] m_vehicleFallbacks = Array.Empty<Transform>();
         [SerializeField] private Transform m_couchHiddenSpawn;
         [SerializeField] private Transform[] m_conveyorPath = Array.Empty<Transform>();
@@ -124,7 +151,7 @@ namespace CouchGuys.Gameplay.Depot
         private readonly Collider[] m_safetyHits = new Collider[32];
 
         public Transform DeliveryNpcMarker => m_deliveryNpc;
-        public Transform VehicleArrival => m_vehicleArrival;
+        public Transform VehicleArrival => m_truckSpawnPoint != null ? m_truckSpawnPoint : m_vehicleArrival;
         public IReadOnlyList<Transform> VehicleFallbacks => m_vehicleFallbacks;
         public Transform CouchHiddenSpawn => m_couchHiddenSpawn;
         public IReadOnlyList<Transform> ConveyorPath => m_conveyorPath;
@@ -136,6 +163,16 @@ namespace CouchGuys.Gameplay.Depot
         {
             m_exitDoor?.Tick(m_doorAnimationSpeed, Time.deltaTime);
             m_vehicleGarageDoor?.Tick(m_doorAnimationSpeed, Time.deltaTime);
+        }
+
+        private void OnDisable() => ReleaseDoorAnimations();
+
+        private void OnDestroy() => ReleaseDoorAnimations();
+
+        public void ReleaseDoorAnimations()
+        {
+            m_exitDoor?.Dispose();
+            m_vehicleGarageDoor?.Dispose();
         }
 
         public void ApplyDoorStates(bool exitOpen, bool garageOpen, bool immediate = false)
@@ -186,7 +223,7 @@ namespace CouchGuys.Gameplay.Depot
 
         public IEnumerable<Transform> EnumerateVehicleSpawnMarkers()
         {
-            if (m_vehicleArrival != null) yield return m_vehicleArrival;
+            if (VehicleArrival != null) yield return VehicleArrival;
             if (m_vehicleFallbacks == null) yield break;
             foreach (Transform marker in m_vehicleFallbacks)
                 if (marker != null) yield return marker;
@@ -206,6 +243,8 @@ namespace CouchGuys.Gameplay.Depot
             m_vehicleGarageDoor = vehicleGarageDoor ?? new DepotDoorRig();
             m_doorButtons = doorButtons ?? Array.Empty<DepotDoorButton>();
         }
+
+        public void SetTruckSpawnPoint(Transform marker) => m_truckSpawnPoint = marker;
 
         private static void ApplyDoorState(DepotDoorRig rig, bool open, bool immediate)
         {
@@ -245,6 +284,10 @@ namespace CouchGuys.Gameplay.Depot
                 Vector3.up).normalized;
             road.rotation = Quaternion.LookRotation(outward.sqrMagnitude > 0.01f
                 ? outward : -root.transform.forward, Vector3.up);
+            Transform staging = Find(root.transform, "CGD_MARK_Truck_DispatchStaging");
+            Transform truckSpawn = Find(root.transform, "TruckSpawnPoint") ??
+                CreateRuntimeMarker(root.transform, "TruckSpawnPoint", staging != null ? staging : vehicle);
+            truckSpawn.rotation = road.rotation;
             npc.localScale = Vector3.one;
             Transform npcSpawn = CreateRuntimeMarker(root.transform,
                 "DeliveryNpcSpawnPoint", npc);
@@ -289,6 +332,9 @@ namespace CouchGuys.Gameplay.Depot
                                     root.AddComponent<DepotController>();
             depot.Configure(npcSpawn, vehicle, fallbacks, couchHidden, conveyor, exit, garage,
                 new[] { exterior, interior });
+            depot.SetTruckSpawnPoint(truckSpawn);
+            foreach (Transform fallback in fallbacks)
+                if (fallback != null) fallback.rotation = truckSpawn.rotation;
             startingArea = root.GetComponent<StartingArea>() ?? root.AddComponent<StartingArea>();
             startingArea.Initialise(road, spawns, npcSpawn, new Vector2Int(5, 5));
             startingArea.SetDepot(depot);
@@ -364,7 +410,7 @@ namespace CouchGuys.Gameplay.Depot
             string[] tokens =
             {
                 "WarehouseInterior_WalkableFloor", "Foundation_Main", "BrickFront_Solid",
-                "PaleWood_Solid", "BelowWindow", "RearWall_", "RealLintel",
+                "PaleWood_Solid", "BelowWindow", "RearWall_", "TruckArrival_RearWallHeader", "RealLintel",
                 "Backstage_LeftOpaquePartition", "Backstage_FrontWall",
                 "Conveyor_VisibilityBaffle", "Conveyor_MainBody", "Conveyor_Guardrail",
                 "FrogCounter_Main", "ArrivalServiceTunnel_SideWall", "RearPortal_Bumper",
