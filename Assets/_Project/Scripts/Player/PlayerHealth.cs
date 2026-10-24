@@ -60,9 +60,9 @@ namespace CouchGuys.Player
         {
             get
             {
-                PlayerVanInteractor interactor = GetComponent<PlayerVanInteractor>();
-                return interactor != null && interactor.CurrentVan != null
-                    ? interactor.CurrentVan.CameraTarget.position
+                PlayerTruckInteractor interactor = GetComponent<PlayerTruckInteractor>();
+                return interactor != null && interactor.CurrentTruck != null
+                    ? interactor.CurrentTruck.CameraTarget.position
                     : transform.position + Vector3.up * 0.9f;
             }
         }

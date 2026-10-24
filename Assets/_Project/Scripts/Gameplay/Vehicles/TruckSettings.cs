@@ -2,15 +2,16 @@ using UnityEngine;
 
 namespace CouchGuys.Gameplay.Vehicles
 {
-    public enum VanQuality { Light, Good, Best }
+    public enum TruckQuality { Light, Good, Best }
 
-    /// <summary>Single source of truth for a van's configurable behaviour. Runtime state is never stored here.</summary>
-    [CreateAssetMenu(fileName = "VanSettings", menuName = "Couch Guys/Vehicles/Van Settings")]
-    public sealed class VanSettings : ScriptableObject
+    /// <summary>Single source of truth for a truck's configurable behaviour. Runtime state is never stored here.</summary>
+    [CreateAssetMenu(fileName = "TruckSettings", menuName = "Couch Guys/Vehicles/Truck Settings")]
+    [UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "CouchGuys.Gameplay.Vehicles", sourceAssembly: "Assembly-CSharp", sourceClassName: "VanSettings")]
+    public sealed class TruckSettings : ScriptableObject
     {
         [Header("General")]
-        [SerializeField] private VanQuality m_quality;
-        [SerializeField] private string m_displayName = "Van";
+        [SerializeField] private TruckQuality m_quality;
+        [SerializeField] private string m_displayName = "Truck";
 
         [Header("Driving")]
         [SerializeField, Min(1f), Tooltip("Maximum forward speed in kilometres per hour.")] private float m_maxForwardSpeed = 65f;
@@ -36,14 +37,14 @@ namespace CouchGuys.Gameplay.Vehicles
 
         [Header("Health And Damage")]
         [SerializeField, Min(1f)] private float m_maxHealth = 175f;
-        [SerializeField, Min(0f), Tooltip("Minimum speed into a solid obstacle in m/s before the van takes damage.")] private float m_minimumCollisionDamageSpeed = 4f;
-        [SerializeField, Min(0f), Tooltip("Van damage per m/s above the obstacle collision threshold.")] private float m_collisionDamageMultiplier = 4f;
+        [SerializeField, Min(0f), Tooltip("Minimum speed into a solid obstacle in m/s before the truck takes damage.")] private float m_minimumCollisionDamageSpeed = 4f;
+        [SerializeField, Min(0f), Tooltip("Truck damage per m/s above the obstacle collision threshold.")] private float m_collisionDamageMultiplier = 4f;
         [SerializeField, Min(0f)] private float m_maximumCollisionDamage = 45f;
         [SerializeField, Min(0f), Tooltip("Minimum time before the same collision can deal damage again.")] private float m_collisionDamageCooldown = 0.4f;
-        [SerializeField, Min(0f), Tooltip("Minimum horizontal van impact speed in m/s before a character takes damage. Slower contact only pushes.")] private float m_minimumCharacterImpactSpeed = 2.5f;
+        [SerializeField, Min(0f), Tooltip("Minimum horizontal truck impact speed in m/s before a character takes damage. Slower contact only pushes.")] private float m_minimumCharacterImpactSpeed = 2.5f;
         [SerializeField, Min(0f), Tooltip("Character damage per m/s above the impact threshold.")] private float m_characterImpactDamageMultiplier = 6f;
         [SerializeField, Min(0f), Tooltip("Horizontal knockback strength at a full-speed character impact.")] private float m_characterKnockbackForce = 12f;
-        [SerializeField, Min(0f), Tooltip("Upward knockback applied to a character hit by the van.")] private float m_characterKnockbackUpwardForce = 2.5f;
+        [SerializeField, Min(0f), Tooltip("Upward knockback applied to a character hit by the truck.")] private float m_characterKnockbackUpwardForce = 2.5f;
         [SerializeField, Min(0f)] private float m_bulletDamageMultiplier = 1f;
         [SerializeField, Range(0f, 1f)] private float m_criticalHealthThreshold = 0.25f;
 
@@ -61,7 +62,7 @@ namespace CouchGuys.Gameplay.Vehicles
         [SerializeField, Tooltip("When disabled, engine power is blocked until the rear doors are closed.")] private bool m_allowDrivingWithDoorsOpen;
 
         [Header("Couch Loading")]
-        [SerializeField, Min(1), Tooltip("Maximum couches secured in this van at once.")] private int m_cargoCapacity = 1;
+        [SerializeField, Min(1), Tooltip("Maximum couches secured in this truck at once.")] private int m_cargoCapacity = 1;
         [SerializeField, Min(0.1f), Tooltip("Maximum couch and player distance from CargoLoadingAnchor.")] private float m_couchLoadingRange = 2.5f;
         [SerializeField, Min(0.05f)] private float m_couchLoadingDuration = 0.8f;
         [SerializeField, Min(0.05f)] private float m_couchUnloadingDuration = 0.65f;
@@ -85,7 +86,7 @@ namespace CouchGuys.Gameplay.Vehicles
         [SerializeField, Range(0f, 20f)] private float m_bodyPitchAmount = 3f;
         [SerializeField, Min(0.01f)] private float m_visualSmoothing = 8f;
 
-        public VanQuality Quality => m_quality; public string DisplayName => m_displayName;
+        public TruckQuality Quality => m_quality; public string DisplayName => m_displayName;
         public float MaxForwardSpeed => m_maxForwardSpeed; public float MaxReverseSpeed => m_maxReverseSpeed;
         public float Acceleration => m_acceleration; public float ReverseAcceleration => m_reverseAcceleration;
         public float BrakingForce => m_brakingForce; public float NaturalDeceleration => m_naturalDeceleration;

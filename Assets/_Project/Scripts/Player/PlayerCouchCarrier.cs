@@ -117,9 +117,9 @@ namespace CouchGuys.Player
                 RequestTeleportToDeliveryServerRpc();
             }
 
-            PlayerVanInteractor vanInteractor = GetComponent<PlayerVanInteractor>();
+            PlayerTruckInteractor truckInteractor = GetComponent<PlayerTruckInteractor>();
             if (m_input != null && m_input.InteractPressedThisFrame &&
-                (vanInteractor == null || !vanInteractor.HasPriorityWorldInteraction()))
+                (truckInteractor == null || !truckInteractor.HasPriorityWorldInteraction()))
             {
                 if (IsCarrying)
                 {
@@ -709,7 +709,7 @@ namespace CouchGuys.Player
                     item.Icon,
                     item.Category switch
                     {
-                        ShopItemCategory.Vehicle => "Vans",
+                        ShopItemCategory.Vehicle => "Trucks",
                         ShopItemCategory.Weapon => "Weapons",
                         ShopItemCategory.Equipment => "Upgrades",
                         ShopItemCategory.PlayerUpgrade => "Upgrades",

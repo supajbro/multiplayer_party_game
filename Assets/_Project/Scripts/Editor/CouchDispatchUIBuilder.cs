@@ -69,12 +69,12 @@ namespace CouchGuys.Editor
             new("DeliveryEasy", 18, 939, 310, 154, new Vector4(25, 25, 25, 25)),
             new("DeliveryMedium", 348, 939, 314, 154, new Vector4(25, 25, 25, 25)),
             new("DeliveryHard", 691, 939, 316, 154, new Vector4(25, 25, 25, 25)),
-            new("CategoryVans", 18, 1105, 226, 63, new Vector4(25, 20, 25, 20)),
+            new("CategoryTrucks", 18, 1105, 226, 63, new Vector4(25, 20, 25, 20)),
             new("CategoryWeapons", 269, 1105, 233, 63, new Vector4(25, 20, 25, 20)),
             new("CategoryUpgrades", 519, 1105, 239, 63, new Vector4(25, 20, 25, 20)),
             new("PageDots", 773, 1105, 235, 63, new Vector4(25, 20, 25, 20)),
 
-            new("VanIcon", 23, 1193, 213, 116),
+            new("TruckIcon", 23, 1193, 213, 116),
             new("WeaponsIcon", 252, 1184, 250, 136),
             new("UpgradeCrate", 506, 1182, 174, 133),
             new("CurrencyCoin", 687, 1184, 104, 108),
@@ -245,7 +245,7 @@ namespace CouchGuys.Editor
             filtersLayout.childForceExpandWidth = true;
             filtersLayout.childControlHeight = true;
             filtersLayout.childForceExpandHeight = true;
-            string[] filterNames = { "All", "Vans", "Weapons", "Upgrades", "Other" };
+            string[] filterNames = { "All", "Trucks", "Weapons", "Upgrades", "Other" };
             CouchDispatchFilterButtonView[] filters = filterNames
                 .Select(group => CreateFilter(filtersRoot, style, group)).ToArray();
 
@@ -276,9 +276,9 @@ namespace CouchGuys.Editor
 
             RectTransform shopCardsRoot = CreateCardsRoot("ShopCards", viewport);
             CouchDispatchOptionCardView shopTemplate = CreateCard(shopCardsRoot, style, "ShopCardTemplate", false,
-                style.Get("VanIcon"));
+                style.Get("TruckIcon"));
             PopulatePreview(shopTemplate, "Shop Item", "Description supplied by the shop catalogue.", "$250", string.Empty,
-                new Color(0.18f, 0.52f, 0.72f), true, false, style.Get("VanIcon"));
+                new Color(0.18f, 0.52f, 0.72f), true, false, style.Get("TruckIcon"));
             shopTemplate.gameObject.SetActive(false);
             shopCardsRoot.gameObject.SetActive(false);
             scroll.content = deliveryCardsRoot;

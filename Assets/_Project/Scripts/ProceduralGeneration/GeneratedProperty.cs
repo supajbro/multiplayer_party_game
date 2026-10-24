@@ -23,7 +23,8 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private float m_lotElevation;
         [SerializeField] private float m_drivewayLength;
         [SerializeField] private float m_drivewayGrade;
-        [SerializeField] private bool m_vanAccessible;
+        [UnityEngine.Serialization.FormerlySerializedAs("m_vanAccessible") ]
+        [SerializeField] private bool m_truckAccessible;
         [SerializeField] private Vector3 m_frontageDirection;
         [SerializeField] private Vector3 m_drivewayStart;
         [SerializeField] private Vector3 m_drivewayEnd;
@@ -43,7 +44,7 @@ namespace CouchGuys.ProceduralGeneration
         public float LotElevation => m_lotElevation;
         public float DrivewayLength => m_drivewayLength;
         public float DrivewayGrade => m_drivewayGrade;
-        public bool VanAccessible => m_vanAccessible;
+        public bool TruckAccessible => m_truckAccessible;
         public Vector3 FrontageDirection => m_frontageDirection;
         public Vector3 DrivewayStart => m_drivewayStart;
         public Vector3 DrivewayEnd => m_drivewayEnd;
@@ -81,7 +82,7 @@ namespace CouchGuys.ProceduralGeneration
             m_drivewayGrade = m_drivewayLength > 0.01f
                 ? Mathf.Atan2(Mathf.Abs(m_lotElevation - m_roadElevation), m_drivewayLength) * Mathf.Rad2Deg
                 : 0f;
-            m_vanAccessible = m_drivewayGrade <= 16f && m_drivewayLength <= 24f;
+            m_truckAccessible = m_drivewayGrade <= 16f && m_drivewayLength <= 24f;
         }
 
         public void SetDrivewayReservation(

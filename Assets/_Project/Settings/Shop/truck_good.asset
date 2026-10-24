@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 47a9d384fe104a878d888afc5a20adf1, type: 3}
-  m_Name: van_best
+  m_Name: truck_good
   m_EditorClassIdentifier: 
-  m_itemId: van_best
-  m_displayName: Best Van
-  m_description: Top-tier capacity, durability, and performance.
-  m_price: 1000
+  m_itemId: truck_good
+  m_displayName: Good Truck
+  m_description: A sturdier all-round delivery van.
+  m_price: 500
   m_category: 0
   m_icon: {fileID: 0}
-  m_purchaseBehaviour: {fileID: 11400000, guid: 3743300be183461494b9ba487084fc2e, type: 2}
+  m_purchaseBehaviour: {fileID: 11400000, guid: 24a92c2af03843e8b9ae5479ea7d454e, type: 2}

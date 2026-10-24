@@ -197,7 +197,7 @@ namespace CouchGuys.Gameplay.Depot
                 Collider hit = m_safetyHits[index];
                 if (hit == null || hit == volume || hit.transform.IsChildOf(transform)) continue;
                 if (hit.GetComponentInParent<PlayerCouchCarrier>() != null ||
-                    hit.GetComponentInParent<VanController>() != null)
+                    hit.GetComponentInParent<TruckController>() != null)
                     return true;
             }
             return count >= m_safetyHits.Length;

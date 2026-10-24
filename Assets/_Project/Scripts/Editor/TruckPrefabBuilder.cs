@@ -14,74 +14,72 @@ using UnityEngine.SceneManagement;
 namespace CouchGuys.Editor
 {
     /// <summary>Builds the network-ready vehicle variants around the shared delivery truck visual.</summary>
-    public static class VanPrefabBuilder
+    public static class TruckPrefabBuilder
     {
-        private const float SeatedPlayerRootDrop = .8f;
         private const string SettingsFolder = "Assets/_Project/Settings/Vehicles";
         private const string PrefabFolder = "Assets/_Project/Prefabs/Vehicles";
         private const string ScenePath = "Assets/Scenes/SampleScene.unity";
 
         [InitializeOnLoadMethod]
-        private static void BuildMissingVanAssetsAfterImport()
+        private static void BuildMissingTruckAssetsAfterImport()
         {
-            GameObject light = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/LightVan.prefab");
+            GameObject light = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/LightTruck.prefab");
             Transform imported = light != null ? FindDescendant(light.transform, "ImportedTruckModel") : null;
-            if (light == null || imported == null || FindDescendant(light.transform, "Seat_00_Driver") == null ||
-                !AreVanPrefabsRegistered())
-                EditorApplication.delayCall += BuildVanSystem;
+            if (light == null || imported == null)
+                EditorApplication.delayCall += BuildTruckSystem;
         }
 
-        [MenuItem("Couch Guys/Vehicles/Build Van System")]
-        public static void BuildVanSystem()
+        [MenuItem("Couch Guys/Vehicles/Build Truck System")]
+        public static void BuildTruckSystem()
         {
             EnsureFolder("Assets/_Project/Settings", "Vehicles");
             EnsureFolder("Assets/_Project/Prefabs", "Vehicles");
-            VanSettings light = BuildSettings("LightVanSettings", VanQuality.Light, "Light Van", 45f, 60f, .35f, 100f, 5f, .62f, 1.25f);
-            VanSettings good = BuildSettings("GoodVanSettings", VanQuality.Good, "Good Van", 65f, 90f, .25f, 175f, 8f, .78f, 1f);
-            VanSettings best = BuildSettings("BestVanSettings", VanQuality.Best, "Best Van", 90f, 130f, .16f, 275f, 12f, .9f, .72f);
-            BuildPrefab("LightVan", light);
-            BuildPrefab("GoodVan", good);
-            BuildPrefab("BestVan", best);
+            TruckSettings light = BuildSettings("LightTruckSettings", TruckQuality.Light, "Light Truck", 45f, 60f, .35f, 100f, 5f, .62f, 1.25f);
+            TruckSettings good = BuildSettings("GoodTruckSettings", TruckQuality.Good, "Good Truck", 65f, 90f, .25f, 175f, 8f, .78f, 1f);
+            TruckSettings best = BuildSettings("BestTruckSettings", TruckQuality.Best, "Best Truck", 90f, 130f, .16f, 275f, 12f, .9f, .72f);
+            BuildPrefab("LightTruck", light);
+            BuildPrefab("GoodTruck", good);
+            BuildPrefab("BestTruck", best);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-            RegisterVanPrefabs();
+            RegisterTruckPrefabs();
             PlayerPrefabBuilder.BuildPlayerPrefab();
-            AddTestVanToScene();
+            AddTestTruckToScene();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log("Couch Guys truck visual, four seats, cargo points, networking, and SampleScene test vehicle built.");
         }
 
-        public static void BuildFromCommandLine() => BuildVanSystem();
+        public static void BuildFromCommandLine() => BuildTruckSystem();
 
-        private static VanSettings BuildSettings(string file, VanQuality quality, string displayName,
+        private static TruckSettings BuildSettings(string file, TruckQuality quality, string displayName,
             float speed, float fuel, float drivingConsumption, float health, float acceleration, float traction, float bulletMultiplier)
         {
             string path = $"{SettingsFolder}/{file}.asset";
-            VanSettings settings = AssetDatabase.LoadAssetAtPath<VanSettings>(path);
-            if (settings == null) { settings = ScriptableObject.CreateInstance<VanSettings>(); AssetDatabase.CreateAsset(settings, path); }
+            TruckSettings settings = AssetDatabase.LoadAssetAtPath<TruckSettings>(path);
+            if (settings == null) { settings = ScriptableObject.CreateInstance<TruckSettings>(); AssetDatabase.CreateAsset(settings, path); }
             SerializedObject so = new(settings);
             Set(so, "m_quality", (int)quality); Set(so, "m_displayName", displayName);
             Set(so, "m_maxForwardSpeed", speed); Set(so, "m_maxFuel", fuel);
             Set(so, "m_fuelConsumptionDriving", drivingConsumption); Set(so, "m_maxHealth", health);
             Set(so, "m_acceleration", acceleration); Set(so, "m_traction", traction);
             Set(so, "m_bulletDamageMultiplier", bulletMultiplier);
-            Set(so, "m_collisionDamageMultiplier", quality == VanQuality.Light ? 5f : quality == VanQuality.Good ? 3.5f : 2.3f);
-            Set(so, "m_maximumCollisionDamage", quality == VanQuality.Light ? 55f : quality == VanQuality.Good ? 42f : 32f);
-            Set(so, "m_steeringSensitivity", quality == VanQuality.Light ? 72f : quality == VanQuality.Good ? 92f : 108f);
-            Set(so, "m_highSpeedSteeringMultiplier", quality == VanQuality.Light ? .32f : quality == VanQuality.Good ? .44f : .55f);
-            Set(so, "m_vehicleMass", quality == VanQuality.Light ? 1250f : quality == VanQuality.Good ? 1450f : 1650f);
-            Set(so, "m_doorOpenAngle", quality == VanQuality.Light ? 100f : quality == VanQuality.Good ? 110f : 120f);
-            Set(so, "m_doorAnimationDuration", quality == VanQuality.Light ? .7f : quality == VanQuality.Good ? .55f : .42f);
-            SetInteger(so, "m_cargoCapacity", quality == VanQuality.Best ? 2 : 1);
-            Set(so, "m_couchLoadingDuration", quality == VanQuality.Light ? 1f : quality == VanQuality.Good ? .72f : .5f);
-            Set(so, "m_couchUnloadingDuration", quality == VanQuality.Light ? .85f : quality == VanQuality.Good ? .65f : .48f);
+            Set(so, "m_collisionDamageMultiplier", quality == TruckQuality.Light ? 5f : quality == TruckQuality.Good ? 3.5f : 2.3f);
+            Set(so, "m_maximumCollisionDamage", quality == TruckQuality.Light ? 55f : quality == TruckQuality.Good ? 42f : 32f);
+            Set(so, "m_steeringSensitivity", quality == TruckQuality.Light ? 72f : quality == TruckQuality.Good ? 92f : 108f);
+            Set(so, "m_highSpeedSteeringMultiplier", quality == TruckQuality.Light ? .32f : quality == TruckQuality.Good ? .44f : .55f);
+            Set(so, "m_vehicleMass", quality == TruckQuality.Light ? 1250f : quality == TruckQuality.Good ? 1450f : 1650f);
+            Set(so, "m_doorOpenAngle", quality == TruckQuality.Light ? 100f : quality == TruckQuality.Good ? 110f : 120f);
+            Set(so, "m_doorAnimationDuration", quality == TruckQuality.Light ? .7f : quality == TruckQuality.Good ? .55f : .42f);
+            SetInteger(so, "m_cargoCapacity", quality == TruckQuality.Best ? 2 : 1);
+            Set(so, "m_couchLoadingDuration", quality == TruckQuality.Light ? 1f : quality == TruckQuality.Good ? .72f : .5f);
+            Set(so, "m_couchUnloadingDuration", quality == TruckQuality.Light ? .85f : quality == TruckQuality.Good ? .65f : .48f);
             SetBool(so, "m_allowDrivingWithDoorsOpen", false);
             SetBool(so, "m_autoPositionLoadedCouches", true);
             so.ApplyModifiedPropertiesWithoutUndo(); EditorUtility.SetDirty(settings); return settings;
         }
 
-        private static void BuildPrefab(string name, VanSettings settings)
+        private static void BuildPrefab(string name, TruckSettings settings)
         {
             GameObject root = new(name);
             try
@@ -90,7 +88,7 @@ namespace CouchGuys.Editor
                 rb.centerOfMass = new Vector3(0f, 1.05f, -.1f); rb.maxAngularVelocity = 5f;
                 NetworkObject networkObject = root.AddComponent<NetworkObject>();
                 NetworkTransform networkTransform = root.AddComponent<NetworkTransform>();
-                VanController controller = root.AddComponent<VanController>();
+                TruckController controller = root.AddComponent<TruckController>();
 
                 GameObject visual = Child(root.transform, "VisualModel", Vector3.zero);
                 GameObject modelPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Models/truck/truck.fbx");
@@ -117,17 +115,14 @@ namespace CouchGuys.Editor
                     RequireDescendant(imported.transform, "Tire_Rear_Left"),
                     RequireDescendant(imported.transform, "Tire_Rear_Right")
                 };
-                Transform seats = Child(root.transform, "Seats", Vector3.zero).transform;
                 Transform[] seatAnchors =
                 {
-                    CreateSeatAnchor(seats, "Seat_00_Driver", RequireDescendant(imported.transform, "SeatAnchor_Front_Right"), root.transform),
-                    CreateSeatAnchor(seats, "Seat_01_FrontPassenger", RequireDescendant(imported.transform, "SeatAnchor_Front_Left"), root.transform),
-                    CreateSeatAnchor(seats, "Seat_02_RearPassenger", RequireDescendant(imported.transform, "SeatAnchor_Rear_Right"), root.transform),
-                    CreateSeatAnchor(seats, "Seat_03_RearPassenger", RequireDescendant(imported.transform, "SeatAnchor_Rear_Left"), root.transform)
+                    RequireDescendant(imported.transform, "SeatAnchor_Front_Right"),
+                    RequireDescendant(imported.transform, "SeatAnchor_Front_Left"),
+                    RequireDescendant(imported.transform, "SeatAnchor_Rear_Right"),
+                    RequireDescendant(imported.transform, "SeatAnchor_Rear_Left")
                 };
                 Transform cameraTarget = Child(root.transform, "CameraTarget", new Vector3(0f, Mathf.Clamp(bounds.size.y * .68f, 1.45f, 2f), 0f)).transform;
-                Transform leftExit = Child(root.transform, "ExitPointLeft", new Vector3(-1.65f, .95f, 1.25f)).transform;
-                Transform rightExit = Child(root.transform, "ExitPointRight", new Vector3(1.65f, .95f, 1.25f)).transform;
                 Transform rearInteraction = Child(root.transform, "RearDoorInteractionPoint", new Vector3(.8f, 1.65f, -4.36f)).transform;
                 GameObject cargo = Child(root.transform, "Cargo", Vector3.zero);
                 int capacity = settings.CargoCapacity;
@@ -146,7 +141,7 @@ namespace CouchGuys.Editor
                 SetReference(controller, "m_settings", settings); SetReference(controller, "m_rigidbody", rb);
                 SetReference(controller, "m_visualModel", visual.transform); SetReference(controller, "m_cameraTarget", cameraTarget);
                 SetArray(controller, "m_seatAnchors", seatAnchors); SetReference(controller, "m_destroyedRenderer", renderer);
-                SetArray(controller, "m_exitPoints", new Object[] { leftExit, rightExit }); SetArray(controller, "m_wheels", wheelTransforms);
+                SetArray(controller, "m_wheels", wheelTransforms);
                 SetReference(controller, "m_rearDoorInteractionPoint", rearInteraction); SetReference(controller, "m_cargoLoadingPoint", loadingAnchor);
                 SetArray(controller, "m_cargoPoints", cargoPoints);
 
@@ -155,6 +150,7 @@ namespace CouchGuys.Editor
                 nt.FindProperty("_clientAuthoritative").boolValue = false; nt.FindProperty("_synchronizePosition").boolValue = true;
                 nt.FindProperty("_synchronizeRotation").boolValue = true; nt.FindProperty("_synchronizeScale").boolValue = false; nt.ApplyModifiedPropertiesWithoutUndo();
                 ConfigureNetworkBehaviours(networkObject, networkTransform, controller);
+                VehicleAssetUpgrade.UpgradeTruckRoot(root);
                 PrefabUtility.SaveAsPrefabAsset(root, $"{PrefabFolder}/{name}.prefab");
             }
             finally { Object.DestroyImmediate(root); }
@@ -190,7 +186,7 @@ namespace CouchGuys.Editor
         private static Transform RequireDescendant(Transform root, string name)
         {
             Transform result = FindDescendant(root, name);
-            if (result == null) throw new UnityException($"Imported van '{root.name}' is missing required transform '{name}'.");
+            if (result == null) throw new UnityException($"Imported truck '{root.name}' is missing required transform '{name}'.");
             return result;
         }
 
@@ -205,20 +201,7 @@ namespace CouchGuys.Editor
             return null;
         }
 
-        private static Transform CreateSeatAnchor(
-            Transform parent,
-            string name,
-            Transform modelMarker,
-            Transform vehicleRoot)
-        {
-            Vector3 seatPosition = vehicleRoot.InverseTransformPoint(modelMarker.position) -
-                Vector3.up * SeatedPlayerRootDrop;
-            GameObject anchor = Child(parent, name, seatPosition);
-            anchor.transform.localRotation = Quaternion.identity;
-            return anchor.transform;
-        }
-
-        private static void ConfigureNetworkBehaviours(NetworkObject no, NetworkTransform nt, VanController controller)
+        private static void ConfigureNetworkBehaviours(NetworkObject no, NetworkTransform nt, TruckController controller)
         {
             SerializedObject nso = new(no); SerializedProperty list = nso.FindProperty("NetworkBehaviours"); list.arraySize = 2;
             list.GetArrayElementAtIndex(0).objectReferenceValue = nt; list.GetArrayElementAtIndex(1).objectReferenceValue = controller; nso.ApplyModifiedPropertiesWithoutUndo();
@@ -231,13 +214,14 @@ namespace CouchGuys.Editor
             so.FindProperty("_addedNetworkObject").objectReferenceValue = no; so.FindProperty("_networkObjectCache").objectReferenceValue = no; so.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static void AddTestVanToScene()
+        private static void AddTestTruckToScene()
         {
             Scene scene = SceneManager.GetSceneByPath(ScenePath); bool temporary = !scene.IsValid() || !scene.isLoaded;
             if (temporary) scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive);
-            foreach (GameObject root in scene.GetRootGameObjects()) if (root.name == "TestVan_Light") Object.DestroyImmediate(root);
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/LightVan.prefab");
-            GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene); instance.name = "TestVan_Light";
+            foreach (GameObject root in scene.GetRootGameObjects())
+                if (root.name == "TestTruck_Light" || root.name == "TestVan_Light") Object.DestroyImmediate(root);
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/LightTruck.prefab");
+            GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene); instance.name = "TestTruck_Light";
             NeighbourhoodGenerator generator = Object.FindFirstObjectByType<NeighbourhoodGenerator>();
             Vector3 position = new(5f, .1f, 5f); Quaternion rotation = Quaternion.identity;
             if (generator != null && generator.GeneratedStartingArea != null)
@@ -252,11 +236,11 @@ namespace CouchGuys.Editor
             if (temporary) EditorSceneManager.CloseScene(scene, true);
         }
 
-        private static bool AreVanPrefabsRegistered()
+        private static bool AreTruckPrefabsRegistered()
         {
             SinglePrefabObjects collection = AssetDatabase.LoadAssetAtPath<SinglePrefabObjects>("Assets/_Project/Settings/NetworkSpawnablePrefabs.asset");
             if (collection == null) return false;
-            string[] names = { "LightVan", "GoodVan", "BestVan" };
+            string[] names = { "LightTruck", "GoodTruck", "BestTruck" };
             foreach (string name in names)
             {
                 NetworkObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/{name}.prefab")?.GetComponent<NetworkObject>();
@@ -265,11 +249,11 @@ namespace CouchGuys.Editor
             return true;
         }
 
-        private static void RegisterVanPrefabs()
+        private static void RegisterTruckPrefabs()
         {
             SinglePrefabObjects collection = AssetDatabase.LoadAssetAtPath<SinglePrefabObjects>("Assets/_Project/Settings/NetworkSpawnablePrefabs.asset");
             if (collection == null) return;
-            string[] names = { "LightVan", "GoodVan", "BestVan" };
+            string[] names = { "LightTruck", "GoodTruck", "BestTruck" };
             foreach (string name in names)
             {
                 NetworkObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/{name}.prefab")?.GetComponent<NetworkObject>();

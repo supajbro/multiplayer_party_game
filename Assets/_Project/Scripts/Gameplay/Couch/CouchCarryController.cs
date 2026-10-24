@@ -85,7 +85,7 @@ namespace CouchGuys.Gameplay.Couch
         private readonly SyncVar<int> m_movingCarrierCount = new();
         private readonly SyncVar<float> m_cooperationEfficiency = new(1f);
         private readonly SyncVar<int> m_modelVariantIndex = new(-1);
-        private readonly SyncVar<NetworkObject> m_loadedVan = new();
+        private readonly SyncVar<NetworkObject> m_loadedTruck = new();
         private readonly SyncVar<int> m_loadedCargoSlot = new(-1);
         private readonly SyncVar<bool> m_depotTransportActive = new();
         private readonly ICouchCarrierServer[] m_serverOccupants = new ICouchCarrierServer[MaximumCarryPoints];
@@ -133,8 +133,8 @@ namespace CouchGuys.Gameplay.Couch
             ? m_rigidbody.linearVelocity
             : m_visualWorldVelocity;
         public int ModelVariantIndex => m_modelVariantIndex.Value;
-        public bool IsLoaded => m_loadedVan.Value != null;
-        public NetworkObject LoadedVanObject => m_loadedVan.Value;
+        public bool IsLoaded => m_loadedTruck.Value != null;
+        public NetworkObject LoadedTruckObject => m_loadedTruck.Value;
         public int LoadedCargoSlot => m_loadedCargoSlot.Value;
         public bool IsPickupAvailable => !m_depotTransportActive.Value && m_cargoTransition == null;
         internal bool IsCargoTransitioning => m_cargoTransition != null;
@@ -186,7 +186,7 @@ namespace CouchGuys.Gameplay.Couch
                 m_visualScale = m_modelBaseScale;
             }
             m_modelVariantIndex.OnChange += OnModelVariantChanged;
-            m_loadedVan.OnChange += OnLoadedVanChanged;
+            m_loadedTruck.OnChange += OnLoadedTruckChanged;
             ApplyWeightAndStability();
             ApplyRuntimePhysicsConfiguration();
             ConfigureColliderMaterials();
@@ -226,7 +226,7 @@ namespace CouchGuys.Gameplay.Couch
         private void OnDestroy()
         {
             m_modelVariantIndex.OnChange -= OnModelVariantChanged;
-            m_loadedVan.OnChange -= OnLoadedVanChanged;
+            m_loadedTruck.OnChange -= OnLoadedTruckChanged;
             if (m_runtimePhysicsMaterial != null)
             {
                 Destroy(m_runtimePhysicsMaterial);
@@ -637,37 +637,37 @@ namespace CouchGuys.Gameplay.Couch
         }
 
         [Server]
-        internal bool LoadIntoVanServer(VanController van, int cargoSlot, float duration)
+        internal bool LoadIntoTruckServer(TruckController truck, int cargoSlot, float duration)
         {
-            if (!IsServerInitialized || IsLoaded || !IsPickupAvailable || van == null || van.GetCargoPoint(cargoSlot) == null)
+            if (!IsServerInitialized || IsLoaded || !IsPickupAvailable || truck == null || truck.GetCargoPoint(cargoSlot) == null)
                 return false;
 
             ReleaseAllOccupantsServer();
             // Start the transition before publishing the loaded SyncVars. On a host the
             // SyncVar callback runs immediately; seeing an active transition keeps it
             // from snapping the couch to the cargo point before the animation can play.
-            AnimateLoadObserversRpc(van.NetworkObject, cargoSlot, Mathf.Max(0.05f, duration));
+            AnimateLoadObserversRpc(truck.NetworkObject, cargoSlot, Mathf.Max(0.05f, duration));
             m_loadedCargoSlot.Value = cargoSlot;
-            m_loadedVan.Value = van.NetworkObject;
+            m_loadedTruck.Value = truck.NetworkObject;
             return true;
         }
 
         [Server]
-        internal void UnloadFromVanServer(Vector3 position, Quaternion rotation, float duration)
+        internal void UnloadFromTruckServer(Vector3 position, Quaternion rotation, float duration)
         {
             if (!IsServerInitialized || !IsLoaded) return;
             AnimateUnloadObserversRpc(position, rotation, Mathf.Max(0.05f, duration));
-            m_loadedVan.Value = null;
+            m_loadedTruck.Value = null;
             m_loadedCargoSlot.Value = -1;
         }
 
         [ObserversRpc(RunLocally = true)]
-        private void AnimateLoadObserversRpc(NetworkObject vanObject, int cargoSlot, float duration)
+        private void AnimateLoadObserversRpc(NetworkObject truckObject, int cargoSlot, float duration)
         {
-            if (vanObject == null || !vanObject.TryGetComponent(out VanController van)) return;
-            Transform point = van.GetCargoPoint(cargoSlot);
+            if (truckObject == null || !truckObject.TryGetComponent(out TruckController truck)) return;
+            Transform point = truck.GetCargoPoint(cargoSlot);
             if (point == null) return;
-            BeginCargoTransition(AnimateIntoCargo(point, duration, van.Settings.AutoPositionLoadedCouches));
+            BeginCargoTransition(AnimateIntoCargo(point, duration, truck.Settings.AutoPositionLoadedCouches));
         }
 
         [ObserversRpc(RunLocally = true)]
@@ -704,8 +704,8 @@ namespace CouchGuys.Gameplay.Couch
 
         private IEnumerator AnimateOutOfCargo(Vector3 position, Quaternion rotation, float duration)
         {
-            VanController sourceVan = m_loadedVan.Value != null
-                ? m_loadedVan.Value.GetComponent<VanController>() : null;
+            TruckController sourceTruck = m_loadedTruck.Value != null
+                ? m_loadedTruck.Value.GetComponent<TruckController>() : null;
             SetCargoPhysics(true);
             transform.SetParent(null, true);
             Vector3 startPosition = transform.position;
@@ -724,7 +724,7 @@ namespace CouchGuys.Gameplay.Couch
             // Only the server chooses the final pose and restores simulation.
             if (IsServerInitialized)
             {
-                if (sourceVan != null) sourceVan.GetCouchUnloadPose(this, 0, out position, out rotation);
+                if (sourceTruck != null) sourceTruck.GetCouchUnloadPose(this, 0, out position, out rotation);
                 FinishCargoUnloadObserversRpc(position, rotation);
             }
             m_cargoTransition = null;
@@ -795,21 +795,21 @@ namespace CouchGuys.Gameplay.Couch
             }
         }
 
-        private void OnLoadedVanChanged(NetworkObject previous, NetworkObject next, bool asServer)
+        private void OnLoadedTruckChanged(NetworkObject previous, NetworkObject next, bool asServer)
         {
             if (m_cargoTransition == null) ApplyLoadedStateImmediately();
         }
 
         private void ApplyLoadedStateImmediately()
         {
-            NetworkObject vanObject = m_loadedVan.Value;
-            if (vanObject != null && vanObject.TryGetComponent(out VanController van))
+            NetworkObject truckObject = m_loadedTruck.Value;
+            if (truckObject != null && truckObject.TryGetComponent(out TruckController truck))
             {
-                Transform point = van.GetCargoPoint(m_loadedCargoSlot.Value);
+                Transform point = truck.GetCargoPoint(m_loadedCargoSlot.Value);
                 if (point != null)
                 {
                     SetCargoPhysics(true);
-                    AttachToCargoPoint(point, van.Settings.AutoPositionLoadedCouches);
+                    AttachToCargoPoint(point, truck.Settings.AutoPositionLoadedCouches);
                     return;
                 }
             }

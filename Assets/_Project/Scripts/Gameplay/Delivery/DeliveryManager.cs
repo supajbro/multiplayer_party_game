@@ -606,7 +606,7 @@ namespace CouchGuys.Gameplay.Delivery
             {
                 Collider collider = hits[index].collider;
                 if (collider == null || collider.transform.IsChildOf(npc.transform) ||
-                    collider.GetComponentInParent<VanController>() != null ||
+                    collider.GetComponentInParent<TruckController>() != null ||
                     collider.GetComponentInParent<PlayerCouchCarrier>() != null)
                 {
                     continue;

@@ -146,8 +146,8 @@ namespace CouchGuys.Gameplay.Pedestrians
                 Time.time < m_nextVehicleImpactTime || other.isTrigger) return;
             Rigidbody vehicleBody = other.attachedRigidbody;
             if (vehicleBody == null || vehicleBody.isKinematic) return;
-            var van = other.GetComponentInParent<CouchGuys.Gameplay.Vehicles.VanController>();
-            if (van == null || van.IsDestroyed) return;
+            var truck = other.GetComponentInParent<CouchGuys.Gameplay.Vehicles.TruckController>();
+            if (truck == null || truck.IsDestroyed) return;
             Vector3 velocity = Vector3.ProjectOnPlane(vehicleBody.linearVelocity, Vector3.up);
             float speed = velocity.magnitude;
             if (speed < 0.1f) return;

@@ -10,7 +10,7 @@ namespace CouchGuys.Tests.Editor
             "Assets/_Project/Resources/Shop/DeliveryManagerShop.asset";
 
         [Test]
-        public void DefaultCatalogueContainsConfiguredVans()
+        public void DefaultCatalogueContainsConfiguredTrucks()
         {
             ShopCatalogue catalogue = AssetDatabase.LoadAssetAtPath<ShopCatalogue>(CataloguePath);
             Assert.That(catalogue, Is.Not.Null);

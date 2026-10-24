@@ -87,7 +87,7 @@ namespace CouchGuys.Editor
                 if (model == null) throw new UnityException("Could not instantiate sled_01.");
                 model.name = "sled_01";
                 // The authored Blender file stores metre geometry as centimetre-sized
-                // mesh data in Z-up space. Match the established van import convention.
+                // mesh data in Z-up space. Match the established truck import convention.
                 model.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.Euler(-90f, 0f, 0f));
                 model.transform.localScale = Vector3.one * 100f;
                 foreach (Animator animator in model.GetComponentsInChildren<Animator>(true)) animator.enabled = false;

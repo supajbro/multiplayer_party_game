@@ -72,7 +72,7 @@ namespace CouchGuys.Gameplay.Delivery
                 new SuburbsDeliveryStageDefinition(
                     "suburbs_03_van_fund", "Definitely a Safe Neighbourhood", 175, false, false),
                 new SuburbsDeliveryStageDefinition(
-                    "suburbs_04_van_tutorial", "Van With a Plan", 200, true, false),
+                    "suburbs_04_van_tutorial", "Truck With a Plan", 200, true, false),
                 new SuburbsDeliveryStageDefinition(
                     "suburbs_05_hill_start", "Hill Start", 250, true, false),
                 new SuburbsDeliveryStageDefinition(

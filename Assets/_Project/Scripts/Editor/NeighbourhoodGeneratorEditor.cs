@@ -244,7 +244,7 @@ namespace CouchGuys.EditorTools
             EditorGUILayout.LabelField("Turns", metrics.TurnCount.ToString());
             EditorGUILayout.LabelField("Intersections", metrics.IntersectionCount.ToString());
             EditorGUILayout.LabelField("Final Carry", $"{metrics.FinalCarryDistance:F1} m");
-            EditorGUILayout.LabelField("Van Accessible Door", metrics.VanAccessible ? "Yes" : "No – park and carry");
+            EditorGUILayout.LabelField("Truck Accessible Door", metrics.TruckAccessible ? "Yes" : "No – park and carry");
             EditorGUILayout.LabelField("Difficulty", $"{metrics.DifficultyScore:F1} / 100");
         }
     }

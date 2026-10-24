@@ -14,6 +14,7 @@ namespace CouchGuys.Gameplay.Traffic
     {
         private readonly SyncVar<float> m_health = new SyncVar<float>();
         private readonly SyncVar<bool> m_destroyed = new SyncVar<bool>();
+        private readonly SyncVar<float> m_wheelSteering = new();
         private readonly Dictionary<int, float> m_nextImpactTime = new Dictionary<int, float>(8);
         private readonly Collider[] m_explosionHits = new Collider[32];
         private readonly RaycastHit[] m_obstacleHits = new RaycastHit[8];
@@ -196,6 +197,7 @@ namespace CouchGuys.Gameplay.Traffic
             Vector3 desiredForward = Vector3.ProjectOnPlane(flatTarget.normalized, groundNormal).normalized;
             if (desiredForward.sqrMagnitude < 0.1f) desiredForward = transform.forward;
             float turnAngle = Vector3.SignedAngle(transform.forward, desiredForward, groundNormal);
+            m_wheelSteering.Value = Mathf.Clamp(turnAngle, -32f, 32f);
             float turnSpeedScale = Mathf.Lerp(1f, 0.42f, Mathf.InverseLerp(8f, 70f, Mathf.Abs(turnAngle)));
             if (Time.time >= m_nextObstacleCheck)
             {
@@ -329,6 +331,8 @@ namespace CouchGuys.Gameplay.Traffic
 
         private void Update()
         {
+            if (m_visualInstance != null && m_visualInstance.TryGetComponent(out TrafficWheelAnimator wheels))
+                wheels.SetSteering(IsDestroyed ? 0f : m_wheelSteering.Value);
             if (m_serverDriving && m_destroyed.Value && Time.time >= m_despawnAt)
                 m_manager?.DespawnVehicle(this);
             if (m_serverDriving && !m_destroyed.Value && !m_warnedStationary &&
@@ -520,10 +524,19 @@ namespace CouchGuys.Gameplay.Traffic
         private void SetVisualColour(Color colour)
         {
             m_propertyBlock ??= new MaterialPropertyBlock();
-            m_propertyBlock.SetColor("_BaseColor", colour);
             if (m_renderers == null) return;
             for (int index = 0; index < m_renderers.Length; index++)
-                if (m_renderers[index] != null) m_renderers[index].SetPropertyBlock(m_propertyBlock);
+            {
+                Renderer renderer = m_renderers[index];
+                if (renderer == null) continue;
+                Material material = renderer.sharedMaterial;
+                Color original = material != null && material.HasProperty("_BaseColor")
+                    ? material.GetColor("_BaseColor") : Color.white;
+                Color tinted = original * colour;
+                tinted.a = original.a;
+                m_propertyBlock.SetColor("_BaseColor", tinted);
+                renderer.SetPropertyBlock(m_propertyBlock);
+            }
         }
     }
 }

@@ -308,7 +308,7 @@ namespace CouchGuys.UI
             if (m_style == null) return null;
             if (string.Equals(group, "Weapons", StringComparison.OrdinalIgnoreCase)) return m_style.Get("WeaponsIcon");
             if (string.Equals(group, "Upgrades", StringComparison.OrdinalIgnoreCase)) return m_style.Get("UpgradeCrate");
-            return m_style.Get("VanIcon");
+            return m_style.Get("TruckIcon");
         }
 
         private void ActivateDialogueInput()

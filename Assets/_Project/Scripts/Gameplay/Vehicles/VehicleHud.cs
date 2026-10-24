@@ -5,44 +5,44 @@ using UnityEngine;
 namespace CouchGuys.Gameplay.Vehicles
 {
     /// <summary>Owner-only lightweight vehicle HUD and interaction prompt.</summary>
-    [RequireComponent(typeof(NetworkObject), typeof(PlayerVanInteractor))]
+    [RequireComponent(typeof(NetworkObject), typeof(PlayerTruckInteractor))]
     [DisallowMultipleComponent]
     public sealed class VehicleHud : MonoBehaviour
     {
         private NetworkObject m_networkObject;
-        private PlayerVanInteractor m_interactor;
+        private PlayerTruckInteractor m_interactor;
         private PlayerCouchCarrier m_carrier;
         private GUIStyle m_title, m_label, m_warning, m_prompt;
 
-        private void Awake() { m_networkObject = GetComponent<NetworkObject>(); m_interactor = GetComponent<PlayerVanInteractor>(); m_carrier = GetComponent<PlayerCouchCarrier>(); }
+        private void Awake() { m_networkObject = GetComponent<NetworkObject>(); m_interactor = GetComponent<PlayerTruckInteractor>(); m_carrier = GetComponent<PlayerCouchCarrier>(); }
 
         private void OnGUI()
         {
             if (m_networkObject == null || !m_networkObject.IsOwner) return;
             EnsureStyles();
-            VanController van = m_interactor.CurrentVan;
-            if (van != null) DrawVehicleHud(van);
+            TruckController truck = m_interactor.CurrentTruck;
+            if (truck != null) DrawVehicleHud(truck);
             else if (!string.IsNullOrEmpty(m_interactor.WorldInteractionPrompt))
                 DrawPrompt(m_interactor.WorldInteractionPrompt, 0f, 1f);
             else if (m_carrier != null && !string.IsNullOrEmpty(m_carrier.SledInteractionPrompt))
                 DrawPrompt(m_carrier.SledInteractionPrompt, 0f, 1f);
-            else if (m_interactor.NearbyVan != null)
-                DrawPrompt($"Hold E to Drive {m_interactor.NearbyVan.Settings.DisplayName}", m_interactor.HoldProgress,
-                    m_interactor.NearbyVan.Settings.EnterHoldDuration);
+            else if (m_interactor.NearbyTruck != null)
+                DrawPrompt($"Hold E to {(m_interactor.NearbyTruck.FindEntrySeat(m_interactor.transform.position) == 0 ? "Drive" : "Ride in")} {m_interactor.NearbyTruck.Settings.DisplayName}", m_interactor.HoldProgress,
+                    m_interactor.NearbyTruck.Settings.EnterHoldDuration);
         }
 
-        private void DrawVehicleHud(VanController van)
+        private void DrawVehicleHud(TruckController truck)
         {
             Rect panel = new(Screen.width - 330f, Screen.height - 235f, 300f, 200f);
             GUI.color = new Color(0.055f, 0.07f, 0.09f, 0.94f); GUI.Box(panel, GUIContent.none); GUI.color = Color.white;
-            GUI.Label(new Rect(panel.x + 18f, panel.y + 12f, 265f, 32f), van.Settings.DisplayName, m_title);
-            GUI.Label(new Rect(panel.x + 18f, panel.y + 47f, 265f, 30f), $"{Mathf.RoundToInt(van.SpeedKph)} km/h", m_label);
-            DrawBar(new Rect(panel.x + 18f, panel.y + 86f, 264f, 20f), van.FuelFraction, new Color(1f, .66f, .08f), "FUEL");
-            DrawBar(new Rect(panel.x + 18f, panel.y + 123f, 264f, 20f), van.HealthFraction, new Color(.25f, .92f, .35f), "VAN");
-            if (van.Fuel <= 0f) GUI.Label(new Rect(panel.x + 18f, panel.y + 151f, 264f, 25f), "OUT OF FUEL", m_warning);
-            else if (van.FuelFraction <= van.Settings.LowFuelWarningThreshold) GUI.Label(new Rect(panel.x + 18f, panel.y + 151f, 264f, 25f), "LOW FUEL", m_warning);
-            else if (van.HealthFraction <= van.Settings.CriticalHealthThreshold) GUI.Label(new Rect(panel.x + 18f, panel.y + 151f, 264f, 25f), "CRITICAL DAMAGE", m_warning);
-            DrawPrompt("Hold E to Exit", m_interactor.HoldProgress, van.Settings.ExitHoldDuration);
+            GUI.Label(new Rect(panel.x + 18f, panel.y + 12f, 265f, 32f), truck.Settings.DisplayName, m_title);
+            GUI.Label(new Rect(panel.x + 18f, panel.y + 47f, 265f, 30f), $"{Mathf.RoundToInt(truck.SpeedKph)} km/h", m_label);
+            DrawBar(new Rect(panel.x + 18f, panel.y + 86f, 264f, 20f), truck.FuelFraction, new Color(1f, .66f, .08f), "FUEL");
+            DrawBar(new Rect(panel.x + 18f, panel.y + 123f, 264f, 20f), truck.HealthFraction, new Color(.25f, .92f, .35f), "TRUCK");
+            if (truck.Fuel <= 0f) GUI.Label(new Rect(panel.x + 18f, panel.y + 151f, 264f, 25f), "OUT OF FUEL", m_warning);
+            else if (truck.FuelFraction <= truck.Settings.LowFuelWarningThreshold) GUI.Label(new Rect(panel.x + 18f, panel.y + 151f, 264f, 25f), "LOW FUEL", m_warning);
+            else if (truck.HealthFraction <= truck.Settings.CriticalHealthThreshold) GUI.Label(new Rect(panel.x + 18f, panel.y + 151f, 264f, 25f), "CRITICAL DAMAGE", m_warning);
+            DrawPrompt("Hold E to Exit", m_interactor.HoldProgress, truck.Settings.ExitHoldDuration);
         }
 
         private void DrawBar(Rect rect, float value, Color colour, string text)

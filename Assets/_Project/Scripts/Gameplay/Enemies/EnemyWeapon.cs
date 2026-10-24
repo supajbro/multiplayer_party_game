@@ -42,7 +42,7 @@ namespace CouchGuys.Gameplay.Enemies
         [SerializeField] private Color m_tracerColour = new(1f, 0.72f, 0.12f, 1f);
 
         private readonly Dictionary<PlayerHealth, float> m_damageByPlayer = new();
-        private readonly Dictionary<VanController, float> m_damageByVan = new();
+        private readonly Dictionary<TruckController, float> m_damageByTruck = new();
         private readonly Dictionary<CouchGuys.Gameplay.Pedestrians.PedestrianController, float> m_damageByPedestrian = new();
         private readonly List<Vector3> m_tracerEnds = new(12);
         private readonly List<Collider> m_targetColliders = new(8);
@@ -126,8 +126,8 @@ namespace CouchGuys.Gameplay.Enemies
                 if (m_hits[i].collider.transform.root == transform.root) continue;
                 PlayerHealth hitPlayer = m_hits[i].collider.GetComponentInParent<PlayerHealth>();
                 if (hitPlayer == m_target) return true;
-                VanController hitVan = m_hits[i].collider.GetComponentInParent<VanController>();
-                return hitVan != null && hitVan.Driver == m_target.NetworkObject;
+                TruckController hitTruck = m_hits[i].collider.GetComponentInParent<TruckController>();
+                return hitTruck != null && hitTruck.Driver == m_target.NetworkObject;
             }
             return false;
         }
@@ -146,7 +146,7 @@ namespace CouchGuys.Gameplay.Enemies
             Vector3 shotDirection = miss ? GetMissDirection(origin, spread) : m_aimDirection;
 
             m_damageByPlayer.Clear();
-            m_damageByVan.Clear();
+            m_damageByTruck.Clear();
             m_damageByPedestrian.Clear();
             m_tracerEnds.Clear();
             for (int pellet = 0; pellet < m_pelletsPerShot; pellet++)
@@ -176,11 +176,11 @@ namespace CouchGuys.Gameplay.Enemies
                     }
                     else
                     {
-                        VanController van = hit.collider.GetComponentInParent<VanController>();
-                        if (van != null)
+                        TruckController truck = hit.collider.GetComponentInParent<TruckController>();
+                        if (truck != null)
                         {
-                            m_damageByVan.TryGetValue(van, out float damage);
-                            m_damageByVan[van] = damage + m_damagePerPellet;
+                            m_damageByTruck.TryGetValue(truck, out float damage);
+                            m_damageByTruck[truck] = damage + m_damagePerPellet;
                         }
                     }
                     break;
@@ -193,7 +193,7 @@ namespace CouchGuys.Gameplay.Enemies
                 Vector3 impact = Vector3.ProjectOnPlane(damage.Key.transform.position - transform.position, Vector3.up).normalized;
                 damage.Key.ApplyDamageServer(damage.Value, impact, m_knockbackForce);
             }
-            foreach (KeyValuePair<VanController, float> damage in m_damageByVan)
+            foreach (KeyValuePair<TruckController, float> damage in m_damageByTruck)
                 damage.Key.ApplyBulletDamageServer(damage.Value);
             foreach (var damage in m_damageByPedestrian)
                 damage.Key.ApplyBulletDamageServer(damage.Value);
@@ -206,8 +206,8 @@ namespace CouchGuys.Gameplay.Enemies
         {
             // Aim outside the target's bounding sphere, allowing room for pellet spread.
             Transform targetRoot = m_target.transform;
-            if (m_target.TryGetComponent(out PlayerVanInteractor interactor) && interactor.CurrentVan != null)
-                targetRoot = interactor.CurrentVan.transform;
+            if (m_target.TryGetComponent(out PlayerTruckInteractor interactor) && interactor.CurrentTruck != null)
+                targetRoot = interactor.CurrentTruck.transform;
             targetRoot.GetComponentsInChildren<Collider>(m_targetColliders);
             Bounds bounds = new Bounds(m_target.AimPoint, Vector3.zero);
             foreach (Collider collider in m_targetColliders)

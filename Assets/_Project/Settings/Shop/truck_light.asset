@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 47a9d384fe104a878d888afc5a20adf1, type: 3}
-  m_Name: van_good
+  m_Name: truck_light
   m_EditorClassIdentifier: 
-  m_itemId: van_good
-  m_displayName: Good Van
-  m_description: A sturdier all-round delivery van.
-  m_price: 500
+  m_itemId: truck_light
+  m_displayName: Light Truck
+  m_description: Nimble starter truck with room for one couch.
+  m_price: 250
   m_category: 0
   m_icon: {fileID: 0}
-  m_purchaseBehaviour: {fileID: 11400000, guid: 24a92c2af03843e8b9ae5479ea7d454e, type: 2}
+  m_purchaseBehaviour: {fileID: 11400000, guid: eb976704466748c48e09676bb69ac7fb, type: 2}

@@ -33,6 +33,7 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] private RenderTexture m_portraitTextureTemplate;
         [SerializeField] private float m_portraitDistance = 0.75f;
         [SerializeField] private float m_portraitHalfHeight = 0.32f;
+        public PlayerWeaponHudView View => m_view;
         private PlayerWeaponHudView m_view;
         private float m_healthTarget = 1f;
         private float m_healthDisplay = 1f;

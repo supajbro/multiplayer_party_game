@@ -61,7 +61,7 @@ namespace CouchGuys.Gameplay.Weapons
         private readonly Dictionary<PlayerHealth, float> m_playerDamage = new(8);
         private readonly Dictionary<ThiefHealth, float> m_thiefDamage = new(8);
         private readonly Dictionary<CouchGuys.Gameplay.Pedestrians.PedestrianController, float> m_pedestrianDamage = new(8);
-        private readonly Dictionary<VanController, float> m_vanDamage = new(4);
+        private readonly Dictionary<TruckController, float> m_truckDamage = new(4);
         private readonly Dictionary<TrafficVehicleController, float> m_trafficVehicleDamage = new(4);
         private float m_switchCompleteAt;
         private float m_reloadCompleteAt;
@@ -90,7 +90,7 @@ namespace CouchGuys.Gameplay.Weapons
         public bool HasEquippedWeapon => ValidIndex(m_equippedIndex.Value);
         public bool CanHandleWeaponServer => IsServerInitialized && m_health != null && m_health.IsAlive &&
             !m_health.IsKnockedDown && !(m_couchCarrier != null && m_couchCarrier.IsCarrying) &&
-            !(TryGetComponent(out PlayerVanInteractor van) && van.CurrentVan != null);
+            !(TryGetComponent(out PlayerTruckInteractor truck) && truck.CurrentTruck != null);
         public int SelectedHotbarSlot => Mathf.Clamp(m_selectedHotbarSlot.Value, 0, 4);
         public ReticleSettings CurrentReticleSettings => GetWeapon(m_equippedIndex.Value)?.ReticleSettings;
         public float CurrentWeaponRange => GetWeapon(m_equippedIndex.Value)?.Range ?? 60f;
@@ -540,7 +540,7 @@ namespace CouchGuys.Gameplay.Weapons
             m_playerDamage.Clear();
             m_thiefDamage.Clear();
             m_pedestrianDamage.Clear();
-            m_vanDamage.Clear();
+            m_truckDamage.Clear();
             m_trafficVehicleDamage.Clear();
             Vector3[] ends = new Vector3[weapon.Pellets];
             normals = new Vector3[weapon.Pellets];
@@ -581,11 +581,11 @@ namespace CouchGuys.Gameplay.Weapons
                     m_thiefDamage[thief] = total + damage;
                     continue;
                 }
-                VanController van = nearest.collider.GetComponentInParent<VanController>();
-                if (van != null)
+                TruckController truck = nearest.collider.GetComponentInParent<TruckController>();
+                if (truck != null)
                 {
-                    m_vanDamage.TryGetValue(van, out float total);
-                    m_vanDamage[van] = total + damage;
+                    m_truckDamage.TryGetValue(truck, out float total);
+                    m_truckDamage[truck] = total + damage;
                     continue;
                 }
                 TrafficVehicleController trafficVehicle =
@@ -617,7 +617,7 @@ namespace CouchGuys.Gameplay.Weapons
                     elimination |= entry.Key != null && !entry.Key.IsAlive;
                 ConfirmHostileHitTargetRpc(Owner, elimination);
             }
-            foreach (KeyValuePair<VanController, float> entry in m_vanDamage)
+            foreach (KeyValuePair<TruckController, float> entry in m_truckDamage)
                 entry.Key.ApplyBulletDamageServer(entry.Value);
             foreach (var entry in m_pedestrianDamage)
                 entry.Key.ApplyBulletDamageServer(entry.Value);
@@ -633,7 +633,7 @@ namespace CouchGuys.Gameplay.Weapons
                 collider.GetComponentInParent<ThiefHealth>() != null ||
                 collider.GetComponentInParent<CouchGuys.Gameplay.Pedestrians.PedestrianController>() != null)
                 return WeaponImpactSurface.Enemy;
-            if (collider.GetComponentInParent<VanController>() != null)
+            if (collider.GetComponentInParent<TruckController>() != null)
                 return WeaponImpactSurface.Metal;
             if (collider.GetComponentInParent<TrafficVehicleController>() != null)
                 return WeaponImpactSurface.Metal;
@@ -644,7 +644,7 @@ namespace CouchGuys.Gameplay.Weapons
                 objectName.Contains("grass") || objectName.Contains("terrain"))
                 return WeaponImpactSurface.Terrain;
             if (objectName.Contains("metal") || objectName.Contains("vehicle") ||
-                objectName.Contains("car") || objectName.Contains("van"))
+                objectName.Contains("car") || objectName.Contains("truck"))
                 return WeaponImpactSurface.Metal;
             return WeaponImpactSurface.Wall;
         }

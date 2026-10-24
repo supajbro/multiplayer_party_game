@@ -3899,7 +3899,7 @@ namespace CouchGuys.ProceduralGeneration
                 zone,
                 property.Zone,
                 destinationPosition.y - m_gridOrigin.y,
-                property.VanAccessible);
+                property.TruckAccessible);
         }
 
         private static DeliveryRouteMetrics CreateUnreachableMetrics(GridCoordinate roadCoordinate) =>

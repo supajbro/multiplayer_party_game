@@ -15,20 +15,18 @@ namespace CouchGuys.Editor
         private const string TrafficSettingsPath = SettingsDirectory + "/TrafficSettings.asset";
         private const string CarSettingsPath = SettingsDirectory + "/CarSettings.asset";
         private const string PrefabPath = SettingsDirectory + "/TrafficCar.prefab";
-        private const string SourceModelDirectory = "Assets/_Project/Models/Cars";
         private const string VisualPrefabDirectory = SettingsDirectory + "/CarModels";
         private const string BodyMaterialPath = SettingsDirectory + "/TrafficCarBody.mat";
         private const string TrimMaterialPath = SettingsDirectory + "/TrafficCarTrim.mat";
         private const string SpawnablesPath = "Assets/_Project/Settings/NetworkSpawnablePrefabs.asset";
-        private const float ImportedCarVisualScale = 100f;
-        private static readonly Quaternion ImportedCarVisualRotation = Quaternion.Euler(-90f, 0f, 0f);
 
         [InitializeOnLoadMethod]
         private static void BuildMissingAssetsAfterImport()
         {
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) == null ||
-                CountExistingVisualPrefabs() < 10 || VisualPrefabsNeedTransformCorrection() ||
-                TrafficPrefabNeedsVisualChildren())
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(VehicleAssetUpgrade.HatchbackPath) != null &&
+                (prefab == null || prefab.GetComponentInChildren<TrafficWheelAnimator>(true) == null ||
+                    prefab.GetComponentsInChildren<LODGroup>(true).Length != 1))
                 EditorApplication.delayCall += BuildTrafficSystem;
         }
 
@@ -143,84 +141,7 @@ namespace CouchGuys.Editor
         private static GameObject[] BuildVisualPrefabs()
         {
             EnsureVisualDirectory();
-            GameObject[] prefabs = new GameObject[10];
-            int prefabCount = 0;
-            for (int index = 1; index <= 10; index++)
-            {
-                string number = index.ToString("00");
-                string sourcePath = $"{SourceModelDirectory}/car_{number}.fbx";
-                GameObject source = AssetDatabase.LoadAssetAtPath<GameObject>(sourcePath);
-                if (source == null)
-                {
-                    Debug.LogWarning($"Traffic car model was not found at {sourcePath}.");
-                    continue;
-                }
-
-                GameObject root = new GameObject($"TrafficCarVisual_{number}");
-                try
-                {
-                    GameObject model = (GameObject)PrefabUtility.InstantiatePrefab(source);
-                    model.name = source.name;
-                    model.transform.SetParent(root.transform, false);
-                    model.transform.SetLocalPositionAndRotation(
-                        Vector3.zero,
-                        ImportedCarVisualRotation);
-                    model.transform.localScale = Vector3.one * ImportedCarVisualScale;
-                    Collider[] colliders = root.GetComponentsInChildren<Collider>(true);
-                    for (int colliderIndex = 0; colliderIndex < colliders.Length; colliderIndex++)
-                        Object.DestroyImmediate(colliders[colliderIndex]);
-
-                    string prefabPath = $"{VisualPrefabDirectory}/TrafficCarVisual_{number}.prefab";
-                    GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
-                    if (saved != null) prefabs[prefabCount++] = saved;
-                }
-                finally
-                {
-                    Object.DestroyImmediate(root);
-                }
-            }
-
-            if (prefabCount == prefabs.Length) return prefabs;
-            GameObject[] available = new GameObject[prefabCount];
-            System.Array.Copy(prefabs, available, prefabCount);
-            return available;
-        }
-
-        private static int CountExistingVisualPrefabs()
-        {
-            int count = 0;
-            for (int index = 1; index <= 10; index++)
-            {
-                string path = $"{VisualPrefabDirectory}/TrafficCarVisual_{index:00}.prefab";
-                if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null) count++;
-            }
-            return count;
-        }
-
-        private static bool VisualPrefabsNeedTransformCorrection()
-        {
-            for (int index = 1; index <= 10; index++)
-            {
-                string path = $"{VisualPrefabDirectory}/TrafficCarVisual_{index:00}.prefab";
-                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-                if (prefab == null || prefab.transform.childCount == 0) return true;
-                Transform model = prefab.transform.GetChild(0);
-                if ((model.localScale - Vector3.one * ImportedCarVisualScale).sqrMagnitude > 0.001f ||
-                    Quaternion.Angle(model.localRotation, ImportedCarVisualRotation) > 0.1f)
-                    return true;
-            }
-            return false;
-        }
-
-        private static bool TrafficPrefabNeedsVisualChildren()
-        {
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
-            if (prefab == null) return true;
-            TrafficVehicleController controller = prefab.GetComponent<TrafficVehicleController>();
-            if (controller == null) return true;
-            SerializedObject serializedController = new SerializedObject(controller);
-            SerializedProperty variants = serializedController.FindProperty("m_visualVariants");
-            return variants == null || variants.arraySize < 10;
+            return new[] { VehicleAssetUpgrade.BuildTrafficVisual() };
         }
 
         private static void CreatePlaceholderVisual(

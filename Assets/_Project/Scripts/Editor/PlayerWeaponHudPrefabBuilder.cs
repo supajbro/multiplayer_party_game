@@ -35,6 +35,7 @@ namespace CouchGuys.Editor
         private Outline[] m_slotOutlines;
         private GameObject m_ammoPanel;
 
+        private RectTransform m_minimapRoot;
         private GameObject m_canvasRoot;
         private Sprite m_roundedSprite;
         private Sprite m_circleSprite;
@@ -307,8 +308,14 @@ namespace CouchGuys.Editor
         {
             PlayerWeaponHudView view = AssetDatabase.LoadAssetAtPath<GameObject>(UiRoot + "PlayerWeaponHud.prefab").GetComponent<PlayerWeaponHudView>();
             if (view.m_healthBar == null || view.m_staminaBar == null || view.m_slotBackgrounds.Length != 5 ||
-                view.m_slotOutlines.Any(o => o == null) || view.m_ammoText == null)
+                view.m_slotOutlines.Any(o => o == null) || view.m_ammoText == null || view.m_minimapRoot == null)
                 throw new UnityException("HUD references are incomplete.");
+            if (view.m_minimapRoot.Find("MapMask/StaticMap").GetComponent<RawImage>() == null ||
+                view.m_minimapRoot.Find("MapMask").GetComponent<Mask>() == null ||
+                view.m_minimapRoot.Find("MapMask/DynamicMarkers/LocalPlayer").GetComponent<Image>() == null ||
+                view.m_minimapRoot.Find("MapMask/DynamicMarkers/DeliveryWaypoint").GetComponent<Image>() == null ||
+                view.m_minimapRoot.Find("DeliveryDistance").GetComponent<Text>() == null)
+                throw new UnityException("Minimap references are incomplete.");
             foreach (PlayerStatusBar bar in new[] { view.m_healthBar, view.m_staminaBar })
             {
                 if (bar.Portrait.GetComponentInParent<Mask>(true) == null) throw new UnityException("Portrait mask is missing.");
@@ -493,6 +500,101 @@ namespace CouchGuys.Editor
             BuildStaminaPanel();
             BuildHotbar();
             BuildAmmoPanel();
+            BuildMinimap();
+        }
+
+        private void BuildMinimap()
+        {
+            Image frame = MinimapImage("MinimapFrame", m_canvasRoot.transform,
+                new Color(0.04f, 0.055f, 0.075f, 0.96f), m_circleSprite);
+            RectTransform frameRect = frame.rectTransform;
+            frameRect.anchorMin = frameRect.anchorMax = Vector2.one;
+            frameRect.pivot = Vector2.one;
+            frameRect.anchoredPosition = new Vector2(-24f, -112f);
+            frameRect.sizeDelta = Vector2.one * 270f;
+
+            Image maskImage = MinimapImage("MapMask", frameRect, Color.white, m_circleSprite);
+            Stretch(maskImage.rectTransform, 7f);
+            Mask mask = maskImage.gameObject.AddComponent<Mask>();
+            mask.showMaskGraphic = false;
+
+            GameObject mapObject = new("StaticMap", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
+            mapObject.transform.SetParent(maskImage.transform, false);
+            RawImage m_mapImage = mapObject.GetComponent<RawImage>();
+            m_mapImage.raycastTarget = false;
+            Stretch(m_mapImage.rectTransform, 0f);
+
+            GameObject markerObject = new("DynamicMarkers", typeof(RectTransform));
+            markerObject.transform.SetParent(maskImage.transform, false);
+            RectTransform m_markerLayer = markerObject.GetComponent<RectTransform>();
+            Stretch(m_markerLayer, 0f);
+
+            Compass("N", frameRect, new Vector2(0f, -10f), new Vector2(0.5f, 1f));
+            Compass("E", frameRect, new Vector2(-10f, 0f), new Vector2(1f, 0.5f));
+            Compass("S", frameRect, new Vector2(0f, 10f), new Vector2(0.5f, 0f));
+            Compass("W", frameRect, new Vector2(10f, 0f), new Vector2(0f, 0.5f));
+
+            UnityEngine.UI.Image local = MinimapImage("LocalPlayer", m_markerLayer,
+                new Color(0.12f, 0.95f, 1f, 1f), null);
+            local.rectTransform.anchorMin = local.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            local.rectTransform.sizeDelta = new Vector2(25f, 30f);
+
+            Image m_waypointImage = MinimapImage("DeliveryWaypoint", m_markerLayer,
+                new Color(1f, 0.76f, 0.08f, 1f), null);
+            RectTransform m_waypointRect = m_waypointImage.rectTransform;
+            m_waypointRect.anchorMin = m_waypointRect.anchorMax = new Vector2(0.5f, 0.5f);
+            m_waypointRect.sizeDelta = new Vector2(34f, 34f);
+            m_waypointRect.gameObject.SetActive(false);
+
+            Text m_distanceText = MinimapText("DeliveryDistance", frameRect, string.Empty, 22);
+            RectTransform distanceRect = m_distanceText.rectTransform;
+            distanceRect.anchorMin = distanceRect.anchorMax = new Vector2(0.5f, 0f);
+            distanceRect.pivot = new Vector2(0.5f, 1f);
+            distanceRect.anchoredPosition = new Vector2(0f, -5f);
+            distanceRect.sizeDelta = new Vector2(270f, 30f);
+            m_distanceText.gameObject.SetActive(false);
+
+            m_minimapRoot = frameRect;
+            frame.gameObject.SetActive(false);
+        }
+
+        private void Compass(string value, Transform parent, Vector2 position, Vector2 anchor)
+        {
+            UnityEngine.UI.Text label = MinimapText("Compass " + value, parent, value, 19);
+            RectTransform rect = label.rectTransform;
+            rect.anchorMin = rect.anchorMax = anchor;
+            rect.pivot = anchor;
+            rect.anchoredPosition = position;
+            rect.sizeDelta = new Vector2(28f, 28f);
+        }
+
+        private static UnityEngine.UI.Text MinimapText(string name, Transform parent, string value, int fontSize)
+        {
+            GameObject go = new(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Text));
+            go.transform.SetParent(parent, false);
+            UnityEngine.UI.Text text = go.GetComponent<UnityEngine.UI.Text>();
+            text.text = value;
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = fontSize;
+            text.fontStyle = FontStyle.Bold;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color = Color.white;
+            text.raycastTarget = false;
+            text.horizontalOverflow = HorizontalWrapMode.Overflow;
+            text.verticalOverflow = VerticalWrapMode.Overflow;
+            go.AddComponent<Outline>().effectColor = new Color(0f, 0f, 0f, 0.9f);
+            return text;
+        }
+
+        private static UnityEngine.UI.Image MinimapImage(string name, Transform parent, Color colour, Sprite sprite)
+        {
+            GameObject go = new(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
+            go.transform.SetParent(parent, false);
+            UnityEngine.UI.Image image = go.GetComponent<UnityEngine.UI.Image>();
+            image.color = colour;
+            image.sprite = sprite;
+            image.raycastTarget = false;
+            return image;
         }
 
         private void BuildHealthPanel()

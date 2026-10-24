@@ -32,12 +32,8 @@ namespace CouchGuys.Editor
 
         private static readonly InitialVehicle[] InitialVehicles =
         {
-            new("van_light", "Light Van", "Nimble starter van with room for one couch.", 250,
-                "Assets/_Project/Prefabs/Vehicles/LightVan.prefab"),
-            new("van_good", "Good Van", "A sturdier all-round delivery van.", 500,
-                "Assets/_Project/Prefabs/Vehicles/GoodVan.prefab"),
-            new("van_best", "Best Van", "Top-tier capacity, durability, and performance.", 1000,
-                "Assets/_Project/Prefabs/Vehicles/BestVan.prefab")
+            new("truck_light", "Light Truck", "Nimble starter truck with room for one couch.", 250,
+                "Assets/_Project/Prefabs/Vehicles/LightTruck.prefab")
         };
 
         public static ShopCatalogue EnsureDefaultCatalogue()
@@ -58,6 +54,14 @@ namespace CouchGuys.Editor
 
             SerializedObject serialisedCatalogue = new(catalogue);
             SerializedProperty items = serialisedCatalogue.FindProperty("m_items");
+            for (int index = items.arraySize - 1; index >= 0; index--)
+            {
+                ShopItemDefinition item = items.GetArrayElementAtIndex(index).objectReferenceValue as ShopItemDefinition;
+                if (item == null || (item.ItemId != "van_good" && item.ItemId != "van_best" &&
+                    item.ItemId != "truck_good" && item.ItemId != "truck_best")) continue;
+                items.GetArrayElementAtIndex(index).objectReferenceValue = null;
+                items.DeleteArrayElementAtIndex(index);
+            }
             foreach (ShopItemDefinition item in initialItems)
             {
                 bool present = false;

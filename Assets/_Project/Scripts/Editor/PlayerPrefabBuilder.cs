@@ -212,15 +212,15 @@ namespace CouchGuys.Editor
                 WeaponReticleAssetBuilder.ReticlePrefabPath);
             if (reticlePrefab != null) SetObjectReference(reticleController, "m_reticlePrefab", reticlePrefab);
             if (player.GetComponent<PlayerWeaponHud>() == null) player.AddComponent<PlayerWeaponHud>();
-            PlayerVanInteractor vanInteractor = player.GetComponent<PlayerVanInteractor>();
-            if (vanInteractor == null) vanInteractor = player.AddComponent<PlayerVanInteractor>();
+            PlayerTruckInteractor truckInteractor = player.GetComponent<PlayerTruckInteractor>();
+            if (truckInteractor == null) truckInteractor = player.AddComponent<PlayerTruckInteractor>();
             if (player.GetComponent<VehicleHud>() == null) player.AddComponent<VehicleHud>();
-            SetObjectReference(vanInteractor, "m_input", player.GetComponent<PlayerInputReader>());
-            SetObjectReference(vanInteractor, "m_controller", player.GetComponent<ThirdPersonPlayerController>());
-            SetObjectReference(vanInteractor, "m_characterController", player.GetComponent<CharacterController>());
-            SetObjectReference(vanInteractor, "m_visualRoot", player.transform.Find("Visual"));
-            SetObjectReference(vanInteractor, "m_cameraController", player.GetComponentInChildren<ThirdPersonCameraController>(true));
-            SetObjectReference(vanInteractor, "m_playerCamera", player.GetComponentInChildren<UnityEngine.Camera>(true));
+            SetObjectReference(truckInteractor, "m_input", player.GetComponent<PlayerInputReader>());
+            SetObjectReference(truckInteractor, "m_controller", player.GetComponent<ThirdPersonPlayerController>());
+            SetObjectReference(truckInteractor, "m_characterController", player.GetComponent<CharacterController>());
+            SetObjectReference(truckInteractor, "m_visualRoot", player.transform.Find("Visual"));
+            SetObjectReference(truckInteractor, "m_cameraController", player.GetComponentInChildren<ThirdPersonCameraController>(true));
+            SetObjectReference(truckInteractor, "m_playerCamera", player.GetComponentInChildren<UnityEngine.Camera>(true));
 
             if (player.GetComponent<NeighbourhoodMap>() == null)
             {
@@ -259,7 +259,7 @@ namespace CouchGuys.Editor
             behaviours.GetArrayElementAtIndex(3).objectReferenceValue = playerHealth;
             behaviours.GetArrayElementAtIndex(4).objectReferenceValue = weaponController;
             behaviours.GetArrayElementAtIndex(5).objectReferenceValue = playerStamina;
-            behaviours.GetArrayElementAtIndex(6).objectReferenceValue = vanInteractor;
+            behaviours.GetArrayElementAtIndex(6).objectReferenceValue = truckInteractor;
             serialisedNetworkObject.ApplyModifiedPropertiesWithoutUndo();
 
             SetNetworkBehaviourReferences(networkTransform, networkObject, 0);
@@ -268,7 +268,7 @@ namespace CouchGuys.Editor
             SetNetworkBehaviourReferences(playerHealth, networkObject, 3);
             SetNetworkBehaviourReferences(weaponController, networkObject, 4);
             SetNetworkBehaviourReferences(playerStamina, networkObject, 5);
-            SetNetworkBehaviourReferences(vanInteractor, networkObject, 6);
+            SetNetworkBehaviourReferences(truckInteractor, networkObject, 6);
             EditorUtility.SetDirty(networkObject);
             EditorUtility.SetDirty(networkTransform);
             EditorUtility.SetDirty(ownership);
@@ -276,7 +276,7 @@ namespace CouchGuys.Editor
             EditorUtility.SetDirty(playerHealth);
             EditorUtility.SetDirty(weaponController);
             EditorUtility.SetDirty(playerStamina);
-            EditorUtility.SetDirty(vanInteractor);
+            EditorUtility.SetDirty(truckInteractor);
         }
 
         private static void ConfigureBotNavMeshAgent(NavMeshAgent agent)

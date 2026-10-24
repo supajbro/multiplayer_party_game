@@ -22,7 +22,8 @@ namespace CouchGuys.Gameplay.Delivery
         [SerializeField] private DeliveryDifficultyZone m_zone;
         [SerializeField] private SuburbZone m_progressionZone;
         [SerializeField] private float m_destinationElevation;
-        [SerializeField] private bool m_vanAccessible;
+        [UnityEngine.Serialization.FormerlySerializedAs("m_vanAccessible") ]
+        [SerializeField] private bool m_truckAccessible;
 
         public bool IsReachable => m_isReachable;
         public GridCoordinate RoadCoordinate => m_roadCoordinate;
@@ -38,7 +39,7 @@ namespace CouchGuys.Gameplay.Delivery
         public DeliveryDifficultyZone Zone => m_zone;
         public SuburbZone ProgressionZone => m_progressionZone;
         public float DestinationElevation => m_destinationElevation;
-        public bool VanAccessible => m_vanAccessible;
+        public bool TruckAccessible => m_truckAccessible;
 
         public DeliveryRouteMetrics(
             bool isReachable,
@@ -55,7 +56,7 @@ namespace CouchGuys.Gameplay.Delivery
             DeliveryDifficultyZone zone,
             SuburbZone progressionZone = SuburbZone.Easy,
             float destinationElevation = 0f,
-            bool vanAccessible = true)
+            bool truckAccessible = true)
         {
             m_isReachable = isReachable;
             m_roadCoordinate = roadCoordinate;
@@ -71,7 +72,7 @@ namespace CouchGuys.Gameplay.Delivery
             m_zone = zone;
             m_progressionZone = progressionZone;
             m_destinationElevation = destinationElevation;
-            m_vanAccessible = vanAccessible;
+            m_truckAccessible = truckAccessible;
         }
     }
 }

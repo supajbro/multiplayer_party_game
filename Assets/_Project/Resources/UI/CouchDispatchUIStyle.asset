@@ -60,7 +60,7 @@ MonoBehaviour:
     Sprite: {fileID: 1580865531163481872, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
   - Name: DeliveryHard
     Sprite: {fileID: -5596295465253498590, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
-  - Name: CategoryVans
+  - Name: CategoryTrucks
     Sprite: {fileID: -7757264069748059603, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
   - Name: CategoryWeapons
     Sprite: {fileID: -4144595249256750367, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
@@ -68,7 +68,7 @@ MonoBehaviour:
     Sprite: {fileID: 6525125038259897845, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
   - Name: PageDots
     Sprite: {fileID: -8027932315671793763, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
-  - Name: VanIcon
+  - Name: TruckIcon
     Sprite: {fileID: -6363628860145973549, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}
   - Name: WeaponsIcon
     Sprite: {fileID: 5237328992742081123, guid: 69dab3d0e7db0ce4ba8ced51181c2777, type: 3}

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CouchGuys.Player;
+using CouchGuys.Gameplay.Weapons;
 using CouchGuys.ProceduralGeneration;
 using FishNet.Object;
 using UnityEngine;
@@ -15,9 +16,7 @@ namespace CouchGuys.Gameplay.Delivery
     public sealed class NeighbourhoodMap : MonoBehaviour
     {
         [Header("Layout")]
-        [SerializeField, Min(160f)] private float m_minimapSize = 270f;
         [SerializeField, Min(5f)] private float m_visibleRadiusMetres = 65f;
-        [SerializeField, Min(0f)] private float m_screenMargin = 24f;
         [SerializeField, Range(128, 1024)] private int m_textureResolution = 512;
         [SerializeField, Min(0.05f)] private float m_actorRefreshInterval = 0.5f;
 
@@ -36,6 +35,7 @@ namespace CouchGuys.Gameplay.Delivery
 
         private readonly Dictionary<PlayerHealth, ActorMarker> m_actorMarkers = new();
         private readonly List<PlayerHealth> m_removedActors = new(8);
+        private PlayerWeaponHud m_hud;
         private NetworkObject m_networkObject;
         private PlayerHealth m_localHealth;
         private NeighbourhoodGenerator m_generator;
@@ -47,7 +47,6 @@ namespace CouchGuys.Gameplay.Delivery
         private Image m_waypointImage;
         private Text m_distanceText;
         private Texture2D m_mapTexture;
-        private Sprite m_circleSprite;
         private Sprite m_arrowSprite;
         private Sprite m_aiSprite;
         private Sprite m_waypointSprite;
@@ -61,13 +60,19 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void Awake()
         {
+            m_hud = GetComponent<PlayerWeaponHud>();
             m_networkObject = GetComponent<NetworkObject>();
             m_localHealth = GetComponent<PlayerHealth>();
         }
 
         private void Update()
         {
-            if (m_networkObject == null || !m_networkObject.IsOwner) return;
+            if (m_networkObject == null || !m_networkObject.IsOwner || m_localHealth.IsAiTeammate ||
+                m_hud == null || m_hud.View == null)
+            {
+                if (m_mapTexture != null) DestroyMinimap();
+                return;
+            }
             if (m_generator == null) ResolveWorldReferences();
             if (m_canvasRoot == null && m_generator != null && m_generator.HasGeneratedNeighbourhood)
                 BuildMinimap();
@@ -110,72 +115,28 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void BuildMinimap()
         {
+            if (m_hud == null || m_hud.View == null || m_hud.View.m_minimapRoot == null) return;
+            RectTransform root = m_hud.View.m_minimapRoot;
+            m_canvasRoot = root.gameObject;
             m_mapBounds = m_generator.GeneratedWorldBounds;
             m_mapBounds.size = new Vector3(Mathf.Max(1f, m_mapBounds.size.x),
                 m_mapBounds.size.y, Mathf.Max(1f, m_mapBounds.size.z));
             BuildStaticTexture();
             BuildSprites();
 
-            m_canvasRoot = new GameObject("CircularMinimapCanvas", typeof(Canvas), typeof(CanvasScaler));
-            Canvas canvas = m_canvasRoot.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 90;
-            CanvasScaler scaler = m_canvasRoot.GetComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
-
-            Image frame = Image("MinimapFrame", m_canvasRoot.transform,
-                new Color(0.04f, 0.055f, 0.075f, 0.96f), m_circleSprite);
-            RectTransform frameRect = frame.rectTransform;
-            frameRect.anchorMin = frameRect.anchorMax = Vector2.one;
-            frameRect.pivot = Vector2.one;
-            frameRect.anchoredPosition = new Vector2(-m_screenMargin, -m_screenMargin);
-            frameRect.sizeDelta = Vector2.one * m_minimapSize;
-
-            Image maskImage = Image("MapMask", frameRect, Color.white, m_circleSprite);
-            Stretch(maskImage.rectTransform, 7f);
-            Mask mask = maskImage.gameObject.AddComponent<Mask>();
-            mask.showMaskGraphic = false;
-
-            GameObject mapObject = new("StaticMap", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
-            mapObject.transform.SetParent(maskImage.transform, false);
-            m_mapImage = mapObject.GetComponent<RawImage>();
+            m_mapImage = root.Find("MapMask/StaticMap").GetComponent<RawImage>();
             m_mapImage.texture = m_mapTexture;
-            m_mapImage.raycastTarget = false;
-            Stretch(m_mapImage.rectTransform, 0f);
-
-            GameObject markerObject = new("DynamicMarkers", typeof(RectTransform));
-            markerObject.transform.SetParent(maskImage.transform, false);
-            m_markerLayer = markerObject.GetComponent<RectTransform>();
-            Stretch(m_markerLayer, 0f);
-            m_markerRadius = (m_minimapSize - 14f) * 0.5f;
-
-            Compass("N", frameRect, new Vector2(0f, -10f), new Vector2(0.5f, 1f));
-            Compass("E", frameRect, new Vector2(-10f, 0f), new Vector2(1f, 0.5f));
-            Compass("S", frameRect, new Vector2(0f, 10f), new Vector2(0.5f, 0f));
-            Compass("W", frameRect, new Vector2(10f, 0f), new Vector2(0f, 0.5f));
-
-            UnityEngine.UI.Image local = Image("LocalPlayer", m_markerLayer,
-                new Color(0.12f, 0.95f, 1f, 1f), m_arrowSprite);
-            local.rectTransform.anchorMin = local.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-            local.rectTransform.sizeDelta = new Vector2(25f, 30f);
+            m_markerLayer = (RectTransform)root.Find("MapMask/DynamicMarkers");
+            m_canvasRoot.SetActive(true);
+            Canvas.ForceUpdateCanvases();
+            m_markerRadius = Mathf.Min(m_markerLayer.rect.width, m_markerLayer.rect.height) * 0.5f;
+            Image local = m_markerLayer.Find("LocalPlayer").GetComponent<Image>();
+            local.sprite = m_arrowSprite;
             m_actorMarkers[m_localHealth] = new ActorMarker { Rect = local.rectTransform };
-
-            m_waypointImage = Image("DeliveryWaypoint", m_markerLayer,
-                new Color(1f, 0.76f, 0.08f, 1f), m_waypointSprite);
+            m_waypointImage = m_markerLayer.Find("DeliveryWaypoint").GetComponent<Image>();
+            m_waypointImage.sprite = m_waypointSprite;
             m_waypointRect = m_waypointImage.rectTransform;
-            m_waypointRect.anchorMin = m_waypointRect.anchorMax = new Vector2(0.5f, 0.5f);
-            m_waypointRect.sizeDelta = new Vector2(34f, 34f);
-            m_waypointRect.gameObject.SetActive(false);
-
-            m_distanceText = Text("DeliveryDistance", frameRect, string.Empty, 22);
-            RectTransform distanceRect = m_distanceText.rectTransform;
-            distanceRect.anchorMin = distanceRect.anchorMax = new Vector2(0.5f, 0f);
-            distanceRect.pivot = new Vector2(0.5f, 1f);
-            distanceRect.anchoredPosition = new Vector2(0f, -5f);
-            distanceRect.sizeDelta = new Vector2(m_minimapSize, 30f);
-            m_distanceText.gameObject.SetActive(false);
+            m_distanceText = root.Find("DeliveryDistance").GetComponent<Text>();
 
             RefreshActors();
             UpdateMapPosition();
@@ -298,7 +259,6 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void BuildSprites()
         {
-            m_circleSprite = ProceduralSprite("Minimap Circle", 128, (x, y) => x * x + y * y <= 0.98f);
             m_arrowSprite = ProceduralSprite("Player Arrow", 64, (x, y) =>
                 y > -0.9f && y < 0.95f && Mathf.Abs(x) < (0.95f - y) * 0.48f + 0.08f);
             m_aiSprite = ProceduralSprite("AI Diamond", 64, (x, y) =>
@@ -438,8 +398,13 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void DestroyMinimap()
         {
+            foreach (var marker in m_actorMarkers)
+                if (marker.Key != m_localHealth && marker.Value.Rect != null) Destroy(marker.Value.Rect.gameObject);
             m_actorMarkers.Clear();
-            if (m_canvasRoot != null) Destroy(m_canvasRoot);
+            if (m_mapImage != null) m_mapImage.texture = null;
+            if (m_canvasRoot != null) m_canvasRoot.SetActive(false);
+            m_lastDistanceMetres = -1;
+            m_nextActorRefreshTime = 0f;
             m_canvasRoot = null;
             m_markerLayer = null;
             m_mapImage = null;
@@ -449,11 +414,12 @@ namespace CouchGuys.Gameplay.Delivery
             m_cachedDestination = null;
             m_cachedDestinationProperty = null;
             DestroyTexture(ref m_mapTexture);
-            DestroySprite(ref m_circleSprite);
             DestroySprite(ref m_arrowSprite);
             DestroySprite(ref m_aiSprite);
             DestroySprite(ref m_waypointSprite);
         }
+
+        private void OnDisable() => DestroyMinimap();
 
         private void OnDestroy()
         {
@@ -480,34 +446,6 @@ namespace CouchGuys.Gameplay.Delivery
             texture = null;
         }
 
-        private void Compass(string value, Transform parent, Vector2 position, Vector2 anchor)
-        {
-            UnityEngine.UI.Text label = Text("Compass " + value, parent, value, 19);
-            RectTransform rect = label.rectTransform;
-            rect.anchorMin = rect.anchorMax = anchor;
-            rect.pivot = anchor;
-            rect.anchoredPosition = position;
-            rect.sizeDelta = new Vector2(28f, 28f);
-        }
-
-        private static UnityEngine.UI.Text Text(string name, Transform parent, string value, int fontSize)
-        {
-            GameObject go = new(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Text));
-            go.transform.SetParent(parent, false);
-            UnityEngine.UI.Text text = go.GetComponent<UnityEngine.UI.Text>();
-            text.text = value;
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = fontSize;
-            text.fontStyle = FontStyle.Bold;
-            text.alignment = TextAnchor.MiddleCenter;
-            text.color = Color.white;
-            text.raycastTarget = false;
-            text.horizontalOverflow = HorizontalWrapMode.Overflow;
-            text.verticalOverflow = VerticalWrapMode.Overflow;
-            go.AddComponent<Outline>().effectColor = new Color(0f, 0f, 0f, 0.9f);
-            return text;
-        }
-
         private static UnityEngine.UI.Image Image(string name, Transform parent, Color colour, Sprite sprite)
         {
             GameObject go = new(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
@@ -519,12 +457,5 @@ namespace CouchGuys.Gameplay.Delivery
             return image;
         }
 
-        private static void Stretch(RectTransform rect, float inset)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.one * inset;
-            rect.offsetMax = Vector2.one * -inset;
-        }
     }
 }

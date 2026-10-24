@@ -11,19 +11,23 @@ namespace CouchGuys.Gameplay.Vehicles
 {
     [RequireComponent(typeof(NetworkObject), typeof(Rigidbody))]
     [DisallowMultipleComponent]
-    public sealed class VanController : NetworkBehaviour
+    [UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "CouchGuys.Gameplay.Vehicles", sourceAssembly: "Assembly-CSharp", sourceClassName: "VanController")]
+    public sealed class TruckController : NetworkBehaviour
     {
         public const int MaximumSeats = 4;
-        public static readonly HashSet<VanController> ActiveVans = new();
+        public static readonly HashSet<TruckController> ActiveTrucks = new();
 
         [Header("Configuration")]
-        [SerializeField] private VanSettings m_settings;
+        [SerializeField] private TruckSettings m_settings;
         [Header("References")]
         [SerializeField] private Rigidbody m_rigidbody;
         [SerializeField] private Transform m_visualModel;
         [SerializeField] private Transform m_cameraTarget;
         [SerializeField] private Transform[] m_seatAnchors;
+        [SerializeField] private Vector3 m_seatedRootOffset = new(0f, -.8f, 0f);
         [SerializeField] private Transform[] m_exitPoints;
+        [SerializeField] private Transform[] m_shutterSlats;
+        [SerializeField] private Transform m_shutterSpace;
         [SerializeField] private Transform[] m_wheels;
         [SerializeField] private Renderer m_destroyedRenderer;
         [SerializeField] private Transform m_leftDoorPivot;
@@ -60,7 +64,7 @@ namespace CouchGuys.Gameplay.Vehicles
         private Vector3 m_groundNormal = Vector3.up;
         private float m_lastGroundContactTime = float.NegativeInfinity;
 
-        public VanSettings Settings => m_settings;
+        public TruckSettings Settings => m_settings;
         public float Fuel => m_fuel.Value; public float Health => m_health.Value;
         public float FuelFraction => m_settings != null ? m_fuel.Value / m_settings.MaxFuel : 0f;
         public float HealthFraction => m_settings != null ? m_health.Value / m_settings.MaxHealth : 0f;
@@ -83,6 +87,7 @@ namespace CouchGuys.Gameplay.Vehicles
         public float RearDoorOpenProgress => m_doorOpenProgress;
         public Transform RearDoorInteractionPoint => m_rearDoorInteractionPoint != null ? m_rearDoorInteractionPoint : transform;
         public Transform CargoLoadingPoint => m_cargoLoadingPoint != null ? m_cargoLoadingPoint : RearDoorInteractionPoint;
+        public Vector3 SeatedRootOffset => m_seatedRootOffset;
         public int LoadedCouchCount
         {
             get { int count = 0; for (int i = 0; i < m_loadedCouches.Count; i++) if (m_loadedCouches[i] != null) count++; return count; }
@@ -111,8 +116,8 @@ namespace CouchGuys.Gameplay.Vehicles
             }
         }
 
-        private void OnEnable() => ActiveVans.Add(this);
-        private void OnDisable() => ActiveVans.Remove(this);
+        private void OnEnable() => ActiveTrucks.Add(this);
+        private void OnDisable() => ActiveTrucks.Remove(this);
         private void OnDestroy()
         {
             m_health.OnChange -= OnHealthChanged;
@@ -123,10 +128,10 @@ namespace CouchGuys.Gameplay.Vehicles
         private void ConfigureArcadeColliderFriction()
         {
             // The placeholder is a flat-bottomed cube rather than a wheeled mesh. Default
-            // static friction can exceed the Light Van's configured acceleration and pin it
+            // static friction can exceed the Light Truck's configured acceleration and pin it
             // to the road. Physical contact stays slippery while lateral grip remains under
-            // the explicit VanSettings.Traction calculation below.
-            m_runtimePhysicsMaterial = new PhysicsMaterial("Van Arcade Contact")
+            // the explicit TruckSettings.Traction calculation below.
+            m_runtimePhysicsMaterial = new PhysicsMaterial("Truck Arcade Contact")
             {
                 dynamicFriction = 0.03f,
                 staticFriction = 0f,
@@ -179,12 +184,13 @@ namespace CouchGuys.Gameplay.Vehicles
         private void LateUpdate() => UpdateVisuals(Time.deltaTime);
 
         [Server]
-        public bool TryEnterServer(PlayerVanInteractor player, out int seatIndex)
+        public bool TryEnterServer(PlayerTruckInteractor player, out int seatIndex)
         {
             seatIndex = -1;
             if (player == null || !HasAvailableSeat || m_settings == null ||
                 GetSeatIndex(player.NetworkObject) >= 0) return false;
-            if ((player.transform.position - transform.position).sqrMagnitude > m_settings.InteractionRange * m_settings.InteractionRange) return false;
+            seatIndex = FindEntrySeat(player.transform.position);
+            if (seatIndex < 0) return false;
             if (m_rearDoorsOpen.Value && !m_settings.AllowDrivingWithDoorsOpen)
             {
                 // Loaded couches have their colliders disabled while secured, so this
@@ -192,20 +198,13 @@ namespace CouchGuys.Gameplay.Vehicles
                 if (IsDoorwayObstructed()) return false;
                 SetRearDoorsServer(false);
             }
-            for (int index = 0; index < MaximumSeats; index++)
-            {
-                if (GetOccupant(index) != null) continue;
-                seatIndex = index;
-                SetOccupant(index, player.NetworkObject);
-                break;
-            }
-            if (seatIndex < 0) return false;
+            SetOccupant(seatIndex, player.NetworkObject);
             if (seatIndex == 0) m_driveInput = Vector2.zero;
             return true;
         }
 
         [Server]
-        public void SetInputServer(PlayerVanInteractor player, Vector2 input)
+        public void SetInputServer(PlayerTruckInteractor player, Vector2 input)
         {
             if (player == null || m_driver.Value != player.NetworkObject || IsDestroyed) return;
             m_driveInput = Vector2.ClampMagnitude(input, 1f);
@@ -213,7 +212,7 @@ namespace CouchGuys.Gameplay.Vehicles
         }
 
         [Server]
-        public void LeaveServer(PlayerVanInteractor player)
+        public void LeaveServer(PlayerTruckInteractor player)
         {
             if (player == null) return;
             int seatIndex = GetSeatIndex(player.NetworkObject);
@@ -226,6 +225,28 @@ namespace CouchGuys.Gameplay.Vehicles
             m_seatAnchors != null && seatIndex >= 0 && seatIndex < m_seatAnchors.Length
                 ? m_seatAnchors[seatIndex]
                 : null;
+
+        public Transform GetDoorPoint(int seatIndex) => m_exitPoints != null && seatIndex >= 0 &&
+            seatIndex < m_exitPoints.Length ? m_exitPoints[seatIndex] : null;
+
+        public int FindEntrySeat(Vector3 position)
+        {
+            if (m_settings == null || IsDestroyed) return -1;
+            int nearest = -1;
+            float closest = Mathf.Min(1.1f, m_settings.InteractionRange);
+            closest *= closest;
+            // Choose the actual nearest door first; an occupied door never redirects to another seat.
+            for (int index = 0; index < MaximumSeats; index++)
+            {
+                Transform door = GetDoorPoint(index);
+                if (door == null) continue;
+                float distance = (position - door.position).sqrMagnitude;
+                if (distance > closest) continue;
+                closest = distance;
+                nearest = index;
+            }
+            return nearest >= 0 && GetOccupant(nearest) == null ? nearest : -1;
+        }
 
         public NetworkObject GetOccupant(int seatIndex) => seatIndex switch
         {
@@ -275,7 +296,7 @@ namespace CouchGuys.Gameplay.Vehicles
         }
 
         [Server]
-        public void InteractWithRearServer(PlayerVanInteractor player, PlayerCouchCarrier carrier)
+        public void InteractWithRearServer(PlayerTruckInteractor player, PlayerCouchCarrier carrier)
         {
             if (player == null || m_settings == null || IsDestroyed || IsOccupied || !IsPlayerNearRear(player.transform)) return;
             if (!m_rearDoorsOpen.Value)
@@ -290,7 +311,7 @@ namespace CouchGuys.Gameplay.Vehicles
             {
                 if (LoadedCouchCount >= m_loadedCouches.Count)
                 {
-                    player.ShowVehicleFeedbackServer("Van cargo is full");
+                    player.ShowVehicleFeedbackServer("Truck cargo is full");
                     return;
                 }
                 if (TryLoadCouchServer(player, carriedCouch)) return;
@@ -313,7 +334,7 @@ namespace CouchGuys.Gameplay.Vehicles
         }
 
         [Server]
-        private bool TryLoadCouchServer(PlayerVanInteractor player, CouchCarryController couch)
+        private bool TryLoadCouchServer(PlayerTruckInteractor player, CouchCarryController couch)
         {
             if (couch == null || couch.IsLoaded || !couch.IsPickupAvailable || LoadedCouchCount >= m_loadedCouches.Count) return false;
             float rangeSquared = m_settings.CouchLoadingRange * m_settings.CouchLoadingRange;
@@ -323,13 +344,13 @@ namespace CouchGuys.Gameplay.Vehicles
             for (int index = 0; index < m_loadedCouches.Count; index++)
                 if (m_loadedCouches[index] == null) { slot = index; break; }
             if (slot < 0 || GetCargoPoint(slot) == null ||
-                !couch.LoadIntoVanServer(this, slot, m_settings.CouchLoadingDuration)) return false;
+                !couch.LoadIntoTruckServer(this, slot, m_settings.CouchLoadingDuration)) return false;
             m_loadedCouches[slot] = couch.NetworkObject;
             return true;
         }
 
         [Server]
-        private bool TryUnloadFirstCouchServer(PlayerVanInteractor player)
+        private bool TryUnloadFirstCouchServer(PlayerTruckInteractor player)
         {
             for (int slot = 0; slot < m_loadedCouches.Count; slot++)
             {
@@ -338,7 +359,7 @@ namespace CouchGuys.Gameplay.Vehicles
                 if (couch.IsCargoTransitioning) return false;
                 GetCouchUnloadPose(couch, slot, out Vector3 position, out Quaternion rotation);
                 m_loadedCouches[slot] = null;
-                couch.UnloadFromVanServer(position, rotation, m_settings.CouchUnloadingDuration);
+                couch.UnloadFromTruckServer(position, rotation, m_settings.CouchUnloadingDuration);
                 return true;
             }
             return false;
@@ -353,7 +374,7 @@ namespace CouchGuys.Gameplay.Vehicles
                 if (couchObject == null || !couchObject.TryGetComponent(out CouchCarryController couch)) continue;
                 GetCouchUnloadPose(couch, slot, out Vector3 position, out Quaternion rotation);
                 m_loadedCouches[slot] = null;
-                couch.UnloadFromVanServer(position, rotation, m_settings.CouchUnloadingDuration);
+                couch.UnloadFromTruckServer(position, rotation, m_settings.CouchUnloadingDuration);
             }
         }
 
@@ -387,7 +408,7 @@ namespace CouchGuys.Gameplay.Vehicles
                     {
                         if (ground.collider.transform.IsChildOf(transform) ||
                             ground.collider.GetComponentInParent<CouchCarryController>() != null ||
-                            ground.collider.GetComponentInParent<PlayerVanInteractor>() != null || ground.normal.y < .65f) continue;
+                            ground.collider.GetComponentInParent<PlayerTruckInteractor>() != null || ground.normal.y < .65f) continue;
                         for (int turn = 0; turn < 2; turn++)
                         {
                             Quaternion candidateRotation = Quaternion.LookRotation(
@@ -465,11 +486,10 @@ namespace CouchGuys.Gameplay.Vehicles
             for (int index = 0; index < MaximumSeats; index++)
             {
                 occupants[index] = GetOccupant(index);
-                SetOccupant(index, null);
             }
             m_driveInput = Vector2.zero;
             for (int index = 0; index < occupants.Length; index++)
-                if (occupants[index] != null && occupants[index].TryGetComponent(out PlayerVanInteractor interactor))
+                if (occupants[index] != null && occupants[index].TryGetComponent(out PlayerTruckInteractor interactor))
                     interactor.ForceExitServer(this);
         }
 
@@ -559,9 +579,9 @@ namespace CouchGuys.Gameplay.Vehicles
                 Time.time < nextImpactTime)
                 return;
 
-            Vector3 vanPlanarVelocity = Vector3.ProjectOnPlane(
+            Vector3 truckPlanarVelocity = Vector3.ProjectOnPlane(
                 m_rigidbody.linearVelocity, Vector3.up);
-            float impactSpeed = vanPlanarVelocity.magnitude;
+            float impactSpeed = truckPlanarVelocity.magnitude;
             if (impactSpeed < 0.1f) return;
 
             m_nextCharacterImpactTime[victimId] =
@@ -577,8 +597,8 @@ namespace CouchGuys.Gameplay.Vehicles
             float knockback = m_settings.CharacterKnockbackForce * impactScale;
             float upwardKnockback = m_settings.CharacterKnockbackUpwardForce * impactScale;
             Transform victimTransform = player != null ? player.transform : thief.transform;
-            Vector3 direction = vanPlanarVelocity.sqrMagnitude > 0.01f
-                ? vanPlanarVelocity.normalized
+            Vector3 direction = truckPlanarVelocity.sqrMagnitude > 0.01f
+                ? truckPlanarVelocity.normalized
                 : (victimTransform.position - transform.position).normalized;
 
             if (player != null)
@@ -626,36 +646,41 @@ namespace CouchGuys.Gameplay.Vehicles
 
         public bool TryGetExitPosition(NetworkObject player, out Vector3 position, out Quaternion rotation)
         {
-            rotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
-            if (m_exitPoints != null) foreach (Transform point in m_exitPoints)
+            position = default;
+            rotation = Quaternion.identity;
+            Transform door = GetDoorPoint(GetSeatIndex(player));
+            if (door == null) return false;
+            Vector3 outward = Vector3.ProjectOnPlane(door.forward, Vector3.up).normalized;
+            rotation = Quaternion.LookRotation(outward, Vector3.up);
+            CharacterController capsule = player != null ? player.GetComponent<CharacterController>() : null;
+            float radius = capsule != null ? capsule.radius * Mathf.Max(player.transform.lossyScale.x, player.transform.lossyScale.z) : .35f;
+            float height = capsule != null ? Mathf.Max(radius * 2f, capsule.height * player.transform.lossyScale.y) : 1.8f;
+            Vector3 centre = capsule != null ? Vector3.Scale(capsule.center, player.transform.lossyScale) : Vector3.up * .9f;
+            for (int step = 0; step < 5; step++)
             {
-                if (point == null) continue;
-                if (IsExitClear(point.position, player)) { position = point.position; return true; }
+                Vector3 candidate = door.position + outward * (step * .3f);
+                RaycastHit[] groundHits = Physics.RaycastAll(candidate + Vector3.up * 2f, Vector3.down, 5f, ~0, QueryTriggerInteraction.Ignore);
+                System.Array.Sort(groundHits, (a, b) => a.distance.CompareTo(b.distance));
+                foreach (RaycastHit ground in groundHits)
+                {
+                    if (ground.collider.transform.IsChildOf(transform) ||
+                        (player != null && ground.collider.transform.IsChildOf(player.transform)) || ground.normal.y < .65f) continue;
+                    candidate.y = ground.point.y + .04f + height * .5f - centre.y;
+                    Vector3 middle = candidate + rotation * centre;
+                    Collider[] hits = Physics.OverlapCapsule(middle + Vector3.up * (height * .5f - radius),
+                        middle - Vector3.up * (height * .5f - radius), radius + .01f, ~0, QueryTriggerInteraction.Ignore);
+                    bool blocked = false;
+                    foreach (Collider hit in hits)
+                    {
+                        if (player != null && hit.transform.IsChildOf(player.transform)) continue;
+                        blocked = true;
+                        break;
+                    }
+                    if (!blocked) { position = candidate; return true; }
+                    break;
+                }
             }
-
-            // Preserve the two configured exits as the preferred locations, then fan
-            // additional occupants out beside the rear half of the truck.
-            Vector3[] overflowOffsets =
-            {
-                new(-1.65f, .95f, -1.25f),
-                new(1.65f, .95f, -1.25f)
-            };
-            foreach (Vector3 offset in overflowOffsets)
-            {
-                Vector3 candidate = transform.TransformPoint(offset);
-                if (IsExitClear(candidate, player)) { position = candidate; return true; }
-            }
-            position = transform.position + transform.right * 2.2f + Vector3.up * 0.2f;
             return false;
-        }
-
-        private bool IsExitClear(Vector3 position, NetworkObject player)
-        {
-            Collider[] hits = Physics.OverlapSphere(position, m_settings.ExitClearanceRadius, ~0, QueryTriggerInteraction.Ignore);
-            foreach (Collider hit in hits)
-                if (!hit.transform.IsChildOf(transform) && (player == null || !hit.transform.IsChildOf(player.transform)))
-                    return false;
-            return true;
         }
 
         private void SimulateDriving(float dt)
@@ -725,6 +750,7 @@ namespace CouchGuys.Gameplay.Vehicles
             float doorStep = dt / Mathf.Max(.05f, m_settings.DoorAnimationDuration);
             m_doorOpenProgress = Mathf.MoveTowards(m_doorOpenProgress, m_rearDoorsOpen.Value ? 1f : 0f, doorStep);
             float easedDoor = Mathf.SmoothStep(0f, 1f, m_doorOpenProgress);
+            UpdateShutter(easedDoor);
             if (m_leftDoorPivot != null)
                 m_leftDoorPivot.localRotation = m_leftDoorClosedRotation * Quaternion.Euler(0f, 0f, m_settings.DoorOpenAngle * easedDoor);
             if (m_rightDoorPivot != null)
@@ -741,6 +767,37 @@ namespace CouchGuys.Gameplay.Vehicles
             {
                 Quaternion steer = i < 2 ? Quaternion.Euler(0f, m_driveInput.x * m_settings.MaxWheelSteeringAngle, 0f) : Quaternion.identity;
                 m_wheels[i].localRotation = m_wheelBaseRotations[i] * steer * Quaternion.Euler(spin, 0f, 0f);
+            }
+        }
+
+        private void UpdateShutter(float progress)
+        {
+            if (m_shutterSlats == null || m_shutterSpace == null) return;
+            const float bottom = 1.24f, rear = -3.87f, curveStart = 3.48f, radius = .27f, slatHeight = .145f;
+            float vertical = curveStart - bottom;
+            float arc = radius * Mathf.PI * .5f;
+            float travel = vertical + arc + .25f - slatHeight * .5f;
+            for (int i = 0; i < m_shutterSlats.Length; i++)
+            {
+                Transform slat = m_shutterSlats[i];
+                if (slat == null) continue;
+                float distance = (i + .5f) * slatHeight + progress * travel;
+                float x = rear, z = bottom + distance, turn = 0f;
+                if (distance > vertical && distance <= vertical + arc)
+                {
+                    turn = (distance - vertical) / radius;
+                    x = rear + radius - radius * Mathf.Cos(turn);
+                    z = curveStart + radius * Mathf.Sin(turn);
+                }
+                else if (distance > vertical + arc)
+                {
+                    turn = Mathf.PI * .5f;
+                    x = rear + radius + distance - vertical - arc;
+                    z = curveStart + radius;
+                }
+                // Authored shutter space uses Blender metres (+X front, +Z up).
+                slat.SetPositionAndRotation(m_shutterSpace.TransformPoint(new Vector3(0f, z, x)),
+                    m_shutterSpace.rotation * Quaternion.Euler(-turn * Mathf.Rad2Deg, 0f, 0f));
             }
         }
     }

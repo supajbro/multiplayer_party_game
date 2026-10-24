@@ -7,12 +7,12 @@ using UnityEngine;
 
 namespace CouchGuys.Tests.Editor
 {
-    public sealed class VanCargoTests
+    public sealed class TruckCargoTests
     {
         private const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
         private readonly List<GameObject> m_objects = new();
         private static readonly Vector3 Origin = new(10000f, 1000f, 10000f);
-        private VanController m_van;
+        private TruckController m_truck;
         private CouchCarryController m_couch;
         private BoxCollider m_body;
         private static readonly Bounds CouchBounds = new(Vector3.up * .45f, new Vector3(2.1f, .9f, .9f));
@@ -20,11 +20,11 @@ namespace CouchGuys.Tests.Editor
         [SetUp]
         public void SetUp()
         {
-            GameObject van = Create("Cargo test van", Origin);
-            m_van = van.AddComponent<VanController>();
+            GameObject truck = Create("Cargo test truck", Origin);
+            m_truck = truck.AddComponent<TruckController>();
             GameObject rear = Create("Cargo test rear", Origin + Vector3.back * 4f);
-            rear.transform.SetParent(van.transform, true);
-            Set(m_van, "m_cargoLoadingPoint", rear.transform);
+            rear.transform.SetParent(truck.transform, true);
+            Set(m_truck, "m_cargoLoadingPoint", rear.transform);
             GameObject couch = Create("Cargo test couch", Origin + Vector3.up * 2f);
             m_body = couch.AddComponent<BoxCollider>();
             m_body.center = CouchBounds.center;
@@ -50,7 +50,7 @@ namespace CouchGuys.Tests.Editor
         {
             GameObject floor = Box("Cargo test floor", Origin - Vector3.up * .5f, new Vector3(100f, 1f, 100f));
             floor.transform.rotation = Quaternion.Euler(slope, 0f, 0f);
-            m_van.transform.rotation = floor.transform.rotation;
+            m_truck.transform.rotation = floor.transform.rotation;
             for (int attempt = 0; attempt < 12; attempt++)
             {
                 m_couch.transform.rotation = Quaternion.Euler(attempt * 31f, attempt * 73f, attempt * 17f);
@@ -100,7 +100,7 @@ namespace CouchGuys.Tests.Editor
         private Pose FindPose()
         {
             object[] args = { m_couch, 0, Vector3.zero, Quaternion.identity };
-            typeof(VanController).GetMethod("GetCouchUnloadPose", Private).Invoke(m_van, args);
+            typeof(TruckController).GetMethod("GetCouchUnloadPose", Private).Invoke(m_truck, args);
             return new Pose((Vector3)args[2], (Quaternion)args[3]);
         }
 

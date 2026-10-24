@@ -16,17 +16,17 @@ namespace CouchGuys.Gameplay.Delivery
 
         private readonly SyncVar<int> m_currentStageIndex = new();
         private readonly SyncVar<int> m_completedDeliveryCount = new();
-        private readonly SyncVar<bool> m_vanUnlocked = new();
+        private readonly SyncVar<bool> m_truckUnlocked = new();
         private readonly SyncVar<bool> m_chapterCompleted = new();
 
         public event Action<int> StageChanged;
         public event Action<int> CompletedDeliveryCountChanged;
-        public event Action<bool> VanUnlockedChanged;
+        public event Action<bool> TruckUnlockedChanged;
         public event Action<bool> ChapterCompletedChanged;
 
         public int CurrentStageIndex => m_currentStageIndex.Value;
         public int CompletedDeliveryCount => m_completedDeliveryCount.Value;
-        public bool VanUnlocked => m_vanUnlocked.Value;
+        public bool TruckUnlocked => m_truckUnlocked.Value;
         public bool ChapterCompleted => m_chapterCompleted.Value;
         public SuburbsChapterDefinition Definition => m_definition;
         public int StageCount => m_definition != null
@@ -39,7 +39,7 @@ namespace CouchGuys.Gameplay.Delivery
             m_deliveryManager ??= GetComponent<DeliveryManager>();
             m_currentStageIndex.OnChange += OnStageChanged;
             m_completedDeliveryCount.OnChange += OnCompletedDeliveryCountChanged;
-            m_vanUnlocked.OnChange += OnVanUnlockedChanged;
+            m_truckUnlocked.OnChange += OnTruckUnlockedChanged;
             m_chapterCompleted.OnChange += OnChapterCompletedChanged;
         }
 
@@ -47,7 +47,7 @@ namespace CouchGuys.Gameplay.Delivery
         {
             m_currentStageIndex.OnChange -= OnStageChanged;
             m_completedDeliveryCount.OnChange -= OnCompletedDeliveryCountChanged;
-            m_vanUnlocked.OnChange -= OnVanUnlockedChanged;
+            m_truckUnlocked.OnChange -= OnTruckUnlockedChanged;
             m_chapterCompleted.OnChange -= OnChapterCompletedChanged;
         }
 
@@ -56,7 +56,7 @@ namespace CouchGuys.Gameplay.Delivery
             base.OnStartServer();
             m_currentStageIndex.Value = 0;
             m_completedDeliveryCount.Value = 0;
-            m_vanUnlocked.Value = false;
+            m_truckUnlocked.Value = false;
             m_chapterCompleted.Value = false;
         }
 
@@ -65,7 +65,7 @@ namespace CouchGuys.Gameplay.Delivery
             base.OnStartClient();
             StageChanged?.Invoke(m_currentStageIndex.Value);
             CompletedDeliveryCountChanged?.Invoke(m_completedDeliveryCount.Value);
-            VanUnlockedChanged?.Invoke(m_vanUnlocked.Value);
+            TruckUnlockedChanged?.Invoke(m_truckUnlocked.Value);
             ChapterCompletedChanged?.Invoke(m_chapterCompleted.Value);
         }
 
@@ -98,7 +98,7 @@ namespace CouchGuys.Gameplay.Delivery
             m_completedDeliveryCount.Value++;
             if (completedStageIndex >= 2)
             {
-                m_vanUnlocked.Value = true;
+                m_truckUnlocked.Value = true;
             }
 
             bool isFinalStage = completedStage.FinalDelivery ||
@@ -134,7 +134,7 @@ namespace CouchGuys.Gameplay.Delivery
                 2 => new SuburbsDeliveryStageDefinition(
                     "suburbs_03_van_fund", "Definitely a Safe Neighbourhood", 175, false, false),
                 3 => new SuburbsDeliveryStageDefinition(
-                    "suburbs_04_van_tutorial", "Van With a Plan", 200, true, false),
+                    "suburbs_04_van_tutorial", "Truck With a Plan", 200, true, false),
                 4 => new SuburbsDeliveryStageDefinition(
                     "suburbs_05_hill_start", "Hill Start", 250, true, false),
                 5 => new SuburbsDeliveryStageDefinition(
@@ -151,8 +151,8 @@ namespace CouchGuys.Gameplay.Delivery
         private void OnCompletedDeliveryCountChanged(int previous, int next, bool asServer) =>
             CompletedDeliveryCountChanged?.Invoke(next);
 
-        private void OnVanUnlockedChanged(bool previous, bool next, bool asServer) =>
-            VanUnlockedChanged?.Invoke(next);
+        private void OnTruckUnlockedChanged(bool previous, bool next, bool asServer) =>
+            TruckUnlockedChanged?.Invoke(next);
 
         private void OnChapterCompletedChanged(bool previous, bool next, bool asServer) =>
             ChapterCompletedChanged?.Invoke(next);

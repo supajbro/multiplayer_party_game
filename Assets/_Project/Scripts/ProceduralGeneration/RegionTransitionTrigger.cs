@@ -15,7 +15,7 @@ namespace CouchGuys.ProceduralGeneration
     [DisallowMultipleComponent]
     public sealed class RegionTransitionTrigger : MonoBehaviour
     {
-        public static event Action<VanController, string> ServerTransitionReached;
+        public static event Action<TruckController, string> ServerTransitionReached;
 
         [SerializeField] private string m_destinationRegionId = "next-region";
         private readonly HashSet<int> m_acceptedVehicles = new HashSet<int>();
@@ -37,17 +37,17 @@ namespace CouchGuys.ProceduralGeneration
                 return;
             }
 
-            VanController van = other.GetComponentInParent<VanController>();
-            if (van == null || !van.IsServerInitialized || van.IsDestroyed ||
-                van.Driver == null || !m_acceptedVehicles.Add(van.GetInstanceID()))
+            TruckController truck = other.GetComponentInParent<TruckController>();
+            if (truck == null || !truck.IsServerInitialized || truck.IsDestroyed ||
+                truck.Driver == null || !m_acceptedVehicles.Add(truck.GetInstanceID()))
             {
                 return;
             }
 
-            if (!van.Driver.TryGetComponent(out PlayerVanInteractor driver) ||
-                driver.CurrentVan != van)
+            if (!truck.Driver.TryGetComponent(out PlayerTruckInteractor driver) ||
+                driver.CurrentTruck != truck)
             {
-                m_acceptedVehicles.Remove(van.GetInstanceID());
+                m_acceptedVehicles.Remove(truck.GetInstanceID());
                 return;
             }
 
@@ -56,13 +56,13 @@ namespace CouchGuys.ProceduralGeneration
                 "No full region loader is registered, so the placeholder progression event was raised.",
                 this);
             driver.ShowVehicleFeedbackServer($"Region route unlocked: {m_destinationRegionId}");
-            ServerTransitionReached?.Invoke(van, m_destinationRegionId);
+            ServerTransitionReached?.Invoke(truck, m_destinationRegionId);
         }
 
         private void OnTriggerExit(Collider other)
         {
-            VanController van = other.GetComponentInParent<VanController>();
-            if (van != null) m_acceptedVehicles.Remove(van.GetInstanceID());
+            TruckController truck = other.GetComponentInParent<TruckController>();
+            if (truck != null) m_acceptedVehicles.Remove(truck.GetInstanceID());
         }
     }
 }

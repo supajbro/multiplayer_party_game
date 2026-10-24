@@ -14,6 +14,7 @@ namespace CouchGuys.Gameplay.Shop
         public ShopItemDefinition Find(string itemId)
         {
             if (string.IsNullOrWhiteSpace(itemId) || m_items == null) return null;
+            if (itemId == "van_light") itemId = "truck_light"; // Existing saves/purchase requests.
             for (int index = 0; index < m_items.Length; index++)
             {
                 ShopItemDefinition item = m_items[index];

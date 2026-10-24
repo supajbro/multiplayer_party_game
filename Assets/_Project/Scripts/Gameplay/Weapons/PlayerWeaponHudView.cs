@@ -5,6 +5,7 @@ namespace CouchGuys.Gameplay.Weapons
 {
     public sealed class PlayerWeaponHudView : MonoBehaviour
     {
+        [SerializeField] public RectTransform m_minimapRoot;
         [SerializeField] public Text m_healthText;
         [SerializeField] public Text m_deliveryTitle;
         [SerializeField] public Text m_deliveryDetail;
