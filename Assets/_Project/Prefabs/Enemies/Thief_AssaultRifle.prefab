@@ -246,6 +246,7 @@ MonoBehaviour:
   m_hitMask:
     serializedVersion: 2
     m_Bits: 4294967295
+  m_missChance: 40
   m_baseAccuracy: 0.72
   m_movingAccuracyPenalty: 0.2
   m_distanceAccuracyPenalty: 0.35

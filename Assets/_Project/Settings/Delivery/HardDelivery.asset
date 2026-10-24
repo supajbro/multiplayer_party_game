@@ -24,6 +24,10 @@ MonoBehaviour:
   m_minimumDeliveryTime: 150
   m_maximumDeliveryTime: 600
   m_uphillDistanceMultiplier: 2
+  m_minSpawnInterval: 2
+  m_maxSpawnInterval: 15
+  m_minThievesPerWave: 3
+  m_maxThievesPerWave: 6
   m_minimumRouteDistance: 160
   m_maximumRouteDistance: 10000
   m_minimumProgressionZone: 3

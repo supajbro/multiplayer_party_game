@@ -24,6 +24,8 @@ namespace CouchGuys.Gameplay.Enemies
         [SerializeField] private LayerMask m_hitMask = ~0;
 
         [Header("Accuracy and Pacing")]
+        [Tooltip("Percentage chance per shot to aim visibly wide of the target. Existing spread still applies.")]
+        [SerializeField, Range(0f, 100f)] private float m_missChance = 40f;
         [SerializeField, Range(0f, 1f)] private float m_baseAccuracy = 0.72f;
         [SerializeField, Range(0f, 1f)] private float m_movingAccuracyPenalty = 0.2f;
         [SerializeField, Range(0f, 1f)] private float m_distanceAccuracyPenalty = 0.35f;
@@ -43,6 +45,7 @@ namespace CouchGuys.Gameplay.Enemies
         private readonly Dictionary<VanController, float> m_damageByVan = new();
         private readonly Dictionary<CouchGuys.Gameplay.Pedestrians.PedestrianController, float> m_damageByPedestrian = new();
         private readonly List<Vector3> m_tracerEnds = new(12);
+        private readonly List<Collider> m_targetColliders = new(8);
         private readonly RaycastHit[] m_hits = new RaycastHit[24];
         private PlayerHealth m_target;
         private Material m_tracerMaterial;
@@ -139,6 +142,8 @@ namespace CouchGuys.Gameplay.Enemies
             float accuracy = Mathf.Clamp01(m_baseAccuracy - distance01 * m_distanceAccuracyPenalty -
                 (moving ? m_movingAccuracyPenalty : 0f));
             float spread = m_spreadAngle * Mathf.Lerp(1.8f, 0.25f, accuracy);
+            bool miss = Random.value * 100f < Mathf.Clamp(m_missChance, 0f, 100f) || m_missChance >= 100f;
+            Vector3 shotDirection = miss ? GetMissDirection(origin, spread) : m_aimDirection;
 
             m_damageByPlayer.Clear();
             m_damageByVan.Clear();
@@ -146,7 +151,7 @@ namespace CouchGuys.Gameplay.Enemies
             m_tracerEnds.Clear();
             for (int pellet = 0; pellet < m_pelletsPerShot; pellet++)
             {
-                Vector3 direction = ApplySpread(m_aimDirection, spread);
+                Vector3 direction = ApplySpread(shotDirection, spread);
                 Vector3 end = origin + direction * m_range;
                 int count = Physics.RaycastNonAlloc(origin, direction, m_hits, m_range, m_hitMask, QueryTriggerInteraction.Collide);
                 SortHits(count);
@@ -195,6 +200,24 @@ namespace CouchGuys.Gameplay.Enemies
             if (m_weaponType == EnemyWeaponType.AssaultRifle)
                 m_rifleBurstActive = true;
             ShowShotObserversRpc(origin, m_tracerEnds.ToArray());
+        }
+
+        private Vector3 GetMissDirection(Vector3 origin, float spread)
+        {
+            // Aim outside the target's bounding sphere, allowing room for pellet spread.
+            Transform targetRoot = m_target.transform;
+            if (m_target.TryGetComponent(out PlayerVanInteractor interactor) && interactor.CurrentVan != null)
+                targetRoot = interactor.CurrentVan.transform;
+            targetRoot.GetComponentsInChildren<Collider>(m_targetColliders);
+            Bounds bounds = new Bounds(m_target.AimPoint, Vector3.zero);
+            foreach (Collider collider in m_targetColliders)
+                if (collider.enabled && !collider.isTrigger) bounds.Encapsulate(collider.bounds);
+            Vector3 offset = bounds.center - origin;
+            float radius = bounds.extents.magnitude;
+            float angle = Mathf.Asin(Mathf.Clamp01(radius / Mathf.Max(offset.magnitude, 0.01f))) * Mathf.Rad2Deg;
+            angle += spread + Random.Range(2f, 6f);
+            if (Random.value < 0.5f) angle = -angle;
+            return Quaternion.LookRotation(offset.normalized) * Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
         }
 
         private void SortHits(int count)
@@ -252,6 +275,7 @@ namespace CouchGuys.Gameplay.Enemies
         protected override void OnValidate()
         {
             base.OnValidate();
+            m_missChance = Mathf.Clamp(m_missChance, 0f, 100f);
             m_fireInterval = Mathf.Max(0.05f, m_fireInterval);
             m_range = Mathf.Max(1f, m_range);
             m_pelletsPerShot = Mathf.Max(1, m_pelletsPerShot);

@@ -21,10 +21,6 @@ namespace CouchGuys.Gameplay.Enemies
         [SerializeField] private NeighbourhoodGenerator m_generator;
         [SerializeField] private NetworkObject[] m_enemyPrefabs;
 
-        [Header("Spawn Timing")]
-        [SerializeField, Min(0.1f)] private float m_minSpawnInterval = 20f;
-        [SerializeField, Min(0.1f)] private float m_maxSpawnInterval = 45f;
-
         [Header("Spawn Distance")]
         [SerializeField, Min(1f)] private float m_minSpawnDistance = 30f;
         [SerializeField, Min(1f)] private float m_maxSpawnDistance = 80f;
@@ -44,7 +40,7 @@ namespace CouchGuys.Gameplay.Enemies
         private readonly List<Vector3> m_groupPositions = new List<Vector3>(8);
         private NavMeshPath m_path;
         private DeliveryManager m_deliveryManager;
-        private SuburbsChapterManager m_chapterManager;
+        private NetworkObject m_scheduledCouch;
         private bool m_regionReady;
         private bool m_clearingEnemies;
         private bool m_warnedMissingPrefab;
@@ -54,7 +50,10 @@ namespace CouchGuys.Gameplay.Enemies
         private int m_lastSpawnGroupSize;
         private bool m_hasLastSpawn;
 
-        public bool SpawningEnabled => m_regionReady && IsServerStarted();
+        public bool SpawningEnabled => m_regionReady && IsServerStarted() &&
+            m_deliveryManager != null && m_deliveryManager.HasActiveDelivery &&
+            (m_deliveryManager.State == DeliveryState.CouchSpawned ||
+             m_deliveryManager.State == DeliveryState.Transport);
         public IReadOnlyList<NetworkObject> EnemyPrefabs => m_enemyPrefabs;
         public string CurrentRegionName => m_generator != null ? m_generator.CurrentRegionName : "None";
         public bool NavMeshReady => m_generator != null && m_generator.IsNavMeshReady;
@@ -69,12 +68,12 @@ namespace CouchGuys.Gameplay.Enemies
         {
             m_generator ??= GetComponent<NeighbourhoodGenerator>();
             m_deliveryManager = GetComponent<DeliveryManager>();
-            m_chapterManager = GetComponent<SuburbsChapterManager>();
             m_path = new NavMeshPath();
         }
 
         private void OnEnable()
         {
+            m_deliveryManager ??= GetComponent<DeliveryManager>() ?? FindFirstObjectByType<DeliveryManager>();
             if (m_generator != null)
             {
                 m_generator.RegionClearing += OnRegionClearing;
@@ -108,11 +107,26 @@ namespace CouchGuys.Gameplay.Enemies
             NetworkPlayerOwnership.ServerPlayerStarted -= RegisterPlayer;
             NetworkPlayerOwnership.ServerPlayerStopped -= UnregisterPlayer;
             m_players.Clear();
+            m_scheduledCouch = null;
+            m_nextSpawnTime = float.PositiveInfinity;
         }
 
         private void Update()
         {
-            if (!SpawningEnabled || Time.time < m_nextSpawnTime)
+            if (!SpawningEnabled)
+            {
+                m_scheduledCouch = null;
+                m_nextSpawnTime = float.PositiveInfinity;
+                return;
+            }
+
+            if (m_scheduledCouch != m_deliveryManager.ActiveCouch)
+            {
+                m_scheduledCouch = m_deliveryManager.ActiveCouch;
+                ScheduleNextSpawn();
+            }
+
+            if (Time.time < m_nextSpawnTime)
             {
                 return;
             }
@@ -162,19 +176,14 @@ namespace CouchGuys.Gameplay.Enemies
         private void OnRegionGenerated(NeighbourhoodGenerator generator)
         {
             m_regionReady = generator != null && generator.IsGenerationReady && generator.IsNavMeshReady;
-            if (m_regionReady)
-            {
-                ScheduleNextSpawn();
-            }
-            else
-            {
-                m_nextSpawnTime = float.PositiveInfinity;
-            }
+            m_scheduledCouch = null;
+            m_nextSpawnTime = float.PositiveInfinity;
         }
 
         private void OnRegionClearing(NeighbourhoodGenerator generator)
         {
             m_regionReady = false;
+            m_scheduledCouch = null;
             m_nextSpawnTime = float.PositiveInfinity;
             DespawnAllThieves();
         }
@@ -278,25 +287,15 @@ namespace CouchGuys.Gameplay.Enemies
         {
             minimum = 0;
             maximum = 0;
-            m_deliveryManager ??= GetComponent<DeliveryManager>() ?? FindFirstObjectByType<DeliveryManager>();
-            m_chapterManager ??= GetComponent<SuburbsChapterManager>() ?? FindFirstObjectByType<SuburbsChapterManager>();
-            if (m_deliveryManager == null || !m_deliveryManager.HasActiveDelivery ||
-                m_deliveryManager.ActiveTierIndex < 0)
+            if (!SpawningEnabled)
             {
                 return false;
             }
 
-            int tierIndex = m_deliveryManager.ActiveTierIndex;
-            SuburbsChapterDefinition.EnemySpawnRange range = m_chapterManager?.Definition != null
-                ? m_chapterManager.Definition.GetEnemySpawnRange(tierIndex)
-                : tierIndex switch
-                {
-                    0 => new SuburbsChapterDefinition.EnemySpawnRange(1, 2),
-                    1 => new SuburbsChapterDefinition.EnemySpawnRange(2, 4),
-                    _ => new SuburbsChapterDefinition.EnemySpawnRange(4, 4)
-                };
-            minimum = range.Minimum;
-            maximum = range.Maximum;
+            DeliveryTierConfig tier = m_deliveryManager.GetTierConfig(m_deliveryManager.ActiveTierIndex);
+            if (tier == null) return false;
+            minimum = tier.MinThievesPerWave;
+            maximum = tier.MaxThievesPerWave;
             return true;
         }
 
@@ -471,7 +470,12 @@ namespace CouchGuys.Gameplay.Enemies
 
         private void ScheduleNextSpawn()
         {
-            m_nextSpawnTime = Time.time + Random.Range(m_minSpawnInterval, m_maxSpawnInterval);
+            DeliveryTierConfig tier = SpawningEnabled
+                ? m_deliveryManager.GetTierConfig(m_deliveryManager.ActiveTierIndex)
+                : null;
+            m_nextSpawnTime = tier != null
+                ? Time.time + Random.Range(tier.MinSpawnInterval, tier.MaxSpawnInterval)
+                : float.PositiveInfinity;
         }
 
         private bool HasEnemyPrefabs()
@@ -555,8 +559,6 @@ namespace CouchGuys.Gameplay.Enemies
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            m_minSpawnInterval = Mathf.Max(0.1f, m_minSpawnInterval);
-            m_maxSpawnInterval = Mathf.Max(m_minSpawnInterval, m_maxSpawnInterval);
             m_minSpawnDistance = Mathf.Max(1f, m_minSpawnDistance);
             m_maxSpawnDistance = Mathf.Max(m_minSpawnDistance, m_maxSpawnDistance);
             m_maxActiveThieves = Mathf.Max(1, m_maxActiveThieves);

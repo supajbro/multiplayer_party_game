@@ -46,6 +46,12 @@ namespace CouchGuys.Gameplay.Delivery
         [SerializeField, Min(1f)] private float m_maximumDeliveryTime = 600f;
         [SerializeField, Min(0f)] private float m_uphillDistanceMultiplier = 2f;
 
+        [Header("Thief Waves")]
+        [SerializeField, Min(0.1f)] private float m_minSpawnInterval = 15f;
+        [SerializeField, Min(0.1f)] private float m_maxSpawnInterval = 25f;
+        [SerializeField, Min(1)] private int m_minThievesPerWave = 1;
+        [SerializeField, Min(1)] private int m_maxThievesPerWave = 2;
+
         [Header("Destination Eligibility")]
         [SerializeField, Min(0f)] private float m_minimumRouteDistance;
         [SerializeField, Min(0f)] private float m_maximumRouteDistance = 120f;
@@ -68,6 +74,10 @@ namespace CouchGuys.Gameplay.Delivery
         public float MinimumDeliveryTime => m_minimumDeliveryTime;
         public float MaximumDeliveryTime => m_maximumDeliveryTime;
         public float UphillDistanceMultiplier => m_uphillDistanceMultiplier;
+        public float MinSpawnInterval => Mathf.Max(0.1f, m_minSpawnInterval);
+        public float MaxSpawnInterval => Mathf.Max(MinSpawnInterval, m_maxSpawnInterval);
+        public int MinThievesPerWave => Mathf.Clamp(m_minThievesPerWave, 1, int.MaxValue - 1);
+        public int MaxThievesPerWave => Mathf.Clamp(m_maxThievesPerWave, MinThievesPerWave, int.MaxValue - 1);
 
         public bool IsDestinationEligible(DeliveryDestination destination)
         {
@@ -118,6 +128,10 @@ namespace CouchGuys.Gameplay.Delivery
             DeliveryDestinationCategories categories, Color colour)
         {
             m_tier = tier;
+            m_minSpawnInterval = tier == DeliveryTier.Easy ? 15f : tier == DeliveryTier.Medium ? 8f : 4f;
+            m_maxSpawnInterval = tier == DeliveryTier.Easy ? 25f : tier == DeliveryTier.Medium ? 15f : 9f;
+            m_minThievesPerWave = tier == DeliveryTier.Easy ? 1 : 2;
+            m_maxThievesPerWave = tier == DeliveryTier.Easy ? 2 : tier == DeliveryTier.Medium ? 4 : 6;
             m_displayName = displayName;
             m_description = description;
             m_purchasePrice = price;
@@ -138,6 +152,10 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void OnValidate()
         {
+            m_minSpawnInterval = MinSpawnInterval;
+            m_maxSpawnInterval = MaxSpawnInterval;
+            m_minThievesPerWave = MinThievesPerWave;
+            m_maxThievesPerWave = MaxThievesPerWave;
             m_maximumRouteDistance = Mathf.Max(m_minimumRouteDistance, m_maximumRouteDistance);
             if (m_maximumProgressionZone < m_minimumProgressionZone)
                 m_maximumProgressionZone = m_minimumProgressionZone;
