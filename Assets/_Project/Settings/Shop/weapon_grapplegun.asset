@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47a9d384fe104a878d888afc5a20adf1, type: 3}
+  m_Name: weapon_grapplegun
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Shop.ShopItemDefinition
+  m_itemId: weapon_grapplegun
+  m_displayName: Grapple Gun
+  m_description: Hold fire to pull players, thieves, and couches toward you.
+  m_price: 250
+  m_category: 1
+  m_icon: {fileID: 0}
+  m_purchaseBehaviour: {fileID: 11400000, guid: 2fe01804002c48ae884ef13dd209989d, type: 2}

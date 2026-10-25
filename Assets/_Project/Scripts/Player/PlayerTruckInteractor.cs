@@ -85,6 +85,12 @@ namespace CouchGuys.Player
         private void Update()
         {
             if (!IsOwner || m_input == null) return;
+            if (TryGetComponent(out PlayerHealth health) && (health.IsKnockedDown || health.HasReviveInteraction))
+            {
+                m_holdProgress = 0f;
+                m_worldInteractionPrompt = string.Empty;
+                return;
+            }
             TruckController current = CurrentTruck;
             if (current != null)
             {
@@ -194,6 +200,7 @@ namespace CouchGuys.Player
         [ServerRpc]
         private void RequestRearInteractionServerRpc(NetworkObject truckObject)
         {
+            if (TryGetComponent(out PlayerHealth health) && health.IsKnockedDown) return;
             if (CurrentTruck != null || truckObject == null || !truckObject.TryGetComponent(out TruckController truck)) return;
             truck.InteractWithRearServer(this, GetComponent<PlayerCouchCarrier>());
         }
@@ -234,8 +241,22 @@ namespace CouchGuys.Player
         [ServerRpc]
         private void SendDrivingInputServerRpc(NetworkObject truckObject, Vector2 input)
         {
+            if (TryGetComponent(out PlayerHealth health) && health.IsKnockedDown) return;
             if (truckObject != null && truckObject == m_currentTruckObject.Value && truckObject.TryGetComponent(out TruckController truck))
                 truck.SetInputServer(this, input);
+        }
+
+        [Server]
+        internal void DetachDownedServer()
+        {
+            TruckController truck = CurrentTruck;
+            if (truck == null) return;
+            Vector3 position = transform.position;
+            Quaternion rotation = transform.rotation;
+            truck.LeaveServer(this);
+            m_currentTruckObject.Value = null;
+            m_currentSeatIndex.Value = -1;
+            ApplyExitObserversRpc(position, rotation);
         }
 
         [Server]

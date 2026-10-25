@@ -53,13 +53,15 @@ namespace CouchGuys.Editor
             InstallShop();
             InstallPunchLayer();
             AssetDatabase.SaveAssets();
-            Debug.Log("Weapon ownership installed: three registered pickups, shop weapons, masked punch animations.");
+            Debug.Log("Weapon ownership installed: registered pickups, shop weapons, masked punch animations.");
         }
 
         private static GameObject BuildPickup(PlayerWeaponType type, string path, GameObject player)
         {
             GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(
-                $"Assets/_Project/Models/CouchGuy/Weapons/{type}.fbx");
+                type == PlayerWeaponType.GrappleGun
+                    ? "Assets/_Project/Resources/Weapons/GrappleGunModel.prefab"
+                    : $"Assets/_Project/Models/CouchGuy/Weapons/{type}.fbx");
             if (model == null) throw new UnityException($"Missing exported weapon {type}.");
             var root = new GameObject(type.ToString());
             try
@@ -131,7 +133,8 @@ namespace CouchGuys.Editor
                 var item = ScriptableObject.CreateInstance<ShopItemDefinition>();
                 var data = new SerializedObject(item);
                 data.FindProperty("m_itemId").stringValue = id;
-                data.FindProperty("m_displayName").stringValue = type == PlayerWeaponType.AssaultRifle ? "Assault Rifle" : type.ToString();
+                data.FindProperty("m_displayName").stringValue = type == PlayerWeaponType.GrappleGun ? "Grapple Gun" :
+                    type == PlayerWeaponType.AssaultRifle ? "Assault Rifle" : type.ToString();
                 data.FindProperty("m_description").stringValue = "Equips this weapon. Your previous weapon drops nearby.";
                 data.FindProperty("m_price").intValue = type == PlayerWeaponType.Pistol ? 100 : type == PlayerWeaponType.AssaultRifle ? 300 : 250;
                 data.FindProperty("m_category").enumValueIndex = (int)ShopItemCategory.Weapon;

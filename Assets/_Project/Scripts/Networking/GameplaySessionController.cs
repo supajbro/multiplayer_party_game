@@ -95,7 +95,7 @@ namespace CouchGuys.Networking
                 if (health == null || !health.IsServerInitialized || health.IsAiTeammate ||
                     !health.Owner.IsValid || !health.Owner.IsActive) continue;
                 players++;
-                if (health.IsAlive) return;
+                if (health.IsAlive || health.HasPendingRespawn) return;
             }
             // A connected player still loading/spawning is not a dead player.
             if (players == 0 || players < ActiveConnectionCount()) return;
@@ -224,6 +224,7 @@ namespace CouchGuys.Networking
             bool blocked = BlocksLocalInput;
             if (blocked && !m_hadInputBlock)
             {
+                PlayerDebugMenu.CloseActive();
                 m_previousCursorLock = Cursor.lockState;
                 m_previousCursorVisible = Cursor.visible;
             }

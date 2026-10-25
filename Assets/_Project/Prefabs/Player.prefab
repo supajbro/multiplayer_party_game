@@ -286,7 +286,9 @@ MonoBehaviour:
   _networkObjectCache: {fileID: 4753475039817145927}
   m_maxHealth: 100
   m_knockdownDamageFraction: 0.25
-  m_respawnDelay: 5
+  m_respawnDelay: 30
+  m_reviveDuration: 3
+  m_reviveRange: 1.8
   m_knockdownDuration: 2.25
   m_upwardImpulse: 2.5
   m_fallAngle: 78

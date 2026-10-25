@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using CouchGuys.Networking;
+using CouchGuys.Input;
+using CouchGuys.Gameplay.Weapons;
 using CouchGuys.ProceduralGeneration;
 using FishNet.Connection;
 using FishNet.Object;
@@ -21,7 +23,9 @@ namespace CouchGuys.Player
         [SerializeField, Range(0.01f, 1f)] private float m_knockdownDamageFraction = 0.25f;
 
         [Header("Death And Respawn")]
-        [SerializeField, Min(0.1f)] private float m_respawnDelay = 5f;
+        [SerializeField, Min(0.1f)] private float m_respawnDelay = 30f;
+        [SerializeField, Min(0.1f)] private float m_reviveDuration = 3f;
+        [SerializeField, Min(0.1f)] private float m_reviveRange = 1.8f;
 
         [Header("Knockdown")]
         [SerializeField, Min(0.1f)] private float m_knockdownDuration = 2.25f;
@@ -37,10 +41,21 @@ namespace CouchGuys.Player
         private readonly SyncVar<Vector3> m_knockdownDirection = new(Vector3.forward);
         private readonly SyncVar<int> m_aiTeammateIndex = new(-1);
 
+        private readonly SyncVar<float> m_downedRemaining = new();
+        private readonly SyncVar<float> m_reviveProgress = new();
+        private readonly SyncVar<NetworkObject> m_reviver = new();
+        private PlayerHealth m_activeReviveTarget;
+        private PlayerHealth m_localReviveTarget;
+        private PlayerInputReader m_input;
+        private PlayerCouchCarrier m_carrier;
+        private PlayerTruckInteractor m_truck;
+        private Vector3 m_deathPosition;
+        private float m_reviveStartedAt, m_reviveLeaseUntil, m_nextReviveHeartbeat, m_nextStatePublish;
         private Quaternion m_visualBaseRotation;
         private float m_visualFallProgress;
         private float m_recoverAtServerTime;
         private float m_respawnAtServerTime = float.PositiveInfinity;
+        private float m_nextRespawnAttempt;
         private RobotFaceExpressionController m_faceExpression;
 
         public event Action<float, float> HealthChanged;
@@ -53,6 +68,13 @@ namespace CouchGuys.Player
         public float CurrentHealth => m_currentHealth.Value;
         public float MaximumHealth => m_maxHealth;
         public bool IsAlive => m_currentHealth.Value > 0f;
+        public bool IsDowned => !IsAlive && m_knockedDown.Value;
+        public bool HasPendingRespawn => IsDowned && !IsAiTeammate;
+        public float DownedRemaining => m_downedRemaining.Value;
+        public bool CanRevive => IsSpawned && IsAlive && !IsKnockedDown &&
+            !IsAiTeammate && Owner.IsValid && Owner.IsActive &&
+            (m_carrier == null || !m_carrier.IsCarrying) && (m_truck == null || m_truck.CurrentTruck == null);
+        public bool HasReviveInteraction => FindReviveTarget() != null;
         public bool IsKnockedDown => m_knockedDown.Value;
         public bool IsAiTeammate => m_aiTeammateIndex.Value >= 0;
         public int AiTeammateIndex => m_aiTeammateIndex.Value;
@@ -71,6 +93,9 @@ namespace CouchGuys.Player
         {
             if (!s_instances.Contains(this)) s_instances.Add(this);
             m_playerController ??= GetComponent<ThirdPersonPlayerController>();
+            m_input = GetComponent<PlayerInputReader>();
+            m_carrier = GetComponent<PlayerCouchCarrier>();
+            m_truck = GetComponent<PlayerTruckInteractor>();
             m_faceExpression = GetComponent<RobotFaceExpressionController>();
             m_visualRoot ??= transform.Find("Visual");
             if (m_visualRoot != null)
@@ -98,6 +123,11 @@ namespace CouchGuys.Player
             m_currentHealth.Value = m_maxHealth;
             m_knockedDown.Value = false;
             m_respawnAtServerTime = float.PositiveInfinity;
+            m_nextRespawnAttempt = 0f;
+            m_downedRemaining.Value = 0f;
+            m_reviveProgress.Value = 0f;
+            m_reviver.Value = null;
+            m_activeReviveTarget = null;
             DebugCouchBotController bot = GetComponent<DebugCouchBotController>();
             m_aiTeammateIndex.Value = bot != null && bot.IsAiTeammate ? bot.BotIndex : -1;
         }
@@ -111,7 +141,10 @@ namespace CouchGuys.Player
 
         private void Update()
         {
-            if (IsServerInitialized && !GameplaySessionController.IsServerGameOver && !IsAlive && !IsAiTeammate && Time.time >= m_respawnAtServerTime)
+            UpdateReviveInput();
+            if (IsServerInitialized) UpdateReviveServer();
+            if (IsServerInitialized && HasPendingRespawn && Time.time >= m_respawnAtServerTime &&
+                Time.time >= m_nextRespawnAttempt)
             {
                 RespawnAtDepotServer();
             }
@@ -122,6 +155,121 @@ namespace CouchGuys.Player
             }
 
             UpdateKnockdownVisual();
+        }
+
+        public PlayerHealth FindReviveTarget()
+        {
+            if (!CanRevive) return null;
+            PlayerHealth nearest = null;
+            float distance = m_reviveRange * m_reviveRange;
+            foreach (PlayerHealth target in s_instances)
+            {
+                if (target == null || target == this || !target.IsSpawned || !target.IsDowned ||
+                    (!target.IsAiTeammate && target.DownedRemaining <= 0f) ||
+                    (target.m_reviver.Value != null && target.m_reviver.Value != NetworkObject)) continue;
+                float candidate = (target.transform.position - transform.position).sqrMagnitude;
+                if (candidate > distance) continue;
+                distance = candidate;
+                nearest = target;
+            }
+            return nearest;
+        }
+
+        public string GetRevivePrompt(out float progress, out float duration)
+        {
+            PlayerHealth target = FindReviveTarget();
+            duration = target != null ? target.m_reviveDuration : 0f;
+            progress = target != null && target.m_reviver.Value == NetworkObject ? target.m_reviveProgress.Value : 0f;
+            return target != null ? "Hold E to Revive" : null;
+        }
+
+        private void UpdateReviveInput()
+        {
+            if (!IsOwner || !IsClientInitialized) return;
+            PlayerHealth target = m_input != null && m_input.isActiveAndEnabled && m_input.VehicleInteractHeld
+                ? FindReviveTarget() : null;
+            if (m_localReviveTarget != target)
+            {
+                if (m_localReviveTarget != null) ReleaseReviveServerRpc();
+                m_localReviveTarget = target;
+                m_nextReviveHeartbeat = 0f;
+            }
+            if (target == null || Time.unscaledTime < m_nextReviveHeartbeat) return;
+            HoldReviveServerRpc(target.NetworkObject);
+            m_nextReviveHeartbeat = Time.unscaledTime + 0.1f;
+        }
+
+        [ServerRpc]
+        private void HoldReviveServerRpc(NetworkObject targetObject)
+        {
+            if (!CanRevive || targetObject == null || !targetObject.IsSpawned ||
+                !targetObject.TryGetComponent(out PlayerHealth target) || target == this || !target.IsDowned ||
+                Time.time >= target.m_respawnAtServerTime ||
+                (target.transform.position - transform.position).sqrMagnitude > m_reviveRange * m_reviveRange) return;
+            if (target.m_reviver.Value != null && Time.time >= target.m_reviveLeaseUntil)
+                target.ClearReviveServer();
+            if (target.m_reviver.Value != null && target.m_reviver.Value != NetworkObject) return;
+            if (m_activeReviveTarget != target) CancelOutgoingReviveServer();
+            if (target.m_reviver.Value == null)
+            {
+                target.m_reviver.Value = NetworkObject;
+                target.m_reviveStartedAt = Time.time;
+                target.m_reviveProgress.Value = 0f;
+            }
+            m_activeReviveTarget = target;
+            target.m_reviveLeaseUntil = Time.time + 0.5f;
+        }
+
+        [ServerRpc]
+        private void ReleaseReviveServerRpc() => CancelOutgoingReviveServer();
+
+        private void CancelOutgoingReviveServer()
+        {
+            if (m_activeReviveTarget != null && m_activeReviveTarget.m_reviver.Value == NetworkObject)
+                m_activeReviveTarget.ClearReviveServer();
+            m_activeReviveTarget = null;
+        }
+
+        private void ClearReviveServer()
+        {
+            if (m_reviver.Value != null && m_reviver.Value.TryGetComponent(out PlayerHealth reviver) &&
+                reviver.m_activeReviveTarget == this) reviver.m_activeReviveTarget = null;
+            m_reviver.Value = null;
+            m_reviveProgress.Value = 0f;
+        }
+
+        private void UpdateReviveServer()
+        {
+            if (!IsDowned) return;
+            PlayerHealth reviver = null;
+            bool claimed = m_reviver.Value != null;
+            if (claimed) m_reviver.Value.TryGetComponent(out reviver);
+            bool valid = claimed && reviver != null && reviver.CanRevive &&
+                Time.time < m_reviveLeaseUntil &&
+                (reviver.transform.position - transform.position).sqrMagnitude <= reviver.m_reviveRange * reviver.m_reviveRange;
+            if (!valid) ClearReviveServer();
+            // Timeout wins when both deadlines are crossed in the same server frame.
+            if (valid && Time.time < m_respawnAtServerTime && Time.time >= m_reviveStartedAt + m_reviveDuration)
+            {
+                ClearReviveServer();
+                m_respawnAtServerTime = float.PositiveInfinity;
+                m_downedRemaining.Value = 0f;
+                m_currentHealth.Value = m_maxHealth * 0.5f;
+                m_knockedDown.Value = false;
+                m_recoverAtServerTime = 0f;
+                return;
+            }
+            if (Time.time < m_nextStatePublish) return;
+            m_nextStatePublish = Time.time + 0.1f;
+            m_downedRemaining.Value = IsAiTeammate ? 0f : Mathf.Max(0f, m_respawnAtServerTime - Time.time);
+            m_reviveProgress.Value = valid ? Mathf.Min(m_reviveDuration, Time.time - m_reviveStartedAt) : 0f;
+        }
+
+        public override void OnStopServer()
+        {
+            CancelOutgoingReviveServer();
+            ClearReviveServer();
+            base.OnStopServer();
         }
 
         [Server]
@@ -195,6 +343,12 @@ namespace CouchGuys.Player
                 m_knockedDown.Value = true;
                 if (died)
                 {
+                    m_truck?.DetachDownedServer();
+                    m_deathPosition = transform.position;
+                    m_nextRespawnAttempt = 0f;
+                    m_downedRemaining.Value = m_respawnDelay;
+                    GetComponent<PlayerWeaponController>()?.CancelActionsForDownedServer();
+                    CancelOutgoingReviveServer();
                     m_respawnAtServerTime = IsAiTeammate
                         ? float.PositiveInfinity
                         : Time.time + m_respawnDelay;
@@ -216,6 +370,23 @@ namespace CouchGuys.Player
             }
 
             if (appliedDamage > 0f) PlayHitObserversRpc();
+        }
+
+        // Server chooses every pull. The owning movement motor applies it once,
+        // just like impacts, and its existing NetworkTransform replicates movement.
+        [Server]
+        internal void ApplyGrapplePullServer(Vector3 direction, float acceleration, float speed, float deltaTime)
+        {
+            if (!IsAlive) return;
+            if (Owner.IsValid) ApplyGrapplePullTargetRpc(Owner, direction, acceleration, speed, deltaTime);
+            else GetComponent<DebugCouchBotController>()?.ApplyGrapplePullServer(direction, acceleration, speed, deltaTime);
+        }
+
+        [TargetRpc]
+        private void ApplyGrapplePullTargetRpc(NetworkConnection connection, Vector3 direction,
+            float acceleration, float speed, float deltaTime)
+        {
+            if (IsOwner && IsAlive) m_playerController?.ApplyGrapplePull(direction, acceleration, speed, deltaTime);
         }
 
         [ObserversRpc(RunLocally = true)]
@@ -254,10 +425,19 @@ namespace CouchGuys.Player
             {
                 // Generation should always be ready before a Player exists. Retry on
                 // the next frame rather than reviving at an unsafe arbitrary position.
-                m_respawnAtServerTime = Time.time + 0.1f;
+                m_nextRespawnAttempt = Time.time + 0.1f;
                 return;
             }
 
+            // Successful drops consume their slots; failed spawns retain items for retry.
+            PlayerWeaponController weapons = GetComponent<PlayerWeaponController>();
+            if (weapons != null && !weapons.DropInventoryForRespawnServer(m_deathPosition))
+            {
+                m_nextRespawnAttempt = Time.time + 1f;
+                return;
+            }
+            ClearReviveServer();
+            m_downedRemaining.Value = 0f;
             GetComponent<PlayerCouchCarrier>()?.ReleaseForDamageServer();
             PlayerCouchCarrier carrier = GetComponent<PlayerCouchCarrier>();
             if (carrier != null)
@@ -331,6 +511,8 @@ namespace CouchGuys.Player
             m_maxHealth = Mathf.Max(1f, m_maxHealth);
             m_knockdownDuration = Mathf.Max(0.1f, m_knockdownDuration);
             m_respawnDelay = Mathf.Max(0.1f, m_respawnDelay);
+            m_reviveDuration = Mathf.Max(0.1f, m_reviveDuration);
+            m_reviveRange = Mathf.Max(0.1f, m_reviveRange);
         }
 #endif
     }

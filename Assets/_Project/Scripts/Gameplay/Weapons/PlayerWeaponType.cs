@@ -4,6 +4,7 @@ namespace CouchGuys.Gameplay.Weapons
     {
         Pistol = 0,
         AssaultRifle = 1,
-        Shotgun = 2
+        Shotgun = 2,
+        GrappleGun = 3
     }
 }

@@ -12,7 +12,8 @@ namespace CouchGuys.Gameplay.Weapons
         private int m_magazine = -1;
         private int m_reserve = -1;
         private bool m_claimed;
-        public string DisplayName => m_weaponType == PlayerWeaponType.AssaultRifle ? "Assault Rifle" : m_weaponType.ToString();
+        public string DisplayName => m_weaponType == PlayerWeaponType.GrappleGun ? "Grapple Gun" :
+            m_weaponType == PlayerWeaponType.AssaultRifle ? "Assault Rifle" : m_weaponType.ToString();
 
         public override void OnStartClient()
         {

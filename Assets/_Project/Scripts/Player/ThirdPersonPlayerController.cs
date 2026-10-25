@@ -79,6 +79,9 @@ namespace CouchGuys.Player
         public Vector3 MovementIntent { get; private set; }
         public bool MovementLocked => m_movementLocked;
         public bool IsSprinting { get; private set; }
+        public float WalkSpeed { get => m_walkSpeed; set => m_walkSpeed = Mathf.Clamp(value, 0f, 30f); }
+        public float RunSpeed { get => m_runSpeed; set => m_runSpeed = Mathf.Clamp(value, 0f, 50f); }
+        public float JumpHeight { get => m_jumpHeight; set => m_jumpHeight = Mathf.Clamp(value, 0f, 15f); }
 
         public void SetMovementLocked(bool locked)
         {
@@ -106,6 +109,13 @@ namespace CouchGuys.Player
                 m_vehicleImpactUntil = Time.time + 0.25f;
             }
             else m_externalVelocity += impulse;
+        }
+
+        internal void ApplyGrapplePull(Vector3 direction, float acceleration, float speed, float deltaTime)
+        {
+            float increase = Mathf.Min(acceleration * deltaTime,
+                Mathf.Max(0f, speed - Vector3.Dot(m_externalVelocity, direction)));
+            m_externalVelocity += direction * increase;
         }
 
         /// <summary>

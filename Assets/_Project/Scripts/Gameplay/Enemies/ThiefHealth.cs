@@ -115,6 +115,22 @@ namespace CouchGuys.Gameplay.Enemies
             ApplyImpactServer(damage, impactDirection, knockbackForce, upwardForce, true, directionalKnockback);
         }
 
+        [Server]
+        internal void ApplyGrapplePullServer(Vector3 direction, float acceleration, float speed, float deltaTime)
+        {
+            if (!IsAlive) return;
+            // Keep the thief on its existing collision-aware NavMesh movement path.
+            direction = Vector3.ProjectOnPlane(direction, Vector3.up).normalized;
+            m_knockbackVelocity += direction * Mathf.Min(acceleration * deltaTime,
+                Mathf.Max(0f, speed - Vector3.Dot(m_knockbackVelocity, direction)));
+            m_resumeNavigationAt = Time.time + m_knockbackDuration;
+            if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh)
+            {
+                m_agent.isStopped = true;
+                m_agent.ResetPath();
+            }
+        }
+
         private void ApplyImpactServer(
             float damage,
             Vector3 impactDirection,

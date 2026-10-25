@@ -8,6 +8,7 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] public InteractionPromptView m_interactionPrompt;
         [SerializeField] public RectTransform m_minimapRoot;
         [SerializeField] public Text m_healthText;
+        [SerializeField] public Text m_downedText;
         [SerializeField] public Text m_deliveryTitle;
         [SerializeField] public Text m_deliveryDetail;
         [SerializeField] public Text m_deliveryDistance;

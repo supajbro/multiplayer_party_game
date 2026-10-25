@@ -25,6 +25,12 @@ namespace CouchGuys.Gameplay.Weapons
         [Header("Reticle")]
         [SerializeField] private ReticleSettings m_reticleSettings;
 
+        [Header("Grapple (Range and Fire Interval above set maximum range and cooldown)")]
+        [SerializeField, Min(0f)] private float m_pullForce = 45f;
+        [SerializeField, Min(0f)] private float m_pullSpeed = 12f;
+        public float PullForce => m_pullForce;
+        public float PullSpeed => m_pullSpeed;
+
         [Header("Projectile Visuals")]
         [SerializeField] private GameObject m_bulletPrefab;
         [SerializeField, Min(1f)] private float m_bulletSpeed = 70f;
@@ -80,7 +86,8 @@ namespace CouchGuys.Gameplay.Weapons
             {
                 Create(PlayerWeaponType.Pistol, "Pistol", false, 0.42f, 45f, 1, 0.8f, 28f, 0.8f, 0.72f, 8f, 12, 60, 1.25f, 2.5f, 75f, new Vector3(0.065f, 0.065f, 0.24f), 0.035f, 0.045f, 1f),
                 Create(PlayerWeaponType.AssaultRifle, "Assault Rifle", true, 0.095f, 55f, 1, 1.8f, 12f, 0.65f, 0.55f, 3f, 30, 120, 1.8f, 1.5f, 105f, new Vector3(0.045f, 0.045f, 0.34f), 0.018f, 0.022f, 0.8f),
-                Create(PlayerWeaponType.Shotgun, "Shotgun", false, 0.9f, 28f, 9, 7.5f, 11f, 0.22f, 0.3f, 14f, 6, 36, 2.2f, 12f, 62f, new Vector3(0.055f, 0.055f, 0.18f), 0.075f, 0.1f, 1.5f)
+                Create(PlayerWeaponType.Shotgun, "Shotgun", false, 0.9f, 28f, 9, 7.5f, 11f, 0.22f, 0.3f, 14f, 6, 36, 2.2f, 12f, 62f, new Vector3(0.055f, 0.055f, 0.18f), 0.075f, 0.1f, 1.5f),
+                Create(PlayerWeaponType.GrappleGun, "Grapple Gun", false, 0.4f, 30f, 1, 0f, 0f, 1f, 1f, 0f, 1, 0, 1f, 0f, 70f, Vector3.one, 0f, 0f, 1f)
             };
         }
 

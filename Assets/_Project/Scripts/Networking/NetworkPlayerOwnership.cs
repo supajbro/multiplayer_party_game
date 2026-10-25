@@ -65,6 +65,57 @@ namespace CouchGuys.Networking
             ResolveReferences();
             CacheCameraRigHierarchy();
             SetLocalControl(false);
+            gameObject.AddComponent<PlayerDebugMenu>();
+        }
+
+        private float m_nextDebugActionTime;
+
+        // Ownership is required by FishNet: each client can request actions only for its own player.
+        [ServerRpc]
+        public void DebugSpawnServerRpc(int spawnIndex)
+        {
+            if (GameplaySessionController.IsServerGameOver || Time.unscaledTime < m_nextDebugActionTime) return;
+            m_nextDebugActionTime = Time.unscaledTime + 0.25f;
+            bool truck = spawnIndex >= 3 && spawnIndex <= 5;
+            if (spawnIndex < 0 || spawnIndex > 6) return;
+            Vector3 forward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
+            Vector3 position = transform.position + forward * (truck ? 8f : 2f);
+            // Ground the spawn rather than inheriting the player's altitude while jumping.
+            if (Physics.Raycast(position + Vector3.up * 10f, Vector3.down, out RaycastHit hit,
+                    50f, ~0, QueryTriggerInteraction.Ignore)) position = hit.point;
+            Quaternion rotation = Quaternion.LookRotation(forward);
+            if (!truck)
+            {
+                CouchGuys.Gameplay.Weapons.WeaponPickup.SpawnServer(
+                    spawnIndex == 6 ? CouchGuys.Gameplay.Weapons.PlayerWeaponType.GrappleGun :
+                        (CouchGuys.Gameplay.Weapons.PlayerWeaponType)spawnIndex,
+                    position + Vector3.up * 0.5f, rotation, Vector3.zero);
+                return;
+            }
+
+            string prefabName = spawnIndex == 3 ? "LightTruck" : spawnIndex == 4 ? "GoodTruck" : "BestTruck";
+            var prefabs = NetworkManager.SpawnablePrefabs;
+            if (prefabs == null) return;
+            for (int index = 0; index < prefabs.GetObjectCount(); index++)
+            {
+                NetworkObject prefab = prefabs.GetObject(true, index);
+                if (prefab == null || prefab.name != prefabName ||
+                    prefab.GetComponent<CouchGuys.Gameplay.Vehicles.TruckController>() == null) continue;
+                NetworkObject spawned = Instantiate(prefab, position + Vector3.up * 0.3f, rotation);
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(spawned.gameObject, gameObject.scene);
+                ServerManager.Spawn(spawned);
+                return;
+            }
+            Debug.LogWarning($"Debug spawn: {prefabName} is missing from the network spawnable prefabs.");
+        }
+
+        [ServerRpc]
+        public void DebugAddCurrencyServerRpc(int amount)
+        {
+            if (GameplaySessionController.IsServerGameOver || amount < 1 || amount > 100000 ||
+                Time.unscaledTime < m_nextDebugActionTime) return;
+            m_nextDebugActionTime = Time.unscaledTime + 0.25f;
+            FindFirstObjectByType<CouchGuys.Gameplay.Delivery.DeliveryManager>()?.AddTestCurrencyServer(amount);
         }
 
         public override void OnStartClient()

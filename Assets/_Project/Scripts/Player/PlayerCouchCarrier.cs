@@ -119,6 +119,7 @@ namespace CouchGuys.Player
 
             PlayerTruckInteractor truckInteractor = GetComponent<PlayerTruckInteractor>();
             if (m_input != null && m_input.InteractPressedThisFrame &&
+                (health == null || !health.HasReviveInteraction) &&
                 (truckInteractor == null || !truckInteractor.HasPriorityWorldInteraction()))
             {
                 if (IsCarrying)
@@ -604,6 +605,7 @@ namespace CouchGuys.Player
         [ServerRpc]
         private void RequestDepotDoorServerRpc()
         {
+            if (TryGetComponent(out PlayerHealth health) && health.IsKnockedDown) return;
             DeliveryManager deliveryManager = FindFirstObjectByType<DeliveryManager>();
             deliveryManager?.TryToggleNearbyDepotDoorServer(
                 this, m_interactionRange + m_serverRangeTolerance);
@@ -612,6 +614,7 @@ namespace CouchGuys.Player
         [ServerRpc]
         private void RequestDeliveryServerRpc()
         {
+            if (TryGetComponent(out PlayerHealth health) && health.IsKnockedDown) return;
             DeliveryNPC[] npcs = FindObjectsByType<DeliveryNPC>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
             DeliveryNPC closestNpc = null;
             float allowedRange = m_interactionRange + m_serverRangeTolerance;
@@ -632,6 +635,7 @@ namespace CouchGuys.Player
         [ServerRpc]
         private void RequestDeliveryPurchaseServerRpc(int tierIndex)
         {
+            if (TryGetComponent(out PlayerHealth health) && health.IsKnockedDown) return;
             DeliveryManager deliveryManager = FindFirstObjectByType<DeliveryManager>();
             deliveryManager?.TryPurchaseDeliveryServer(this, tierIndex);
         }
@@ -639,6 +643,7 @@ namespace CouchGuys.Player
         [ServerRpc]
         private void RequestShopPurchaseServerRpc(string itemId, uint requestId)
         {
+            if (TryGetComponent(out PlayerHealth health) && health.IsKnockedDown) return;
             DeliveryManager deliveryManager = FindFirstObjectByType<DeliveryManager>();
             deliveryManager?.TryPurchaseShopItemServer(this, itemId, requestId);
         }
@@ -805,6 +810,7 @@ namespace CouchGuys.Player
         [ServerRpc]
         private void RequestTeleportToDeliveryServerRpc()
         {
+            if (TryGetComponent(out PlayerHealth health) && health.IsKnockedDown) return;
             DeliveryManager deliveryManager = FindFirstObjectByType<DeliveryManager>();
             deliveryManager?.TryTeleportActiveDeliveryServer(this);
         }

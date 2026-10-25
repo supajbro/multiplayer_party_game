@@ -95,6 +95,12 @@ namespace CouchGuys.Gameplay.Weapons
             m_view.m_staminaBar.SetValue(m_staminaDisplay);
 
             RefreshWeapons();
+            if (m_view.m_downedText != null)
+            {
+                m_view.m_downedText.gameObject.SetActive(m_health.IsDowned);
+                if (m_health.IsDowned)
+                    m_view.m_downedText.text = $"DOWNED — Respawning in {Mathf.CeilToInt(m_health.DownedRemaining)}s";
+            }
             RefreshDeliveryTimer();
             if (Time.unscaledTime >= m_nextSlowRefresh)
             {
@@ -140,7 +146,7 @@ namespace CouchGuys.Gameplay.Weapons
                     Text icon = m_slotIcons[slot];
                     if (icon == null) continue;
                     int index = m_weapons.GetInventoryWeaponIndex(slot);
-                    icon.text = index switch { 0 => "P", 1 => "AR", 2 => "SG", _ => "—" };
+                    icon.text = index switch { 0 => "P", 1 => "AR", 2 => "SG", 3 => "G", _ => "—" };
                     icon.fontSize = index == 1 ? 25 : 34;
                     icon.color = index >= 0 ? new Color(1f, 0.55f, 0.12f) : Inactive;
                 }
@@ -169,7 +175,9 @@ namespace CouchGuys.Gameplay.Weapons
                 if (weaponName != m_lastWeaponName || magazine != m_lastMagazine ||
                     reserve != m_lastReserve || reloading != m_lastReloading)
                 {
-                    m_view.m_ammoText.text = reloading
+                    m_view.m_ammoText.text = m_weapons.HasEquippedWeapon && m_weapons.EquippedWeapon == PlayerWeaponType.GrappleGun
+                        ? $"{weaponName}\n<size=24>HOLD FIRE TO PULL</size>"
+                        : reloading
                         ? $"{weaponName}\n<size=24>RELOADING  {magazine} / {reserve}</size>"
                         : $"{weaponName}\n<size=30>{magazine} / {reserve}</size>";
                     m_lastWeaponName = weaponName;
@@ -255,8 +263,9 @@ namespace CouchGuys.Gameplay.Weapons
             if (m_view.m_interactionPrompt != null)
             {
                 float progress = 0f, duration = 0f;
-                string prompt = m_vehicleHud != null
-                    ? m_vehicleHud.GetInteractionPrompt(out progress, out duration) : null;
+                string prompt = m_health.GetRevivePrompt(out progress, out duration);
+                if (prompt == null && !m_health.IsKnockedDown && m_vehicleHud != null)
+                    prompt = m_vehicleHud.GetInteractionPrompt(out progress, out duration);
                 m_view.m_interactionPrompt.Present(prompt, progress, duration);
             }
             if (m_portraitCamera == null || m_portraitFocus == null) return;

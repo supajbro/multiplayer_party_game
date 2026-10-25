@@ -18,9 +18,9 @@ namespace CouchGuys.Gameplay.Weapons
     [DefaultExecutionOrder(100)]
     [RequireComponent(typeof(PlayerInputReader), typeof(PlayerHealth), typeof(PlayerCouchCarrier))]
     [DisallowMultipleComponent]
-    public sealed class PlayerWeaponController : NetworkBehaviour
+    public sealed partial class PlayerWeaponController : NetworkBehaviour
     {
-        private const int WeaponCount = 3;
+        private const int WeaponCount = 4;
         public const int InventorySlotCount = 5;
         private const int RaycastBufferSize = 16;
 
@@ -83,7 +83,7 @@ namespace CouchGuys.Gameplay.Weapons
         public event System.Action<bool> LocalHitConfirmed;
         public event System.Action<ReticleSettings> LocalReticleChanged;
 
-        public PlayerWeaponType EquippedWeapon => (PlayerWeaponType)Mathf.Clamp(m_equippedIndex.Value, 0, 2);
+        public PlayerWeaponType EquippedWeapon => (PlayerWeaponType)Mathf.Clamp(m_equippedIndex.Value, 0, WeaponCount - 1);
         public string EquippedWeaponName => GetWeapon(m_equippedIndex.Value)?.DisplayName ?? "None";
         public int CurrentMagazine => ValidIndex(m_equippedIndex.Value)
             ? Mathf.Max(0, m_magazine[m_equippedIndex.Value] - m_pendingLocalShots[m_equippedIndex.Value])
@@ -96,7 +96,7 @@ namespace CouchGuys.Gameplay.Weapons
             !(TryGetComponent(out PlayerTruckInteractor truck) && truck.CurrentTruck != null);
         public int SelectedHotbarSlot => Mathf.Clamp(m_selectedHotbarSlot.Value, 0, InventorySlotCount - 1);
         public int GetInventoryWeaponIndex(int slot) => slot >= 0 && slot < m_inventory.Count ? m_inventory[slot] : -1;
-        public ReticleSettings CurrentReticleSettings => GetWeapon(m_equippedIndex.Value)?.ReticleSettings;
+        public ReticleSettings CurrentReticleSettings => GetWeaponReticle(m_equippedIndex.Value);
         public float CurrentWeaponRange => GetWeapon(m_equippedIndex.Value)?.Range ?? 60f;
 
         private void Awake()
@@ -112,8 +112,7 @@ namespace CouchGuys.Gameplay.Weapons
             m_faceExpression ??= GetComponent<RobotFaceExpressionController>();
             if (m_effects == null) m_effects = gameObject.AddComponent<PlayerWeaponEffects>();
             if (m_audio == null) m_audio = gameObject.AddComponent<WeaponAudioEmitter>();
-            if (m_weapons == null || m_weapons.Length != WeaponCount || m_weapons[0] == null)
-                m_weapons = WeaponDefinition.CreateDefaults();
+            EnsureWeaponDefinitions();
             ResolveModelReferences();
             SetModelVisibility(-1);
             m_equippedIndex.OnChange += OnEquippedChanged;
@@ -191,6 +190,8 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void LateUpdate()
         {
+            UpdateGrappleInput();
+            UpdateGrappleVisual();
             TryRequestFireFromCurrentCamera();
 
             int index = m_equippedIndex.Value;
@@ -219,6 +220,7 @@ namespace CouchGuys.Gameplay.Weapons
                 return;
             }
             WeaponDefinition weapon = GetWeapon(m_equippedIndex.Value);
+            if (weapon?.Type == PlayerWeaponType.GrappleGun) return;
             bool wantsFire = weapon != null &&
                 (weapon.Automatic ? m_input.ShootHeld : m_input.ShootPressedThisFrame);
             if (!wantsFire || m_localReloading || Time.time < m_nextLocalRequestTime ||
@@ -288,6 +290,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void EquipInventorySlotServer(int slot)
         {
+            StopGrappleServer();
             StoreEquippedAmmoServer();
             EndRifleBurstServer();
             m_reloadingIndex = -1;
@@ -307,6 +310,41 @@ namespace CouchGuys.Gameplay.Weapons
             if (CanHandleWeaponServer && HasEquippedWeapon) DropOwnedWeaponServer();
         }
 
+        [Server]
+        public void CancelActionsForDownedServer()
+        {
+            StopGrappleServer();
+            EndRifleBurstServer();
+            m_reloadingIndex = -1;
+            int index = m_equippedIndex.Value;
+            if (ValidIndex(index) && Owner.IsValid)
+                SendWeaponStateTargetRpc(Owner, index, m_magazine[index], m_reserve[index], false);
+        }
+
+        [Server]
+        public bool DropInventoryForRespawnServer(Vector3 deathPosition)
+        {
+            StoreEquippedAmmoServer();
+            CancelActionsForDownedServer();
+            for (int slot = 0; slot < m_inventory.Count; slot++)
+            {
+                int index = m_inventory[slot];
+                if (!ValidIndex(index)) continue;
+                WeaponPickup pickup = WeaponPickup.SpawnServer((PlayerWeaponType)index,
+                    deathPosition + Vector3.up * (0.6f + slot * 0.15f), Quaternion.identity,
+                    Vector3.zero, m_storedMagazines[slot], m_storedReserves[slot]);
+                if (pickup == null) return false;
+                m_inventory[slot] = -1;
+                m_storedMagazines[slot] = 0;
+                m_storedReserves[slot] = 0;
+                if (slot == SelectedHotbarSlot) m_equippedIndex.Value = -1;
+            }
+            m_equippedIndex.Value = -1;
+            System.Array.Clear(m_magazine, 0, m_magazine.Length);
+            System.Array.Clear(m_reserve, 0, m_reserve.Length);
+            return true;
+        }
+
         private bool DropOwnedWeaponServer()
         {
             int index = m_equippedIndex.Value;
@@ -318,6 +356,7 @@ namespace CouchGuys.Gameplay.Weapons
                 origin + direction * distance, Quaternion.LookRotation(direction), direction * 1.5f,
                 m_magazine[index], m_reserve[index]);
             if (pickup == null) return false;
+            StopGrappleServer();
             foreach (Collider own in GetComponentsInChildren<Collider>())
                 foreach (Collider dropped in pickup.GetComponentsInChildren<Collider>())
                     Physics.IgnoreCollision(own, dropped);
@@ -375,7 +414,7 @@ namespace CouchGuys.Gameplay.Weapons
         {
             int index = m_equippedIndex.Value;
             WeaponDefinition weapon = GetWeapon(index);
-            if (weapon == null || m_reloadingIndex >= 0 || Time.time < m_switchCompleteAt ||
+            if (weapon == null || weapon.Type == PlayerWeaponType.GrappleGun || m_reloadingIndex >= 0 || Time.time < m_switchCompleteAt ||
                 m_magazine[index] >= weapon.MagazineCapacity || m_reserve[index] <= 0 ||
                 !m_health.IsAlive || (m_couchCarrier != null && m_couchCarrier.IsCarrying)) return;
 
@@ -505,7 +544,7 @@ namespace CouchGuys.Gameplay.Weapons
 
             int index = m_equippedIndex.Value;
             WeaponDefinition weapon = GetWeapon(index);
-            if (weapon == null || index != GetInventoryWeaponIndex(SelectedHotbarSlot) || m_reloadingIndex >= 0 || Time.time < m_switchCompleteAt ||
+            if (weapon == null || weapon.Type == PlayerWeaponType.GrappleGun || index != GetInventoryWeaponIndex(SelectedHotbarSlot) || m_reloadingIndex >= 0 || Time.time < m_switchCompleteAt ||
                 Time.time < m_nextServerFireTime[index] || !m_health.IsAlive || m_health.IsKnockedDown ||
                 (m_couchCarrier != null && m_couchCarrier.IsCarrying) ||
                 (aimOrigin - m_health.AimPoint).sqrMagnitude >
@@ -844,11 +883,13 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void ApplyEquippedWeapon(int index)
         {
+            if (index == (int)PlayerWeaponType.GrappleGun && IsOwner)
+                m_nextLocalRequestTime = Time.time + m_switchDuration;
             m_localReloading = false;
             System.Array.Clear(m_pendingLocalShots, 0, m_pendingLocalShots.Length);
             SetModelVisibility(index);
-            m_animationDriver?.SetEquippedWeapon(ValidIndex(index) ? index + 1 : 0);
-            LocalReticleChanged?.Invoke(GetWeapon(index)?.ReticleSettings);
+            m_animationDriver?.SetEquippedWeapon(ValidIndex(index) ? (index == (int)PlayerWeaponType.GrappleGun ? 1 : index + 1) : 0);
+            LocalReticleChanged?.Invoke(GetWeaponReticle(index));
         }
 
         private void SetModelVisibility(int equippedIndex)
@@ -868,11 +909,12 @@ namespace CouchGuys.Gameplay.Weapons
         private void ResolveModelReferences()
         {
             if (m_weaponModels == null || m_weaponModels.Length != WeaponCount)
-                m_weaponModels = new Transform[WeaponCount];
+                System.Array.Resize(ref m_weaponModels, WeaponCount);
             if (m_muzzles == null || m_muzzles.Length != WeaponCount)
-                m_muzzles = new Transform[WeaponCount];
+                System.Array.Resize(ref m_muzzles, WeaponCount);
 
-            string[] names = { "Weapon_Pistol", "Weapon_AssaultRifle", "Weapon_Shotgun" };
+            string[] names = { "Weapon_Pistol", "Weapon_AssaultRifle", "Weapon_Shotgun", "Weapon_GrappleGun" };
+            EnsureGrappleModel();
             for (int i = 0; i < WeaponCount; i++)
             {
                 m_weaponModels[i] ??= FindDescendant(transform, names[i]);
@@ -899,6 +941,17 @@ namespace CouchGuys.Gameplay.Weapons
 
         private WeaponDefinition GetWeapon(int index) =>
             ValidIndex(index) && m_weapons != null && index < m_weapons.Length ? m_weapons[index] : null;
+
+        private ReticleSettings GetWeaponReticle(int index) => GetWeapon(index)?.ReticleSettings ??
+            (index == (int)PlayerWeaponType.GrappleGun ? GetWeapon((int)PlayerWeaponType.Pistol)?.ReticleSettings : null);
+
+        private void EnsureWeaponDefinitions()
+        {
+            WeaponDefinition[] defaults = WeaponDefinition.CreateDefaults();
+            if (m_weapons == null || m_weapons.Length != WeaponCount)
+                System.Array.Resize(ref m_weapons, WeaponCount);
+            for (int i = 0; i < WeaponCount; i++) m_weapons[i] ??= defaults[i];
+        }
 
         private static bool ValidIndex(int index) => index >= 0 && index < WeaponCount;
 
@@ -947,8 +1000,7 @@ namespace CouchGuys.Gameplay.Weapons
             base.OnValidate();
             m_switchDuration = Mathf.Max(0f, m_switchDuration);
             m_maximumAimOriginDistance = Mathf.Max(0.5f, m_maximumAimOriginDistance);
-            if (m_weapons == null || m_weapons.Length != WeaponCount || m_weapons[0] == null)
-                m_weapons = WeaponDefinition.CreateDefaults();
+            EnsureWeaponDefinitions();
         }
 #endif
     }

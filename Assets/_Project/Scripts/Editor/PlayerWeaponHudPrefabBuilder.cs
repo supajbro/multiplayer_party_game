@@ -21,6 +21,7 @@ namespace CouchGuys.Editor
 
         private InteractionPromptView m_interactionPrompt;
         private Text m_healthText;
+        private Text m_downedText;
         private Text m_deliveryTitle;
         private Text m_deliveryDetail;
         private Text m_deliveryDistance;
@@ -507,6 +508,11 @@ namespace CouchGuys.Editor
             BuildHotbar();
             BuildAmmoPanel();
             BuildMinimap();
+            m_downedText = Label("DownedCountdown", m_canvasRoot.transform, "DOWNED", 32,
+                TextAnchor.MiddleCenter, FontStyle.Bold, Red);
+            SetRect(m_downedText.rectTransform, new Vector2(0.5f, 0.65f), new Vector2(0.5f, 0.65f),
+                Vector2.zero, new Vector2(720f, 70f));
+            m_downedText.gameObject.SetActive(false);
         }
 
         private void BuildMinimap()

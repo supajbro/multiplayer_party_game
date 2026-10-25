@@ -52,6 +52,14 @@ namespace CouchGuys.CameraSystem
         private float m_vehicleRotationSmoothing;
         private float m_vehicleCollisionRadius;
 
+        public float VerticalAngle
+        {
+            get => m_pitch;
+            set => m_pitch = m_vehicleTarget != null
+                ? Mathf.Clamp(value, m_vehicleMinimumPitch, m_vehicleMaximumPitch)
+                : Mathf.Clamp(value, m_minimumVerticalAngle, m_maximumVerticalAngle);
+        }
+
         public void FollowVehicle(
             Transform target,
             float distance,

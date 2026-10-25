@@ -125,6 +125,13 @@ namespace CouchGuys.Player
             }
         }
 
+        internal void ApplyGrapplePullServer(Vector3 direction, float acceleration, float speed, float deltaTime)
+        {
+            if (!m_isInitialised || m_health == null || !m_health.IsAlive) return;
+            m_externalVelocity += direction * Mathf.Min(acceleration * deltaTime,
+                Mathf.Max(0f, speed - Vector3.Dot(m_externalVelocity, direction)));
+        }
+
         private void Update()
         {
             if (!CanSimulate())
