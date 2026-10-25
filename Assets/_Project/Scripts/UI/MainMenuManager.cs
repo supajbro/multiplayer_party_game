@@ -32,6 +32,17 @@ namespace CouchGuys.UI
             BindButtons();
         }
 
+        private IEnumerator Start()
+        {
+            // Exit removes the old session (including solo's transport) at end of frame.
+            yield return null;
+            if (InstanceFinder.NetworkManager == null)
+            {
+                GameObject bootstrap = Resources.Load<GameObject>("SteamMultiplayerBootstrap");
+                if (bootstrap != null) Instantiate(bootstrap);
+            }
+        }
+
         private void InstallStaticBackground()
         {
             GameObject decorativeNeighbourhood = GameObject.Find("Decorative Neighbourhood");

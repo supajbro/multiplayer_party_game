@@ -207,6 +207,19 @@ namespace CouchGuys.Networking
             m_networkManager.SceneManager.LoadGlobalScenes(loadData);
         }
 
+        public void BeginRetryLoading()
+        {
+            if (!IsInLobby) return;
+            m_loadingRequested = true;
+            SteamMatchmaking.SetLobbyMemberData(m_currentLobby, ReadyKey, "0");
+        }
+
+        public void PrepareRetry()
+        {
+            if (!IsLocalLobbyOwner) return;
+            SteamMatchmaking.SetLobbyData(m_currentLobby, StateKey, LoadingState);
+        }
+
         public void SetLocalPlayerReady()
         {
             if (IsInLobby)

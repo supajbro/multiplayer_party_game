@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 1668671289218788287}
   - component: {fileID: 960575100153710227}
   - component: {fileID: 8419171927557267565}
+  - component: {fileID: 6103787389915878323}
   m_Layer: 0
   m_Name: SoloNetworkBootstrap
   m_TagString: Untagged
@@ -115,3 +116,17 @@ MonoBehaviour:
   m_aiTeammateCount: 1
   m_aiSpawnRadius: 3
   m_aiNavMeshSampleRadius: 4
+--- !u!114 &6103787389915878323
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6354334087962279804}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e24c39e5cb227c46b1d02fa7766ba8a, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Networking.GameplaySessionController
+  m_pauseMenuPrefab: {fileID: 136, guid: 48d111ada58dc004293ba6869e5ae0f6, type: 3}
+  m_gameOverMenuPrefab: {fileID: 144, guid: 4b0d19fc17e681448a6e90db7f925193, type: 3}

@@ -82,6 +82,16 @@ namespace CouchGuys.Networking
             m_playerPrefab = playerPrefab;
         }
 
+        public void ResetForRetry()
+        {
+            StopAllCoroutines();
+            m_pendingConnections.Clear();
+            m_spawnedConnections.Clear();
+            m_aiTeamSpawned = false;
+        }
+
+        public void SpawnForRetry(NetworkConnection connection) => OnClientLoadedStartScenes(connection, true);
+
         private void OnClientLoadedStartScenes(NetworkConnection connection, bool asServer)
         {
             if (!asServer)

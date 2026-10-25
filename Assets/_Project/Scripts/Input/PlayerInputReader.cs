@@ -29,29 +29,31 @@ namespace CouchGuys.Input
         private InputAction m_teleportToDeliveryAction;
         private InputActionAsset m_runtimeInputActions;
         private bool m_gameplaySuppressed;
+        private bool GameplaySuppressed => m_gameplaySuppressed || CouchGuys.Networking.GameplaySessionController.BlocksLocalInput;
+        private bool MenuBlocked => CouchGuys.Networking.GameplaySessionController.BlocksLocalInput;
 
-        public Vector2 Move => !m_gameplaySuppressed ? m_moveAction?.ReadValue<Vector2>() ?? Vector2.zero : Vector2.zero;
+        public Vector2 Move => !GameplaySuppressed ? m_moveAction?.ReadValue<Vector2>() ?? Vector2.zero : Vector2.zero;
         /// <summary>Unfiltered movement intent for a system which has temporarily taken gameplay control.</summary>
-        public Vector2 VehicleMove => m_moveAction?.ReadValue<Vector2>() ?? Vector2.zero;
+        public Vector2 VehicleMove => MenuBlocked ? Vector2.zero : m_moveAction?.ReadValue<Vector2>() ?? Vector2.zero;
         /// <summary>Unfiltered look intent while seated in a vehicle.</summary>
-        public Vector2 VehicleLook => m_lookAction?.ReadValue<Vector2>() ?? Vector2.zero;
+        public Vector2 VehicleLook => MenuBlocked ? Vector2.zero : m_lookAction?.ReadValue<Vector2>() ?? Vector2.zero;
         /// <summary>Unfiltered interact state used to support hold-to-enter/exit while player gameplay is suppressed.</summary>
-        public bool VehicleInteractHeld => m_interactAction?.IsPressed() ?? false;
-        public bool VehicleInteractPressedThisFrame => m_interactAction?.WasPressedThisFrame() ?? false;
-        public bool VehicleHornPressedThisFrame => Mouse.current?.leftButton.wasPressedThisFrame ?? false;
-        public Vector2 Look => !m_gameplaySuppressed ? m_lookAction?.ReadValue<Vector2>() ?? Vector2.zero : Vector2.zero;
-        public bool JumpPressedThisFrame => !m_gameplaySuppressed && (m_jumpAction?.WasPressedThisFrame() ?? false);
-        public bool SprintHeld => !m_gameplaySuppressed && (m_sprintAction?.IsPressed() ?? false);
-        public bool InteractPressedThisFrame => !m_gameplaySuppressed && (m_interactAction?.WasPressedThisFrame() ?? false);
-        public bool ShootHeld => !m_gameplaySuppressed && (m_shootAction?.IsPressed() ?? false);
-        public bool ShootPressedThisFrame => !m_gameplaySuppressed && (m_shootAction?.WasPressedThisFrame() ?? false);
-        public bool DropWeaponPressedThisFrame => !m_gameplaySuppressed && (Keyboard.current?.qKey.wasPressedThisFrame ?? false);
-        public bool ReloadPressedThisFrame => !m_gameplaySuppressed && (m_reloadAction?.WasPressedThisFrame() ?? false);
+        public bool VehicleInteractHeld => !MenuBlocked && (m_interactAction?.IsPressed() ?? false);
+        public bool VehicleInteractPressedThisFrame => !MenuBlocked && (m_interactAction?.WasPressedThisFrame() ?? false);
+        public bool VehicleHornPressedThisFrame => !MenuBlocked && (Mouse.current?.leftButton.wasPressedThisFrame ?? false);
+        public Vector2 Look => !GameplaySuppressed ? m_lookAction?.ReadValue<Vector2>() ?? Vector2.zero : Vector2.zero;
+        public bool JumpPressedThisFrame => !GameplaySuppressed && (m_jumpAction?.WasPressedThisFrame() ?? false);
+        public bool SprintHeld => !GameplaySuppressed && (m_sprintAction?.IsPressed() ?? false);
+        public bool InteractPressedThisFrame => !GameplaySuppressed && (m_interactAction?.WasPressedThisFrame() ?? false);
+        public bool ShootHeld => !GameplaySuppressed && (m_shootAction?.IsPressed() ?? false);
+        public bool ShootPressedThisFrame => !GameplaySuppressed && (m_shootAction?.WasPressedThisFrame() ?? false);
+        public bool DropWeaponPressedThisFrame => !GameplaySuppressed && (Keyboard.current?.qKey.wasPressedThisFrame ?? false);
+        public bool ReloadPressedThisFrame => !GameplaySuppressed && (m_reloadAction?.WasPressedThisFrame() ?? false);
         public int HotbarSelectionPressedThisFrame
         {
             get
             {
-                if (m_gameplaySuppressed) return -1;
+                if (GameplaySuppressed) return -1;
                 if (m_pistolAction?.WasPressedThisFrame() ?? false) return 0;
                 if (m_assaultRifleAction?.WasPressedThisFrame() ?? false) return 1;
                 if (m_shotgunAction?.WasPressedThisFrame() ?? false) return 2;
@@ -64,9 +66,9 @@ namespace CouchGuys.Input
             ? HotbarSelectionPressedThisFrame
             : -1;
         public bool TeleportToDeliveryPressedThisFrame =>
-            !m_gameplaySuppressed && (m_teleportToDeliveryAction?.WasPressedThisFrame() ?? false);
+            !GameplaySuppressed && (m_teleportToDeliveryAction?.WasPressedThisFrame() ?? false);
         public bool TestResourcesPressedThisFrame =>
-            !m_gameplaySuppressed && (Keyboard.current?.lKey.wasPressedThisFrame ?? false);
+            !GameplaySuppressed && (Keyboard.current?.lKey.wasPressedThisFrame ?? false);
 
         public void SetGameplaySuppressed(bool suppressed)
         {

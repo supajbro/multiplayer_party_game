@@ -111,7 +111,7 @@ namespace CouchGuys.Player
 
         private void Update()
         {
-            if (IsServerInitialized && !IsAlive && !IsAiTeammate && Time.time >= m_respawnAtServerTime)
+            if (IsServerInitialized && !GameplaySessionController.IsServerGameOver && !IsAlive && !IsAiTeammate && Time.time >= m_respawnAtServerTime)
             {
                 RespawnAtDepotServer();
             }
@@ -198,6 +198,7 @@ namespace CouchGuys.Player
                     m_respawnAtServerTime = IsAiTeammate
                         ? float.PositiveInfinity
                         : Time.time + m_respawnDelay;
+                    GameplaySessionController.Instance?.EvaluateGameOverServer();
                     NotifyDiedObserversRpc();
                 }
             }
