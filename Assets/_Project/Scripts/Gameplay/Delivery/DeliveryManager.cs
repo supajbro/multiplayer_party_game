@@ -4,6 +4,7 @@ using CouchGuys.Gameplay.Couch;
 using CouchGuys.Gameplay.Depot;
 using CouchGuys.Gameplay.Shop;
 using CouchGuys.Gameplay.Vehicles;
+using CouchGuys.Gameplay.Pedestrians;
 using CouchGuys.Player;
 using CouchGuys.ProceduralGeneration;
 using FishNet.Object;
@@ -63,7 +64,9 @@ namespace CouchGuys.Gameplay.Delivery
         private readonly SyncVar<bool> m_exitDoorOpen = new();
         private readonly SyncVar<bool> m_vehicleGarageDoorOpen = new();
 
-        private GameObject m_collectionMarker;
+        private PedestrianController m_collectionMarker;
+        private int m_markerDestination = -1;
+        private readonly List<PedestrianController> m_recipients = new();
 
         private bool m_isCompletingDelivery;
         private readonly HashSet<int> m_usedDestinationIndices = new HashSet<int>();
@@ -226,6 +229,7 @@ namespace CouchGuys.Gameplay.Delivery
             }
 
             DeliveryDestination destination = ActiveDestination;
+            if (m_collectionMarker != null && !m_collectionMarker.IsAlive) return;
             if (destination == null || !destination.CanReceiveDelivery)
             {
                 return;
@@ -761,6 +765,8 @@ namespace CouchGuys.Gameplay.Delivery
             SetStateServer(DeliveryState.DestinationReached, DeliveryObjectiveStep.DeliverCouch);
             NetworkObject deliveredCouch = m_activeCouch.Value;
             DeliveryDestination destination = ActiveDestination;
+            m_collectionMarker?.CompleteDeliveryServer();
+            m_collectionMarker = null;
             m_activeCouch.Value = null;
             m_destinationIndex.Value = -1;
             couch.ReleaseAllOccupantsServer();
@@ -802,7 +808,9 @@ namespace CouchGuys.Gameplay.Delivery
         public bool FailAndResetActiveDeliveryServer()
         {
             if (m_isCompletingDelivery || !HasActiveDelivery ||
-                (m_state.Value != DeliveryState.Transport &&
+                (m_state.Value != DeliveryState.Accepted &&
+                 m_state.Value != DeliveryState.CouchSpawned &&
+                 m_state.Value != DeliveryState.Transport &&
                  m_state.Value != DeliveryState.PartyWipe))
             {
                 return false;
@@ -874,6 +882,7 @@ namespace CouchGuys.Gameplay.Delivery
         {
             StopConveyorDispatchServer();
             DestroyCollectionMarker();
+            ClearRecipientsServer();
             m_depot = null;
             m_candidatesReady = false;
             for (int i = 0; i < m_tierCandidates.Length; i++) m_tierCandidates[i].Clear();
@@ -1017,6 +1026,9 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void RefreshCollectionMarker()
         {
+            if (!IsServerInitialized) return;
+            if (m_collectionMarker != null && m_collectionMarker.IsSpawned &&
+                m_markerDestination == m_destinationIndex.Value) return;
             DestroyCollectionMarker();
             DeliveryDestination destination = ActiveDestination;
             if (destination == null || !destination.CanReceiveDelivery || m_destinationIndex.Value < 0)
@@ -1024,23 +1036,50 @@ namespace CouchGuys.Gameplay.Delivery
                 return;
             }
 
-            // Every peer resolves the same deterministic destination from the synced index.
-            // This prefab contains only the existing animated visual, with no gameplay scripts.
-            GameObject visual = Resources.Load<GameObject>("DeliveryWaitingNPC");
-            if (visual == null) return;
+            var settings = Resources.Load<PedestrianSettings>("Pedestrians/PedestrianSettings");
+            var prefab = Resources.Load<NetworkObject>($"Pedestrians/Pedestrian_{UnityEngine.Random.Range(1, 11):00}");
+            if (prefab == null || settings == null) return;
             Transform door = destination.DropPosition;
-            m_collectionMarker = Instantiate(visual, door.position, door.rotation, transform);
-            m_collectionMarker.name = "ActiveDeliveryWaitingNPC";
+            NetworkObject recipient = Instantiate(prefab, door.position, door.rotation);
+            m_collectionMarker = recipient.GetComponent<PedestrianController>();
+            m_collectionMarker.InitialiseRecipientServer(this, settings);
+            m_markerDestination = m_destinationIndex.Value;
+            Spawn(recipient);
+            m_recipients.RemoveAll(npc => npc == null || !npc.IsSpawned);
+            m_recipients.Add(m_collectionMarker);
         }
 
         private void DestroyCollectionMarker()
         {
             if (m_collectionMarker != null)
             {
-                m_collectionMarker.SetActive(false);
-                Destroy(m_collectionMarker);
+                if (IsServerInitialized && m_collectionMarker.IsSpawned)
+                    Despawn(m_collectionMarker.NetworkObject);
                 m_collectionMarker = null;
             }
+            m_markerDestination = -1;
+        }
+
+        internal void RecipientDiedServer(PedestrianController recipient)
+        {
+            if (!IsServerInitialized || recipient != m_collectionMarker) return;
+            // Keep the replicated corpse; failing the job only removes its couch.
+            m_collectionMarker = null;
+            FailAndResetActiveDeliveryServer();
+        }
+
+        private void ClearRecipientsServer()
+        {
+            if (!IsServerInitialized) return;
+            foreach (var recipient in m_recipients)
+                if (recipient != null && recipient.IsSpawned) Despawn(recipient.NetworkObject);
+            m_recipients.Clear();
+        }
+
+        public override void OnStopServer()
+        {
+            ClearRecipientsServer();
+            base.OnStopServer();
         }
 
         private float FindGroundHeight(

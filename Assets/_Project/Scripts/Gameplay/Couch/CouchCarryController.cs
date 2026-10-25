@@ -274,7 +274,7 @@ namespace CouchGuys.Gameplay.Couch
         private void FixedUpdate()
         {
             if (IsServerInitialized) UpdateCargoCollisionRecovery();
-            if (!IsServerInitialized || m_rigidbody == null || m_rigidbody.isKinematic)
+            if (!IsServerInitialized || IsLoaded || m_cargoTransition != null || m_rigidbody == null || m_rigidbody.isKinematic)
             {
                 return;
             }
@@ -429,7 +429,7 @@ namespace CouchGuys.Gameplay.Couch
 
         private void LateUpdate()
         {
-            if (m_modelRoot == null || IsLoaded)
+            if (m_modelRoot == null || IsLoaded || m_cargoTransition != null)
             {
                 return;
             }
@@ -827,6 +827,14 @@ namespace CouchGuys.Gameplay.Couch
 
         private void SetCargoPhysics(bool loaded)
         {
+            // Cargo owns the local pose; old world-space network samples must not
+            // be interpolated as local coordinates under the cargo point.
+            NetworkTransform networkTransform = GetComponent<NetworkTransform>();
+            if (networkTransform != null)
+            {
+                networkTransform.SetSynchronizePosition(!loaded);
+                networkTransform.SetSynchronizeRotation(!loaded);
+            }
             if (m_rigidbody != null)
             {
                 if (!m_rigidbody.isKinematic)
@@ -835,6 +843,8 @@ namespace CouchGuys.Gameplay.Couch
                     m_rigidbody.angularVelocity = Vector3.zero;
                 }
                 m_rigidbody.isKinematic = loaded || !IsServerInitialized;
+                m_rigidbody.interpolation = loaded || !IsServerInitialized
+                    ? RigidbodyInterpolation.None : RigidbodyInterpolation.Interpolate;
             }
             if (loaded && m_modelRoot != null)
             {

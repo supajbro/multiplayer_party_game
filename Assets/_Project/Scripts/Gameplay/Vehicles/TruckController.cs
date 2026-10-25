@@ -170,6 +170,7 @@ namespace CouchGuys.Gameplay.Vehicles
 
         public override void OnStopServer()
         {
+            RecoverLoadedCouchesServer();
             ReleaseAllOccupantsServer();
             base.OnStopServer();
         }

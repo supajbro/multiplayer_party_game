@@ -3,29 +3,58 @@ using CouchGuys.Gameplay.Couch;
 using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Player;
 using FishNet.Object;
+using FishNet.Object.Synchronizing;
 using UnityEngine;
 using UnityEngine.AI;
 
 namespace CouchGuys.Gameplay.Enemies
 {
     [RequireComponent(typeof(NavMeshAgent))]
+    [RequireComponent(typeof(ThiefAudioEmitter))]
     [DisallowMultipleComponent]
     public sealed class ThiefNavigator : NetworkBehaviour, ICouchCarrierServer
     {
-        [Header("Navigation")]
+        [SerializeField] private ThiefSettings m_settings;
         [SerializeField] private NavMeshAgent m_agent;
-        [SerializeField, Min(0.05f)] private float m_pathRefreshInterval = 0.45f;
-        [SerializeField, Min(0.1f)] private float m_tacticalRepositionInterval = 2.5f;
-        [SerializeField, Min(0f)] private float m_repositionIntervalVariation = 1f;
-        [SerializeField, Min(0.25f)] private float m_targetNavMeshSampleRadius = 6f;
-        [SerializeField, Min(0.25f)] private float m_tacticalSampleRadius = 4f;
-        [SerializeField, Min(0.1f)] private float m_targetMovementThreshold = 2.5f;
-        [SerializeField, Min(1)] private int m_tacticalPositionAttempts = 4;
-        [Header("Formation")]
-        [SerializeField, Min(0f)] private float m_positionVariation = 1.25f;
-        [SerializeField, Min(0f)] private float m_supportRangeMultiplier = 1.45f;
-        [SerializeField, Min(0f)] private float m_minimumSlotSeparation = 1.75f;
-        [SerializeField, Min(1f)] private float m_aimTurnSpeed = 260f;
+        private float m_pathRefreshInterval => m_settings != null
+            ? m_settings.Navigation.PathRefreshInterval : 0.45f;
+        private float m_tacticalRepositionInterval => m_settings != null
+            ? m_settings.Navigation.TacticalRepositionInterval : 2.5f;
+        private float m_repositionIntervalVariation => m_settings != null
+            ? m_settings.Navigation.RepositionIntervalVariation : 1f;
+        private float m_targetNavMeshSampleRadius => m_settings != null
+            ? m_settings.Navigation.TargetNavMeshSampleRadius : 6f;
+        private float m_tacticalSampleRadius => m_settings != null
+            ? m_settings.Navigation.TacticalSampleRadius : 4f;
+        private float m_targetMovementThreshold => m_settings != null
+            ? m_settings.Navigation.TargetMovementThreshold : 2.5f;
+        private int m_tacticalPositionAttempts => m_settings != null
+            ? m_settings.Navigation.TacticalPositionAttempts : 4;
+        private float m_positionVariation => m_settings != null
+            ? m_settings.Navigation.PositionVariation : 1.25f;
+        private float m_supportRangeMultiplier => m_settings != null
+            ? m_settings.Navigation.SupportRangeMultiplier : 1.45f;
+        private float m_minimumSlotSeparation => m_settings != null
+            ? m_settings.Navigation.MinimumSlotSeparation : 1.75f;
+        private float m_aimTurnSpeed => m_settings != null
+            ? m_settings.Navigation.AimTurnSpeed : 260f;
+        private float m_alertChance => m_settings != null
+            ? m_settings.Alerts.AlertChance : 25f;
+        private float m_alertDistance => m_settings != null
+            ? m_settings.Alerts.AlertDistance : 14f;
+        private float m_alertResetDistance => m_settings != null
+            ? m_settings.Alerts.AlertResetDistance : 20f;
+        private float m_alertPauseDuration => m_settings != null
+            ? m_settings.Alerts.AlertPauseDuration : 1.2f;
+        private float m_alertCooldown => m_settings != null
+            ? m_settings.Alerts.AlertCooldown : 10f;
+
+        private readonly SyncVar<bool> m_alerting = new();
+        private ThiefAudioEmitter m_audio;
+        private bool m_alertEncounterChecked;
+        private float m_alertUntil;
+        private float m_nextAlertTime;
+        public bool IsAlerting => m_alerting.Value;
 
         private const float CouchGrabDistance = 2.1f;
         private const float EscapeDistance = 20f;
@@ -69,18 +98,34 @@ namespace CouchGuys.Gameplay.Enemies
             m_agent ??= GetComponent<NavMeshAgent>();
             m_weapon ??= GetComponent<EnemyWeapon>();
             m_health ??= GetComponent<ThiefHealth>();
+            m_audio = GetComponent<ThiefAudioEmitter>();
             m_carrierCollider = GetComponent<Collider>();
             m_path = new NavMeshPath();
             if (m_agent != null)
             {
+                ApplyMovementSettings();
                 m_normalNavigationSpeed = m_agent.speed;
                 m_normalUpdateRotation = m_agent.updateRotation;
             }
         }
 
+        private void ApplyMovementSettings()
+        {
+            if (m_settings == null || m_agent == null) return;
+            m_agent.speed = m_settings.Movement.Speed;
+            m_agent.acceleration = m_settings.Movement.Acceleration;
+            m_agent.angularSpeed = m_settings.Movement.AngularSpeed;
+            m_agent.stoppingDistance = m_settings.Movement.StoppingDistance;
+            m_agent.autoBraking = m_settings.Movement.AutoBraking;
+        }
+
         public override void OnStartServer()
         {
             base.OnStartServer();
+            m_alerting.Value = false;
+            m_alertEncounterChecked = false;
+            m_alertUntil = 0f;
+            m_nextAlertTime = 0f;
             m_deliveryManager = FindFirstObjectByType<DeliveryManager>();
             if (m_agent != null)
             {
@@ -96,10 +141,18 @@ namespace CouchGuys.Gameplay.Enemies
         {
             base.OnStartClient();
             if (!IsServerInitialized && m_agent != null) m_agent.enabled = false;
+            m_audio.StartLocal();
+        }
+
+        public override void OnStopClient()
+        {
+            m_audio.StopLocal();
+            base.OnStopClient();
         }
 
         public override void OnStopServer()
         {
+            m_alerting.Value = false;
             ReleaseCarriedCouchServer();
             SetConstrainedCarryMovement(false);
             UpdateCarriedCouchCollision(null);
@@ -137,15 +190,47 @@ namespace CouchGuys.Gameplay.Enemies
             if (!IsServerInitialized || (m_health != null && !m_health.IsAlive)) return;
             if (m_health != null && m_health.IsBeingKnockedBack)
             {
+                m_alerting.Value = false;
                 ReleaseCarriedCouchServer();
                 SetConstrainedCarryMovement(false);
                 m_carryIntent = Vector3.zero;
                 return;
             }
 
+            if (UpdateProximityAlert(GetClosestLivingTarget())) return;
+
             CouchCarryController couch = GetActiveCouch();
             if (m_carriedCouch != null && m_carriedCouch != couch)
                 ReleaseCarriedCouchServer();
+
+            if (couch != null && couch.IsLoaded)
+            {
+                ReleaseCarriedCouchServer();
+                SetConstrainedCarryMovement(false);
+                var truck = couch.LoadedTruckObject.GetComponent<CouchGuys.Gameplay.Vehicles.TruckController>();
+                if (truck != null && !truck.IsDestroyed)
+                {
+                    m_weapon?.SetTruckTargetServer(truck);
+                    if (m_agent == null || !m_agent.enabled || !m_agent.isOnNavMesh) return;
+                    m_agent.stoppingDistance = Mathf.Max(0.25f,
+                        (m_weapon != null ? m_weapon.PreferredRange : 1.25f) * 0.72f);
+                    Vector3 aim = Vector3.ProjectOnPlane(truck.CameraTarget.position - transform.position, Vector3.up);
+                    if (aim.sqrMagnitude > 0.001f)
+                        transform.rotation = Quaternion.RotateTowards(transform.rotation,
+                            Quaternion.LookRotation(aim), m_aimTurnSpeed * Time.deltaTime);
+                    if (Time.time >= m_nextPathTime)
+                    {
+                        m_nextPathTime = Time.time + m_pathRefreshInterval;
+                        if (!m_hasDestination || Time.time >= m_nextRepositionTime ||
+                            (truck.transform.position - m_lastTargetPosition).sqrMagnitude >=
+                            m_targetMovementThreshold * m_targetMovementThreshold)
+                            RecalculateCombatDestination(truck.transform.position, truck.transform);
+                        ApplyDestination();
+                    }
+                }
+                else m_weapon?.SetTargetServer(null);
+                return;
+            }
 
             PlayerHealth closestPlayer = GetClosestLivingTarget();
             PlayerCouchCarrier humanCarrier = couch != null
@@ -159,6 +244,61 @@ namespace CouchGuys.Gameplay.Enemies
             else
                 UpdateFightObjective(humanCarrier != null ? humanCarrier.GetComponent<PlayerHealth>() : closestPlayer);
         }
+
+        private bool UpdateProximityAlert(PlayerHealth player)
+        {
+            if (IsAlerting)
+            {
+                if (Time.time < m_alertUntil)
+                {
+                    // Clear weapon targets throughout the pause, regardless of Update order.
+                    m_weapon?.SetTargetServer(null);
+                    m_carryIntent = Vector3.zero;
+                    if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh)
+                    {
+                        m_agent.isStopped = true;
+                        m_agent.velocity = Vector3.zero;
+                    }
+                    return true;
+                }
+                m_alerting.Value = false;
+                m_hasDestination = false;
+                m_nextPathTime = 0f;
+                if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh)
+                    m_agent.isStopped = false;
+                return false;
+            }
+
+            float distanceSquared = player != null
+                ? (player.transform.position - transform.position).sqrMagnitude
+                : float.PositiveInfinity;
+            if (distanceSquared > Mathf.Max(m_alertDistance, m_alertResetDistance) *
+                Mathf.Max(m_alertDistance, m_alertResetDistance))
+                m_alertEncounterChecked = false;
+            // Do not interrupt an existing couch grip or a knockback recovery.
+            if (m_carriedCouch != null || distanceSquared > m_alertDistance * m_alertDistance ||
+                m_alertEncounterChecked || m_agent == null || !m_agent.enabled || !m_agent.isOnNavMesh)
+                return false;
+
+            // Roll once on entering range, including failed rolls and cooldown entries.
+            m_alertEncounterChecked = true;
+            if (Time.time < m_nextAlertTime || Random.value * 100f >= m_alertChance) return false;
+            m_nextAlertTime = Time.time + m_alertCooldown;
+            m_alertUntil = Time.time + Mathf.Max(0.1f, m_alertPauseDuration);
+            m_alerting.Value = true;
+            m_agent.isStopped = true;
+            m_agent.ResetPath();
+            m_agent.velocity = Vector3.zero;
+            m_hasDestination = false;
+            m_carryIntent = Vector3.zero;
+            m_weapon?.SetTargetServer(null);
+            PlayAlertObserversRpc();
+            return true;
+        }
+
+        // No local prediction or buffered replay: each current observer, including host, hears one alert.
+        [ObserversRpc]
+        private void PlayAlertObserversRpc() => m_audio.PlayAlert();
 
         private CouchCarryController GetActiveCouch()
         {
@@ -177,6 +317,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         private void UpdateStealObjective(CouchCarryController couch)
         {
+            if (couch.IsLoaded) return;
             m_weapon?.SetTargetServer(null);
             if (couch.ThiefCarrierCountServer() >= MaximumThiefCouchCarriers)
             {
@@ -428,12 +569,13 @@ namespace CouchGuys.Gameplay.Enemies
             return best;
         }
 
-        private void RecalculateCombatDestination(Vector3 targetPosition)
+        private void RecalculateCombatDestination(Vector3 targetPosition, Transform target = null)
         {
             m_lastTargetPosition = targetPosition;
             m_nextRepositionTime = Time.time + m_tacticalRepositionInterval +
                 Random.Range(-m_repositionIntervalVariation, m_repositionIntervalVariation);
-            Vector3 forward = Vector3.ProjectOnPlane(m_target.transform.forward, Vector3.up);
+            target = target != null ? target : m_target != null ? m_target.transform : transform;
+            Vector3 forward = Vector3.ProjectOnPlane(target.forward, Vector3.up);
             if (forward.sqrMagnitude < 0.01f) forward = transform.position - targetPosition;
             forward = forward.sqrMagnitude > 0.01f ? forward.normalized : Vector3.forward;
             float range = Mathf.Max(1f, m_weapon != null ? m_weapon.PreferredRange : m_agent.stoppingDistance) * m_rangeMultiplier;
@@ -450,7 +592,7 @@ namespace CouchGuys.Gameplay.Enemies
         private bool TryCombatDestination(Vector3 candidate)
         {
             if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, m_tacticalSampleRadius, m_agent.areaMask) ||
-                (hit.position - m_target.transform.position).sqrMagnitude < m_minimumSlotSeparation * m_minimumSlotSeparation ||
+                (hit.position - m_lastTargetPosition).sqrMagnitude < m_minimumSlotSeparation * m_minimumSlotSeparation ||
                 !HasPath(hit.position)) return false;
             m_destination = hit.position;
             m_hasDestination = true;
@@ -549,17 +691,5 @@ namespace CouchGuys.Gameplay.Enemies
             m_collisionIgnoredCouch?.SetCarrierCollisionIgnored(m_carrierCollider, true);
         }
 
-#if UNITY_EDITOR
-        protected override void OnValidate()
-        {
-            base.OnValidate();
-            m_pathRefreshInterval = Mathf.Max(0.05f, m_pathRefreshInterval);
-            m_tacticalRepositionInterval = Mathf.Max(0.1f, m_tacticalRepositionInterval);
-            m_repositionIntervalVariation = Mathf.Clamp(m_repositionIntervalVariation, 0f, m_tacticalRepositionInterval * 0.8f);
-            m_targetNavMeshSampleRadius = Mathf.Max(0.25f, m_targetNavMeshSampleRadius);
-            m_tacticalSampleRadius = Mathf.Max(0.25f, m_tacticalSampleRadius);
-            m_tacticalPositionAttempts = Mathf.Max(1, m_tacticalPositionAttempts);
-        }
-#endif
     }
 }

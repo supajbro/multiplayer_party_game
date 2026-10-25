@@ -10,9 +10,12 @@ namespace CouchGuys.Gameplay.Enemies
         private static readonly int ShootHash = Animator.StringToHash("Shoot");
         private static readonly int DeadHash = Animator.StringToHash("Dead");
 
+        [SerializeField] private ThiefSettings m_settings;
         [SerializeField] private Animator m_animator;
-        [SerializeField, Min(0.01f)] private float m_movingThreshold = 0.08f;
-        [SerializeField, Min(0f)] private float m_speedDamping = 0.08f;
+        private float m_movingThreshold => m_settings != null
+            ? m_settings.Animation.MovingThreshold : 0.08f;
+        private float m_speedDamping => m_settings != null
+            ? m_settings.Animation.SpeedDamping : 0.08f;
 
         private Vector3 m_previousPosition;
         private bool m_hasPreviousPosition;
@@ -83,12 +86,5 @@ namespace CouchGuys.Gameplay.Enemies
             m_hasPreviousPosition = true;
         }
 
-#if UNITY_EDITOR
-        private void OnValidate()
-        {
-            m_movingThreshold = Mathf.Max(0.01f, m_movingThreshold);
-            m_speedDamping = Mathf.Max(0f, m_speedDamping);
-        }
-#endif
     }
 }

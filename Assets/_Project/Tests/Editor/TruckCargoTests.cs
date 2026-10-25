@@ -2,7 +2,9 @@ using System.Collections.Generic;
 using System.Reflection;
 using CouchGuys.Gameplay.Couch;
 using CouchGuys.Gameplay.Vehicles;
+using FishNet.Component.Transforming;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 
 namespace CouchGuys.Tests.Editor
@@ -59,6 +61,40 @@ namespace CouchGuys.Tests.Editor
                 Assert.That(Vector3.Angle(pose.rotation * Vector3.up, floor.transform.up), Is.LessThan(.1f));
                 AssertClear(pose);
             }
+        }
+
+        [TestCase(true)]
+        [TestCase(false)]
+        public void SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters(bool autoPosition)
+        {
+            var networkTransform = m_couch.gameObject.AddComponent<NetworkTransform>();
+            var body = m_couch.GetComponent<Rigidbody>();
+            body.interpolation = RigidbodyInterpolation.Interpolate;
+            Quaternion originalRotation = m_couch.transform.rotation;
+            GameObject cargo = Create("Cargo attachment", Origin + Vector3.up * 2f);
+            cargo.transform.SetParent(m_truck.transform, true);
+            Invoke(m_couch, "SetCargoPhysics", true);
+            Invoke(m_couch, "AttachToCargoPoint", cargo.transform, autoPosition);
+            var settings = new SerializedObject(networkTransform);
+            Assert.That(settings.FindProperty("_synchronizePosition").boolValue, Is.False);
+            Assert.That(settings.FindProperty("_synchronizeRotation").boolValue, Is.False);
+            Assert.That(body.isKinematic, Is.True);
+            Assert.That(body.interpolation, Is.EqualTo(RigidbodyInterpolation.None));
+            Assert.That(m_body.enabled, Is.False);
+
+            m_truck.transform.SetPositionAndRotation(Origin + new Vector3(15f, 3f, -9f),
+                Quaternion.Euler(12f, 115f, 8f));
+            Physics.SyncTransforms();
+            Assert.That(Vector3.Distance(m_couch.transform.position, cargo.transform.position), Is.LessThan(0.001f));
+            Quaternion expected = autoPosition ? cargo.transform.rotation : m_truck.transform.rotation * originalRotation;
+            Assert.That(Quaternion.Angle(m_couch.transform.rotation, expected), Is.LessThan(0.01f));
+
+            m_couch.transform.SetParent(null, true);
+            Invoke(m_couch, "SetCargoPhysics", false);
+            settings.Update();
+            Assert.That(settings.FindProperty("_synchronizePosition").boolValue, Is.True);
+            Assert.That(settings.FindProperty("_synchronizeRotation").boolValue, Is.True);
+            Assert.That(m_body.enabled, Is.True);
         }
 
         [Test]

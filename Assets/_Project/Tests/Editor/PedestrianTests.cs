@@ -86,7 +86,14 @@ namespace CouchGuys.Tests.Editor
                 Animator rig = character.GetComponentInChildren<Animator>();
                 Assert.That(rig.avatar.isHuman, Is.True);
                 Assert.That(rig.applyRootMotion, Is.False);
-                Assert.That(rig.runtimeAnimatorController.animationClips.Length, Is.EqualTo(3));
+                Assert.That(rig.runtimeAnimatorController.animationClips.Length, Is.EqualTo(4));
+                var controller = (UnityEditor.Animations.AnimatorController)rig.runtimeAnimatorController;
+                var dance = System.Array.Find(controller.layers[0].stateMachine.states,
+                    state => state.state.name == "Dance").state;
+                Assert.That(dance, Is.Not.Null);
+                Assert.That(dance.motion, Is.TypeOf<AnimationClip>());
+                Assert.That(((AnimationClip)dance.motion).isLooping, Is.True);
+                Assert.That(dance.transitions, Is.Empty, "Completed recipients must keep dancing.");
                 Assert.That(character.GetComponentInChildren<PedestrianRagdoll>(), Is.Not.Null);
             }
         }

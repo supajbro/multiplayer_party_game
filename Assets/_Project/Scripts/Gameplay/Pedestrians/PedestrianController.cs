@@ -1,6 +1,10 @@
 using System.Collections.Generic;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
+using FishNet.Connection;
+using CouchGuys.Gameplay.Delivery;
+using CouchGuys.Player;
+using CouchGuys.Networking;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -11,6 +15,15 @@ namespace CouchGuys.Gameplay.Pedestrians
     {
         public enum MovementState : byte { Idle, Walking, Frightened, Returning, Dead }
         private readonly SyncVar<MovementState> m_state = new SyncVar<MovementState>();
+        private readonly SyncVar<bool> m_deliveryCompleted = new();
+        private DeliveryManager m_deliveryManager;
+        private bool m_celebrating;
+        private readonly HashSet<NetworkConnection> m_viewers = new();
+        private readonly HashSet<NetworkConnection> m_pendingViewers = new();
+        private int m_viewQuery;
+        private bool m_anyViewer;
+        private float m_nextViewQuery;
+        public bool IsAlive => m_state.Value != MovementState.Dead;
         private readonly List<Vector3> m_escapeTrail = new List<Vector3>(256);
         private readonly List<int> m_returnCandidates = new List<int>();
         private readonly List<Vector3> m_returnPath = new List<Vector3>();
@@ -37,6 +50,7 @@ namespace CouchGuys.Gameplay.Pedestrians
         private NavMeshHit m_returnStart;
         private bool m_returnOnMesh;
         private static readonly int SpeedHash = Animator.StringToHash("Speed");
+        private static readonly int DanceHash = Animator.StringToHash("Base Layer.Dance");
 
         private void Awake()
         {
@@ -48,6 +62,7 @@ namespace CouchGuys.Gameplay.Pedestrians
             m_lastVisualPosition = transform.position;
             m_lastMotionTime = Time.time;
             m_state.OnChange += StateChanged;
+            m_deliveryCompleted.OnChange += DeliveryCompletedChanged;
         }
 
         public override void OnStartClient()
@@ -55,6 +70,7 @@ namespace CouchGuys.Gameplay.Pedestrians
             base.OnStartClient();
             if (!IsServerInitialized) m_collider.enabled = false;
             ApplyState();
+            ApplyCelebration();
         }
 
         public override void OnStartServer()
@@ -83,9 +99,42 @@ namespace CouchGuys.Gameplay.Pedestrians
             m_state.Value = MovementState.Walking;
         }
 
+        internal void InitialiseRecipientServer(DeliveryManager manager, PedestrianSettings settings)
+        {
+            m_deliveryManager = manager;
+            m_settings = settings;
+            m_health = Mathf.Max(1f, settings.MaximumHealth);
+            m_initialised = true;
+            m_state.Value = MovementState.Idle;
+        }
+
+        internal void CompleteDeliveryServer()
+        {
+            if (!IsServerInitialized || !IsAlive) return;
+            m_deliveryCompleted.Value = true;
+            m_nextViewQuery = Time.time + 0.5f;
+        }
+
+        private void DeliveryCompletedChanged(bool previous, bool next, bool asServer) => ApplyCelebration();
+
+        private void ApplyCelebration()
+        {
+            if (!m_deliveryCompleted.Value || !IsAlive || m_animator == null ||
+                m_animator.runtimeAnimatorController == null || m_celebrating ||
+                !m_animator.HasState(0, DanceHash)) return;
+            m_celebrating = true;
+            m_animator.CrossFadeInFixedTime(DanceHash, 0.2f, 0);
+        }
+
+        private void OnDestroy()
+        {
+            m_state.OnChange -= StateChanged;
+            m_deliveryCompleted.OnChange -= DeliveryCompletedChanged;
+        }
+
         public void FrightenServer(Vector3 origin)
         {
-            if (!IsServerInitialized || !m_initialised || m_state.Value == MovementState.Dead) return;
+            if (!IsServerInitialized || !m_initialised || m_deliveryManager != null || m_state.Value == MovementState.Dead) return;
             bool entering = m_state.Value != MovementState.Frightened;
             if (m_state.Value == MovementState.Walking || m_state.Value == MovementState.Idle)
             {
@@ -135,6 +184,7 @@ namespace CouchGuys.Gameplay.Pedestrians
         {
             m_state.Value = MovementState.Dead;
             m_despawnAt = Time.time + Mathf.Max(0.1f, m_settings.CorpseDuration);
+            m_deliveryManager?.RecipientDiedServer(this);
         }
 
         private void OnTriggerEnter(Collider other) => TryVehicleImpact(other);
@@ -180,9 +230,18 @@ namespace CouchGuys.Gameplay.Pedestrians
         private void FixedUpdate()
         {
             if (!IsServerInitialized || !m_initialised) return;
+            if (m_deliveryCompleted.Value)
+            {
+                UpdateRecipientVisibilityServer();
+                return;
+            }
             if (m_state.Value == MovementState.Dead)
             {
-                if (Time.time >= m_despawnAt) m_manager.Despawn(this);
+                if (Time.time >= m_despawnAt)
+                {
+                    if (m_manager != null) m_manager.Despawn(this);
+                    else Despawn(NetworkObject);
+                }
                 return;
             }
             if (m_state.Value == MovementState.Frightened && Time.time >= m_calmAt && Time.time >= m_nextThink)
@@ -198,6 +257,66 @@ namespace CouchGuys.Gameplay.Pedestrians
                 Move(m_fleeTarget, Mathf.Max(0.1f, m_settings.RunningSpeed) * Time.fixedDeltaTime);
             }
             else if (m_state.Value == MovementState.Returning) Return(Time.fixedDeltaTime);
+        }
+
+        private void UpdateRecipientVisibilityServer()
+        {
+            if (Time.time < m_nextViewQuery) return;
+            m_pendingViewers.RemoveWhere(connection => !connection.IsActive);
+            if (m_viewQuery > 0)
+            {
+                bool allReported = m_pendingViewers.Count == 0;
+                foreach (var player in PlayerHealth.Instances)
+                    if (IsActiveViewer(player) && !m_viewers.Contains(player.Owner)) allReported = false;
+                if (allReported && !m_anyViewer)
+                {
+                    Despawn(NetworkObject);
+                    return;
+                }
+                // Missing replies keep the recipient alive; retry stalled rounds.
+                if (m_pendingViewers.Count > 0 && Time.time < m_nextViewQuery + 2.5f) return;
+            }
+            m_viewQuery++;
+            m_anyViewer = false;
+            m_viewers.Clear();
+            m_pendingViewers.Clear();
+            foreach (var player in PlayerHealth.Instances)
+                if (IsActiveViewer(player)) m_viewers.Add(player.Owner);
+            foreach (var connection in m_viewers) m_pendingViewers.Add(connection);
+            m_nextViewQuery = Time.time + 0.5f;
+            foreach (var connection in m_viewers) QueryVisibilityTargetRpc(connection, m_viewQuery);
+        }
+
+        private static bool IsActiveViewer(PlayerHealth player) => player != null &&
+            player.IsSpawned && player.IsAlive && !player.IsAiTeammate && player.Owner.IsActive;
+
+        [TargetRpc]
+        private void QueryVisibilityTargetRpc(NetworkConnection connection, int query)
+        {
+            bool visible = false;
+            bool foundCamera = false;
+            Bounds bounds = new Bounds(transform.position + Vector3.up * 0.9f, new Vector3(1.2f, 2f, 1.2f));
+            foreach (var renderer in GetComponentsInChildren<Renderer>())
+                if (renderer.enabled) bounds.Encapsulate(renderer.bounds);
+            foreach (var player in PlayerHealth.Instances)
+            {
+                if (!player.IsOwner || !player.IsAlive || player.IsAiTeammate) continue;
+                var ownership = player.GetComponent<NetworkPlayerOwnership>();
+                Camera camera = ownership != null ? ownership.PlayerCamera : null;
+                if (camera == null || !camera.isActiveAndEnabled) continue;
+                foundCamera = true;
+                if (GeometryUtility.TestPlanesAABB(GeometryUtility.CalculateFrustumPlanes(camera), bounds))
+                    visible = true;
+            }
+            ReportVisibilityServerRpc(query, visible || !foundCamera);
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        private void ReportVisibilityServerRpc(int query, bool visible, NetworkConnection sender = null)
+        {
+            if (!m_deliveryCompleted.Value || query != m_viewQuery || sender == null ||
+                !m_pendingViewers.Remove(sender)) return;
+            m_anyViewer |= visible;
         }
 
         private void Walk(float dt)

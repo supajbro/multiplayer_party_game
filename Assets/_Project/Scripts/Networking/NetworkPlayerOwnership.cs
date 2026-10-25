@@ -22,6 +22,7 @@ namespace CouchGuys.Networking
         [SerializeField] private ThirdPersonPlayerController m_playerController;
         [SerializeField] private ThirdPersonCameraController m_cameraController;
         [SerializeField] private Camera m_playerCamera;
+        public Camera PlayerCamera => m_playerCamera;
         [SerializeField] private AudioListener m_audioListener;
 
         [Header("Temporary Player Identification")]

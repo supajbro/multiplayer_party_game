@@ -94,7 +94,11 @@ namespace CouchGuys.Editor
         {
             string path = Directory + "/Pedestrian.controller";
             var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
-            if (controller != null) return controller;
+            if (controller != null)
+            {
+                EnsureDanceState(controller);
+                return controller;
+            }
             controller = AnimatorController.CreateAnimatorControllerAtPath(path);
             controller.AddParameter("Speed", AnimatorControllerParameterType.Float);
             AnimatorStateMachine machine = controller.layers[0].stateMachine;
@@ -109,8 +113,20 @@ namespace CouchGuys.Editor
                 tree.AddChild(clip, i * 0.5f);
             }
             machine.defaultState = state;
+            EnsureDanceState(controller);
             EditorUtility.SetDirty(controller);
             return controller;
+        }
+
+        private static void EnsureDanceState(AnimatorController controller)
+        {
+            AnimatorStateMachine machine = controller.layers[0].stateMachine;
+            AnimatorState dance = machine.states.FirstOrDefault(state => state.state.name == "Dance").state;
+            if (dance == null) dance = machine.AddState("Dance");
+            dance.motion = AssetDatabase.LoadAssetAtPath<AnimationClip>($"{Source}/Animations/Dance 1.anim");
+            if (dance.motion == null) throw new UnityException("Missing pedestrian dance animation.");
+            EditorUtility.SetDirty(dance);
+            EditorUtility.SetDirty(controller);
         }
 
         private static PedestrianRagdoll BuildRagdoll(GameObject visual, Animator animator)

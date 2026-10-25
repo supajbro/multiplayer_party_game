@@ -11,35 +11,52 @@ namespace CouchGuys.Gameplay.Enemies
     [DisallowMultipleComponent]
     public sealed class EnemyWeapon : NetworkBehaviour
     {
-        [Header("Weapon")]
-        [SerializeField] private EnemyWeaponType m_weaponType = EnemyWeaponType.Pistol;
+        [SerializeField] private ThiefSettings m_settings;
         [SerializeField] private Transform m_muzzle;
-        [SerializeField, Min(0.05f)] private float m_fireInterval = 0.8f;
-        [SerializeField, Min(1f)] private float m_range = 30f;
-        [SerializeField, Min(1)] private int m_pelletsPerShot = 1;
-        [SerializeField, Min(0f)] private float m_spreadAngle = 5f;
-        [SerializeField, Min(0f)] private float m_damagePerPellet = 20f;
-        [SerializeField, Min(0f)] private float m_knockbackForce = 5f;
-        [SerializeField, Min(0f)] private float m_preferredRange = 12f;
-        [SerializeField] private LayerMask m_hitMask = ~0;
-
-        [Header("Accuracy and Pacing")]
-        [Tooltip("Percentage chance per shot to aim visibly wide of the target. Existing spread still applies.")]
-        [SerializeField, Range(0f, 100f)] private float m_missChance = 40f;
-        [SerializeField, Range(0f, 1f)] private float m_baseAccuracy = 0.72f;
-        [SerializeField, Range(0f, 1f)] private float m_movingAccuracyPenalty = 0.2f;
-        [SerializeField, Range(0f, 1f)] private float m_distanceAccuracyPenalty = 0.35f;
-        [SerializeField, Min(0f)] private float m_reactionTime = 0.65f;
-        [SerializeField, Min(1f)] private float m_aimRotationSpeed = 150f;
-        [SerializeField, Min(1)] private int m_minBurstShots = 1;
-        [SerializeField, Min(1)] private int m_maxBurstShots = 3;
-        [SerializeField, Min(0f)] private float m_burstCooldown = 1.1f;
-        [SerializeField, Range(0f, 45f)] private float m_requiredAimAngle = 16f;
-
-        [Header("Bullet Visuals")]
-        [SerializeField, Min(0.01f)] private float m_tracerDuration = 0.16f;
-        [SerializeField, Min(0.005f)] private float m_tracerWidth = 0.025f;
-        [SerializeField] private Color m_tracerColour = new(1f, 0.72f, 0.12f, 1f);
+        private EnemyWeaponType m_weaponType => m_settings != null
+            ? m_settings.Combat.WeaponType : EnemyWeaponType.Pistol;
+        private float m_fireInterval => m_settings != null
+            ? m_settings.Combat.FireInterval : 0.8f;
+        private float m_range => m_settings != null
+            ? m_settings.Combat.Range : 30f;
+        private int m_pelletsPerShot => m_settings != null
+            ? m_settings.Combat.PelletsPerShot : 1;
+        private float m_spreadAngle => m_settings != null
+            ? m_settings.Combat.SpreadAngle : 5f;
+        private float m_damagePerPellet => m_settings != null
+            ? m_settings.Combat.DamagePerPellet : 20f;
+        private float m_knockbackForce => m_settings != null
+            ? m_settings.Combat.KnockbackForce : 5f;
+        private float m_preferredRange => m_settings != null
+            ? m_settings.Combat.PreferredRange : 12f;
+        private LayerMask m_hitMask => m_settings != null
+            ? m_settings.Combat.HitMask : ~0;
+        private float m_missChance => m_settings != null
+            ? m_settings.Combat.MissChance : 40f;
+        private float m_baseAccuracy => m_settings != null
+            ? m_settings.Combat.BaseAccuracy : 0.72f;
+        private float m_movingAccuracyPenalty => m_settings != null
+            ? m_settings.Combat.MovingAccuracyPenalty : 0.2f;
+        private float m_distanceAccuracyPenalty => m_settings != null
+            ? m_settings.Combat.DistanceAccuracyPenalty : 0.35f;
+        private float m_reactionTime => m_settings != null
+            ? m_settings.Combat.ReactionTime : 0.65f;
+        private float m_aimRotationSpeed => m_settings != null
+            ? m_settings.Combat.AimRotationSpeed : 150f;
+        private int m_minBurstShots => m_settings != null
+            ? m_settings.Combat.MinBurstShots : 1;
+        private int m_maxBurstShots => m_settings != null
+            ? m_settings.Combat.MaxBurstShots : 3;
+        private float m_burstCooldown => m_settings != null
+            ? m_settings.Combat.BurstCooldown : 1.1f;
+        private float m_requiredAimAngle => m_settings != null
+            ? m_settings.Combat.RequiredAimAngle : 16f;
+        private float m_tracerDuration => m_settings != null
+            ? m_settings.Combat.TracerDuration : 0.16f;
+        private float m_tracerWidth => m_settings != null
+            ? m_settings.Combat.TracerWidth : 0.025f;
+        private Color m_tracerColour => m_settings != null
+            ? m_settings.Combat.TracerColour : new(1f, 0.72f, 0.12f, 1f);
 
         private readonly Dictionary<PlayerHealth, float> m_damageByPlayer = new();
         private readonly Dictionary<TruckController, float> m_damageByTruck = new();
@@ -48,6 +65,9 @@ namespace CouchGuys.Gameplay.Enemies
         private readonly List<Collider> m_targetColliders = new(8);
         private readonly RaycastHit[] m_hits = new RaycastHit[24];
         private PlayerHealth m_target;
+        private TruckController m_targetTruck;
+        private Vector3 TargetAimPoint => m_targetTruck != null
+            ? m_targetTruck.CameraTarget.position : m_target.AimPoint;
         private Material m_tracerMaterial;
         private ThiefAnimationDriver m_animationDriver;
         private NavMeshAgent m_agent;
@@ -80,24 +100,37 @@ namespace CouchGuys.Gameplay.Enemies
         public void SetTargetServer(PlayerHealth target)
         {
             if (!IsServerInitialized && NetworkObject != null && NetworkObject.IsSpawned) return;
-            if (m_target != target)
+            if (m_target != target || m_targetTruck != null)
             {
                 EndRifleBurstServer();
                 m_reactionEndsAt = Time.time + m_reactionTime;
                 m_burstShotsRemaining = Random.Range(m_minBurstShots, m_maxBurstShots + 1);
             }
             m_target = target;
+            m_targetTruck = null;
+        }
+
+        public void SetTruckTargetServer(TruckController truck)
+        {
+            if (!IsServerInitialized) return;
+            if (m_targetTruck != truck)
+            {
+                SetTargetServer(null);
+                m_reactionEndsAt = Time.time + m_reactionTime;
+                m_burstShotsRemaining = Random.Range(m_minBurstShots, m_maxBurstShots + 1);
+            }
+            m_targetTruck = truck;
         }
 
         private void Update()
         {
             if (!IsServerInitialized) return;
-            if (m_target == null || !m_target.IsAlive)
+            if (m_targetTruck != null ? m_targetTruck.IsDestroyed : m_target == null || !m_target.IsAlive)
             {
                 EndRifleBurstServer();
                 return;
             }
-            Vector3 desired = (m_target.AimPoint - GetMuzzlePosition()).normalized;
+            Vector3 desired = (TargetAimPoint - GetMuzzlePosition()).normalized;
             m_aimDirection = Vector3.RotateTowards(m_aimDirection, desired,
                 m_aimRotationSpeed * Mathf.Deg2Rad * Time.deltaTime, 0f).normalized;
             if (Time.time < m_reactionEndsAt || Time.time < m_nextFireTime || !CanShootTarget(desired)) return;
@@ -116,7 +149,7 @@ namespace CouchGuys.Gameplay.Enemies
         private bool CanShootTarget(Vector3 desired)
         {
             Vector3 origin = GetMuzzlePosition();
-            Vector3 offset = m_target.AimPoint - origin;
+            Vector3 offset = TargetAimPoint - origin;
             if (offset.sqrMagnitude > m_range * m_range ||
                 Vector3.Angle(m_aimDirection, desired) > m_requiredAimAngle) return false;
             int count = Physics.RaycastNonAlloc(origin, desired, m_hits, m_range, m_hitMask, QueryTriggerInteraction.Ignore);
@@ -125,9 +158,10 @@ namespace CouchGuys.Gameplay.Enemies
             {
                 if (m_hits[i].collider.transform.root == transform.root) continue;
                 PlayerHealth hitPlayer = m_hits[i].collider.GetComponentInParent<PlayerHealth>();
-                if (hitPlayer == m_target) return true;
+                if (m_target != null && hitPlayer == m_target) return true;
                 TruckController hitTruck = m_hits[i].collider.GetComponentInParent<TruckController>();
-                return hitTruck != null && hitTruck.Driver == m_target.NetworkObject;
+                return hitTruck != null && (m_targetTruck != null
+                    ? hitTruck == m_targetTruck : m_target != null && hitTruck.Driver == m_target.NetworkObject);
             }
             return false;
         }
@@ -137,7 +171,7 @@ namespace CouchGuys.Gameplay.Enemies
         {
             Vector3 origin = GetMuzzlePosition();
             CouchGuys.Gameplay.Pedestrians.PedestrianManager.ReportGunshotServer(origin);
-            float distance01 = Mathf.Clamp01(Vector3.Distance(origin, m_target.AimPoint) / m_range);
+            float distance01 = Mathf.Clamp01(Vector3.Distance(origin, TargetAimPoint) / m_range);
             bool moving = m_agent != null && m_agent.enabled && m_agent.velocity.sqrMagnitude > 0.2f;
             float accuracy = Mathf.Clamp01(m_baseAccuracy - distance01 * m_distanceAccuracyPenalty -
                 (moving ? m_movingAccuracyPenalty : 0f));
@@ -205,11 +239,11 @@ namespace CouchGuys.Gameplay.Enemies
         private Vector3 GetMissDirection(Vector3 origin, float spread)
         {
             // Aim outside the target's bounding sphere, allowing room for pellet spread.
-            Transform targetRoot = m_target.transform;
-            if (m_target.TryGetComponent(out PlayerTruckInteractor interactor) && interactor.CurrentTruck != null)
+            Transform targetRoot = m_targetTruck != null ? m_targetTruck.transform : m_target.transform;
+            if (m_target != null && m_target.TryGetComponent(out PlayerTruckInteractor interactor) && interactor.CurrentTruck != null)
                 targetRoot = interactor.CurrentTruck.transform;
             targetRoot.GetComponentsInChildren<Collider>(m_targetColliders);
-            Bounds bounds = new Bounds(m_target.AimPoint, Vector3.zero);
+            Bounds bounds = new Bounds(TargetAimPoint, Vector3.zero);
             foreach (Collider collider in m_targetColliders)
                 if (collider.enabled && !collider.isTrigger) bounds.Encapsulate(collider.bounds);
             Vector3 offset = bounds.center - origin;
@@ -271,17 +305,5 @@ namespace CouchGuys.Gameplay.Enemies
             return rotation * new Vector3(spread.x, spread.y, 1f).normalized;
         }
 
-#if UNITY_EDITOR
-        protected override void OnValidate()
-        {
-            base.OnValidate();
-            m_missChance = Mathf.Clamp(m_missChance, 0f, 100f);
-            m_fireInterval = Mathf.Max(0.05f, m_fireInterval);
-            m_range = Mathf.Max(1f, m_range);
-            m_pelletsPerShot = Mathf.Max(1, m_pelletsPerShot);
-            m_minBurstShots = Mathf.Max(1, m_minBurstShots);
-            m_maxBurstShots = Mathf.Max(m_minBurstShots, m_maxBurstShots);
-        }
-#endif
     }
 }

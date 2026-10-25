@@ -1,0 +1,82 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 908be3f8fe404f8ab4a7d41e53dc8625, type: 3}
+  m_Name: PistolThiefSettings
+  m_EditorClassIdentifier:
+  Movement:
+    Speed: 4.5
+    Acceleration: 16
+    AngularSpeed: 720
+    StoppingDistance: 5
+    AutoBraking: 1
+  Navigation:
+    PathRefreshInterval: 0.35
+    TacticalRepositionInterval: 2.5
+    RepositionIntervalVariation: 1
+    TargetNavMeshSampleRadius: 6
+    TacticalSampleRadius: 4
+    TargetMovementThreshold: 2.5
+    TacticalPositionAttempts: 4
+    PositionVariation: 1.25
+    SupportRangeMultiplier: 1.45
+    MinimumSlotSeparation: 1.75
+    AimTurnSpeed: 540
+  Alerts:
+    AlertChance: 25
+    AlertDistance: 14
+    AlertResetDistance: 20
+    AlertPauseDuration: 1.2
+    AlertCooldown: 10
+  Health:
+    MaxHealth: 100
+    KnockbackDuration: 0.22
+    KnockbackDamping: 14
+    DeathDespawnDelay: 2.5
+    WeaponDropChance: 35
+  Combat:
+    WeaponType: 0
+    FireInterval: 0.8
+    Range: 28
+    PelletsPerShot: 1
+    SpreadAngle: 2
+    DamagePerPellet: 20
+    KnockbackForce: 5
+    PreferredRange: 5
+    HitMask:
+      serializedVersion: 2
+      m_Bits: 4294967295
+    MissChance: 40
+    BaseAccuracy: 0.72
+    MovingAccuracyPenalty: 0.2
+    DistanceAccuracyPenalty: 0.35
+    ReactionTime: 0.65
+    AimRotationSpeed: 150
+    MinBurstShots: 1
+    MaxBurstShots: 3
+    BurstCooldown: 1.1
+    RequiredAimAngle: 16
+    TracerDuration: 0.16
+    TracerWidth: 0.035
+    TracerColour: {r: 1, g: 0.72, b: 0.12, a: 1}
+  Audio:
+    FootstepLoop: {fileID: 8300000, guid: a7605e3995f04aaf9dd93d8bf7381427, type: 3}
+    AlertClip: {fileID: 8300000, guid: 491328b55d78481e83e65c896c24e922, type: 3}
+    FootstepVolume: 0.55
+    AlertVolume: 1
+    MovingThreshold: 0.12
+    FootstepMinimumDistance: 2
+    FootstepMaximumDistance: 20
+    AlertMinimumDistance: 4
+    AlertMaximumDistance: 30
+  Animation:
+    MovingThreshold: 0.08
+    SpeedDamping: 0.08

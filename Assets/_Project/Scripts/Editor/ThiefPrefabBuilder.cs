@@ -32,42 +32,26 @@ namespace CouchGuys.Editor
             public readonly string Path;
             public readonly string ModelPath;
             public readonly string ControllerPath;
-            public readonly float FireInterval;
-            public readonly float Range;
-            public readonly int Pellets;
-            public readonly float Spread;
-            public readonly float Damage;
-            public readonly float Knockback;
-            public readonly float PreferredRange;
 
             public WeaponSpec(
-                EnemyWeaponType type, string name, string path, string modelPath, string controllerPath,
-                float fireInterval, float range, int pellets, float spread,
-                float damage, float knockback, float preferredRange)
+                EnemyWeaponType type, string name, string path, string modelPath, string controllerPath)
             {
                 Type = type;
                 Name = name;
                 Path = path;
                 ModelPath = modelPath;
                 ControllerPath = controllerPath;
-                FireInterval = fireInterval;
-                Range = range;
-                Pellets = pellets;
-                Spread = spread;
-                Damage = damage;
-                Knockback = knockback;
-                PreferredRange = preferredRange;
             }
         }
 
         private static readonly WeaponSpec[] Specs =
         {
             new(EnemyWeaponType.Pistol, "Thief_Pistol", PistolPrefabPath,
-                PistolModelPath, PistolControllerPath, 0.8f, 28f, 1, 2f, 20f, 5f, 5f),
+                PistolModelPath, PistolControllerPath),
             new(EnemyWeaponType.AssaultRifle, "Thief_AssaultRifle", AssaultRiflePrefabPath,
-                AssaultRifleModelPath, AssaultRifleControllerPath, 0.12f, 34f, 1, 1.5f, 9f, 3.5f, 7f),
+                AssaultRifleModelPath, AssaultRifleControllerPath),
             new(EnemyWeaponType.Shotgun, "Thief_Shotgun", ShotgunPrefabPath,
-                ShotgunModelPath, ShotgunControllerPath, 1.4f, 20f, 8, 7f, 8f, 9f, 3.5f)
+                ShotgunModelPath, ShotgunControllerPath)
         };
 
         [InitializeOnLoadMethod]
@@ -125,18 +109,27 @@ namespace CouchGuys.Editor
                 NavMeshAgent agent = root.AddComponent<NavMeshAgent>();
                 CapsuleCollider collider = root.AddComponent<CapsuleCollider>();
                 ThiefNavigator navigator = root.AddComponent<ThiefNavigator>();
+                ThiefAudioEmitter audio = root.GetComponent<ThiefAudioEmitter>();
                 EnemyWeapon weapon = root.AddComponent<EnemyWeapon>();
                 ThiefHealth health = root.AddComponent<ThiefHealth>();
                 ThiefAnimationDriver animationDriver = root.AddComponent<ThiefAnimationDriver>();
+                ThiefSettings settings = AssetDatabase.LoadAssetAtPath<ThiefSettings>(
+                    $"Assets/_Project/Settings/Thieves/{spec.Type}ThiefSettings.asset");
+                if (settings == null) throw new UnityException($"Missing thief settings for {spec.Type}.");
+                SetObjectReference(navigator, "m_settings", settings);
+                SetObjectReference(weapon, "m_settings", settings);
+                SetObjectReference(health, "m_settings", settings);
+                SetObjectReference(audio, "m_settings", settings);
+                SetObjectReference(animationDriver, "m_settings", settings);
 
                 agent.radius = 0.35f;
                 agent.height = 1.8f;
                 agent.baseOffset = 0f;
-                agent.speed = 4.5f;
-                agent.angularSpeed = 720f;
-                agent.acceleration = 16f;
-                agent.stoppingDistance = spec.PreferredRange;
-                agent.autoBraking = true;
+                agent.speed = settings.Movement.Speed;
+                agent.angularSpeed = settings.Movement.AngularSpeed;
+                agent.acceleration = settings.Movement.Acceleration;
+                agent.stoppingDistance = settings.Movement.StoppingDistance;
+                agent.autoBraking = settings.Movement.AutoBraking;
 
                 collider.radius = 0.35f;
                 collider.height = 1.8f;
@@ -149,7 +142,7 @@ namespace CouchGuys.Editor
                 SetObjectReference(animationDriver, "m_animator", animator);
                 SetObjectReference(health, "m_agent", agent);
                 SetObjectReference(health, "m_collider", collider);
-                ConfigureWeapon(weapon, muzzle, spec);
+                ConfigureWeapon(weapon, muzzle);
                 ConfigureNetworkBehaviours(networkObject, networkTransform, navigator, weapon, health);
 
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, spec.Path);
@@ -247,20 +240,10 @@ namespace CouchGuys.Editor
             return null;
         }
 
-        private static void ConfigureWeapon(EnemyWeapon weapon, Transform muzzle, WeaponSpec spec)
+        private static void ConfigureWeapon(EnemyWeapon weapon, Transform muzzle)
         {
             SerializedObject serialised = new SerializedObject(weapon);
-            serialised.FindProperty("m_weaponType").enumValueIndex = (int)spec.Type;
             serialised.FindProperty("m_muzzle").objectReferenceValue = muzzle;
-            serialised.FindProperty("m_fireInterval").floatValue = spec.FireInterval;
-            serialised.FindProperty("m_range").floatValue = spec.Range;
-            serialised.FindProperty("m_pelletsPerShot").intValue = spec.Pellets;
-            serialised.FindProperty("m_spreadAngle").floatValue = spec.Spread;
-            serialised.FindProperty("m_damagePerPellet").floatValue = spec.Damage;
-            serialised.FindProperty("m_knockbackForce").floatValue = spec.Knockback;
-            serialised.FindProperty("m_preferredRange").floatValue = spec.PreferredRange;
-            serialised.FindProperty("m_tracerDuration").floatValue = 0.16f;
-            serialised.FindProperty("m_tracerWidth").floatValue = 0.035f;
             serialised.ApplyModifiedPropertiesWithoutUndo();
         }
 

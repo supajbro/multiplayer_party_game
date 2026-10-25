@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 6428441084481991781}
   - component: {fileID: 3510916381192600324}
   - component: {fileID: 1512817484687679622}
+  - component: {fileID: 859010020030040051}
   m_Layer: 0
   m_Name: Thief_Pistol
   m_TagString: Untagged
@@ -204,21 +205,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7c9826403ae43f99d1e670c38439114, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Enemies.ThiefNavigator
+  m_settings: {fileID: 11400000, guid: 5293ffe021b64af9a4f7ce306ae131f6, type: 2}
   _componentIndexCache: 1
   _addedNetworkObject: {fileID: 2162281211134036330}
   _networkObjectCache: {fileID: 2162281211134036330}
   m_agent: {fileID: 6984351324654476776}
-  m_pathRefreshInterval: 0.35
-  m_tacticalRepositionInterval: 2.5
-  m_repositionIntervalVariation: 1
-  m_targetNavMeshSampleRadius: 6
-  m_tacticalSampleRadius: 4
-  m_targetMovementThreshold: 2.5
-  m_tacticalPositionAttempts: 4
-  m_positionVariation: 1.25
-  m_supportRangeMultiplier: 1.45
-  m_minimumSlotSeparation: 1.75
-  m_aimTurnSpeed: 540
 --- !u!114 &6428441084481991781
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -231,34 +222,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7c9826403ae43f99d1e670c38439119, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Enemies.EnemyWeapon
+  m_settings: {fileID: 11400000, guid: 5293ffe021b64af9a4f7ce306ae131f6, type: 2}
   _componentIndexCache: 2
   _addedNetworkObject: {fileID: 2162281211134036330}
   _networkObjectCache: {fileID: 2162281211134036330}
-  m_weaponType: 0
   m_muzzle: {fileID: 7451082415155115017}
-  m_fireInterval: 0.8
-  m_range: 28
-  m_pelletsPerShot: 1
-  m_spreadAngle: 2
-  m_damagePerPellet: 20
-  m_knockbackForce: 5
-  m_preferredRange: 5
-  m_hitMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_missChance: 40
-  m_baseAccuracy: 0.72
-  m_movingAccuracyPenalty: 0.2
-  m_distanceAccuracyPenalty: 0.35
-  m_reactionTime: 0.65
-  m_aimRotationSpeed: 150
-  m_minBurstShots: 1
-  m_maxBurstShots: 3
-  m_burstCooldown: 1.1
-  m_requiredAimAngle: 16
-  m_tracerDuration: 0.16
-  m_tracerWidth: 0.035
-  m_tracerColour: {r: 1, g: 0.72, b: 0.12, a: 1}
 --- !u!114 &3510916381192600324
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -271,13 +239,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ccd362814cebad845ae2dc7098ee6650, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Enemies.ThiefHealth
+  m_settings: {fileID: 11400000, guid: 5293ffe021b64af9a4f7ce306ae131f6, type: 2}
   _componentIndexCache: 3
   _addedNetworkObject: {fileID: 2162281211134036330}
   _networkObjectCache: {fileID: 2162281211134036330}
-  m_maxHealth: 100
-  m_knockbackDuration: 0.22
-  m_knockbackDamping: 14
-  m_deathDespawnDelay: 2.5
   m_agent: {fileID: 6984351324654476776}
   m_collider: {fileID: 270697794739547846}
 --- !u!114 &1512817484687679622
@@ -292,9 +257,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a79d5a22df0a038418e15828baa382d0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Enemies.ThiefAnimationDriver
+  m_settings: {fileID: 11400000, guid: 5293ffe021b64af9a4f7ce306ae131f6, type: 2}
   m_animator: {fileID: 2869617047751260689}
-  m_movingThreshold: 0.08
-  m_speedDamping: 0.08
 --- !u!1001 &3356758941038901569
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -584,3 +548,16 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5328344959207050568, guid: f2e31496912d2c1429dd6f6b1961d280, type: 3}
   m_PrefabInstance: {fileID: 3356758941038901569}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &859010020030040051
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2569576030818965973}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b43cf6913a8848238932f566081d29eb, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_settings: {fileID: 11400000, guid: 5293ffe021b64af9a4f7ce306ae131f6, type: 2}

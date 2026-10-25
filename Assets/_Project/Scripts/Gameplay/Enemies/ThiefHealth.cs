@@ -10,13 +10,19 @@ namespace CouchGuys.Gameplay.Enemies
     [DisallowMultipleComponent]
     public sealed class ThiefHealth : NetworkBehaviour
     {
-        [SerializeField, Min(1f)] private float m_maxHealth = 100f;
-        [SerializeField, Min(0.05f)] private float m_knockbackDuration = 0.22f;
-        [SerializeField, Min(0f)] private float m_knockbackDamping = 14f;
-        [SerializeField, Min(0f)] private float m_deathDespawnDelay = 2.5f;
-        [SerializeField, Range(0f, 100f)] private float m_weaponDropChance = 35f;
+        [SerializeField] private ThiefSettings m_settings;
         [SerializeField] private NavMeshAgent m_agent;
         [SerializeField] private Collider m_collider;
+        private float m_maxHealth => m_settings != null
+            ? m_settings.Health.MaxHealth : 100f;
+        private float m_knockbackDuration => m_settings != null
+            ? m_settings.Health.KnockbackDuration : 0.22f;
+        private float m_knockbackDamping => m_settings != null
+            ? m_settings.Health.KnockbackDamping : 14f;
+        private float m_deathDespawnDelay => m_settings != null
+            ? m_settings.Health.DeathDespawnDelay : 2.5f;
+        private float m_weaponDropChance => m_settings != null
+            ? m_settings.Health.WeaponDropChance : 35f;
 
         private readonly SyncVar<float> m_currentHealth = new();
         private readonly SyncVar<bool> m_dead = new();
@@ -24,6 +30,7 @@ namespace CouchGuys.Gameplay.Enemies
         private float m_resumeNavigationAt;
         private float m_despawnAt = float.PositiveInfinity;
         private ThiefAnimationDriver m_animationDriver;
+        private ThiefNavigator m_navigator;
 
         public event Action<float, float> HealthChanged;
         public bool IsAlive => !m_dead.Value;
@@ -35,6 +42,7 @@ namespace CouchGuys.Gameplay.Enemies
             m_agent ??= GetComponent<NavMeshAgent>();
             m_collider ??= GetComponent<Collider>();
             m_animationDriver = GetComponentInChildren<ThiefAnimationDriver>(true);
+            m_navigator = GetComponent<ThiefNavigator>();
             m_currentHealth.OnChange += OnHealthChanged;
             m_dead.OnChange += OnDeadChanged;
         }
@@ -82,7 +90,8 @@ namespace CouchGuys.Gameplay.Enemies
                 m_knockbackVelocity = Vector3.MoveTowards(
                     m_knockbackVelocity, Vector3.zero, m_knockbackDamping * Time.deltaTime);
             }
-            else if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh && m_agent.isStopped)
+            else if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh && m_agent.isStopped &&
+                (m_navigator == null || !m_navigator.IsAlerting))
             {
                 m_agent.isStopped = false;
             }
@@ -164,13 +173,5 @@ namespace CouchGuys.Gameplay.Enemies
             m_animationDriver?.TriggerDeath();
         }
 
-#if UNITY_EDITOR
-        protected override void OnValidate()
-        {
-            base.OnValidate();
-            m_maxHealth = Mathf.Max(1f, m_maxHealth);
-            m_knockbackDuration = Mathf.Max(0.05f, m_knockbackDuration);
-        }
-#endif
     }
 }
