@@ -7,7 +7,8 @@ namespace CouchGuys.Editor
     /// <summary>Creates an editable wrapper while keeping the imported FBX linked.</summary>
     public static class StreetLightPrefabBuilder
     {
-        public const string PrefabPath = "Assets/_Project/Prefabs/Environment/StreetLight.prefab";
+        public const string PrefabPath = "Assets/_Project/Prefabs/Environment/StreetLights/StreetLight.prefab";
+        private const string PreviousPath = "Assets/_Project/Prefabs/Environment/StreetLight.prefab";
         private const string LegacyPath = "Assets/_Project/Prefabs/Environment/Placeholders/StreetLight_Placeholder.prefab";
         private const string ModelPath = "Assets/_Project/Models/StreetLights/street_light_02.fbx";
 
@@ -24,6 +25,15 @@ namespace CouchGuys.Editor
             if (prefab != null) return prefab;
             GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
             if (model == null) return null;
+
+            if (!AssetDatabase.IsValidFolder("Assets/_Project/Prefabs/Environment/StreetLights"))
+                AssetDatabase.CreateFolder("Assets/_Project/Prefabs/Environment", "StreetLights");
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(PreviousPath) != null)
+            {
+                string error = AssetDatabase.MoveAsset(PreviousPath, PrefabPath);
+                if (!string.IsNullOrEmpty(error)) throw new System.InvalidOperationException(error);
+                return AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            }
 
             // Move the original asset to preserve its GUID and existing region references.
             bool migrating = AssetDatabase.LoadAssetAtPath<GameObject>(LegacyPath) != null;
@@ -69,6 +79,17 @@ namespace CouchGuys.Editor
                 var controller = new SerializedObject(root.GetComponent<StreetlightPlaceholder>());
                 controller.FindProperty("m_light").objectReferenceValue = light;
                 controller.ApplyModifiedPropertiesWithoutUndo();
+
+                BoxCollider collider = root.GetComponent<BoxCollider>();
+                if (collider == null) collider = root.AddComponent<BoxCollider>();
+                collider.center = new Vector3(0f, 3.1f, 0f);
+                collider.size = new Vector3(0.3f, 6.2f, 0.3f);
+                Rigidbody body = root.GetComponent<Rigidbody>();
+                if (body == null) body = root.AddComponent<Rigidbody>();
+                body.mass = 60f;
+                body.isKinematic = true;
+                body.interpolation = RigidbodyInterpolation.Interpolate;
+                body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
 
                 prefab = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
                 Debug.Log($"StreetLight prefab created: height 6.2, arm +Z, model scale {scale:F6}.");

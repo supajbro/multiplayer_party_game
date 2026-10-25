@@ -1,4 +1,5 @@
 using CouchGuys.Gameplay.Delivery;
+using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Player;
 using FishNet.Object;
 using UnityEngine;
@@ -20,6 +21,7 @@ namespace CouchGuys.Gameplay.Weapons
         private static readonly Color Red = new(1f, 0.2f, 0.15f, 1f);
 
         private NetworkObject m_networkObject;
+        private VehicleHud m_vehicleHud;
         private PlayerWeaponController m_weapons;
         private PlayerHealth m_health;
         private PlayerStamina m_stamina;
@@ -54,6 +56,7 @@ namespace CouchGuys.Gameplay.Weapons
         private void Awake()
         {
             m_networkObject = GetComponent<NetworkObject>();
+            m_vehicleHud = GetComponent<VehicleHud>();
             m_weapons = GetComponent<PlayerWeaponController>();
             m_health = GetComponent<PlayerHealth>();
             m_stamina = GetComponent<PlayerStamina>();
@@ -248,7 +251,15 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void LateUpdate()
         {
-            if (!m_hudBuilt || m_portraitCamera == null || m_portraitFocus == null) return;
+            if (!m_hudBuilt) return;
+            if (m_view.m_interactionPrompt != null)
+            {
+                float progress = 0f, duration = 0f;
+                string prompt = m_vehicleHud != null
+                    ? m_vehicleHud.GetInteractionPrompt(out progress, out duration) : null;
+                m_view.m_interactionPrompt.Present(prompt, progress, duration);
+            }
+            if (m_portraitCamera == null || m_portraitFocus == null) return;
             Vector3 focus = m_portraitFocus.TransformPoint(m_portraitFocusOffset);
             Vector3 forward = transform.forward;
             m_portraitCamera.transform.SetPositionAndRotation(

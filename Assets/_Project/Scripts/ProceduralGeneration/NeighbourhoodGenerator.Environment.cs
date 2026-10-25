@@ -19,6 +19,9 @@ namespace CouchGuys.ProceduralGeneration
         public int GeneratedParkCount => m_generatedParks.Count;
         public int GeneratedParkBlockCount => m_parkBlocks.Count;
         public int GeneratedStreetlightCount => m_streetlightsRoot != null ? m_streetlightsRoot.childCount : 0;
+        internal StreetlightPlaceholder GetStreetlight(int index) =>
+            index >= 0 && index < GeneratedStreetlightCount
+                ? m_streetlightsRoot.GetChild(index).GetComponent<StreetlightPlaceholder>() : null;
         public int GeneratedResidentialDecorationCount =>
             m_residentialDecorationsRoot != null ? m_residentialDecorationsRoot.childCount : 0;
         public int GeneratedRoadsideDecorationCount =>
@@ -481,7 +484,6 @@ namespace CouchGuys.ProceduralGeneration
                 if (IsNearDriveway(position, settings.MinimumClearanceFromDriveways)) continue;
                 if (!TryPlaceEnvironmentPrefab(settings.Prefab, position,
                         Quaternion.LookRotation(-outward, Vector3.up), m_streetlightsRoot, true, out GameObject instance)) continue;
-                RemoveCollidersFromHierarchy(instance);
                 GroundStreetlightToGeneratedTerrain(instance);
                 StreetlightPlaceholder light = instance.GetComponent<StreetlightPlaceholder>();
                 if (light != null) light.Configure(settings.LightingEnabled, settings.LightColour,

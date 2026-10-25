@@ -19,6 +19,7 @@ namespace CouchGuys.Editor
         private static readonly Color Yellow = new(1f, 0.7f, 0.08f, 1f);
         private static readonly Color Red = new(1f, 0.2f, 0.15f, 1f);
 
+        private InteractionPromptView m_interactionPrompt;
         private Text m_healthText;
         private Text m_deliveryTitle;
         private Text m_deliveryDetail;
@@ -492,6 +493,11 @@ namespace CouchGuys.Editor
             scaler.referenceResolution = new Vector2(1920f, 1080f);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             scaler.matchWidthOrHeight = 0.5f;
+
+            // Preserve the Inspector-authored prompt when rebuilding the other HUD elements.
+            PlayerWeaponHudView existing = AssetDatabase.LoadAssetAtPath<PlayerWeaponHudView>(UiRoot + "PlayerWeaponHud.prefab");
+            if (existing != null && existing.m_interactionPrompt != null)
+                m_interactionPrompt = Object.Instantiate(existing.m_interactionPrompt, m_canvasRoot.transform, false);
 
             BuildHealthPanel();
             BuildDeliveryPanel();

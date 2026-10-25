@@ -253,6 +253,11 @@ namespace CouchGuys.ProceduralGeneration
 
         private void Start()
         {
+            if (GetComponent<MainMenuEnvironment>() == null)
+            {
+                GameObject ambience = Resources.Load<GameObject>("NeighbourhoodAmbience");
+                if (ambience != null) Instantiate(ambience, transform);
+            }
             if (m_generateOnStart && GetComponent<NeighbourhoodSeedSynchroniser>() == null)
             {
                 if (GameLaunchContext.UseLoadingFlow)
