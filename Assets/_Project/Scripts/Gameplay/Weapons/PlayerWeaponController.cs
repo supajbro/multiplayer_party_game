@@ -21,6 +21,7 @@ namespace CouchGuys.Gameplay.Weapons
     public sealed class PlayerWeaponController : NetworkBehaviour
     {
         private const int WeaponCount = 3;
+        public const int InventorySlotCount = 5;
         private const int RaycastBufferSize = 16;
 
         [Header("References")]
@@ -44,7 +45,9 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField, Min(0.5f)] private float m_maximumAimOriginDistance = 6f;
 
         private readonly SyncVar<int> m_equippedIndex = new(-1);
-        private int m_ownedIndex = -1;
+        private readonly SyncList<int> m_inventory = new();
+        private readonly int[] m_storedMagazines = new int[InventorySlotCount];
+        private readonly int[] m_storedReserves = new int[InventorySlotCount];
         [Header("Unarmed")]
         [SerializeField, Min(0f)] private float m_punchDamage = 25f;
         [SerializeField, Min(0.1f)] private float m_punchRange = 1.65f;
@@ -91,7 +94,8 @@ namespace CouchGuys.Gameplay.Weapons
         public bool CanHandleWeaponServer => IsServerInitialized && m_health != null && m_health.IsAlive &&
             !m_health.IsKnockedDown && !(m_couchCarrier != null && m_couchCarrier.IsCarrying) &&
             !(TryGetComponent(out PlayerTruckInteractor truck) && truck.CurrentTruck != null);
-        public int SelectedHotbarSlot => Mathf.Clamp(m_selectedHotbarSlot.Value, 0, 4);
+        public int SelectedHotbarSlot => Mathf.Clamp(m_selectedHotbarSlot.Value, 0, InventorySlotCount - 1);
+        public int GetInventoryWeaponIndex(int slot) => slot >= 0 && slot < m_inventory.Count ? m_inventory[slot] : -1;
         public ReticleSettings CurrentReticleSettings => GetWeapon(m_equippedIndex.Value)?.ReticleSettings;
         public float CurrentWeaponRange => GetWeapon(m_equippedIndex.Value)?.Range ?? 60f;
 
@@ -126,7 +130,8 @@ namespace CouchGuys.Gameplay.Weapons
                 m_magazine[i] = weapon.MagazineCapacity;
                 m_reserve[i] = weapon.StartingReserve;
             }
-            m_ownedIndex = -1;
+            m_inventory.Clear();
+            for (int slot = 0; slot < InventorySlotCount; slot++) m_inventory.Add(-1);
             m_equippedIndex.Value = -1;
             m_selectedHotbarSlot.Value = 3;
             m_switchCompleteAt = Time.time + m_switchDuration;
@@ -252,17 +257,48 @@ namespace CouchGuys.Gameplay.Weapons
         {
             int index = (int)type;
             if (!CanHandleWeaponServer || !ValidIndex(index)) return false;
-            if (ValidIndex(m_ownedIndex) && !DropOwnedWeaponServer()) return false;
+            int slot = FindPickupSlot();
+            if (slot < 0) return false;
+            bool equip = !HasEquippedWeapon || ValidIndex(GetInventoryWeaponIndex(slot));
+            if (ValidIndex(GetInventoryWeaponIndex(slot)) && !DropOwnedWeaponServer()) return false;
             WeaponDefinition weapon = GetWeapon(index);
-            m_ownedIndex = index;
-            m_magazine[index] = magazine < 0 ? weapon.MagazineCapacity : Mathf.Clamp(magazine, 0, weapon.MagazineCapacity);
-            m_reserve[index] = reserve < 0 ? weapon.StartingReserve : Mathf.Max(0, reserve);
-            m_reloadingIndex = -1;
-            m_equippedIndex.Value = index;
-            m_selectedHotbarSlot.Value = index;
-            m_switchCompleteAt = Time.time + m_switchDuration;
-            if (Owner.IsValid) SendWeaponStateTargetRpc(Owner, index, m_magazine[index], m_reserve[index], false);
+            m_inventory[slot] = index;
+            m_storedMagazines[slot] = magazine < 0 ? weapon.MagazineCapacity : Mathf.Clamp(magazine, 0, weapon.MagazineCapacity);
+            m_storedReserves[slot] = reserve < 0 ? weapon.StartingReserve : Mathf.Max(0, reserve);
+            if (equip) EquipInventorySlotServer(slot);
             return true;
+        }
+
+        private int FindPickupSlot()
+        {
+            for (int slot = 0; slot < m_inventory.Count; slot++)
+                if (!ValidIndex(m_inventory[slot])) return slot;
+            return HasEquippedWeapon ? SelectedHotbarSlot : -1;
+        }
+
+        // Ammo arrays above are the active weapon's cache. Store it before changing
+        // slots so two copies of the same weapon retain independent ammunition.
+        private void StoreEquippedAmmoServer()
+        {
+            int index = m_equippedIndex.Value;
+            if (!ValidIndex(index)) return;
+            m_storedMagazines[SelectedHotbarSlot] = m_magazine[index];
+            m_storedReserves[SelectedHotbarSlot] = m_reserve[index];
+        }
+
+        private void EquipInventorySlotServer(int slot)
+        {
+            StoreEquippedAmmoServer();
+            EndRifleBurstServer();
+            m_reloadingIndex = -1;
+            int index = GetInventoryWeaponIndex(slot);
+            m_equippedIndex.Value = index;
+            m_selectedHotbarSlot.Value = slot;
+            m_switchCompleteAt = Time.time + m_switchDuration;
+            if (!ValidIndex(index)) return;
+            m_magazine[index] = m_storedMagazines[slot];
+            m_reserve[index] = m_storedReserves[slot];
+            if (Owner.IsValid) SendWeaponStateTargetRpc(Owner, index, m_magazine[index], m_reserve[index], false);
         }
 
         [ServerRpc]
@@ -273,7 +309,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         private bool DropOwnedWeaponServer()
         {
-            int index = m_ownedIndex;
+            int index = m_equippedIndex.Value;
             if (!ValidIndex(index)) return true;
             Vector3 origin = transform.position + Vector3.up;
             Vector3 direction = transform.forward;
@@ -287,9 +323,8 @@ namespace CouchGuys.Gameplay.Weapons
                     Physics.IgnoreCollision(own, dropped);
             EndRifleBurstServer();
             m_reloadingIndex = -1;
-            m_ownedIndex = -1;
+            m_inventory[SelectedHotbarSlot] = -1;
             m_equippedIndex.Value = -1;
-            m_selectedHotbarSlot.Value = 3;
             return true;
         }
 
@@ -325,15 +360,8 @@ namespace CouchGuys.Gameplay.Weapons
         [ServerRpc]
         private void RequestHotbarSelectionServerRpc(int slot)
         {
-            if (slot < 0 || slot >= 5 || slot == m_selectedHotbarSlot.Value || !m_health.IsAlive) return;
-            int index = slot < WeaponCount && slot == m_ownedIndex ? slot : -1;
-            EndRifleBurstServer();
-            m_reloadingIndex = -1;
-            m_selectedHotbarSlot.Value = slot;
-            m_equippedIndex.Value = index;
-            m_switchCompleteAt = Time.time + m_switchDuration;
-            if (ValidIndex(index))
-                SendWeaponStateTargetRpc(Owner, index, m_magazine[index], m_reserve[index], false);
+            if (slot < 0 || slot >= InventorySlotCount || slot == m_selectedHotbarSlot.Value || !m_health.IsAlive) return;
+            EquipInventorySlotServer(slot);
         }
 
         [ServerRpc]
@@ -385,6 +413,14 @@ namespace CouchGuys.Gameplay.Weapons
                 m_reserve[index] = weapon.StartingReserve;
             }
 
+            for (int slot = 0; slot < m_inventory.Count; slot++)
+            {
+                WeaponDefinition weapon = GetWeapon(m_inventory[slot]);
+                if (weapon == null) continue;
+                m_storedMagazines[slot] = weapon.MagazineCapacity;
+                m_storedReserves[slot] = weapon.StartingReserve;
+            }
+
             int equippedIndex = m_equippedIndex.Value;
             if (Owner.IsValid && ValidIndex(equippedIndex))
                 SendWeaponStateTargetRpc(Owner, equippedIndex,
@@ -420,7 +456,8 @@ namespace CouchGuys.Gameplay.Weapons
             int index = (int)weaponType;
             EndRifleBurstServer();
             m_reloadingIndex = -1;
-            m_ownedIndex = index;
+            m_inventory[0] = index;
+            m_selectedHotbarSlot.Value = 0;
             m_equippedIndex.Value = index;
             m_switchCompleteAt = Time.time;
         }
@@ -468,7 +505,7 @@ namespace CouchGuys.Gameplay.Weapons
 
             int index = m_equippedIndex.Value;
             WeaponDefinition weapon = GetWeapon(index);
-            if (weapon == null || index != m_ownedIndex || m_reloadingIndex >= 0 || Time.time < m_switchCompleteAt ||
+            if (weapon == null || index != GetInventoryWeaponIndex(SelectedHotbarSlot) || m_reloadingIndex >= 0 || Time.time < m_switchCompleteAt ||
                 Time.time < m_nextServerFireTime[index] || !m_health.IsAlive || m_health.IsKnockedDown ||
                 (m_couchCarrier != null && m_couchCarrier.IsCarrying) ||
                 (aimOrigin - m_health.AimPoint).sqrMagnitude >

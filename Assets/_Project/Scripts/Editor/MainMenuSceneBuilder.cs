@@ -54,6 +54,7 @@ namespace CouchGuys.Editor
             CreateMenuUi(menuScene);
             CreateEventSystem(menuScene);
             CreatePostProcessing(menuScene);
+            CreateMusic(menuScene);
 
             EditorSceneManager.SaveScene(menuScene, MainMenuScenePath);
             ConfigureBuildScenes();
@@ -61,6 +62,16 @@ namespace CouchGuys.Editor
             AssetDatabase.Refresh();
             ValidateScene(menuScene);
             Debug.Log("Couch Guys MainMenu scene built successfully.");
+        }
+
+        private static void CreateMusic(Scene scene)
+        {
+            GameObject musicObject = new GameObject("Main Menu Music", typeof(MainMenuMusic));
+            SceneManager.MoveGameObjectToScene(musicObject, scene);
+            SerializedObject serialized = new SerializedObject(musicObject.GetComponent<MainMenuMusic>());
+            serialized.FindProperty("m_clip").objectReferenceValue = AssetDatabase.LoadAssetAtPath<AudioClip>(
+                "Assets/_Project/Audio/Jingles/Delivery_Full_Preview_Loop.wav");
+            serialized.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void ConfigureSingleSprite(string path)

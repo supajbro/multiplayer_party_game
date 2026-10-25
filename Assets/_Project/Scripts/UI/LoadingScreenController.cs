@@ -171,6 +171,7 @@ namespace CouchGuys.UI
             foreach (PlayerInputReader input in FindObjectsByType<PlayerInputReader>(FindObjectsSortMode.None))
                 input.SetGameplaySuppressed(false);
             Destroy(gameObject);
+            MainMenuMusic.FadeOutForGameplay();
         }
 
         private static bool HasLocalPlayer()
