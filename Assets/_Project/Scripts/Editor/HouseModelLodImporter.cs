@@ -16,18 +16,24 @@ namespace CouchGuys.Editor
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets,
             string[] movedAssets, string[] movedFromAssetPaths)
         {
-            if (!importedAssets.Contains(HousePrefabBuilder.House02ModelPath)) return;
+            if (!importedAssets.Contains(HousePrefabBuilder.House02ModelPath) &&
+                !importedAssets.Contains(HousePrefabBuilder.House03ModelPath)) return;
             EditorApplication.delayCall += () =>
             {
                 if (!EditorApplication.isPlayingOrWillChangePlaymode)
+                {
+                    foreach (string path in importedAssets)
+                        if (path == HousePrefabBuilder.House02ModelPath || path == HousePrefabBuilder.House03ModelPath)
+                            HousePrefabBuilder.RebuildImportedHouse(path);
                     HousePrefabBuilder.EnsureHousePrefabs();
+                }
             };
         }
 
         private void OnPreprocessModel()
         {
             if (assetPath != HousePrefabBuilder.HouseModelPath &&
-                assetPath != HousePrefabBuilder.House02ModelPath)
+                assetPath != HousePrefabBuilder.House02ModelPath && assetPath != HousePrefabBuilder.House03ModelPath)
             {
                 return;
             }
@@ -43,6 +49,7 @@ namespace CouchGuys.Editor
         {
             Reimport(HousePrefabBuilder.HouseModelPath);
             Reimport(HousePrefabBuilder.House02ModelPath);
+            Reimport(HousePrefabBuilder.House03ModelPath);
             HousePrefabBuilder.EnsureHousePrefabs();
             LogTriangleAudit();
         }
@@ -66,6 +73,7 @@ namespace CouchGuys.Editor
         {
             LogTriangleAudit(HousePrefabBuilder.HouseModelPath);
             LogTriangleAudit(HousePrefabBuilder.House02ModelPath);
+            LogTriangleAudit(HousePrefabBuilder.House03ModelPath);
         }
 
         private static void LogTriangleAudit(string path)

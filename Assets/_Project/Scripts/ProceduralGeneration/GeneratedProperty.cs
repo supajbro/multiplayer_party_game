@@ -33,6 +33,8 @@ namespace CouchGuys.ProceduralGeneration
 
         public Transform RoadConnection => m_roadConnection;
         public Transform DeliveryPoint => m_deliveryPoint;
+        public bool HasFrontDoorAnchor => m_deliveryPoint != null && m_visualRoot != null &&
+            m_deliveryPoint.IsChildOf(m_visualRoot);
         public Transform DrivewayAnchor => m_drivewayAnchor;
         public Vector2Int GridFootprint => m_gridFootprint;
         public Transform VisualRoot => m_visualRoot;

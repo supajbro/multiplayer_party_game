@@ -11,7 +11,7 @@ using UnityEngine.SceneManagement;
 
 namespace CouchGuys.Editor
 {
-    /// <summary>Focused, repeatable House 02 import and delivery generation checks.</summary>
+    /// <summary>Checks house LODs, entrance clearance and deterministic delivery tier assignments.</summary>
     public static class EasyHouseValidation
     {
         private const string Request = "Library/EasyHouseValidation.request";
@@ -32,6 +32,34 @@ namespace CouchGuys.Editor
             try
             {
                 HousePrefabBuilder.EnsureHousePrefabs();
+                GameObject mansion = AssetDatabase.LoadAssetAtPath<GameObject>(HousePrefabBuilder.House03PrefabPath);
+                Require(mansion != null, "Mansion prefab");
+                Require(mansion.GetComponent<GeneratedProperty>().HasFrontDoorAnchor, "Mansion front-door anchor");
+                Require(mansion.GetComponent<HouseExteriorModuleSet>().IsConfigured, "Mansion driveway modules");
+                Require(AssetDatabase.GetDependencies(HousePrefabBuilder.House03PrefabPath)
+                    .Contains(HousePrefabBuilder.House03ModelPath), "Mansion source dependency");
+                Require(mansion.GetComponentsInChildren<BoxCollider>(true).Length > 0, "Mansion structural colliders");
+                Require(mansion.GetComponentsInChildren<Renderer>(true).All(r => r.sharedMaterials.All(m => m != null)),
+                    "Mansion has no missing materials");
+                Require(mansion.GetComponentsInChildren<Renderer>(true).Any(r => r.sharedMaterials.Any(m =>
+                    AssetDatabase.GetAssetPath(m) == HousePrefabBuilder.HouseModelPath)), "Mansion shares Medium palette");
+                LOD[] mansionLods = mansion.GetComponentInChildren<LODGroup>(true).GetLODs();
+                Require(mansionLods.Length == 4 && mansionLods.All(l => l.renderers.Length > 0), "Mansion four LODs");
+                long mansionPrevious = long.MaxValue;
+                for (int level = 0; level < mansionLods.Length; level++)
+                {
+                    LOD lod = mansionLods[level];
+                    long triangles = lod.renderers.Sum(r => (long)r.GetComponent<MeshFilter>().sharedMesh.triangles.Length / 3);
+                    Require(triangles <= mansionPrevious, "Mansion LOD triangle reduction");
+                    mansionPrevious = triangles;
+                    results.AppendLine($"Mansion LOD{level}: {triangles} triangles, {lod.renderers.Length} renderers");
+                }
+                GameObject waitingNpc = Resources.Load<GameObject>("DeliveryWaitingNPC");
+                Require(waitingNpc != null && waitingNpc.GetComponentInChildren<Animator>() != null &&
+                    waitingNpc.GetComponentInChildren<Animator>().runtimeAnimatorController != null &&
+                    waitingNpc.GetComponentsInChildren<Collider>(true).Length == 0 &&
+                    waitingNpc.GetComponentsInChildren<MonoBehaviour>(true).Length == 0,
+                    "Waiting NPC reuses idle animation without gameplay components");
                 GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(HousePrefabBuilder.House02PrefabPath);
                 Require(prefab != null && prefab.GetComponent<GeneratedProperty>().IsEasyDeliveryHouse,
                     "House 02 prefab and delivery identity");
@@ -70,17 +98,19 @@ namespace CouchGuys.Editor
                         foreach (DeliveryDestination destination in generator.DeliveryDestinations)
                         {
                             bool easyHouse = destination.GetComponent<GeneratedProperty>().IsEasyDeliveryHouse;
+                            Require(destination.GetComponent<GeneratedProperty>().HasFrontDoorAnchor, "Generated front-door anchor");
                             for (int t = 0; t < tiers.Length; t++)
                             {
                                 if (!tiers[t].IsDestinationEligible(destination)) continue;
                                 Require(easyHouse == (t == 0), "Tier exclusivity");
+                                Require((destination.DestinationType == DeliveryDestinationType.Mansion) == (t == 2), "Hard exclusively uses mansion");
                                 counts[t]++;
                                 // The collection point must be outside structural collisions with
                                 // room for a couch to approach at normal carry height.
                                 Bounds couchSpace = new Bounds(destination.DropPosition.position + Vector3.up,
                                     new Vector3(1.4f, .8f, .7f));
                                 foreach (Collider collider in destination.GetComponentsInChildren<Collider>())
-                                    if (easyHouse && collider.name.StartsWith("Structure_"))
+                                    if (collider.name.StartsWith("Structure_"))
                                         Require(!IntersectsCurrentBox((BoxCollider)collider, couchSpace),
                                             $"Couch drop clearance seed={seed} tier={t} easyHouse={easyHouse} drop={destination.DropPosition.position} collider={collider.name} bounds={collider.bounds}");
                             }

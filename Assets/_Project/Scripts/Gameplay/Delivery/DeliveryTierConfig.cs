@@ -97,7 +97,9 @@ namespace CouchGuys.Gameplay.Delivery
             };
             bool easyHouse = destination.TryGetComponent(out GeneratedProperty property) &&
                 property.IsEasyDeliveryHouse;
-            return (m_tier == DeliveryTier.Easy ? easyHouse : !easyHouse) &&
+            bool mansion = destination.DestinationType == DeliveryDestinationType.Mansion;
+            return (m_tier == DeliveryTier.Easy ? easyHouse && !mansion :
+                    m_tier == DeliveryTier.Hard ? mansion : !easyHouse && !mansion) &&
                    (m_allowedCategories & category) != 0 &&
                    metrics.RouteLength >= m_minimumRouteDistance &&
                    metrics.RouteLength <= m_maximumRouteDistance &&

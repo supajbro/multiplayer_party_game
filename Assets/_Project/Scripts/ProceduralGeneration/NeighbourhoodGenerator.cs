@@ -3578,7 +3578,7 @@ namespace CouchGuys.ProceduralGeneration
                 roadElevation);
             FacePropertyTowardsRoad(property.transform, candidate.PropertyToRoad);
             Renderer[] renderers = property.GetComponentsInChildren<Renderer>(true);
-            Vector2Int visualFootprint = centreInLot && prefab != m_mansionPrefab
+            Vector2Int visualFootprint = centreInLot
                 ? GetLotFootprint(definition, prefab)
                 : footprint;
             FitPropertyVisualToFootprint(generatedProperty, visualFootprint, renderers);
@@ -3666,10 +3666,9 @@ namespace CouchGuys.ProceduralGeneration
                 m_spawnedUniqueLots.Add(definition);
             }
 
-            // One centred house per block is the normal Suburbs layout. Only centred
-            // houses in the final progression zone are logical mansion destinations;
-            // otherwise every house would be excluded from Easy and Medium deliveries.
-            bool isMansionDestination = centreInLot && zone == SuburbZone.Outer;
+            // The mansion category follows the actual model, so Hard cannot select
+            // a fallback Medium house in an outer block.
+            bool isMansionDestination = prefab != null && prefab == m_mansionPrefab;
             RegisterDeliveryDestination(property, generatedProperty, definition,
                 isMansionDestination);
             return true;
@@ -4435,7 +4434,8 @@ namespace CouchGuys.ProceduralGeneration
                     Vector3.up).normalized;
                 metadata.VisualRoot.localRotation = Quaternion.identity;
                 SetPropertyPointDirection(metadata.RoadConnection, localDirectionToRoad);
-                SetPropertyPointDirection(metadata.DeliveryPoint, localDirectionToRoad);
+                if (!metadata.HasFrontDoorAnchor)
+                    SetPropertyPointDirection(metadata.DeliveryPoint, localDirectionToRoad);
             }
         }
 
@@ -4541,7 +4541,7 @@ namespace CouchGuys.ProceduralGeneration
                 property.RoadConnection.localPosition = frontDirection * propertyFront;
             }
 
-            if (property.DeliveryPoint != null)
+            if (property.DeliveryPoint != null && !property.HasFrontDoorAnchor)
             {
                 property.DeliveryPoint.localPosition = frontDirection *
                     (propertyFront + m_roadTileSize * 0.05f);
@@ -4882,7 +4882,7 @@ namespace CouchGuys.ProceduralGeneration
                     Quaternion.LookRotation(-forward, Vector3.up));
             }
 
-            if (property.DeliveryPoint != null)
+            if (property.DeliveryPoint != null && !property.HasFrontDoorAnchor)
             {
                 property.DeliveryPoint.SetPositionAndRotation(
                     drivewayEnd,

@@ -95,6 +95,24 @@ namespace CouchGuys.Editor
         {
             ConfigureFrogImporter();
             EnsureDeliveryNpcPrefab();
+            EnsureWaitingVisual();
+        }
+
+        public static void EnsureWaitingVisual()
+        {
+            const string path = "Assets/_Project/Resources/DeliveryWaitingNPC.prefab";
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null) return;
+            GameObject source = EnsureDeliveryNpcPrefab();
+            Transform visual = source != null ? source.transform.Find(VisualName) : null;
+            if (visual == null) return;
+            GameObject root = new GameObject("DeliveryWaitingNPC");
+            try
+            {
+                GameObject copy = UnityEngine.Object.Instantiate(visual.gameObject, root.transform, false);
+                copy.name = VisualName;
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root); }
         }
 
         private static void ConfigureFrogImporter()

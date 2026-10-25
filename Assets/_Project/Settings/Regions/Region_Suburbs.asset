@@ -116,7 +116,7 @@ MonoBehaviour:
   m_groundPrefab: {fileID: 0}
   m_startingAreaPrefab: {fileID: 7676411037448871107, guid: 9a1d7890e9178a54a9dfc9a24f4ee7dd, type: 3}
   m_deliveryNpcPrefab: {fileID: 100000, guid: 745a18178b59482a906e0b428dbcb8ce, type: 3}
-  m_mansionPrefab: {fileID: 0}
+  m_mansionPrefab: {fileID: 4271396772608569660, guid: 2b7a3bbfba241044cae6b210d5d811e0, type: 3}
   m_lots:
   - Definition: {fileID: 11400000, guid: 15aab6b7cac24f2499d3f3ef9c445f8b, type: 2}
     Weight: 1

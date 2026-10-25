@@ -47,12 +47,25 @@ MonoBehaviour:
     ResidentialRoadMaximumSlope: 18
     MinimumDestinationsPerZone: 2
     MaximumGenerationAttempts: 3
+  m_landmarkRoads:
+    Enabled: 1
+    UphillLengthTiles: 24
+    SummitHeight: 100
+    MaximumSlope: 30
+    ElevationCurveExponent: 1.35
+    EmbankmentBlendWidth: 22
+    GenerateGuardRails: 1
+    GuardRailHeight: 1.1
+    GuardRailPostIntervalTiles: 2
+    TransitionTriggerDepth: 6
+    NextRegionId: countryside
   m_terrain:
     VertexSpacing: 2
     MapBorder: 8
     RoadHalfWidth: 4
     RoadShoulderWidth: 4
     DepotBlendWidth: 4
+    DepotSurfaceClearance: 0.2
     HousePadBlendWidth: 3
     RoadSurfaceOffset: 0.035
     TextureScale: 16
@@ -65,6 +78,24 @@ MonoBehaviour:
     SceneryDensity: 0.65
     MinimumSectionLength: 28
     MaximumSectionLength: 65
+    HillHeight: 24
+    HillDepth: 80
+    SlopeSmoothness: 1.35
+    HillNoiseAmount: 5
+    HillNoiseFrequency: 0.018
+    HillVariation: 0.55
+    TreeDensity: 0.62
+    MinimumTreeSpacing: 8
+    MaximumTreeSpacing: 15
+    TunnelClearance: 8
+    MaximumTreeSlope: 38
+    TreeScaleRange: {x: 0.8, y: 1.35}
+    TreePrefabs: []
+    StandardTunnelPrefab: {fileID: 0}
+    SummitGatewayPrefab: {fileID: 0}
+    TunnelWidth: 12
+    TunnelHeight: 8
+    TunnelDepth: 12
     ForestPrefabs: []
     MountainPrefabs: []
     ConstructionPrefabs: []
@@ -82,7 +113,7 @@ MonoBehaviour:
   m_groundPrefab: {fileID: 0}
   m_startingAreaPrefab: {fileID: 0}
   m_deliveryNpcPrefab: {fileID: 0}
-  m_mansionPrefab: {fileID: 0}
+  m_mansionPrefab: {fileID: 4271396772608569660, guid: 2b7a3bbfba241044cae6b210d5d811e0, type: 3}
   m_lots:
   - Definition: {fileID: 11400000, guid: 15aab6b7cac24f2499d3f3ef9c445f8b, type: 2}
     Weight: 1
@@ -91,6 +122,100 @@ MonoBehaviour:
   m_lotDensity: 1
   m_minimumLandmarks: 0
   m_maximumLandmarks: 0
+  m_houseLod:
+    Lod1Distance: 20
+    Lod2Distance: 40
+    Lod3Distance: 70
+    Hysteresis: 2
+    UpdateInterval: 0.2
+  m_environment:
+    Lighting:
+      Enabled: 1
+      SunColour: {r: 1, g: 0.91, b: 0.76, a: 1}
+      SunIntensity: 1.25
+      SunEulerAngles: {x: 48, y: -32, z: 0}
+      AmbientSkyColour: {r: 0.46, g: 0.72, b: 1, a: 1}
+      AmbientEquatorColour: {r: 0.55, g: 0.72, b: 0.82, a: 1}
+      AmbientGroundColour: {r: 0.28, g: 0.36, b: 0.29, a: 1}
+      AmbientIntensity: 1.05
+      FogEnabled: 1
+      FogColour: {r: 0.62, g: 0.82, b: 0.96, a: 1}
+      FogStartDistance: 180
+      FogEndDistance: 520
+      SkyboxMaterial: {fileID: 0}
+      PostProcessingProfile: {fileID: 0}
+    Streetlights:
+      Enabled: 1
+      Prefab: {fileID: 0}
+      AverageSpacing: 24
+      SpacingVariation: 4
+      SidewalkOffset: 0.7
+      MinimumDistanceFromIntersections: 10
+      MinimumClearanceFromDriveways: 3.5
+      MaximumCount: 96
+      LightingEnabled: 0
+      LightColour: {r: 1, g: 0.68, b: 0.28, a: 1}
+      LightIntensity: 2.2
+      LightRange: 11
+    Parks:
+      Enabled: 1
+      MinimumParks: 1
+      MaximumParks: 2
+      SmallProbability: 0.45
+      MediumProbability: 0.4
+      LargeProbability: 0.15
+      SmallFootprint: {x: 2, y: 2}
+      MediumFootprint: {x: 4, y: 4}
+      LargeFootprint: {x: 6, y: 6}
+      MaximumTerrainSlope: 12
+      DecorationDensity: 0.8
+      BoundaryClearance: 1
+    Landmarks:
+      Enabled: 1
+      MinimumCount: 1
+      MaximumCount: 3
+      MinimumSpacing: 35
+      Clearance: 2
+      MaximumTerrainSlope: 14
+      Prefabs: []
+    ResidentialDecorations:
+      Enabled: 1
+      BinProbability: 0.7
+      SecondBinProbability: 0.2
+      MailboxProbability: 0.8
+      FlowerBedProbability: 0.72
+      BushProbability: 0.68
+      OrnamentalTreeProbability: 0.18
+      GardenDensity: 0.85
+      DoorClearance: 2.5
+      DrivewayClearance: 1.25
+    DrivewayMaterial: {fileID: 0}
+    Prefabs:
+      SmallPark: {fileID: 0}
+      MediumPark: {fileID: 0}
+      LargePark: {fileID: 0}
+      TreePrefabs: []
+      Bench: {fileID: 0}
+      Bin: {fileID: 0}
+      PublicBin: {fileID: 0}
+      Mailbox: {fileID: 0}
+      FlowerCluster: {fileID: 0}
+      Bush: {fileID: 0}
+      Fountain: {fileID: 0}
+      Statue: {fileID: 0}
+      Playground: {fileID: 0}
+      Gazebo: {fileID: 0}
+      BusStop: {fileID: 0}
+      ParkSign: {fileID: 0}
+      ParkPath: {fileID: 0}
+      ParkBoundary: {fileID: 0}
+      NoticeBoard: {fileID: 0}
+      PicnicArea: {fileID: 0}
+      Plaza: {fileID: 0}
+      FireHydrant: {fileID: 0}
+      StreetSign: {fileID: 0}
+      UtilityBox: {fileID: 0}
+      PlantingBed: {fileID: 0}
   m_props: []
   m_hazards: []
   m_buildNavMesh: 0

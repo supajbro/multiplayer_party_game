@@ -16,6 +16,8 @@ namespace CouchGuys.Editor
             "Assets/_Project/Models/Houses/CouchGuys_House_02.fbx";
         public const string House01PrefabPath = "Assets/_Project/Prefabs/Houses/House_01.prefab";
         public const string House02PrefabPath = "Assets/_Project/Prefabs/Houses/House_02.prefab";
+        public const string House03ModelPath = "Assets/_Project/Models/Houses/CouchGuys_House_03.fbx";
+        public const string House03PrefabPath = "Assets/_Project/Prefabs/Houses/House_03.prefab";
         private const string GeneratedLodMeshFolder = "Assets/_Project/Generated/HouseLods";
         private const int HouseLodCount = 4;
 
@@ -23,7 +25,7 @@ namespace CouchGuys.Editor
         private static void BuildMissingPrefabsAfterImport()
         {
             if (!PrefabUsesCurrentModel(House01PrefabPath) ||
-                !PrefabUsesCurrentModel(House02PrefabPath))
+                !PrefabUsesCurrentModel(House02PrefabPath) || !PrefabUsesCurrentModel(House03PrefabPath))
             {
                 EditorApplication.delayCall += EnsureHousePrefabs;
             }
@@ -37,7 +39,22 @@ namespace CouchGuys.Editor
             EnsureFolder("Assets/_Project/Generated", "HouseLods");
             if (!PrefabUsesCurrentModel(House01PrefabPath))
                 BuildWrapper(HouseModelPath, House01PrefabPath, "House_01");
-            BuildWrapper(House02ModelPath, House02PrefabPath, "House_02");
+            if (!PrefabUsesCurrentModel(House02PrefabPath))
+                BuildWrapper(House02ModelPath, House02PrefabPath, "House_02");
+            if (!PrefabUsesCurrentModel(House03PrefabPath))
+                BuildWrapper(House03ModelPath, House03PrefabPath, "House_03");
+            DeliveryNPCPrefabBuilder.EnsureWaitingVisual();
+            GameObject mansion = AssetDatabase.LoadAssetAtPath<GameObject>(House03PrefabPath);
+            if (mansion != null)
+                foreach (string path in new[] { "Assets/_Project/Settings/Regions/Region_Suburbs.asset",
+                    "Assets/_Project/Resources/Region_Suburbs_Menu.asset" })
+                {
+                    RegionDefinition region = AssetDatabase.LoadAssetAtPath<RegionDefinition>(path);
+                    if (region == null) continue;
+                    SerializedObject data = new SerializedObject(region);
+                    data.FindProperty("m_mansionPrefab").objectReferenceValue = mansion;
+                    data.ApplyModifiedPropertiesWithoutUndo();
+                }
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
         }
@@ -62,6 +79,13 @@ namespace CouchGuys.Editor
             EnsureHousePrefabs();
         }
 
+        public static void RebuildImportedHouse(string modelPath)
+        {
+            if (modelPath == House02ModelPath) BuildWrapper(modelPath, House02PrefabPath, "House_02");
+            else if (modelPath == House03ModelPath) BuildWrapper(modelPath, House03PrefabPath, "House_03");
+            AssetDatabase.SaveAssets();
+        }
+
         private static void BuildWrapper(string modelPath, string prefabPath, string wrapperName)
         {
             GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(modelPath);
@@ -82,11 +106,11 @@ namespace CouchGuys.Editor
                 modelInstance.transform.localPosition = Vector3.zero;
                 // House 02 retains the FBX root's axis/unit conversion. House 01 was
                 // authored with those conversions baked into the source geometry.
-                modelInstance.transform.localRotation = modelPath == House02ModelPath
+                modelInstance.transform.localRotation = modelPath != HouseModelPath
                     ? model.transform.localRotation : Quaternion.identity;
-                modelInstance.transform.localScale = modelPath == House02ModelPath
+                modelInstance.transform.localScale = modelPath != HouseModelPath
                     ? model.transform.localScale : Vector3.one;
-                if (modelPath == House02ModelPath)
+                if (modelPath != HouseModelPath)
                 {
                     Dictionary<string, Material> palette = new Dictionary<string, Material>();
                     foreach (Object asset in AssetDatabase.LoadAllAssetsAtPath(HouseModelPath))
@@ -101,7 +125,6 @@ namespace CouchGuys.Editor
                     }
                 }
 
-                LogModelInspection(modelPath, modelInstance);
                 CorrectModelOrientationAndPivot(visualRoot, modelInstance);
                 // Scale around the corrected ground-level wrapper pivot.
                 visualRoot.localScale = Vector3.one * 2f;
@@ -113,11 +136,20 @@ namespace CouchGuys.Editor
                 ConfigureHouseLods(visualRoot, modelInstance, wrapperName);
 
                 Transform roadConnection = CreatePoint(root.transform, "RoadConnection", new Vector3(0f, 0f, 10f));
-                Transform deliveryPoint = CreatePoint(root.transform, "DeliveryPoint", new Vector3(0f, 0f, 10.5f));
+                Transform door = FindNamedDescendants(modelInstance.transform, "FrontDoor_Slab").Find(t => t.GetComponent<Renderer>() != null)
+                    ?? FindNamedDescendants(modelInstance.transform, "FrontDoor_Plain").Find(t => t.GetComponent<Renderer>() != null);
+                if (door == null) throw new UnityException($"{modelPath} has no front door mesh.");
+                Bounds doorBounds = CalculateWorldBounds(door);
+                List<Transform> porches = FindNamedDescendants(modelInstance.transform, "Porch_Slab");
+                float ground = porches.Count > 0 ? CalculateWorldBounds(porches[0]).max.y : doorBounds.min.y;
+                Transform deliveryPoint = CreateWorldPoint(visualRoot, "FrontDoorDeliveryAnchor",
+                    new Vector3(doorBounds.center.x, ground + 0.02f, doorBounds.max.z + 1.5f));
+                List<Transform> authoredDoors = FindNamedDescendants(modelInstance.transform, "FrontDoorAnchor");
+                if (authoredDoors.Count > 0) deliveryPoint.position = authoredDoors[0].position;
                 GeneratedProperty property = root.AddComponent<GeneratedProperty>();
                 property.SetEasyDeliveryHouse(modelPath == House02ModelPath);
                 property.ConfigurePrefab(
-                    new Vector2Int(2, 2),
+                    modelPath == House03ModelPath ? new Vector2Int(3, 3) : new Vector2Int(2, 2),
                     roadConnection,
                     deliveryPoint,
                     visualRoot,
@@ -277,7 +309,7 @@ namespace CouchGuys.Editor
                     MeshRenderer sourceRenderer = sourceRenderers[rendererIndex];
                     // House 02 sheds small trim at distance, while its silhouette, windows,
                     // entrance and garage remain present at every level.
-                    if (lod0Model.name.StartsWith("CouchGuys_House_02") &&
+                    if ((lod0Model.name.StartsWith("CouchGuys_House_02") || lod0Model.name.StartsWith("CouchGuys_House_03")) &&
                         sourceRenderer.name.StartsWith("Detail_") &&
                         (level >= 3 || (level >= 2 && !sourceRenderer.name.StartsWith("Detail_Shrub_")) ||
                          (level >= 1 && sourceRenderer.name.StartsWith("Detail_RoofSeam_"))))
@@ -845,7 +877,14 @@ namespace CouchGuys.Editor
                 return false;
             }
 
-            string wrapperName = prefabPath == House01PrefabPath ? "House_01" : "House_02";
+            if (!prefab.TryGetComponent(out GeneratedProperty property) || !property.HasFrontDoorAnchor) return false;
+            if (prefabPath == House03PrefabPath)
+            {
+                List<Transform> doors = FindNamedDescendants(prefab.transform, "FrontDoorAnchor");
+                if (doors.Count > 0 && Vector3.Distance(doors[0].position, property.DeliveryPoint.position) > .01f)
+                    return false;
+            }
+            string wrapperName = prefabPath == House01PrefabPath ? "House_01" : prefabPath == House02PrefabPath ? "House_02" : "House_03";
             string combinedMeshPath = $"{GeneratedLodMeshFolder}/{wrapperName}_CombinedLods.asset";
             if (AssetDatabase.LoadAssetAtPath<Mesh>(combinedMeshPath) == null)
             {
@@ -890,7 +929,7 @@ namespace CouchGuys.Editor
             bool usesCombinedLods = false;
             for (int index = 0; index < dependencies.Length; index++)
             {
-                if (dependencies[index] == (prefabPath == House02PrefabPath ? House02ModelPath : HouseModelPath))
+                if (dependencies[index] == (prefabPath == House03PrefabPath ? House03ModelPath : prefabPath == House02PrefabPath ? House02ModelPath : HouseModelPath))
                 {
                     usesSourceModel = true;
                 }

@@ -23,7 +23,6 @@ namespace CouchGuys.Gameplay.Delivery
         [SerializeField] private NeighbourhoodGenerator m_generator;
         [SerializeField] private SuburbsChapterManager m_chapterManager;
         [SerializeField] private NetworkObject m_couchPrefab;
-        [SerializeField] private GameObject m_collectionMarkerPrefab;
 
         [Header("Delivery Shop")]
         [SerializeField] private DeliveryTierConfig[] m_deliveryTiers = new DeliveryTierConfig[3];
@@ -43,7 +42,6 @@ namespace CouchGuys.Gameplay.Delivery
 
         [Header("Delivery Completion")]
         [SerializeField, Min(0.25f)] private float m_collectionRadius = 2.5f;
-        [SerializeField, Min(0f)] private float m_markerGroundOffset = 0.035f;
 
         [Header("Debug/Test Teleport")]
         [SerializeField, Min(0.25f)] private float m_testTeleportOutsideRadius = 1.5f;
@@ -66,7 +64,7 @@ namespace CouchGuys.Gameplay.Delivery
         private readonly SyncVar<bool> m_vehicleGarageDoorOpen = new();
 
         private GameObject m_collectionMarker;
-        private Material m_runtimeMarkerMaterial;
+
         private bool m_isCompletingDelivery;
         private readonly HashSet<int> m_usedDestinationIndices = new HashSet<int>();
         private readonly List<int>[] m_tierCandidates =
@@ -154,10 +152,6 @@ namespace CouchGuys.Gameplay.Delivery
             if (IsServerInitialized && m_dialoguePlayer != null && m_dialoguePlayer.Owner.IsValid)
                 m_dialoguePlayer.CloseDeliveryDialogueTargetRpc(m_dialoguePlayer.Owner, "Delivery Manager unavailable.");
             DestroyCollectionMarker();
-            if (m_runtimeMarkerMaterial != null)
-            {
-                Destroy(m_runtimeMarkerMaterial);
-            }
         }
 
         public override void OnStartClient()
@@ -167,6 +161,12 @@ namespace CouchGuys.Gameplay.Delivery
             CurrencyChanged?.Invoke(m_currency.Value);
             StateChanged?.Invoke(m_state.Value);
             ObjectiveStepChanged?.Invoke(m_objectiveStep.Value);
+        }
+
+        public override void OnStopClient()
+        {
+            DestroyCollectionMarker();
+            base.OnStopClient();
         }
 
         public override void OnStartServer()
@@ -183,6 +183,7 @@ namespace CouchGuys.Gameplay.Delivery
             m_activeTierIndex.Value = -1;
             StopDeliveryTimerServer();
             RebuildCandidateCache();
+            RefreshCollectionMarker();
         }
 
         /// <summary>Adds shared test currency from an already-authorised server action.</summary>
@@ -866,11 +867,13 @@ namespace CouchGuys.Gameplay.Delivery
             m_depot?.ApplyDoorStates(m_exitDoorOpen.Value,
                 m_vehicleGarageDoorOpen.Value, true);
             RebuildCandidateCache();
+            RefreshCollectionMarker();
         }
 
         private void OnRegionClearing(NeighbourhoodGenerator generator)
         {
             StopConveyorDispatchServer();
+            DestroyCollectionMarker();
             m_depot = null;
             m_candidatesReady = false;
             for (int i = 0; i < m_tierCandidates.Length; i++) m_tierCandidates[i].Clear();
@@ -1021,44 +1024,20 @@ namespace CouchGuys.Gameplay.Delivery
                 return;
             }
 
-            Vector3 markerPosition = destination.DropPosition.position + Vector3.up * m_markerGroundOffset;
-            if (m_collectionMarkerPrefab != null)
-            {
-                m_collectionMarker = Instantiate(
-                    m_collectionMarkerPrefab,
-                    markerPosition,
-                    Quaternion.identity,
-                    transform);
-                m_collectionMarker.name = "ActiveDeliveryCollectionMarker";
-                return;
-            }
-
-            m_collectionMarker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            m_collectionMarker.name = "ActiveDeliveryCollectionMarker_Runtime";
-            m_collectionMarker.transform.SetParent(transform, true);
-            m_collectionMarker.transform.SetPositionAndRotation(markerPosition, Quaternion.identity);
-            m_collectionMarker.transform.localScale = new Vector3(
-                m_collectionRadius * 2f,
-                0.025f,
-                m_collectionRadius * 2f);
-            Destroy(m_collectionMarker.GetComponent<Collider>());
-
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            if (shader != null)
-            {
-                m_runtimeMarkerMaterial ??= new Material(shader)
-                {
-                    name = "Runtime Delivery Marker Material",
-                    color = new Color(0.1f, 0.95f, 0.2f, 0.72f)
-                };
-                m_collectionMarker.GetComponent<Renderer>().sharedMaterial = m_runtimeMarkerMaterial;
-            }
+            // Every peer resolves the same deterministic destination from the synced index.
+            // This prefab contains only the existing animated visual, with no gameplay scripts.
+            GameObject visual = Resources.Load<GameObject>("DeliveryWaitingNPC");
+            if (visual == null) return;
+            Transform door = destination.DropPosition;
+            m_collectionMarker = Instantiate(visual, door.position, door.rotation, transform);
+            m_collectionMarker.name = "ActiveDeliveryWaitingNPC";
         }
 
         private void DestroyCollectionMarker()
         {
             if (m_collectionMarker != null)
             {
+                m_collectionMarker.SetActive(false);
                 Destroy(m_collectionMarker);
                 m_collectionMarker = null;
             }
