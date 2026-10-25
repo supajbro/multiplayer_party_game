@@ -38,6 +38,7 @@ namespace CouchGuys.Input
         /// <summary>Unfiltered interact state used to support hold-to-enter/exit while player gameplay is suppressed.</summary>
         public bool VehicleInteractHeld => m_interactAction?.IsPressed() ?? false;
         public bool VehicleInteractPressedThisFrame => m_interactAction?.WasPressedThisFrame() ?? false;
+        public bool VehicleHornPressedThisFrame => Mouse.current?.leftButton.wasPressedThisFrame ?? false;
         public Vector2 Look => !m_gameplaySuppressed ? m_lookAction?.ReadValue<Vector2>() ?? Vector2.zero : Vector2.zero;
         public bool JumpPressedThisFrame => !m_gameplaySuppressed && (m_jumpAction?.WasPressedThisFrame() ?? false);
         public bool SprintHeld => !m_gameplaySuppressed && (m_sprintAction?.IsPressed() ?? false);

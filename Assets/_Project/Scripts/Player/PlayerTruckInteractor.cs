@@ -28,6 +28,7 @@ namespace CouchGuys.Player
         private float m_holdProgress;
         private float m_nextInteractionTime;
         private float m_nextInputSendTime;
+        private float m_nextHornRequestTime;
         private float m_originalFieldOfView;
         private string m_worldInteractionPrompt;
         private string m_vehicleFeedback;
@@ -88,7 +89,15 @@ namespace CouchGuys.Player
             if (current != null)
             {
                 m_nearbyTruck = null;
-                if (m_currentSeatIndex.Value == 0) SendDrivingInput(current);
+                if (m_currentSeatIndex.Value == 0)
+                {
+                    SendDrivingInput(current);
+                    if (m_input.VehicleHornPressedThisFrame && Time.time >= m_nextHornRequestTime)
+                    {
+                        m_nextHornRequestTime = Time.time + current.HornCooldown;
+                        RequestHornServerRpc();
+                    }
+                }
                 UpdateHold(current.Settings.ExitHoldDuration, RequestExitServerRpc);
             }
             else
@@ -215,6 +224,12 @@ namespace CouchGuys.Player
 
         [ServerRpc]
         private void RequestExitServerRpc() => ExitServer(CurrentTruck);
+
+        [ServerRpc]
+        private void RequestHornServerRpc()
+        {
+            if (m_currentSeatIndex.Value == 0) CurrentTruck?.HornServer(this);
+        }
 
         [ServerRpc]
         private void SendDrivingInputServerRpc(NetworkObject truckObject, Vector2 input)

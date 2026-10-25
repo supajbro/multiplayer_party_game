@@ -116,11 +116,12 @@ namespace CouchGuys.Gameplay.Pedestrians
             m_state.Value = MovementState.Frightened;
         }
 
-        public void ApplyVehicleImpactServer(float speed)
+        public bool ApplyVehicleImpactServer(float speed)
         {
             if (!IsServerInitialized || !m_initialised || m_state.Value == MovementState.Dead ||
-                speed < Mathf.Max(0.1f, m_settings.LethalVehicleSpeed)) return;
+                speed < Mathf.Max(0.1f, m_settings.LethalVehicleSpeed)) return false;
             DieServer();
+            return true;
         }
 
         public void ApplyBulletDamageServer(float damage)
@@ -147,16 +148,25 @@ namespace CouchGuys.Gameplay.Pedestrians
             Rigidbody vehicleBody = other.attachedRigidbody;
             if (vehicleBody == null || vehicleBody.isKinematic) return;
             var truck = other.GetComponentInParent<CouchGuys.Gameplay.Vehicles.TruckController>();
-            if (truck == null || truck.IsDestroyed) return;
+            var car = other.GetComponentInParent<CouchGuys.Gameplay.Traffic.TrafficVehicleController>();
+            if ((truck == null || truck.IsDestroyed) && (car == null || car.IsDestroyed)) return;
             Vector3 velocity = Vector3.ProjectOnPlane(vehicleBody.linearVelocity, Vector3.up);
             float speed = velocity.magnitude;
             if (speed < 0.1f) return;
             m_nextVehicleImpactTime = Time.time + 0.5f;
-            // A human-sized impulse gives the truck a bump, capped at 8% speed loss.
-            float impactMass = Mathf.Min(75f, vehicleBody.mass * 0.08f);
-            vehicleBody.AddForceAtPosition(-velocity * impactMass,
-                transform.position + Vector3.up * 0.7f, ForceMode.Impulse);
-            ApplyVehicleImpactServer(speed);
+            if (truck != null)
+            {
+                // A human-sized impulse gives the truck a bump, capped at 8% speed loss.
+                float impactMass = Mathf.Min(75f, vehicleBody.mass * 0.08f);
+                vehicleBody.AddForceAtPosition(-velocity * impactMass,
+                    transform.position + Vector3.up * 0.7f, ForceMode.Impulse);
+            }
+            Vector3 position = other.ClosestPoint(transform.position + Vector3.up * 0.7f);
+            if (ApplyVehicleImpactServer(speed))
+            {
+                if (truck != null) truck.PlaySplatServer(position);
+                else car.PlaySplatServer(position);
+            }
         }
 
         public static bool IsBulletHit(Collider collider)

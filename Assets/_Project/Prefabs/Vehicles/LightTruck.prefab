@@ -2624,6 +2624,7 @@ GameObject:
   - component: {fileID: 5873252375396000528}
   - component: {fileID: 1210505046444709441}
   - component: {fileID: 4766884851468984819}
+  - component: {fileID: 859010020030040050}
   m_Layer: 0
   m_Name: LightTruck
   m_TagString: Untagged
@@ -2804,6 +2805,7 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 5873252375396000528}
   _networkObjectCache: {fileID: 5873252375396000528}
   m_settings: {fileID: 11400000, guid: 411522100326939408e30a60a4d7b0ca, type: 2}
+  m_hornCooldown: 0.5
   m_rigidbody: {fileID: 4761075286210854685}
   m_visualModel: {fileID: 2141219692986546635}
   m_cameraTarget: {fileID: 9048424270430502666}
@@ -4050,3 +4052,21 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -4807682793018310294, guid: 3c64cf0e4879457418ff734ae13c915b, type: 3}
   m_PrefabInstance: {fileID: 4733226626174170564}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &859010020030040050
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6179796800887206169}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8468c78c72d3491582c4c5a003273d41, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_engineClip: {fileID: 0}
+  m_splatClip: {fileID: 8300000, guid: a15d1d70eef3413ab7dfe68dbcbf5ea7, type: 3}
+  m_hornClip: {fileID: 8300000, guid: d9c8aba7bf3c4c1ca33cf878f0cc8a8c, type: 3}
+  m_engineVolume: 0.65
+  m_minDistance: 3
+  m_maxDistance: 30

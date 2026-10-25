@@ -50,6 +50,7 @@ GameObject:
   - component: {fileID: 4087385694241014534}
   - component: {fileID: 3361720526368209299}
   - component: {fileID: 208991203557030093}
+  - component: {fileID: 859010020030040050}
   m_Layer: 0
   m_Name: TrafficCar
   m_TagString: Untagged
@@ -808,3 +809,21 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 7263597454815622385, guid: 778f47703bae31546b0c5416707084d9, type: 3}
   m_PrefabInstance: {fileID: 1979305012609593613}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &859010020030040050
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4713296498847513284}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8468c78c72d3491582c4c5a003273d41, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_engineClip: {fileID: 8300000, guid: 80f7b7bca45b47cfac5a88e8c7727d4e, type: 3}
+  m_splatClip: {fileID: 8300000, guid: a15d1d70eef3413ab7dfe68dbcbf5ea7, type: 3}
+  m_hornClip: {fileID: 0}
+  m_engineVolume: 0.65
+  m_minDistance: 3
+  m_maxDistance: 30

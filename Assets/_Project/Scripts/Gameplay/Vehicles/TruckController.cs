@@ -11,6 +11,7 @@ namespace CouchGuys.Gameplay.Vehicles
 {
     [RequireComponent(typeof(NetworkObject), typeof(Rigidbody))]
     [DisallowMultipleComponent]
+    [RequireComponent(typeof(VehicleAudioEmitter))]
     [UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "CouchGuys.Gameplay.Vehicles", sourceAssembly: "Assembly-CSharp", sourceClassName: "VanController")]
     public sealed class TruckController : NetworkBehaviour
     {
@@ -19,6 +20,7 @@ namespace CouchGuys.Gameplay.Vehicles
 
         [Header("Configuration")]
         [SerializeField] private TruckSettings m_settings;
+        [SerializeField, Min(0.1f)] private float m_hornCooldown = 0.5f;
         [Header("References")]
         [SerializeField] private Rigidbody m_rigidbody;
         [SerializeField] private Transform m_visualModel;
@@ -48,6 +50,8 @@ namespace CouchGuys.Gameplay.Vehicles
         private Vector2 m_driveInput;
         private float m_steering;
         private float m_nextCollisionDamageTime;
+        private float m_nextHornTime;
+        private VehicleAudioEmitter m_audio;
         private readonly Dictionary<int, float> m_nextCharacterImpactTime = new();
         private float m_lastInputTime;
         private Vector3[] m_wheelBasePositions;
@@ -65,6 +69,7 @@ namespace CouchGuys.Gameplay.Vehicles
         private float m_lastGroundContactTime = float.NegativeInfinity;
 
         public TruckSettings Settings => m_settings;
+        public float HornCooldown => Mathf.Max(0.1f, m_hornCooldown);
         public float Fuel => m_fuel.Value; public float Health => m_health.Value;
         public float FuelFraction => m_settings != null ? m_fuel.Value / m_settings.MaxFuel : 0f;
         public float HealthFraction => m_settings != null ? m_health.Value / m_settings.MaxHealth : 0f;
@@ -96,6 +101,7 @@ namespace CouchGuys.Gameplay.Vehicles
         private void Awake()
         {
             m_rigidbody ??= GetComponent<Rigidbody>();
+            m_audio = GetComponent<VehicleAudioEmitter>();
             if (m_settings != null) m_rigidbody.mass = m_settings.VehicleMass;
             ConfigureArcadeColliderFriction();
             if (m_visualModel != null) m_visualBaseRotation = m_visualModel.localRotation;
@@ -149,6 +155,7 @@ namespace CouchGuys.Gameplay.Vehicles
         {
             base.OnStartServer();
             m_nextCollisionDamageTime = 0f;
+            m_nextHornTime = 0f;
             m_nextCharacterImpactTime.Clear();
             m_fuel.Value = m_settings.MaxFuel;
             m_health.Value = m_settings.MaxHealth;
@@ -172,6 +179,30 @@ namespace CouchGuys.Gameplay.Vehicles
             base.OnStartClient();
             if (!IsServerInitialized) m_rigidbody.isKinematic = true;
         }
+
+        public override void OnStopClient()
+        {
+            m_audio.StopLocal();
+            base.OnStopClient();
+        }
+
+        [Server]
+        internal void HornServer(PlayerTruckInteractor player)
+        {
+            if (player == null || m_driver.Value != player.NetworkObject || IsDestroyed ||
+                Time.time < m_nextHornTime) return;
+            m_nextHornTime = Time.time + HornCooldown;
+            PlayHornObserversRpc();
+        }
+
+        [ObserversRpc]
+        private void PlayHornObserversRpc() => m_audio.PlayHorn();
+
+        [Server]
+        internal void PlaySplatServer(Vector3 position) => PlaySplatObserversRpc(position);
+
+        [ObserversRpc]
+        private void PlaySplatObserversRpc(Vector3 position) => m_audio.PlaySplat(position);
 
         private void FixedUpdate()
         {
@@ -516,8 +547,9 @@ namespace CouchGuys.Gameplay.Vehicles
             var pedestrian = collision.collider.GetComponentInParent<CouchGuys.Gameplay.Pedestrians.PedestrianController>();
             if (pedestrian != null)
             {
-                pedestrian.ApplyVehicleImpactServer(Mathf.Max(collision.relativeVelocity.magnitude,
-                    Vector3.ProjectOnPlane(m_rigidbody.linearVelocity, Vector3.up).magnitude));
+                if (pedestrian.ApplyVehicleImpactServer(Mathf.Max(collision.relativeVelocity.magnitude,
+                    Vector3.ProjectOnPlane(m_rigidbody.linearVelocity, Vector3.up).magnitude)))
+                    PlaySplatServer(collision.GetContact(0).point);
                 return;
             }
 
@@ -604,7 +636,11 @@ namespace CouchGuys.Gameplay.Vehicles
             if (player != null)
                 player.ApplyVehicleImpactServer(damage, direction, knockback, upwardKnockback);
             else
+            {
+                bool alive = thief.IsAlive;
                 thief.ApplyVehicleImpactServer(damage, direction, knockback, upwardKnockback);
+                if (alive) PlaySplatServer(collision.GetContact(0).point);
+            }
         }
 
         private static float GetStrongestObstacleImpactSpeed(Collision collision)

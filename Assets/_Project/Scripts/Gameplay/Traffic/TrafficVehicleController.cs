@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Enemies;
+using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Player;
 using FishNet;
 using FishNet.Object;
@@ -10,12 +11,14 @@ namespace CouchGuys.Gameplay.Traffic
 {
     [RequireComponent(typeof(NetworkObject), typeof(Rigidbody))]
     [DisallowMultipleComponent]
+    [RequireComponent(typeof(VehicleAudioEmitter))]
     public sealed class TrafficVehicleController : NetworkBehaviour
     {
         private readonly SyncVar<float> m_health = new SyncVar<float>();
         private readonly SyncVar<bool> m_destroyed = new SyncVar<bool>();
         private readonly SyncVar<float> m_wheelSteering = new();
         private readonly Dictionary<int, float> m_nextImpactTime = new Dictionary<int, float>(8);
+        private readonly Dictionary<int, float> m_lastSplatContactTime = new Dictionary<int, float>(8);
         private readonly Collider[] m_explosionHits = new Collider[32];
         private readonly RaycastHit[] m_obstacleHits = new RaycastHit[8];
         private readonly RaycastHit[] m_groundHits = new RaycastHit[8];
@@ -45,6 +48,7 @@ namespace CouchGuys.Gameplay.Traffic
         private GameObject m_visualInstance;
         private BoxCollider m_bodyCollider;
         private Vector3 m_impactVelocity;
+        private VehicleAudioEmitter m_audio;
 
         public bool IsDestroyed => m_destroyed.Value;
         public float CurrentHealth => m_health.Value;
@@ -55,6 +59,7 @@ namespace CouchGuys.Gameplay.Traffic
         private void Awake()
         {
             m_rigidbody ??= GetComponent<Rigidbody>();
+            m_audio = GetComponent<VehicleAudioEmitter>();
             ConfigureGroundContact();
             ApplyVisualVariant(0);
             m_health.OnChange += OnHealthChanged;
@@ -71,6 +76,7 @@ namespace CouchGuys.Gameplay.Traffic
         public override void OnStartServer()
         {
             base.OnStartServer();
+            m_lastSplatContactTime.Clear();
             m_health.Value = m_settings != null ? m_settings.MaximumHealth : 120f;
             m_destroyed.Value = false;
             m_rigidbody.isKinematic = false;
@@ -82,6 +88,13 @@ namespace CouchGuys.Gameplay.Traffic
             base.OnStartClient();
             if (!IsServerInitialized) m_rigidbody.isKinematic = true;
             ApplyDestroyedVisual(m_destroyed.Value);
+            m_audio.SetEngineRunning(!IsDestroyed);
+        }
+
+        public override void OnStopClient()
+        {
+            m_audio.StopLocal();
+            base.OnStopClient();
         }
 
         public override void OnStopServer()
@@ -467,6 +480,17 @@ namespace CouchGuys.Gameplay.Traffic
             ThiefHealth thief = collider.GetComponentInParent<ThiefHealth>();
             Object victim = player != null ? (Object)player : thief;
             if (victim == null) return;
+            // The swept overlap and collision callback can both report the same hit.
+            // Track continued contact independently of the damage cooldown so a car
+            // pushing one thief does not emit another splat every cooldown interval.
+            bool newContact = true;
+            if (thief != null)
+            {
+                int thiefId = thief.GetInstanceID();
+                newContact = !m_lastSplatContactTime.TryGetValue(thiefId, out float lastContact) ||
+                    Time.fixedTime - lastContact > Time.fixedDeltaTime * 1.5f;
+                m_lastSplatContactTime[thiefId] = Time.fixedTime;
+            }
             float minimumImpactSpeed = player != null
                 ? Mathf.Min(0.75f, m_settings.MinimumCollisionSpeed)
                 : m_settings.MinimumCollisionSpeed;
@@ -483,9 +507,21 @@ namespace CouchGuys.Gameplay.Traffic
                 player.ApplyVehicleImpactServer(m_settings.CollisionDamage * scale, direction,
                     m_settings.CollisionKnockbackStrength * scale, 0f, true);
             else
+            {
+                bool alive = thief.IsAlive;
                 thief.ApplyVehicleImpactServer(m_settings.CollisionDamage * scale, direction,
                     m_settings.CollisionKnockbackStrength * scale, 0f, true);
+                if (alive && newContact && velocity.sqrMagnitude > 0.01f)
+                    PlaySplatServer(collider.ClosestPoint(transform.position));
+            }
         }
+
+        [Server]
+        internal void PlaySplatServer(Vector3 position) => PlaySplatObserversRpc(position);
+
+        // Client-only execution: the host hears the observer event exactly once.
+        [ObserversRpc]
+        private void PlaySplatObserversRpc(Vector3 position) => m_audio.PlaySplat(position);
 
         [ObserversRpc(RunLocally = true)]
         private void PlayExplosionObserversRpc()
@@ -514,6 +550,7 @@ namespace CouchGuys.Gameplay.Traffic
         private void OnDestroyedChanged(bool previous, bool next, bool asServer)
         {
             if (next) ApplyDestroyedVisual(true);
+            if (IsClientInitialized) m_audio.SetEngineRunning(!next);
         }
 
         private void ApplyDestroyedVisual(bool destroyed)
