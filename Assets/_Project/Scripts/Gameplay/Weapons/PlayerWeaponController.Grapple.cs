@@ -10,6 +10,13 @@ namespace CouchGuys.Gameplay.Weapons
 {
     public sealed partial class PlayerWeaponController
     {
+        [SerializeField] private GrappleGunSettings m_grappleSettings;
+        private Vector3 m_previousGrappleAim;
+        private float m_previousGrappleSampleTime;
+        private float m_previousGrappleReceiptTime;
+        private float m_grappleUpwardSweep;
+        private float m_nextServerFlickTime;
+        private float m_resumeGrapplePullAt;
         // One server simulation per target, including when several shooters hit it.
         private static readonly Dictionary<NetworkObject, PlayerWeaponController> GrappleClaims = new();
         private readonly SyncVar<Vector3> m_grappleLocalPoint = new();
@@ -51,7 +58,8 @@ namespace CouchGuys.Gameplay.Weapons
                 !(m_couchCarrier != null && m_couchCarrier.IsCarrying);
             if (!held)
             {
-                if (m_localGrappleHeld && IsClientInitialized) ReleaseGrappleServerRpc();
+                if (m_localGrappleHeld && IsClientInitialized)
+                    ReleaseGrappleServerRpc(CurrentGrappleAimDirection(), Time.unscaledTime);
                 m_localGrappleHeld = false;
                 return;
             }
@@ -61,29 +69,32 @@ namespace CouchGuys.Gameplay.Weapons
                 Ray ray = m_aimCamera != null
                     ? m_aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f))
                     : new Ray(m_health.AimPoint, transform.forward);
-                StartGrappleServerRpc(ray.origin, ray.direction);
+                StartGrappleServerRpc(ray.origin, ray.direction, Time.unscaledTime);
                 m_nextLocalRequestTime = Time.time + GetWeapon((int)PlayerWeaponType.GrappleGun).FireInterval;
-                m_nextGrappleHeartbeat = Time.unscaledTime + 0.1f;
+                m_nextGrappleHeartbeat = Time.unscaledTime + 0.04f;
             }
             else if (m_localGrappleHeld && Time.unscaledTime >= m_nextGrappleHeartbeat)
             {
-                HoldGrappleServerRpc();
-                m_nextGrappleHeartbeat = Time.unscaledTime + 0.1f;
+                HoldGrappleServerRpc(CurrentGrappleAimDirection(), Time.unscaledTime);
+                m_nextGrappleHeartbeat = Time.unscaledTime + 0.04f;
             }
         }
+
+        private Vector3 CurrentGrappleAimDirection() => m_aimCamera != null
+            ? m_aimCamera.transform.forward : transform.forward;
 
         private static bool IsFinite(Vector3 value) =>
             float.IsFinite(value.x) && float.IsFinite(value.y) && float.IsFinite(value.z);
 
         [ServerRpc]
-        private void StartGrappleServerRpc(Vector3 aimOrigin, Vector3 aimDirection)
+        private void StartGrappleServerRpc(Vector3 aimOrigin, Vector3 aimDirection, float sampleTime)
         {
             int index = (int)PlayerWeaponType.GrappleGun;
             WeaponDefinition weapon = GetWeapon(index);
             if (!CanHandleWeaponServer || m_equippedIndex.Value != index ||
                 GetInventoryWeaponIndex(SelectedHotbarSlot) != index ||
                 Time.time < m_switchCompleteAt || Time.time < m_nextServerFireTime[index] ||
-                !IsFinite(aimOrigin) || !IsFinite(aimDirection) || aimDirection.sqrMagnitude < 0.5f ||
+                !float.IsFinite(sampleTime) || !IsFinite(aimOrigin) || !IsFinite(aimDirection) || aimDirection.sqrMagnitude < 0.5f ||
                 (aimOrigin - m_health.AimPoint).sqrMagnitude > m_maximumAimOriginDistance * m_maximumAimOriginDistance)
                 return;
 
@@ -113,16 +124,80 @@ namespace CouchGuys.Gameplay.Weapons
             m_grappleLocalPoint.Value = target.transform.InverseTransformPoint(hit.point);
             m_grappleTarget.Value = target;
             m_grappleLeaseUntil = Time.unscaledTime + 0.6f;
+            m_previousGrappleAim = forward;
+            m_previousGrappleSampleTime = sampleTime;
+            m_previousGrappleReceiptTime = Time.unscaledTime;
+            m_grappleUpwardSweep = 0f;
+            m_resumeGrapplePullAt = 0f;
         }
 
         [ServerRpc]
-        private void HoldGrappleServerRpc()
+        private void HoldGrappleServerRpc(Vector3 aimDirection, float sampleTime)
         {
-            if (m_grappleTarget.Value != null) m_grappleLeaseUntil = Time.unscaledTime + 0.6f;
+            if (m_grappleTarget.Value == null) return;
+            UpdateGrappleFlickServer(aimDirection, sampleTime);
+            m_grappleLeaseUntil = Time.unscaledTime + 0.6f;
         }
 
         [ServerRpc]
-        private void ReleaseGrappleServerRpc() => StopGrappleServer();
+        private void ReleaseGrappleServerRpc(Vector3 aimDirection, float sampleTime)
+        {
+            // Include the final camera pose: a flick and release may happen between heartbeats.
+            UpdateGrappleFlickServer(aimDirection, sampleTime);
+            StopGrappleServer();
+        }
+
+        private void UpdateGrappleFlickServer(Vector3 aimDirection, float sampleTime)
+        {
+            NetworkObject target = m_grappleTarget.Value;
+            if (m_grappleSettings == null || !CanHandleWeaponServer ||
+                m_equippedIndex.Value != (int)PlayerWeaponType.GrappleGun ||
+                !IsValidGrappleTarget(target) || Time.unscaledTime > m_grappleLeaseUntil ||
+                !float.IsFinite(sampleTime) || !IsFinite(aimDirection) || aimDirection.sqrMagnitude < 0.5f) return;
+            float sampleDelta = sampleTime - m_previousGrappleSampleTime;
+            if (sampleDelta <= 0f) return;
+            // Use sample spacing to tolerate packets arriving in a batch, but never
+            // let a client compress a long server interval into a high-power flick.
+            float delta = Mathf.Max(sampleDelta, Time.unscaledTime - m_previousGrappleReceiptTime - 0.1f, 0.016f);
+            Vector3 previous = m_previousGrappleAim;
+            m_previousGrappleAim = aimDirection.normalized;
+            m_previousGrappleSampleTime = sampleTime;
+            m_previousGrappleReceiptTime = Time.unscaledTime;
+            if (Time.unscaledTime < m_nextServerFlickTime)
+            {
+                m_grappleUpwardSweep = 0f;
+                return;
+            }
+            if (!m_grappleSettings.TryCalculateFlick(previous, aimDirection, delta,
+                ref m_grappleUpwardSweep, out Vector3 impulse)) return;
+            Vector3 muzzle = GetMuzzlePosition((int)PlayerWeaponType.GrappleGun, m_health.AimPoint);
+            if ((target.transform.TransformPoint(m_grappleLocalPoint.Value) - muzzle).sqrMagnitude >
+                GetWeapon((int)PlayerWeaponType.GrappleGun).Range * GetWeapon((int)PlayerWeaponType.GrappleGun).Range) return;
+
+            if (target.TryGetComponent(out CouchCarryController couch))
+                couch.ApplyGrappleFlickServer(impulse,
+                    Vector3.Cross(Vector3.up, impulse).normalized * m_grappleSettings.CouchSpin,
+                    m_grappleSettings.MaximumTargetSpeed, m_grappleSettings.MomentumDuration);
+            else if (target.TryGetComponent(out PlayerHealth player))
+                player.ApplyGrappleFlickServer(impulse, m_grappleSettings.MaximumTargetSpeed,
+                    m_grappleSettings.MomentumDuration, m_grappleSettings.AirDrag, m_grappleSettings.GravityMultiplier);
+            else if (target.TryGetComponent(out ThiefHealth thief))
+                thief.ApplyGrappleFlickServer(impulse, m_grappleSettings.MaximumTargetSpeed,
+                    m_grappleSettings.AirDrag, m_grappleSettings.GravityMultiplier);
+
+            m_nextServerFlickTime = Time.unscaledTime + m_grappleSettings.Cooldown;
+            m_resumeGrapplePullAt = Time.unscaledTime + m_grappleSettings.PullPause;
+            ShowGrappleFlickObserversRpc();
+            if (m_grappleSettings.ReleaseOnFlick) StopGrappleServer();
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void ShowGrappleFlickObserversRpc()
+        {
+            m_visualRecoil = 7f;
+            m_visualRecoilDistance = 0.04f;
+            m_animationDriver?.PlayWeaponShot(PlayerWeaponType.Pistol);
+        }
 
         private bool IsValidGrappleTarget(NetworkObject target)
         {
@@ -155,6 +230,7 @@ namespace CouchGuys.Gameplay.Weapons
                 StopGrappleServer();
                 return;
             }
+            if (Time.unscaledTime < m_resumeGrapplePullAt) return;
             // Ease off near the muzzle without cancelling existing momentum on release.
             float speed = Mathf.Min(weapon.PullSpeed, Mathf.Max(0f, offset.magnitude - 1.1f) * 4f);
             Vector3 direction = offset.normalized;

@@ -132,6 +132,53 @@ namespace CouchGuys.Player
                 Mathf.Max(0f, speed - Vector3.Dot(m_externalVelocity, direction)));
         }
 
+        private bool m_grappleFlying;
+        private bool m_grappleAgentWasEnabled;
+        private float m_grappleFlightStartedAt;
+        private float m_grappleFlightDrag;
+        private float m_grappleFlightGravity;
+
+        internal void ApplyGrappleFlickServer(Vector3 impulse, float maximumSpeed, float drag, float gravity)
+        {
+            if (!CanSimulate() || !m_health.IsAlive || m_characterController == null) return;
+            if (!m_grappleFlying)
+            {
+                SetConstrainedCarryMovement(false);
+                m_grappleAgentWasEnabled = m_agent != null && m_agent.enabled;
+            }
+            m_grappleFlying = true;
+            m_grappleFlightStartedAt = Time.time;
+            m_grappleFlightDrag = drag;
+            m_grappleFlightGravity = gravity;
+            m_externalVelocity = Vector3.ClampMagnitude(m_externalVelocity + impulse, maximumSpeed);
+            if (m_agent != null) m_agent.enabled = false;
+            m_characterController.enabled = true;
+        }
+
+        private void UpdateGrappleFlight()
+        {
+            m_externalVelocity += Physics.gravity * (m_grappleFlightGravity * Time.deltaTime);
+            CollisionFlags flags = m_characterController.Move(m_externalVelocity * Time.deltaTime);
+            Vector3 horizontal = Vector3.ProjectOnPlane(m_externalVelocity, Vector3.up);
+            m_externalVelocity += Vector3.MoveTowards(horizontal, Vector3.zero,
+                m_grappleFlightDrag * Time.deltaTime) - horizontal;
+            if ((flags & CollisionFlags.Above) != 0) m_externalVelocity.y = Mathf.Min(0f, m_externalVelocity.y);
+            if ((flags & CollisionFlags.Below) == 0 || m_externalVelocity.y > 0f ||
+                Time.time < m_grappleFlightStartedAt + 0.15f) return;
+            m_externalVelocity.y = -2f;
+            NavMeshHit landing = default;
+            if (m_grappleAgentWasEnabled && (!NavMesh.SamplePosition(transform.position, out landing,
+                1f, m_agent.areaMask) || Mathf.Abs(landing.position.y - transform.position.y) > 0.5f)) return;
+            m_grappleFlying = false;
+            m_externalVelocity.y = 0f;
+            m_verticalVelocity = 0f;
+            if (m_grappleAgentWasEnabled)
+            {
+                m_agent.enabled = true;
+                m_agent.Warp(landing.position);
+            }
+        }
+
         private void Update()
         {
             if (!CanSimulate())
@@ -152,6 +199,12 @@ namespace CouchGuys.Player
             }
 
             m_deadStateApplied = false;
+            if (m_grappleFlying)
+            {
+                m_carrier.SetDebugBotMovementIntentServer(Vector3.zero);
+                UpdateGrappleFlight();
+                return;
+            }
             if (m_health.IsKnockedDown || Time.time < m_vehicleImpactUntil)
             {
                 State = AiState.FollowPlayer;

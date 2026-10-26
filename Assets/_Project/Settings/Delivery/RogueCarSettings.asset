@@ -24,8 +24,8 @@ MonoBehaviour:
   PlayerKnockbackForce: 13
   StructureCollisionDamageMultiplier: 5
   MinimumDamagingCollisionSpeed: 3.5
-  InitialSpawnDelay: 1
-  SpawnCheckInterval: 1
-  SpawnChance: 1
+  InitialSpawnDelay: 45
+  SpawnCheckInterval: 60
+  SpawnChance: 0.15
   MaxActiveCars: 1
   MaxSpawnsPerDelivery: 1

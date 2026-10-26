@@ -119,6 +119,20 @@ namespace CouchGuys.Gameplay.Couch
         private Vector3 m_modelBaseScale = Vector3.one;
 
         public Rigidbody CouchRigidbody => m_rigidbody;
+        private float m_grappleFlickSpeedLimitUntil;
+        private float m_grappleFlickSpeedLimit;
+
+        [Server]
+        internal void ApplyGrappleFlickServer(Vector3 impulse, Vector3 spin, float maximumSpeed, float duration)
+        {
+            if (IsLoaded || !IsPickupAvailable || m_rigidbody == null || m_rigidbody.isKinematic) return;
+            m_grappleFlickSpeedLimit = Mathf.Max(FreeMaximumSpeed, maximumSpeed);
+            m_grappleFlickSpeedLimitUntil = Time.time + duration;
+            // Preserve carrier constraints. A free couch gets full ballistic momentum.
+            m_rigidbody.linearVelocity = Vector3.ClampMagnitude(m_rigidbody.linearVelocity + impulse, maximumSpeed);
+            m_rigidbody.AddTorque(spin, ForceMode.VelocityChange);
+            m_rigidbody.WakeUp();
+        }
         public float Weight => CouchWeight;
         internal float ExhaustedSpeedMultiplier => m_settings != null
             ? m_settings.ExhaustedSpeedMultiplier
@@ -1483,7 +1497,8 @@ namespace CouchGuys.Gameplay.Couch
             }
 
             m_rigidbody.linearVelocity = Vector3.ClampMagnitude(
-                m_rigidbody.linearVelocity, FreeMaximumSpeed);
+                m_rigidbody.linearVelocity, Time.time < m_grappleFlickSpeedLimitUntil
+                    ? m_grappleFlickSpeedLimit : FreeMaximumSpeed);
             m_rigidbody.angularVelocity = Vector3.ClampMagnitude(
                 m_rigidbody.angularVelocity, MaximumAngularVelocity);
         }

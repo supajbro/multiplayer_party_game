@@ -16,6 +16,81 @@ namespace CouchGuys.Tests.Editor
     {
         private const BindingFlags PrivateInstance = BindingFlags.NonPublic | BindingFlags.Instance;
 
+        [Test]
+        public void FlickSettingsAreAssignedToNetworkPlayer()
+        {
+            var settings = AssetDatabase.LoadAssetAtPath<GrappleGunSettings>("Assets/_Project/Settings/Weapons/GrappleGun.asset");
+            Assert.That(settings, Is.Not.Null);
+            var player = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Player.prefab");
+            Assert.That(new SerializedObject(player.GetComponent<PlayerWeaponController>())
+                .FindProperty("m_grappleSettings").objectReferenceValue, Is.EqualTo(settings));
+        }
+
+        [Test]
+        public void UpwardFlickScalesWithCameraSpeedAndRejectsSlowDownwardOrInvalidSamples()
+        {
+            var settings = ScriptableObject.CreateInstance<GrappleGunSettings>();
+            try
+            {
+                float sweep = 0f;
+                Vector3 tenDegreesUp = Quaternion.AngleAxis(-10f, Vector3.right) * Vector3.forward;
+                Assert.That(settings.TryCalculateFlick(Vector3.forward, tenDegreesUp, 0.2f, ref sweep, out _), Is.False);
+                Assert.That(settings.TryCalculateFlick(tenDegreesUp, Vector3.forward, 0.04f, ref sweep, out _), Is.False);
+                Assert.That(settings.TryCalculateFlick(Vector3.forward, tenDegreesUp, 0.04f, ref sweep, out Vector3 medium), Is.True);
+                Assert.That(medium.y, Is.GreaterThan(0f));
+                Assert.That(medium.z, Is.GreaterThan(0f));
+                Vector3 fastUp = Quaternion.AngleAxis(-30f, Vector3.right) * Vector3.forward;
+                Assert.That(settings.TryCalculateFlick(Vector3.forward, fastUp, 0.04f, ref sweep, out Vector3 fast), Is.True);
+                Assert.That(fast.magnitude, Is.GreaterThan(medium.magnitude));
+                Assert.That(fast.magnitude, Is.LessThanOrEqualTo(settings.MaximumTargetSpeed));
+                Assert.That(settings.TryCalculateFlick(Vector3.forward, fastUp, 0f, ref sweep, out _), Is.False);
+                Assert.That(settings.TryCalculateFlick(Vector3.forward, fastUp, 1f, ref sweep, out _), Is.False);
+                Assert.That(settings.TryCalculateFlick(Vector3.forward, new Vector3(float.NaN, 0f, 0f), 0.04f, ref sweep, out _), Is.False);
+            }
+            finally { Object.DestroyImmediate(settings); }
+        }
+
+        [Test]
+        public void TinyCameraJitterDoesNotThrowAndPowerIsConfigurable()
+        {
+            var settings = ScriptableObject.CreateInstance<GrappleGunSettings>();
+            try
+            {
+                float sweep = 0f;
+                Vector3 jitter = Quaternion.AngleAxis(-1f, Vector3.right) * Vector3.forward;
+                Assert.That(settings.TryCalculateFlick(Vector3.forward, jitter, 0.005f, ref sweep, out _), Is.False);
+                Assert.That(settings.TryCalculateFlick(jitter, Vector3.forward, 0.005f, ref sweep, out _), Is.False);
+                Assert.That(sweep, Is.Zero);
+                var serialized = new SerializedObject(settings);
+                serialized.FindProperty("m_minimumPower").floatValue = 5f;
+                serialized.FindProperty("m_maximumPower").floatValue = 5f;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                Vector3 fastUp = Quaternion.AngleAxis(-30f, Vector3.right) * Vector3.forward;
+                Assert.That(settings.TryCalculateFlick(Vector3.forward, fastUp, 0.04f, ref sweep, out Vector3 impulse), Is.True);
+                Assert.That(impulse.magnitude, Is.EqualTo(5f).Within(0.001f));
+            }
+            finally { Object.DestroyImmediate(settings); }
+        }
+
+        [Test]
+        public void PlayerFlickAddsMomentumAndUsesGravityVelocityForTakeoff()
+        {
+            var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Player.prefab"));
+            try
+            {
+                var motor = player.GetComponent<ThirdPersonPlayerController>();
+                var velocity = typeof(ThirdPersonPlayerController).GetField("m_externalVelocity", PrivateInstance);
+                var vertical = typeof(ThirdPersonPlayerController).GetField("m_verticalVelocity", PrivateInstance);
+                velocity.SetValue(motor, Vector3.left * 3f);
+                vertical.SetValue(motor, 2f);
+                typeof(ThirdPersonPlayerController).GetMethod("ApplyGrappleFlick", PrivateInstance)
+                    .Invoke(motor, new object[] { new Vector3(0f, 10f, 20f), 40f, 3f, 1.5f, 1f });
+                Assert.That((Vector3)velocity.GetValue(motor), Is.EqualTo(new Vector3(-3f, 0f, 20f)));
+                Assert.That((float)vertical.GetValue(motor), Is.EqualTo(12f));
+            }
+            finally { Object.DestroyImmediate(player); }
+        }
+
         [TestCase(1f)]
         [TestCase(50f)]
         [TestCase(0.01f)]

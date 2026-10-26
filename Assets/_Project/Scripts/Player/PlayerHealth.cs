@@ -375,6 +375,22 @@ namespace CouchGuys.Player
         // Server chooses every pull. The owning movement motor applies it once,
         // just like impacts, and its existing NetworkTransform replicates movement.
         [Server]
+        internal void ApplyGrappleFlickServer(Vector3 impulse, float maximumSpeed, float duration, float drag, float gravity)
+        {
+            if (!IsAlive) return;
+            GetComponent<PlayerCouchCarrier>()?.ReleaseForDamageServer();
+            if (Owner.IsValid) ApplyGrappleFlickTargetRpc(Owner, impulse, maximumSpeed, duration, drag, gravity);
+            else GetComponent<DebugCouchBotController>()?.ApplyGrappleFlickServer(impulse, maximumSpeed, drag, gravity);
+        }
+
+        [TargetRpc]
+        private void ApplyGrappleFlickTargetRpc(NetworkConnection connection, Vector3 impulse,
+            float maximumSpeed, float duration, float drag, float gravity)
+        {
+            if (IsOwner && IsAlive) m_playerController?.ApplyGrappleFlick(impulse, maximumSpeed, duration, drag, gravity);
+        }
+
+        [Server]
         internal void ApplyGrapplePullServer(Vector3 direction, float acceleration, float speed, float deltaTime)
         {
             if (!IsAlive) return;

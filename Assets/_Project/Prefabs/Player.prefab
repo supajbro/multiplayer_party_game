@@ -487,6 +487,7 @@ MonoBehaviour:
   m_couchCarrier: {fileID: 0}
   m_animationDriver: {fileID: 0}
   m_aimCamera: {fileID: 410002}
+  m_grappleSettings: {fileID: 11400000, guid: f4f0e78b3561447eb81d830e43ba700f, type: 2}
   m_weaponModels:
   - {fileID: 7838298426495760366}
   - {fileID: 6891257441039681528}

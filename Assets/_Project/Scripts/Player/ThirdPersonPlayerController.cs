@@ -118,6 +118,25 @@ namespace CouchGuys.Player
             m_externalVelocity += direction * increase;
         }
 
+        private float m_grappleFlightUntil;
+        private float m_grappleFlightDrag;
+        private float m_grappleFlightGravity = 1f;
+
+        internal void ApplyGrappleFlick(Vector3 impulse, float maximumSpeed, float duration, float drag, float gravity)
+        {
+            // Put upward momentum in the motor's gravity-integrated velocity,
+            // rather than letting impact damping erase it during takeoff.
+            Vector3 velocity = m_externalVelocity + MovementIntent.normalized * m_currentSpeed +
+                Vector3.up * Mathf.Max(0f, m_verticalVelocity);
+            velocity = Vector3.ClampMagnitude(velocity + impulse, maximumSpeed);
+            m_externalVelocity = Vector3.ProjectOnPlane(velocity, Vector3.up);
+            m_verticalVelocity = velocity.y;
+            m_grappleFlightUntil = Time.time + duration;
+            m_grappleFlightDrag = drag;
+            m_grappleFlightGravity = gravity;
+            m_currentSpeed = 0f;
+        }
+
         /// <summary>
         /// Applies a gameplay speed modifier without coupling movement to the carrying system.
         /// </summary>
@@ -236,7 +255,7 @@ namespace CouchGuys.Player
             m_externalVelocity = Vector3.MoveTowards(
                 m_externalVelocity,
                 Vector3.zero,
-                m_knockbackDamping * Time.deltaTime);
+                (Time.time < m_grappleFlightUntil ? m_grappleFlightDrag : m_knockbackDamping) * Time.deltaTime);
         }
 
         private void UpdateVerticalMovement()
@@ -244,6 +263,7 @@ namespace CouchGuys.Player
             if (IsGrounded && m_verticalVelocity < 0f)
             {
                 m_verticalVelocity = -m_groundedForce;
+                m_grappleFlightUntil = 0f;
             }
 
             if (!m_movementLocked && IsGrounded && m_input.JumpPressedThisFrame)
@@ -253,7 +273,7 @@ namespace CouchGuys.Player
 
             if (m_verticalVelocity > -m_terminalVelocity)
             {
-                m_verticalVelocity += m_gravity * Time.deltaTime;
+                m_verticalVelocity += m_gravity * (Time.time < m_grappleFlightUntil ? m_grappleFlightGravity : 1f) * Time.deltaTime;
             }
         }
 
