@@ -38,6 +38,7 @@ namespace CouchGuys.Editor
         private GameObject m_ammoPanel;
 
         private RectTransform m_minimapRoot;
+        private RectTransform m_expandedMapRoot;
         private GameObject m_canvasRoot;
         private Sprite m_roundedSprite;
         private Sprite m_circleSprite;
@@ -318,6 +319,11 @@ namespace CouchGuys.Editor
                 view.m_minimapRoot.Find("MapMask/DynamicMarkers/DeliveryWaypoint").GetComponent<Image>() == null ||
                 view.m_minimapRoot.Find("DeliveryDistance").GetComponent<Text>() == null)
                 throw new UnityException("Minimap references are incomplete.");
+            if (view.m_expandedMapRoot == null || view.m_expandedMapRoot.gameObject.activeSelf ||
+                view.m_expandedMapRoot.Find("Viewport/StaticMap").GetComponent<RawImage>() == null ||
+                view.m_expandedMapRoot.Find("Viewport/StaticMap/DynamicMarkers") == null ||
+                view.m_expandedMapRoot.Find("CloseHint").GetComponent<Text>().text != "M - Close Map")
+                throw new UnityException("Expanded map must be complete and disabled by default.");
             foreach (PlayerStatusBar bar in new[] { view.m_healthBar, view.m_staminaBar })
             {
                 if (bar.Portrait.GetComponentInParent<Mask>(true) == null) throw new UnityException("Portrait mask is missing.");
@@ -513,6 +519,36 @@ namespace CouchGuys.Editor
             SetRect(m_downedText.rectTransform, new Vector2(0.5f, 0.65f), new Vector2(0.5f, 0.65f),
                 Vector2.zero, new Vector2(720f, 70f));
             m_downedText.gameObject.SetActive(false);
+            BuildExpandedMap();
+        }
+
+        private void BuildExpandedMap()
+        {
+            Image frame = MinimapImage("ExpandedMap", m_canvasRoot.transform, Gold, null);
+            m_expandedMapRoot = frame.rectTransform;
+            m_expandedMapRoot.anchorMin = Vector2.one * 0.1f;
+            m_expandedMapRoot.anchorMax = Vector2.one * 0.9f;
+            m_expandedMapRoot.sizeDelta = Vector2.zero;
+
+            Image background = MinimapImage("Background", frame.transform, Charcoal, null);
+            Stretch(background.rectTransform, 3f);
+            RectTransform viewport = Rect("Viewport", frame.transform);
+            Stretch(viewport, 24f);
+            viewport.offsetMin = new Vector2(24f, 60f);
+
+            GameObject map = new("StaticMap", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
+            map.transform.SetParent(viewport, false);
+            RawImage image = map.GetComponent<RawImage>();
+            image.raycastTarget = false;
+            image.rectTransform.anchorMin = image.rectTransform.anchorMax = Vector2.one * 0.5f;
+            RectTransform markers = Rect("DynamicMarkers", map.transform);
+            Stretch(markers, 0f);
+
+            Text hint = MinimapText("CloseHint", frame.transform, "M - Close Map", 24);
+            hint.color = Gold;
+            SetRect(hint.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f),
+                new Vector2(0f, 28f), new Vector2(360f, 36f));
+            frame.gameObject.SetActive(false);
         }
 
         private void BuildMinimap()

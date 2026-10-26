@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CouchGuys.Player;
+using CouchGuys.Input;
 using CouchGuys.Gameplay.Weapons;
 using CouchGuys.ProceduralGeneration;
 using FishNet.Object;
@@ -31,11 +32,17 @@ namespace CouchGuys.Gameplay.Delivery
         private sealed class ActorMarker
         {
             public RectTransform Rect;
+            public RectTransform ExpandedRect;
         }
 
         private readonly Dictionary<PlayerHealth, ActorMarker> m_actorMarkers = new();
         private readonly List<PlayerHealth> m_removedActors = new(8);
         private PlayerWeaponHud m_hud;
+        private PlayerInputReader m_input;
+        private RectTransform m_expandedRoot;
+        private RawImage m_expandedImage;
+        private RectTransform m_expandedMarkers;
+        private RectTransform m_expandedWaypoint;
         private NetworkObject m_networkObject;
         private PlayerHealth m_localHealth;
         private NeighbourhoodGenerator m_generator;
@@ -61,6 +68,7 @@ namespace CouchGuys.Gameplay.Delivery
         private void Awake()
         {
             m_hud = GetComponent<PlayerWeaponHud>();
+            m_input = GetComponent<PlayerInputReader>();
             m_networkObject = GetComponent<NetworkObject>();
             m_localHealth = GetComponent<PlayerHealth>();
         }
@@ -87,6 +95,65 @@ namespace CouchGuys.Gameplay.Delivery
             UpdateActorMarkers();
             UpdateWaypoint();
         }
+
+        private void LateUpdate()
+        {
+            if (m_expandedRoot == null || m_canvasRoot == null) return;
+            // Menus resolve in Update, so they always take priority over this passive overlay.
+            if (m_input == null || !m_input.CanShowMap || !m_canvasRoot.activeInHierarchy)
+            {
+                if (m_expandedRoot.gameObject.activeSelf) m_expandedRoot.gameObject.SetActive(false);
+                return;
+            }
+            if (m_input.MapPressedThisFrame)
+                m_expandedRoot.gameObject.SetActive(!m_expandedRoot.gameObject.activeSelf);
+            if (!m_expandedRoot.gameObject.activeInHierarchy) return;
+
+            RectTransform mapRect = m_expandedImage.rectTransform;
+            Vector2 available = ((RectTransform)mapRect.parent).rect.size;
+            // Inset the map enough to keep edge markers inside the available area.
+            float scale = Mathf.Min(Mathf.Max(1f, available.x - 36f) / m_mapBounds.size.x,
+                Mathf.Max(1f, available.y - 36f) / m_mapBounds.size.z);
+            mapRect.sizeDelta = new Vector2(m_mapBounds.size.x, m_mapBounds.size.z) * scale;
+
+            foreach (var entry in m_actorMarkers)
+            {
+                PlayerHealth actor = entry.Key;
+                if (actor == null) continue;
+                // Unowned hostile bots are not teammates. Only consume replicated player/AI data.
+                bool teammate = actor == m_localHealth || actor.IsAiTeammate || actor.Owner.IsValid;
+                if (entry.Value.ExpandedRect == null && teammate)
+                {
+                    entry.Value.ExpandedRect = Instantiate(entry.Value.Rect, m_expandedMarkers, false);
+                    entry.Value.ExpandedRect.GetComponent<Image>().raycastTarget = false;
+                }
+                RectTransform marker = entry.Value.ExpandedRect;
+                if (marker == null) continue;
+                marker.gameObject.SetActive(teammate && actor.isActiveAndEnabled && actor.IsAlive);
+                if (!marker.gameObject.activeSelf) continue;
+                marker.anchoredPosition = ExpandedPosition(actor.transform.position, scale);
+                Vector3 forward = actor.transform.forward;
+                marker.localRotation = Quaternion.Euler(0f, 0f,
+                    -Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg);
+            }
+
+            if (m_expandedWaypoint == null)
+            {
+                m_expandedWaypoint = Instantiate(m_waypointRect, m_expandedMarkers, false);
+                m_expandedWaypoint.GetComponent<Image>().sprite = m_waypointSprite;
+                m_expandedWaypoint.GetComponent<Image>().raycastTarget = false;
+                m_expandedWaypoint.sizeDelta = Vector2.one * 34f;
+                m_expandedWaypoint.localRotation = Quaternion.identity;
+            }
+            DeliveryDestination destination = m_deliveryManager != null && m_deliveryManager.HasActiveDelivery
+                ? m_deliveryManager.ActiveDestination : null;
+            bool active = destination != null && destination.CanReceiveDelivery;
+            m_expandedWaypoint.gameObject.SetActive(active);
+            if (active) m_expandedWaypoint.anchoredPosition = ExpandedPosition(destination.transform.position, scale);
+        }
+
+        private Vector2 ExpandedPosition(Vector3 world, float scale) =>
+            new Vector2(world.x - m_mapBounds.center.x, world.z - m_mapBounds.center.z) * scale;
 
         private void ResolveWorldReferences()
         {
@@ -137,6 +204,15 @@ namespace CouchGuys.Gameplay.Delivery
             m_waypointImage.sprite = m_waypointSprite;
             m_waypointRect = m_waypointImage.rectTransform;
             m_distanceText = root.Find("DeliveryDistance").GetComponent<Text>();
+
+            m_expandedRoot = m_hud.View.m_expandedMapRoot;
+            if (m_expandedRoot != null)
+            {
+                m_expandedRoot.gameObject.SetActive(false);
+                m_expandedImage = m_expandedRoot.Find("Viewport/StaticMap").GetComponent<RawImage>();
+                m_expandedImage.texture = m_mapTexture;
+                m_expandedMarkers = (RectTransform)m_expandedImage.transform.Find("DynamicMarkers");
+            }
 
             RefreshActors();
             UpdateMapPosition();
@@ -310,6 +386,7 @@ namespace CouchGuys.Gameplay.Delivery
             {
                 if (entry.Key == m_localHealth || (entry.Key != null && entry.Key.isActiveAndEnabled)) continue;
                 if (entry.Value.Rect != null) Destroy(entry.Value.Rect.gameObject);
+                if (entry.Value.ExpandedRect != null) Destroy(entry.Value.ExpandedRect.gameObject);
                 m_removedActors.Add(entry.Key);
             }
             for (int i = 0; i < m_removedActors.Count; i++) m_actorMarkers.Remove(m_removedActors[i]);
@@ -399,7 +476,17 @@ namespace CouchGuys.Gameplay.Delivery
         private void DestroyMinimap()
         {
             foreach (var marker in m_actorMarkers)
+            {
                 if (marker.Key != m_localHealth && marker.Value.Rect != null) Destroy(marker.Value.Rect.gameObject);
+                if (marker.Value.ExpandedRect != null) Destroy(marker.Value.ExpandedRect.gameObject);
+            }
+            if (m_expandedWaypoint != null) Destroy(m_expandedWaypoint.gameObject);
+            if (m_expandedImage != null) m_expandedImage.texture = null;
+            if (m_expandedRoot != null) m_expandedRoot.gameObject.SetActive(false);
+            m_expandedRoot = null;
+            m_expandedImage = null;
+            m_expandedMarkers = null;
+            m_expandedWaypoint = null;
             m_actorMarkers.Clear();
             if (m_mapImage != null) m_mapImage.texture = null;
             if (m_canvasRoot != null) m_canvasRoot.SetActive(false);

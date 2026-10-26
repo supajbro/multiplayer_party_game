@@ -1,5 +1,7 @@
 using System;
+using CouchGuys.Gameplay.Enemies;
 using CouchGuys.ProceduralGeneration;
+using FishNet.Object;
 using UnityEngine;
 
 namespace CouchGuys.Gameplay.Delivery
@@ -51,6 +53,13 @@ namespace CouchGuys.Gameplay.Delivery
         [SerializeField, Min(0.1f)] private float m_maxSpawnInterval = 25f;
         [SerializeField, Min(1)] private int m_minThievesPerWave = 1;
         [SerializeField, Min(1)] private int m_maxThievesPerWave = 2;
+
+        [Header("Rogue Cars (Hard deliveries only)")]
+        [SerializeField] private RogueCarSettings m_rogueCarSettings;
+        [SerializeField, Tooltip("Dedicated network prefab used only by Rogue Car spawns.")]
+        private NetworkObject m_rogueCarPrefab;
+        public RogueCarSettings RogueCarSettings => m_rogueCarSettings;
+        public NetworkObject RogueCarPrefab => m_rogueCarPrefab;
 
         [Header("Destination Eligibility")]
         [SerializeField, Min(0f)] private float m_minimumRouteDistance;

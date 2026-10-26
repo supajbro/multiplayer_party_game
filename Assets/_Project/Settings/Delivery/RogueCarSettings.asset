@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48b8b2096a154a978e753dcc1d692864, type: 3}
+  m_Name: RogueCarSettings
+  m_EditorClassIdentifier: 
+  MaxSpeed: 15
+  Acceleration: 10
+  ReverseSpeed: 5
+  TurnSpeed: 95
+  MinTurningRadius: 4
+  TargetRefreshInterval: 0.5
+  StuckDetectionTime: 2
+  MaxHealth: 120
+  PlayerCollisionDamage: 28
+  PlayerKnockbackForce: 13
+  StructureCollisionDamageMultiplier: 5
+  MinimumDamagingCollisionSpeed: 3.5
+  InitialSpawnDelay: 1
+  SpawnCheckInterval: 1
+  SpawnChance: 1
+  MaxActiveCars: 1
+  MaxSpawnsPerDelivery: 1

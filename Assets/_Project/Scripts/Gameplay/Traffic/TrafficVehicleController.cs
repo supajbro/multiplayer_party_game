@@ -49,6 +49,25 @@ namespace CouchGuys.Gameplay.Traffic
         private BoxCollider m_bodyCollider;
         private Vector3 m_impactVelocity;
         private VehicleAudioEmitter m_audio;
+        private RogueCarSettings m_rogueSettings;
+
+        internal void InitialiseRogueServer(RogueCarSettings settings, TrafficManager manager, int visualVariant)
+        {
+            InitialiseServer(null, manager, visualVariant);
+            m_rogueSettings = settings;
+            m_health.Value = Mathf.Max(1f, settings.MaxHealth);
+            RogueCar rogue = GetComponent<RogueCar>();
+            if (rogue == null) rogue = gameObject.AddComponent<RogueCar>();
+            rogue.Initialise(settings);
+        }
+
+        internal void UpdateRogueImpactsServer(float steering)
+        {
+            if (!IsServerInitialized || m_destroyed.Value || m_rogueSettings == null) return;
+            m_wheelSteering.Value = steering;
+            m_impactVelocity = Vector3.ProjectOnPlane(m_rigidbody.linearVelocity, Vector3.up);
+            CheckCharacterImpacts();
+        }
 
         public bool IsDestroyed => m_destroyed.Value;
         public float CurrentHealth => m_health.Value;
@@ -346,7 +365,7 @@ namespace CouchGuys.Gameplay.Traffic
         {
             if (m_visualInstance != null && m_visualInstance.TryGetComponent(out TrafficWheelAnimator wheels))
                 wheels.SetSteering(IsDestroyed ? 0f : m_wheelSteering.Value);
-            if (m_serverDriving && m_destroyed.Value && Time.time >= m_despawnAt)
+            if ((m_serverDriving || m_rogueSettings != null) && m_destroyed.Value && Time.time >= m_despawnAt)
                 m_manager?.DespawnVehicle(this);
             if (m_serverDriving && !m_destroyed.Value && !m_warnedStationary &&
                 Time.time >= m_stationaryCheckAt &&
@@ -466,7 +485,7 @@ namespace CouchGuys.Gameplay.Traffic
 
         private void OnCollisionEnter(Collision collision)
         {
-            if (!IsServerInitialized || !m_serverDriving || m_destroyed.Value || m_settings == null) return;
+            if (!IsServerInitialized || (!m_serverDriving && m_rogueSettings == null) || m_destroyed.Value || m_settings == null) return;
             Vector3 velocity = m_impactVelocity.sqrMagnitude > 0.01f
                 ? m_impactVelocity
                 : Vector3.ProjectOnPlane(m_rigidbody.linearVelocity, Vector3.up);
@@ -499,13 +518,16 @@ namespace CouchGuys.Gameplay.Traffic
             if (m_nextImpactTime.TryGetValue(id, out float nextTime) && Time.time < nextTime) return;
             m_nextImpactTime[id] = Time.time + m_settings.CollisionDamageCooldown;
 
-            float scale = Mathf.Clamp(speed / Mathf.Max(0.1f, m_settings.MaximumDrivingSpeed), 0.35f, 1.5f);
+            float scale = Mathf.Clamp(speed / Mathf.Max(0.1f,
+                m_rogueSettings != null ? m_rogueSettings.MaxSpeed : m_settings.MaximumDrivingSpeed), 0.35f, 1.5f);
             Vector3 direction = velocity.sqrMagnitude > 0.01f
                 ? velocity.normalized
                 : transform.forward;
             if (player != null)
-                player.ApplyVehicleImpactServer(m_settings.CollisionDamage * scale, direction,
-                    m_settings.CollisionKnockbackStrength * scale, 0f, true);
+                player.ApplyVehicleImpactServer((m_rogueSettings != null ?
+                    m_rogueSettings.PlayerCollisionDamage : m_settings.CollisionDamage) * scale, direction,
+                    (m_rogueSettings != null ? m_rogueSettings.PlayerKnockbackForce :
+                    m_settings.CollisionKnockbackStrength) * scale, 0f, true);
             else
             {
                 bool alive = thief.IsAlive;

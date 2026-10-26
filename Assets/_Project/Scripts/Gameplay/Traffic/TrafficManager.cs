@@ -10,7 +10,7 @@ namespace CouchGuys.Gameplay.Traffic
 {
     /// <summary>Spawns only on the server and reuses routes built once per generated region.</summary>
     [DisallowMultipleComponent]
-    public sealed class TrafficManager : MonoBehaviour
+    public sealed partial class TrafficManager : MonoBehaviour
     {
         private const string TrafficSettingsResource = "Traffic/TrafficSettings";
         private const string CarPrefabResource = "Traffic/TrafficCar";
@@ -51,6 +51,7 @@ namespace CouchGuys.Gameplay.Traffic
 
         private void OnDisable()
         {
+            ClearRogueCars();
             if (m_generator == null) return;
             m_generator.RegionClearing -= OnRegionClearing;
             m_generator.RegionGenerated -= OnRegionGenerated;
@@ -58,6 +59,7 @@ namespace CouchGuys.Gameplay.Traffic
 
         private void Update()
         {
+            UpdateRogueSpawning();
             if (!m_regionReady || m_settings == null || !IsServerStarted()) return;
             if (Time.time >= m_nextPruneTime)
             {
@@ -90,6 +92,7 @@ namespace CouchGuys.Gameplay.Traffic
 
         private void OnRegionClearing(NeighbourhoodGenerator generator)
         {
+            ClearRogueCars();
             m_regionReady = false;
             m_laneGraph.Clear();
             m_routeOrder.Clear();
