@@ -17,28 +17,6 @@ namespace CouchGuys.Editor
         private const string GameplayScenePath = "Assets/Scenes/SampleScene.unity";
         private const ulong NeighbourhoodSceneId = 0x4347555953454544UL;
 
-        [InitializeOnLoadMethod]
-        private static void BuildOpenGameplaySceneAfterImport()
-        {
-            EditorApplication.delayCall += () =>
-            {
-                if (EditorApplication.isPlayingOrWillChangePlaymode)
-                {
-                    return;
-                }
-
-                for (int index = 0; index < SceneManager.sceneCount; index++)
-                {
-                    if (SceneManager.GetSceneAt(index).isDirty)
-                    {
-                        return;
-                    }
-                }
-
-                BuildProceduralGameplayScene();
-            };
-        }
-
         [MenuItem("Couch Guys/Build Procedural Gameplay Scene")]
         public static void BuildProceduralGameplayScene()
         {

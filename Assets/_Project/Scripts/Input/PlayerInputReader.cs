@@ -30,7 +30,8 @@ namespace CouchGuys.Input
         private InputActionAsset m_runtimeInputActions;
         private bool m_gameplaySuppressed;
         private bool GameplaySuppressed => m_gameplaySuppressed || MenuBlocked;
-        private bool MenuBlocked => CouchGuys.Networking.GameplaySessionController.BlocksLocalInput ||
+        private bool MenuBlocked => CouchGuys.UI.LoadingScreenController.BlocksGameplayInput ||
+            CouchGuys.Networking.GameplaySessionController.BlocksLocalInput ||
             CouchGuys.Networking.PlayerDebugMenu.IsOpen;
 
         public Vector2 Move => !GameplaySuppressed ? m_moveAction?.ReadValue<Vector2>() ?? Vector2.zero : Vector2.zero;

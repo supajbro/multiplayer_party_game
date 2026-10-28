@@ -38,7 +38,7 @@ namespace CouchGuys.UI
         }
     }
 
-    /// <summary>Persistent, code-authored loading view shared by solo and network launches.</summary>
+    /// <summary>Persistent, prefab-authored loading view shared by solo and network launches.</summary>
     [DisallowMultipleComponent]
     public sealed class LoadingScreenController : MonoBehaviour
     {
@@ -51,13 +51,14 @@ namespace CouchGuys.UI
             "Tip: The shortest road is not always the safest road."
         };
 
+        public static bool BlocksGameplayInput => s_instance != null && s_instance.isActiveAndEnabled;
         private static LoadingScreenController s_instance;
-        private Text m_status;
-        private Text m_tip;
-        private Image m_fill;
-        private Text m_progressPercent;
-        private RectTransform m_spinner;
-        private Button m_returnButton;
+        [SerializeField] private Text m_status;
+        [SerializeField] private Text m_tip;
+        [SerializeField] private Image m_fill;
+        [SerializeField] private Text m_progressPercent;
+        [SerializeField] private RectTransform m_spinner;
+        [SerializeField] private Button m_returnButton;
         private float m_displayedProgress;
         private float m_visualProgress;
         private bool m_tracking;
@@ -66,8 +67,14 @@ namespace CouchGuys.UI
         {
             if (s_instance == null)
             {
-                GameObject root = new GameObject("Couch Guys Loading Screen");
-                s_instance = root.AddComponent<LoadingScreenController>();
+                var settings = Resources.Load<LoadingScreenSettings>("UI/LoadingScreenSettings");
+                LoadingScreenController prefab = settings != null ? settings.Prefab : null;
+                if (prefab == null)
+                {
+                    Debug.LogError("Assign the loading screen prefab in Assets/_Project/Resources/UI/LoadingScreenSettings.asset.");
+                    return;
+                }
+                s_instance = Instantiate(prefab);
             }
             s_instance.m_status.text = initialStatus;
             s_instance.gameObject.SetActive(true);
@@ -80,10 +87,12 @@ namespace CouchGuys.UI
 
         private void Awake()
         {
+            if (!Application.isPlaying) return;
             if (s_instance != null && s_instance != this) { Destroy(gameObject); return; }
             s_instance = this;
             DontDestroyOnLoad(gameObject);
-            BuildUi();
+            m_tip.text = Tips[Random.Range(0, Tips.Length)];
+            m_returnButton.onClick.AddListener(ReturnToMenu);
         }
 
         private void OnDestroy()
@@ -100,8 +109,6 @@ namespace CouchGuys.UI
                 m_fill.rectTransform.sizeDelta = new Vector2(808f * m_visualProgress, 30f);
                 m_progressPercent.text = $"{Mathf.RoundToInt(m_visualProgress * 100f)}%";
             }
-            foreach (PlayerInputReader input in FindObjectsByType<PlayerInputReader>(FindObjectsSortMode.None))
-                input.SetGameplaySuppressed(true);
         }
 
         private IEnumerator TrackReadiness()
@@ -168,8 +175,6 @@ namespace CouchGuys.UI
 
         private void Finish()
         {
-            foreach (PlayerInputReader input in FindObjectsByType<PlayerInputReader>(FindObjectsSortMode.None))
-                input.SetGameplaySuppressed(false);
             Destroy(gameObject);
             MainMenuMusic.FadeOutForGameplay();
         }
@@ -196,73 +201,6 @@ namespace CouchGuys.UI
             FindFirstObjectByType<SteamLobbyController>()?.LeaveLobby();
             SceneManager.LoadScene("MainMenu", LoadSceneMode.Single);
             Destroy(gameObject);
-        }
-
-        private void BuildUi()
-        {
-            Canvas canvas = gameObject.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 32000;
-            CanvasScaler scaler = gameObject.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            gameObject.AddComponent<GraphicRaycaster>();
-
-            Image backdrop = UiImage(transform, "Backdrop", new Color(0.08f, 0.32f, 0.55f, 1f));
-            Stretch(backdrop.rectTransform);
-            Image sun = UiImage(transform, "Sun", new Color(1f, 0.72f, 0.22f, 1f));
-            sun.rectTransform.anchorMin = sun.rectTransform.anchorMax = new Vector2(.78f, .72f);
-            sun.rectTransform.sizeDelta = new Vector2(460f, 460f);
-
-            Image existingLogo = GameObject.Find("Couch Guys Logo")?.GetComponent<Image>();
-            if (existingLogo != null && existingLogo.sprite != null)
-            {
-                Image logoImage = UiImage(transform, "Couch Guys Logo", Color.white);
-                logoImage.sprite = existingLogo.sprite; logoImage.preserveAspect = true;
-                logoImage.rectTransform.anchorMin = logoImage.rectTransform.anchorMax = new Vector2(.5f, .68f);
-                logoImage.rectTransform.sizeDelta = new Vector2(900f, 340f);
-            }
-            else
-            {
-                Text logo = UiText(transform, "COUCH\nGUYS", 112, FontStyle.Bold, Color.white);
-                logo.alignment = TextAnchor.MiddleCenter;
-                logo.rectTransform.anchorMin = logo.rectTransform.anchorMax = new Vector2(.5f, .68f);
-                logo.rectTransform.sizeDelta = new Vector2(900f, 300f);
-            }
-
-            m_spinner = UiImage(transform, "Spinner", new Color(1f, .58f, .12f, 1f)).rectTransform;
-            m_spinner.anchorMin = m_spinner.anchorMax = new Vector2(.5f, .42f);
-            m_spinner.sizeDelta = new Vector2(54f, 54f);
-            Text spinnerMark = UiText(m_spinner, "↻", 54, FontStyle.Bold, Color.white);
-            Stretch(spinnerMark.rectTransform);
-            spinnerMark.alignment = TextAnchor.MiddleCenter;
-
-            m_status = UiText(transform, "Building Neighbourhood...", 38, FontStyle.Bold, Color.white);
-            m_status.alignment = TextAnchor.MiddleCenter;
-            m_status.rectTransform.anchorMin = m_status.rectTransform.anchorMax = new Vector2(.5f, .32f);
-            m_status.rectTransform.sizeDelta = new Vector2(1000f, 80f);
-
-            Image track = UiImage(transform, "Progress Track", new Color(.05f, .12f, .2f, .75f));
-            track.rectTransform.anchorMin = track.rectTransform.anchorMax = new Vector2(.5f, .24f);
-            track.rectTransform.sizeDelta = new Vector2(820f, 42f);
-            m_fill = UiImage(track.transform, "Actual Progress", new Color(1f, .63f, .12f, 1f));
-            m_fill.rectTransform.anchorMin = m_fill.rectTransform.anchorMax = new Vector2(0f, .5f);
-            m_fill.rectTransform.pivot = new Vector2(0f, .5f);
-            m_fill.rectTransform.anchoredPosition = new Vector2(6f, 0f);
-            m_fill.rectTransform.sizeDelta = new Vector2(0f, 30f);
-            m_progressPercent = UiText(track.transform, "0%", 24, FontStyle.Bold, Color.white);
-            Stretch(m_progressPercent.rectTransform);
-            m_progressPercent.alignment = TextAnchor.MiddleCenter;
-
-            m_tip = UiText(transform, Tips[Random.Range(0, Tips.Length)], 27, FontStyle.Italic, new Color(1f, .93f, .72f));
-            m_tip.alignment = TextAnchor.MiddleCenter;
-            m_tip.rectTransform.anchorMin = m_tip.rectTransform.anchorMax = new Vector2(.5f, .13f);
-            m_tip.rectTransform.sizeDelta = new Vector2(1200f, 70f);
-
-            m_returnButton = UiButton(transform, "Return to Main Menu", ReturnToMenu);
-            m_returnButton.GetComponent<RectTransform>().anchorMin = m_returnButton.GetComponent<RectTransform>().anchorMax = new Vector2(.5f, .12f);
-            m_returnButton.GetComponent<RectTransform>().sizeDelta = new Vector2(420f, 80f);
-            m_returnButton.gameObject.SetActive(false);
         }
 
         internal static Image UiImage(Transform parent, string name, Color colour)
