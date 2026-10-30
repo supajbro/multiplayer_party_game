@@ -119,6 +119,7 @@ namespace CouchGuys.Gameplay.Weapons
             if (!IsValidGrappleTarget(target) ||
                 (GrappleClaims.TryGetValue(target, out PlayerWeaponController claimant) && claimant != null && claimant != this)) return;
 
+            if (thief != null) thief.SetGrappledServer(true);
             GrappleClaims[target] = this;
             m_claimedGrappleTarget = target;
             m_grappleLocalPoint.Value = target.transform.InverseTransformPoint(hit.point);
@@ -252,7 +253,11 @@ namespace CouchGuys.Gameplay.Weapons
             if (!IsServerInitialized) return;
             if (!ReferenceEquals(m_claimedGrappleTarget, null) &&
                 GrappleClaims.TryGetValue(m_claimedGrappleTarget, out PlayerWeaponController claimant) && claimant == this)
+            {
+                if (m_claimedGrappleTarget != null && m_claimedGrappleTarget.TryGetComponent(out ThiefHealth thief))
+                    thief.SetGrappledServer(false);
                 GrappleClaims.Remove(m_claimedGrappleTarget);
+            }
             m_claimedGrappleTarget = null;
             m_grappleTarget.Value = null;
         }

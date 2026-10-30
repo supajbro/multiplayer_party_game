@@ -84,9 +84,9 @@ MonoBehaviour:
     HillNoiseAmount: 2
     HillNoiseFrequency: 0.018
     HillVariation: 0.4
-    TreeDensity: 0.62
-    MinimumTreeSpacing: 8
-    MaximumTreeSpacing: 15
+    TreeDensity: 0.9
+    MinimumTreeSpacing: 5
+    MaximumTreeSpacing: 10
     TunnelClearance: 8
     MaximumTreeSlope: 38
     TreeScaleRange: {x: 0.8, y: 1.35}

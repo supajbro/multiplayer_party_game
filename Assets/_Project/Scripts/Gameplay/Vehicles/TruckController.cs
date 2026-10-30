@@ -614,6 +614,10 @@ namespace CouchGuys.Gameplay.Vehicles
 
             Vector3 truckPlanarVelocity = Vector3.ProjectOnPlane(
                 m_rigidbody.linearVelocity, Vector3.up);
+            // The solver may already have stopped the truck against a navigation capsule.
+            Vector3 approachVelocity = Vector3.ProjectOnPlane(collision.relativeVelocity, Vector3.up);
+            if (approachVelocity.sqrMagnitude > truckPlanarVelocity.sqrMagnitude)
+                truckPlanarVelocity = approachVelocity;
             float impactSpeed = truckPlanarVelocity.magnitude;
             if (impactSpeed < 0.1f) return;
 
@@ -639,7 +643,8 @@ namespace CouchGuys.Gameplay.Vehicles
             else
             {
                 bool alive = thief.IsAlive;
-                thief.ApplyVehicleImpactServer(damage, direction, knockback, upwardKnockback);
+                thief.ApplyVehicleImpactServer(Driver != null ? thief.CurrentHealth : damage,
+                    direction, Mathf.Max(knockback, impactSpeed), upwardKnockback);
                 if (alive) PlaySplatServer(collision.GetContact(0).point);
             }
         }

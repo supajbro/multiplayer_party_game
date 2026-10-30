@@ -187,7 +187,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         private void Update()
         {
-            if (!IsServerInitialized || (m_health != null && !m_health.IsAlive)) return;
+            if (!IsServerInitialized) return;
             if (m_health != null && m_health.IsBeingKnockedBack)
             {
                 m_alerting.Value = false;
@@ -196,6 +196,8 @@ namespace CouchGuys.Gameplay.Enemies
                 m_carryIntent = Vector3.zero;
                 return;
             }
+
+            if (m_health != null && !m_health.IsAlive) return;
 
             if (UpdateProximityAlert(GetClosestLivingTarget())) return;
 

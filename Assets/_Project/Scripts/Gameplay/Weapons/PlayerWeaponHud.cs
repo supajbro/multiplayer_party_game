@@ -30,12 +30,6 @@ namespace CouchGuys.Gameplay.Weapons
         private GameObject m_canvasRoot;
         private bool m_hudBuilt;
         [SerializeField] private PlayerWeaponHudView m_hudPrefab;
-        [SerializeField] private Camera m_portraitCamera;
-        [SerializeField] private Transform m_portraitFocus;
-        [SerializeField] private Vector3 m_portraitFocusOffset;
-        [SerializeField] private RenderTexture m_portraitTextureTemplate;
-        [SerializeField] private float m_portraitDistance = 0.75f;
-        [SerializeField] private float m_portraitHalfHeight = 0.32f;
         public PlayerWeaponHudView View => m_view;
         private PlayerWeaponHudView m_view;
         private float m_healthTarget = 1f;
@@ -51,7 +45,6 @@ namespace CouchGuys.Gameplay.Weapons
         private int m_lastTimerSecond = -1;
         private int m_seenFailureSequence;
         private float m_failureVisibleUntil;
-        private RenderTexture m_portraitTexture;
 
         private void Awake()
         {
@@ -60,7 +53,6 @@ namespace CouchGuys.Gameplay.Weapons
             m_weapons = GetComponent<PlayerWeaponController>();
             m_health = GetComponent<PlayerHealth>();
             m_stamina = GetComponent<PlayerStamina>();
-            if (m_portraitCamera != null) m_portraitCamera.enabled = false;
         }
 
         private void Update()
@@ -84,7 +76,6 @@ namespace CouchGuys.Gameplay.Weapons
                 for (int slot = 0; slot < m_slotIcons.Length; slot++)
                     m_slotIcons[slot] = m_view.m_slotBackgrounds[slot].transform.Find("Icon")?.GetComponent<Text>();
                 m_canvasRoot = m_view.gameObject;
-                InitializePortrait();
                 BindEvents();
                 m_hudBuilt = true;
             }
@@ -131,6 +122,7 @@ namespace CouchGuys.Gameplay.Weapons
         private void OnHealthChanged(float current, float maximum)
         {
             m_healthTarget = maximum > 0f ? Mathf.Clamp01(current / maximum) : 0f;
+            m_view.m_healthBar.SetHealthExpression(m_healthTarget);
             if (m_view.m_healthText != null) m_view.m_healthText.text = $"{Mathf.CeilToInt(current)} / {Mathf.CeilToInt(maximum)}";
         }
 
@@ -246,17 +238,6 @@ namespace CouchGuys.Gameplay.Weapons
         }
 
 
-        private void InitializePortrait()
-        {
-            if (m_portraitCamera == null || m_portraitFocus == null || m_portraitTextureTemplate == null) return;
-            // Each local HUD owns its target; remote players never allocate or render.
-            m_portraitTexture = new RenderTexture(m_portraitTextureTemplate) { name = "LocalPlayerPortrait" };
-            m_portraitTexture.Create();
-            m_portraitCamera.targetTexture = m_portraitTexture;
-            m_view.m_healthBar.Portrait.texture = m_portraitTexture;
-            m_portraitCamera.enabled = true;
-        }
-
         private void LateUpdate()
         {
             if (!m_hudBuilt) return;
@@ -268,12 +249,6 @@ namespace CouchGuys.Gameplay.Weapons
                     prompt = m_vehicleHud.GetInteractionPrompt(out progress, out duration);
                 m_view.m_interactionPrompt.Present(prompt, progress, duration);
             }
-            if (m_portraitCamera == null || m_portraitFocus == null) return;
-            Vector3 focus = m_portraitFocus.TransformPoint(m_portraitFocusOffset);
-            Vector3 forward = transform.forward;
-            m_portraitCamera.transform.SetPositionAndRotation(
-                focus + forward * m_portraitDistance, Quaternion.LookRotation(-forward, transform.up));
-            m_portraitCamera.orthographicSize = m_portraitHalfHeight;
         }
 
         private static void SetBar(Image fill, float value)
@@ -287,21 +262,10 @@ namespace CouchGuys.Gameplay.Weapons
         {
             if (m_health != null) m_health.HealthChanged -= OnHealthChanged;
             if (m_stamina != null) m_stamina.StaminaChanged -= OnStaminaChanged;
-            if (m_portraitCamera != null)
-            {
-                m_portraitCamera.enabled = false;
-                m_portraitCamera.targetTexture = null;
-            }
             if (m_canvasRoot != null) Destroy(m_canvasRoot);
             m_canvasRoot = null;
             m_view = null;
             m_hudBuilt = false;
-            if (m_portraitTexture != null)
-            {
-                m_portraitTexture.Release();
-                Destroy(m_portraitTexture);
-                m_portraitTexture = null;
-            }
             m_lastSelectedSlot = -1;
             m_lastWeaponName = null;
             m_lastMagazine = int.MinValue;

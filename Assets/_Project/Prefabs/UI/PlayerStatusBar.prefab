@@ -176,7 +176,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4254668090368794996}
   - component: {fileID: 3355665751695127558}
-  - component: {fileID: 4406695721735665720}
+  - component: {fileID: 5691995044139160957}
   m_Layer: 0
   m_Name: Portrait
   m_TagString: Untagged
@@ -211,7 +211,7 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3833427522027380587}
   m_CullTransparentMesh: 1
---- !u!114 &4406695721735665720
+--- !u!114 &5691995044139160957
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -220,9 +220,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 3833427522027380587}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1344c3c82d62a2a41a3576d8abb8e3ea, type: 3}
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.RawImage
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
@@ -231,13 +231,16 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 8400000, guid: e5788cdc8bdb741419b7c69e4fbdf640, type: 2}
-  m_UVRect:
-    serializedVersion: 2
-    x: 0
-    y: 0
-    width: 1
-    height: 1
+  m_Sprite: {fileID: 7798814281522731657, guid: d6c14194a0f30714eae2d5da3efcd86d, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 1
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
 --- !u!1 &4438229791466861989
 GameObject:
   m_ObjectHideFlags: 0
@@ -329,7 +332,31 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Weapons.PlayerStatusBar
   m_fill: {fileID: 2882888312817630139}
-  m_portrait: {fileID: 4406695721735665720}
+  m_expression: {fileID: 5691995044139160957}
+  m_happyFrames:
+  - {fileID: 7798814281522731657, guid: d6c14194a0f30714eae2d5da3efcd86d, type: 3}
+  - {fileID: 7982826624310744135, guid: d6c14194a0f30714eae2d5da3efcd86d, type: 3}
+  - {fileID: -4788981604074241912, guid: d6c14194a0f30714eae2d5da3efcd86d, type: 3}
+  - {fileID: -8676559936618614614, guid: d6c14194a0f30714eae2d5da3efcd86d, type: 3}
+  - {fileID: -8863675146604962622, guid: d6c14194a0f30714eae2d5da3efcd86d, type: 3}
+  - {fileID: 1245004753701718193, guid: d6c14194a0f30714eae2d5da3efcd86d, type: 3}
+  - {fileID: -1461544022883845972, guid: d6c14194a0f30714eae2d5da3efcd86d, type: 3}
+  - {fileID: -1029864125184812184, guid: d6c14194a0f30714eae2d5da3efcd86d, type: 3}
+  - {fileID: 5143447356985974333, guid: d6c14194a0f30714eae2d5da3efcd86d, type: 3}
+  - {fileID: -805174815483948428, guid: d6c14194a0f30714eae2d5da3efcd86d, type: 3}
+  - {fileID: 3986295080230820885, guid: d6c14194a0f30714eae2d5da3efcd86d, type: 3}
+  - {fileID: 8450939961874301933, guid: d6c14194a0f30714eae2d5da3efcd86d, type: 3}
+  m_orangeFrames: []
+  m_redFrames: []
+  m_idleFrame: 0
+  m_idleAnimationSpeed: 0.3
+  m_idleScaleAmount: 0.012
+  m_blinkFrames: 080000000a00000008000000
+  m_blinkInterval: {x: 3, y: 6}
+  m_blinkDuration: {x: 0.15, y: 0.25}
+  m_bigHappyFrames: 020000000600000002000000
+  m_bigHappyInterval: {x: 8, y: 15}
+  m_bigHappyDuration: {x: 0.4, y: 0.7}
   m_lightningIcon: {fileID: 9195511873057428739}
   lightningIconTexture: {fileID: 0}
 --- !u!1 &7222252702676339540

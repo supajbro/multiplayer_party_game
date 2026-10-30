@@ -47,27 +47,6 @@ namespace CouchGuys.Editor
         private const string ArtRoot = "Assets/_Project/Art/UI/";
         private const string PlayerPath = "Assets/_Project/Prefabs/Player.prefab";
 
-        [InitializeOnLoadMethod]
-        private static void InstallMissing()
-        {
-            EditorApplication.update -= InstallOnUpdate;
-            EditorApplication.update += InstallOnUpdate;
-        }
-
-        private static void InstallOnUpdate()
-        {
-            if (EditorApplication.isCompiling || EditorApplication.isUpdating || EditorApplication.isPlayingOrWillChangePlaymode) return;
-            EditorApplication.update -= InstallOnUpdate;
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(UiRoot + "PlayerWeaponHud.prefab") == null) Build();
-            else
-            {
-                GameObject player = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPath);
-                PlayerWeaponHud hud = player != null ? player.GetComponent<PlayerWeaponHud>() : null;
-                if (hud != null && new SerializedObject(hud).FindProperty("m_hudPrefab").objectReferenceValue == null)
-                    AssignToPlayer();
-            }
-        }
-
         [MenuItem("Couch Guys/UI/Rebuild Player HUD")]
         public static void Build()
         {
@@ -158,6 +137,8 @@ namespace CouchGuys.Editor
 
         private PlayerStatusBar BuildStatusPrefab()
         {
+            var existing = AssetDatabase.LoadAssetAtPath<PlayerStatusBar>(UiRoot + "PlayerStatusBar.prefab");
+            if (existing != null) return existing;
             Sprite holder = ImportSprite("UI_StatusBar_Background", true);
             Sprite fill = ImportSprite("UI_StatusBar_Fill", false);
             GameObject root = new("PlayerStatusBar", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
@@ -188,9 +169,9 @@ namespace CouchGuys.Editor
                 badge.gameObject.AddComponent<Mask>().showMaskGraphic = false;
                 RectTransform portrait = Rect("Portrait", badge);
                 Stretch(portrait, 0f);
-                RawImage portraitImage = portrait.gameObject.AddComponent<RawImage>();
+                Image portraitImage = portrait.gameObject.AddComponent<Image>();
                 portraitImage.raycastTarget = false;
-                portraitImage.texture = AssetDatabase.LoadAssetAtPath<RenderTexture>(ArtRoot + "LocalPlayerPortrait.renderTexture");
+                portraitImage.preserveAspect = true;
                 RectTransform icon = Rect("LightningIcon", badge);
                 Stretch(icon, 5f);
                 RawImage iconImage = icon.gameObject.AddComponent<RawImage>();
@@ -199,7 +180,7 @@ namespace CouchGuys.Editor
                 PlayerStatusBar status = root.AddComponent<PlayerStatusBar>();
                 SerializedObject s = new(status);
                 s.FindProperty("m_fill").objectReferenceValue = fillImage;
-                s.FindProperty("m_portrait").objectReferenceValue = portraitImage;
+                s.FindProperty("m_expression").objectReferenceValue = portraitImage;
                 s.FindProperty("m_lightningIcon").objectReferenceValue = iconImage;
                 s.ApplyModifiedPropertiesWithoutUndo();
                 return PrefabUtility.SaveAsPrefabAsset(root, UiRoot + "PlayerStatusBar.prefab").GetComponent<PlayerStatusBar>();
@@ -249,59 +230,14 @@ namespace CouchGuys.Editor
 
         private static void ConfigurePlayer(PlayerWeaponHudView view)
         {
-            string rtPath = ArtRoot + "LocalPlayerPortrait.renderTexture";
-            RenderTexture target = AssetDatabase.LoadAssetAtPath<RenderTexture>(rtPath);
-            if (target == null)
-            {
-                target = new RenderTexture(256, 256, 24, RenderTextureFormat.ARGB32) { name = "LocalPlayerPortrait" };
-                AssetDatabase.CreateAsset(target, rtPath);
-            }
             GameObject player = PrefabUtility.LoadPrefabContents(PlayerPath);
             try
             {
                 PlayerWeaponHud hud = player.GetComponent<PlayerWeaponHud>();
-                Transform cameraTransform = player.transform.Find("PortraitCamera");
-                if (cameraTransform == null)
-                {
-                    cameraTransform = new GameObject("PortraitCamera", typeof(Camera)).transform;
-                    cameraTransform.SetParent(player.transform, false);
-                }
-                Camera camera = cameraTransform.GetComponent<Camera>();
-                camera.enabled = false;
-                camera.targetTexture = target;
-                camera.clearFlags = CameraClearFlags.SolidColor;
-                camera.backgroundColor = new Color(0.12f, 0.07f, 0.04f, 1f);
-                camera.orthographic = true;
-                camera.orthographicSize = 0.32f;
-                camera.nearClipPlane = 0.05f;
-                camera.farClipPlane = 1.1f;
-                camera.cullingMask = ~(1 << 5);
-                camera.allowHDR = true;
-                camera.depth = -10;
-                Transform focus = player.GetComponentsInChildren<Transform>(true)
-                    .FirstOrDefault(t => t.name.Equals("Head", StringComparison.OrdinalIgnoreCase) || t.name.EndsWith(":Head", StringComparison.OrdinalIgnoreCase));
-                if (focus == null)
-                {
-                    Transform visual = player.transform.Find("Visual");
-                    focus = new GameObject("PortraitFocus").transform;
-                    focus.SetParent(player.transform, false);
-                    focus.localPosition = new Vector3(0f, 1.5f, 0f);
-                }
-                Renderer head = player.GetComponentsInChildren<Renderer>(true).FirstOrDefault(r => r.name == "Head");
-                Vector3 focusPosition = head != null ? head.bounds.center : focus.position;
-                Vector3 focusOffset = focus.InverseTransformPoint(focusPosition);
-                cameraTransform.position = focusPosition + player.transform.forward * 0.75f;
-                cameraTransform.rotation = Quaternion.LookRotation(-player.transform.forward);
                 SerializedObject s = new(hud);
                 s.FindProperty("m_hudPrefab").objectReferenceValue = view;
-                s.FindProperty("m_portraitCamera").objectReferenceValue = camera;
-                s.FindProperty("m_portraitFocus").objectReferenceValue = focus;
-                s.FindProperty("m_portraitFocusOffset").vector3Value = focusOffset;
-                s.FindProperty("m_portraitHalfHeight").floatValue = 0.32f;
-                s.FindProperty("m_portraitTextureTemplate").objectReferenceValue = target;
                 s.ApplyModifiedPropertiesWithoutUndo();
                 PrefabUtility.SaveAsPrefabAsset(player, PlayerPath);
-                Debug.Log("HUD portrait focus: " + focus.name + " at " + focus.position);
             }
             finally { PrefabUtility.UnloadPrefabContents(player); }
         }
@@ -326,7 +262,7 @@ namespace CouchGuys.Editor
                 throw new UnityException("Expanded map must be complete and disabled by default.");
             foreach (PlayerStatusBar bar in new[] { view.m_healthBar, view.m_staminaBar })
             {
-                if (bar.Portrait.GetComponentInParent<Mask>(true) == null) throw new UnityException("Portrait mask is missing.");
+                if (bar.transform.Find("BadgeMask").GetComponent<Mask>() == null) throw new UnityException("Portrait mask is missing.");
                 if (bar.transform.Find("Fill").GetComponent<Image>().type != Image.Type.Filled) throw new UnityException("Bar must use filled Image.");
             }
             foreach (var field in typeof(PlayerWeaponHudView).GetFields())
@@ -337,16 +273,13 @@ namespace CouchGuys.Editor
             }
             PlayerWeaponHud hud = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPath).GetComponent<PlayerWeaponHud>();
             SerializedObject s = new(hud);
-            foreach (string field in new[] { "m_hudPrefab", "m_portraitCamera", "m_portraitFocus", "m_portraitTextureTemplate" })
+            foreach (string field in new[] { "m_hudPrefab" })
                 if (s.FindProperty(field).objectReferenceValue == null) throw new UnityException("Missing " + field);
-            Camera portraitCamera = (Camera)s.FindProperty("m_portraitCamera").objectReferenceValue;
-            if (portraitCamera.enabled || !portraitCamera.orthographic || portraitCamera.targetTexture == null)
-                throw new UnityException("Portrait camera must be saved disabled with an orthographic RenderTexture target.");
             CheckRect(view.transform.Find("HealthPanel"), Vector2.zero, new Vector2(24f, 24f), new Vector2(455f, 122f));
             CheckRect(view.transform.Find("StaminaPanel"), new Vector2(0.5f, 1f), new Vector2(0f, -25f), new Vector2(410f, 42f));
             CheckRect(view.transform.Find("Hotbar"), new Vector2(0.5f, 0f), new Vector2(0f, 24f), new Vector2(548f, 108f));
             RenderPreview(view);
-            File.WriteAllText("Temp/PlayerHudVerification.txt", "PASS: HUD prefab references, five slots, filled bars, circle masks, player portrait camera/target/focus. Owner lifecycle requires play-mode check.");
+            File.WriteAllText("Temp/PlayerHudVerification.txt", "PASS: HUD prefab references, five slots, filled bars, circle masks, sprite expressions. Owner lifecycle requires play-mode check.");
             Debug.Log("Player HUD prefab verification passed.");
         }
 
@@ -419,24 +352,8 @@ namespace CouchGuys.Editor
                 typeof(CouchGuys.Player.RobotFaceExpressionController).GetMethod("Awake", privateInstance).Invoke(face, null);
                 typeof(CouchGuys.Player.RobotFaceExpressionController).GetMethod("LateUpdate", privateInstance).Invoke(face, null);
                 PlayerWeaponHud hud = player.GetComponent<PlayerWeaponHud>();
-                SerializedObject s = new(hud);
-                Camera portrait = (Camera)s.FindProperty("m_portraitCamera").objectReferenceValue;
-                output = new RenderTexture(256, 256, 24);
-                portrait.targetTexture = output;
-                portrait.overrideSceneCullingMask = UnityEditor.SceneManagement.EditorSceneManager.GetSceneCullingMask(scene);
-                portrait.aspect = 1f;
-                portrait.ResetProjectionMatrix();
-                GameObject lightObject = new GameObject("PreviewLight", typeof(Light));
-                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(lightObject, scene);
-                Light light = lightObject.GetComponent<Light>();
-                light.type = LightType.Directional;
-                light.intensity = 2f;
-                light.transform.rotation = Quaternion.Euler(25f, 180f, 0f);
-                portrait.Render();
-                SaveRender(output, "Temp/PlayerHudPortrait.png");
                 canvas = (GameObject)PrefabUtility.InstantiatePrefab(prefab.gameObject, scene);
                 PlayerWeaponHudView view = canvas.GetComponent<PlayerWeaponHudView>();
-                view.m_healthBar.Portrait.texture = output;
                 VerifyBehaviour(hud, view);
                 GameObject cameraObject = new GameObject("HudPreviewCamera", typeof(Camera));
                 UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(cameraObject, scene);
