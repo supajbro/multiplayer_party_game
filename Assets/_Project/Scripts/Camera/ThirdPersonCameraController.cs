@@ -42,6 +42,7 @@ namespace CouchGuys.CameraSystem
         private Vector3 m_previousPivotPosition;
         private bool m_hasPreviousPivotPosition;
         private readonly RaycastHit[] m_collisionHits = new RaycastHit[16];
+        private Collider[] m_pivotOverlaps = new Collider[16];
         private Transform m_vehicleTarget;
         private float m_vehicleDistance;
         private float m_vehicleHeight;
@@ -135,6 +136,7 @@ namespace CouchGuys.CameraSystem
 
             Vector3 pivot = GetPivotPosition();
             CompensateForTargetMovement(pivot);
+            pivot = GetClearCollisionPivot(pivot);
 
             Vector2 lookInput = m_input.Look;
             m_yaw += lookInput.x * m_mouseSensitivity;
@@ -148,7 +150,10 @@ namespace CouchGuys.CameraSystem
 
             float positionBlend = 1f - Mathf.Exp(-m_followSmoothing * Time.deltaTime);
             float rotationBlend = 1f - Mathf.Exp(-m_rotationSmoothing * Time.deltaTime);
-            transform.position = Vector3.Lerp(transform.position, desiredPosition, positionBlend);
+            Vector3 smoothedPosition = Vector3.Lerp(transform.position, desiredPosition, positionBlend);
+            // Smoothing can cross furniture even when both orbit destinations are clear.
+            // Collision correction must be the last position operation of the frame.
+            transform.position = ResolveCollisionPosition(pivot, smoothedPosition);
             transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, rotationBlend);
         }
 
@@ -213,8 +218,52 @@ namespace CouchGuys.CameraSystem
 
         private Vector3 CalculateCollisionPosition(Vector3 pivot, Quaternion orbitRotation)
         {
+            pivot = GetClearCollisionPivot(pivot);
             Vector3 desiredOffset = orbitRotation * new Vector3(m_shoulderOffset, 0f, -m_cameraDistance);
+            return ResolveCollisionPosition(pivot, pivot + desiredOffset);
+        }
+
+        private Vector3 GetClearCollisionPivot(Vector3 pivot)
+        {
+            // A carrier can overlap the couch because their mutual collision is ignored.
+            // Sphere casts do not detect colliders overlapping their starting sphere.
+            // Lift the query origin above those colliders before testing the camera boom.
+            for (int attempt = 0; attempt < 4; attempt++)
+            {
+                int count;
+                while ((count = Physics.OverlapSphereNonAlloc(pivot, m_collisionRadius,
+                           m_pivotOverlaps, m_collisionLayers, QueryTriggerInteraction.Ignore))
+                       == m_pivotOverlaps.Length)
+                {
+                    System.Array.Resize(ref m_pivotOverlaps, m_pivotOverlaps.Length * 2);
+                }
+
+                float clearHeight = pivot.y;
+                for (int index = 0; index < count; index++)
+                {
+                    Collider obstacle = m_pivotOverlaps[index];
+                    if (IsPlayerCollider(obstacle.transform)) continue;
+                    clearHeight = Mathf.Max(clearHeight,
+                        obstacle.bounds.max.y + m_collisionRadius + m_collisionPadding + 0.001f);
+                }
+
+                if (clearHeight <= pivot.y) break;
+                pivot.y = clearHeight;
+            }
+
+            return pivot;
+        }
+
+        private bool IsPlayerCollider(Transform colliderTransform)
+        {
+            return m_playerRoot != null && colliderTransform.IsChildOf(m_playerRoot);
+        }
+
+        private Vector3 ResolveCollisionPosition(Vector3 pivot, Vector3 desiredPosition)
+        {
+            Vector3 desiredOffset = desiredPosition - pivot;
             float desiredDistance = desiredOffset.magnitude;
+            if (desiredDistance < 0.0001f) return pivot;
             Vector3 castDirection = desiredOffset / desiredDistance;
             float nearestDistance = desiredDistance;
 
@@ -230,7 +279,7 @@ namespace CouchGuys.CameraSystem
             for (int index = 0; index < hitCount; index++)
             {
                 Transform hitTransform = m_collisionHits[index].transform;
-                if (m_playerRoot != null && hitTransform.IsChildOf(m_playerRoot))
+                if (IsPlayerCollider(hitTransform))
                 {
                     continue;
                 }
@@ -238,7 +287,9 @@ namespace CouchGuys.CameraSystem
                 nearestDistance = Mathf.Min(nearestDistance, m_collisionHits[index].distance);
             }
 
-            float correctedDistance = Mathf.Max(0f, nearestDistance - m_collisionPadding);
+            float correctedDistance = nearestDistance < desiredDistance
+                ? Mathf.Max(0f, nearestDistance - m_collisionPadding)
+                : desiredDistance;
             return pivot + castDirection * correctedDistance;
         }
 
