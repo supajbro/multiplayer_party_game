@@ -1,0 +1,39 @@
+{
+  "variant": "AssaultRifle",
+  "animation_sources": "C:\\Users\\Jaden\\Documents\\MyUnityProjects\\multiplayer_party_game\\Assets\\_Project\\Models\\Thieves\\thief_assault_rifle.fbx",
+  "weapon_source": "CouchGuy_WithPunches.fbx / Weapon_AssaultRifle",
+  "weapon_uniform_scale": 0.38,
+  "weapon_materials": [
+    "CG_Weapon_Blue",
+    "CG_Weapon_Yellow",
+    "CG_Weapon_Ink",
+    "CG_Weapon_Steel",
+    "CG_Weapon_YellowLight",
+    "CG_Weapon_Coral"
+  ],
+  "clips": {
+    "Thief_Idle": {
+      "frames": 48,
+      "right_grip_clamp_m": 2.5334713065503992e-08,
+      "left_grip_clamp_m": 5.0669426131007984e-08
+    },
+    "Thief_Walk": {
+      "frames": 24,
+      "right_grip_clamp_m": 3.0719530773294423e-08,
+      "left_grip_clamp_m": 4.348388884190005e-08
+    },
+    "Thief_Shoot": {
+      "frames": 24,
+      "right_grip_clamp_m": 4.6313989010290636e-08,
+      "left_grip_clamp_m": 5.986600622530355e-08
+    },
+    "Thief_Death": {
+      "frames": 52,
+      "right_grip_clamp_m": 5.960464477539063e-08,
+      "left_grip_clamp_m": 6.664001874625056e-08
+    }
+  },
+  "armature_bones": 43,
+  "preview_exported": false,
+  "fbx": "C:\\Users\\Jaden\\Documents\\MyUnityProjects\\multiplayer_party_game\\Assets\\_Project\\Models\\Thieves\\Character01Thief\\Armed\\Character01_Thief_AssaultRifle.fbx"
+}

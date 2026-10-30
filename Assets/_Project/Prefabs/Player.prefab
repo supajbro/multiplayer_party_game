@@ -482,12 +482,12 @@ MonoBehaviour:
   _componentIndexCache: 4
   _addedNetworkObject: {fileID: 4753475039817145927}
   _networkObjectCache: {fileID: 4753475039817145927}
+  m_grappleSettings: {fileID: 11400000, guid: f4f0e78b3561447eb81d830e43ba700f, type: 2}
   m_input: {fileID: 0}
   m_health: {fileID: 0}
   m_couchCarrier: {fileID: 0}
   m_animationDriver: {fileID: 0}
   m_aimCamera: {fileID: 410002}
-  m_grappleSettings: {fileID: 11400000, guid: f4f0e78b3561447eb81d830e43ba700f, type: 2}
   m_weaponModels:
   - {fileID: 7838298426495760366}
   - {fileID: 6891257441039681528}
@@ -515,6 +515,8 @@ MonoBehaviour:
     m_reloadDuration: 1.25
     m_knockback: 2.5
     m_reticleSettings: {fileID: 11400000, guid: c88b9d7048fe4874d9cf5c4b7578154c, type: 2}
+    m_pullForce: 45
+    m_pullSpeed: 12
     m_bulletPrefab: {fileID: 7053223019108582829, guid: 7d6ed1a4199de8e48803919040627113, type: 3}
     m_bulletSpeed: 75
     m_bulletLifetime: 0.75
@@ -543,6 +545,8 @@ MonoBehaviour:
     m_reloadDuration: 1.8
     m_knockback: 1.5
     m_reticleSettings: {fileID: 11400000, guid: 346508b230abac74fad5df41a467b1b9, type: 2}
+    m_pullForce: 45
+    m_pullSpeed: 12
     m_bulletPrefab: {fileID: 4510290296513175856, guid: d266e9f1b53a51a42ba14c066c659f28, type: 3}
     m_bulletSpeed: 105
     m_bulletLifetime: 0.65
@@ -571,6 +575,8 @@ MonoBehaviour:
     m_reloadDuration: 2.2
     m_knockback: 12
     m_reticleSettings: {fileID: 11400000, guid: b5bd8a4c54dc5f04ca9d2869aface38d, type: 2}
+    m_pullForce: 45
+    m_pullSpeed: 12
     m_bulletPrefab: {fileID: 3735381363240024366, guid: f59bac2ce39e9c34d8047a11bc3a447b, type: 3}
     m_bulletSpeed: 62
     m_bulletLifetime: 0.55
@@ -583,11 +589,45 @@ MonoBehaviour:
     m_recoilDistance: 0.075
     m_cameraShake: 0.1
     m_impactScale: 1.5
+  - m_type: 3
+    m_displayName: Grapple Gun
+    m_automatic: 0
+    m_fireInterval: 0.4
+    m_range: 30
+    m_pellets: 1
+    m_spreadDegrees: 0
+    m_damagePerPellet: 0
+    m_minimumDamageMultiplier: 1
+    m_falloffStart: 1
+    m_recoil: 0
+    m_magazineCapacity: 1
+    m_startingReserve: 0
+    m_reloadDuration: 1
+    m_knockback: 0
+    m_reticleSettings: {fileID: 0}
+    m_pullForce: 45
+    m_pullSpeed: 12
+    m_bulletPrefab: {fileID: 0}
+    m_bulletSpeed: 70
+    m_bulletLifetime: 1
+    m_bulletSize: {x: 1, y: 1, z: 1}
+    m_bulletColour: {r: 1, g: 0.72, b: 0.12, a: 1}
+    m_trailWidth: 0.025
+    m_trailColour: {r: 1, g: 0.55, b: 0.08, a: 0.85}
+    m_muzzleFlashPrefab: {fileID: 0}
+    m_shellEjectionPrefab: {fileID: 0}
+    m_recoilDistance: 0
+    m_cameraShake: 0
+    m_impactScale: 1
   m_hitMask:
     serializedVersion: 2
     m_Bits: 4294967295
   m_switchDuration: 0.18
   m_maximumAimOriginDistance: 6
+  m_punchDamage: 25
+  m_punchRange: 1.65
+  m_punchCooldown: 0.55
+  m_punchKnockback: 2.5
 --- !u!114 &2114314630447923985
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -652,9 +692,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49b1e3edba294a9b92b972e39fdbcb7b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Delivery.NeighbourhoodMap
-  m_minimapSize: 270
   m_visibleRadiusMetres: 65
-  m_screenMargin: 24
   m_textureResolution: 512
   m_actorRefreshInterval: 0.5
 --- !u!114 &7168290924105605430

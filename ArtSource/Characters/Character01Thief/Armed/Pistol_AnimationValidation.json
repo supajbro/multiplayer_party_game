@@ -1,0 +1,39 @@
+{
+  "variant": "Pistol",
+  "animation_sources": "C:\\Users\\Jaden\\Documents\\MyUnityProjects\\multiplayer_party_game\\Assets\\_Project\\Models\\Thieves\\thief_pistol.fbx",
+  "weapon_source": "CouchGuy_WithPunches.fbx / Weapon_Pistol",
+  "weapon_uniform_scale": 0.38,
+  "weapon_materials": [
+    "CG_Weapon_Yellow",
+    "CG_Weapon_Ink",
+    "CG_Weapon_YellowLight",
+    "CG_Weapon_Blue",
+    "CG_Weapon_Purple",
+    "CG_Weapon_Steel"
+  ],
+  "clips": {
+    "Thief_Idle": {
+      "frames": 48,
+      "right_grip_clamp_m": 3.332000937312528e-08,
+      "left_grip_clamp_m": 5.3726900748371916e-08
+    },
+    "Thief_Walk": {
+      "frames": 24,
+      "right_grip_clamp_m": 1.666000468656264e-08,
+      "left_grip_clamp_m": 5.3726900748371916e-08
+    },
+    "Thief_Shoot": {
+      "frames": 24,
+      "right_grip_clamp_m": 3.332000937312528e-08,
+      "left_grip_clamp_m": 5.3726900748371916e-08
+    },
+    "Thief_Death": {
+      "frames": 52,
+      "right_grip_clamp_m": 4.712160915387242e-08,
+      "left_grip_clamp_m": 7.028863677424642e-08
+    }
+  },
+  "armature_bones": 43,
+  "preview_exported": false,
+  "fbx": "C:\\Users\\Jaden\\Documents\\MyUnityProjects\\multiplayer_party_game\\Assets\\_Project\\Models\\Thieves\\Character01Thief\\Armed\\Character01_Thief_Pistol.fbx"
+}

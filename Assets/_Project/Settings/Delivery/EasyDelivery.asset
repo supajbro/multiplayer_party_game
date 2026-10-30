@@ -25,9 +25,11 @@ MonoBehaviour:
   m_maximumDeliveryTime: 300
   m_uphillDistanceMultiplier: 2
   m_minSpawnInterval: 5
-  m_maxSpawnInterval: 50
+  m_maxSpawnInterval: 20
   m_minThievesPerWave: 1
-  m_maxThievesPerWave: 2
+  m_maxThievesPerWave: 1
+  m_rogueCarSettings: {fileID: 0}
+  m_rogueCarPrefab: {fileID: 0}
   m_minimumRouteDistance: 0
   m_maximumRouteDistance: 110
   m_minimumProgressionZone: 0

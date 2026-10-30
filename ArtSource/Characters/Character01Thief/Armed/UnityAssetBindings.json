@@ -1,0 +1,23 @@
+{
+  "Pistol": {
+    "model_guid": "722aafb11dc44a84b9c220684b48747c",
+    "controller_guid": "97ec155c8eac431e86dd0e1b24149c5f",
+    "controller": "Assets\\_Project\\Animations\\Thieves\\Character01\\Character01_Thief_Pistol.controller",
+    "clips_referenced": 4,
+    "shared_robot_materials": true
+  },
+  "AssaultRifle": {
+    "model_guid": "b68f72dca94745cebdcffb484d3a84f0",
+    "controller_guid": "2ef52d38496341f8bca290f85c846d87",
+    "controller": "Assets\\_Project\\Animations\\Thieves\\Character01\\Character01_Thief_AssaultRifle.controller",
+    "clips_referenced": 4,
+    "shared_robot_materials": true
+  },
+  "Shotgun": {
+    "model_guid": "b2b48c8835b34a1e8f0fddd81130adf0",
+    "controller_guid": "223e99814c594e6195b0b1596f8f89ad",
+    "controller": "Assets\\_Project\\Animations\\Thieves\\Character01\\Character01_Thief_Shotgun.controller",
+    "clips_referenced": 4,
+    "shared_robot_materials": true
+  }
+}

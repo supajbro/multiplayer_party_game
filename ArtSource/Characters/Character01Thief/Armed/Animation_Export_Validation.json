@@ -1,0 +1,98 @@
+{
+  "Pistol": {
+    "matches_active_player_weapon_max_error_m": 2.230201658903752e-07,
+    "export_weapon_geometry_max_error_m": 1.2385903573886026e-06,
+    "fbx_meshes": 2,
+    "bones": 43,
+    "no_preview_objects": true,
+    "clips": {
+      "Thief_Death": {
+        "frames": 52,
+        "fps": 30,
+        "max_bone_translation_change_m": 2.273865080820483
+      },
+      "Thief_Idle": {
+        "frames": 48,
+        "fps": 30,
+        "max_bone_translation_change_m": 0.04034130605562075,
+        "loop_end_matrix_max_error": 0.0
+      },
+      "Thief_Shoot": {
+        "frames": 24,
+        "fps": 30,
+        "max_bone_translation_change_m": 0.2035768854307312
+      },
+      "Thief_Walk": {
+        "frames": 24,
+        "fps": 30,
+        "max_bone_translation_change_m": 0.527953936378365,
+        "loop_end_matrix_max_error": 0.0
+      }
+    },
+    "finite_animation_matrices": true
+  },
+  "AssaultRifle": {
+    "matches_active_player_weapon_max_error_m": 2.4575624024691933e-07,
+    "export_weapon_geometry_max_error_m": 1.2320296036705258e-06,
+    "fbx_meshes": 2,
+    "bones": 43,
+    "no_preview_objects": true,
+    "clips": {
+      "Thief_Death": {
+        "frames": 52,
+        "fps": 30,
+        "max_bone_translation_change_m": 2.3062881863949642
+      },
+      "Thief_Idle": {
+        "frames": 48,
+        "fps": 30,
+        "max_bone_translation_change_m": 0.04282110764979188,
+        "loop_end_matrix_max_error": 0.0
+      },
+      "Thief_Shoot": {
+        "frames": 24,
+        "fps": 30,
+        "max_bone_translation_change_m": 0.2537470510688822
+      },
+      "Thief_Walk": {
+        "frames": 24,
+        "fps": 30,
+        "max_bone_translation_change_m": 0.5278260265027752,
+        "loop_end_matrix_max_error": 0.0
+      }
+    },
+    "finite_animation_matrices": true
+  },
+  "Shotgun": {
+    "matches_active_player_weapon_max_error_m": 2.5680196813482326e-07,
+    "export_weapon_geometry_max_error_m": 1.2336562349446467e-06,
+    "fbx_meshes": 2,
+    "bones": 43,
+    "no_preview_objects": true,
+    "clips": {
+      "Thief_Death": {
+        "frames": 52,
+        "fps": 30,
+        "max_bone_translation_change_m": 2.31588526131534
+      },
+      "Thief_Idle": {
+        "frames": 48,
+        "fps": 30,
+        "max_bone_translation_change_m": 0.04552196515774353,
+        "loop_end_matrix_max_error": 0.0
+      },
+      "Thief_Shoot": {
+        "frames": 24,
+        "fps": 30,
+        "max_bone_translation_change_m": 0.32060266572538565
+      },
+      "Thief_Walk": {
+        "frames": 24,
+        "fps": 30,
+        "max_bone_translation_change_m": 0.5276697428702251,
+        "loop_end_matrix_max_error": 0.0
+      }
+    },
+    "finite_animation_matrices": true
+  }
+}
