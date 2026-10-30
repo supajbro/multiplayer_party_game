@@ -61,6 +61,7 @@ namespace CouchGuys.Gameplay.Weapons
         private readonly int[] m_pendingLocalShots = new int[WeaponCount];
         private readonly float[] m_nextServerFireTime = new float[WeaponCount];
         private readonly RaycastHit[] m_hits = new RaycastHit[RaycastBufferSize];
+        private readonly Dictionary<Component, RaycastHit> m_bloodHits = new(8);
         private readonly Dictionary<PlayerHealth, float> m_playerDamage = new(8);
         private readonly Dictionary<ThiefHealth, float> m_thiefDamage = new(8);
         private readonly Dictionary<CouchGuys.Gameplay.Pedestrians.PedestrianController, float> m_pedestrianDamage = new(8);
@@ -613,6 +614,7 @@ namespace CouchGuys.Gameplay.Weapons
         private Vector3[] ResolveHitsServer(Vector3 origin, Vector3 forward, WeaponDefinition weapon,
             out Vector3[] normals, out byte[] surfaces)
         {
+            m_bloodHits.Clear();
             m_playerDamage.Clear();
             m_thiefDamage.Clear();
             m_pedestrianDamage.Clear();
@@ -639,6 +641,7 @@ namespace CouchGuys.Gameplay.Weapons
                 var pedestrian = nearest.collider.GetComponentInParent<CouchGuys.Gameplay.Pedestrians.PedestrianController>();
                 if (pedestrian != null)
                 {
+                    if (!m_bloodHits.ContainsKey(pedestrian)) m_bloodHits.Add(pedestrian, nearest);
                     m_pedestrianDamage.TryGetValue(pedestrian, out float total);
                     m_pedestrianDamage[pedestrian] = total + damage;
                     continue;
@@ -653,6 +656,7 @@ namespace CouchGuys.Gameplay.Weapons
                 ThiefHealth thief = nearest.collider.GetComponentInParent<ThiefHealth>();
                 if (thief != null)
                 {
+                    if (!m_bloodHits.ContainsKey(thief)) m_bloodHits.Add(thief, nearest);
                     m_thiefDamage.TryGetValue(thief, out float total);
                     m_thiefDamage[thief] = total + damage;
                     continue;
@@ -684,7 +688,8 @@ namespace CouchGuys.Gameplay.Weapons
             {
                 float force = weapon.Knockback * Mathf.Lerp(0.25f, 1f,
                     Mathf.Clamp01(entry.Value / maximumShotDamage));
-                entry.Key.ApplyDamageServer(entry.Value, forward, force);
+                RaycastHit bloodHit = m_bloodHits[entry.Key];
+                entry.Key.ApplyBulletDamageServer(entry.Value, forward, force, bloodHit.point);
             }
             if (m_thiefDamage.Count > 0 && Owner.IsValid)
             {
@@ -696,7 +701,10 @@ namespace CouchGuys.Gameplay.Weapons
             foreach (KeyValuePair<TruckController, float> entry in m_truckDamage)
                 entry.Key.ApplyBulletDamageServer(entry.Value);
             foreach (var entry in m_pedestrianDamage)
-                entry.Key.ApplyBulletDamageServer(entry.Value);
+            {
+                RaycastHit bloodHit = m_bloodHits[entry.Key];
+                entry.Key.ApplyBulletDamageServer(entry.Value, bloodHit.point, (bloodHit.point - origin).normalized);
+            }
             foreach (KeyValuePair<TrafficVehicleController, float> entry in m_trafficVehicleDamage)
                 entry.Key.ApplyBulletDamageServer(entry.Value);
             return ends;

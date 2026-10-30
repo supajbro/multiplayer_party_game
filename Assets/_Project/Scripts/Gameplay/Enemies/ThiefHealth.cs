@@ -180,9 +180,26 @@ namespace CouchGuys.Gameplay.Enemies
                 ragdollImpulseScale: m_damageRagdollImpulseScale);
 
         [Server]
+        public void ApplyBulletDamageServer(float damage, Vector3 direction, float force, Vector3 position)
+        {
+            if (!IsAlive || damage <= 0f) return;
+            PlayBloodObserversRpc(position, direction, false);
+            ApplyDamageServer(damage, direction, force);
+        }
+
+        [ObserversRpc]
+        private void PlayBloodObserversRpc(Vector3 position, Vector3 direction, bool vehicle) =>
+            CouchGuys.Gameplay.Weapons.BloodBurst.Play(position, direction, vehicle);
+
+        [Server]
         public void ApplyVehicleImpactServer(float damage, Vector3 impactDirection, float knockbackForce,
-            float upwardForce, bool directionalKnockback = false) =>
+            float upwardForce, bool directionalKnockback = false, Vector3? impactPosition = null)
+        {
+            if (IsAlive && damage > 0f)
+                PlayBloodObserversRpc(impactPosition ?? transform.position + Vector3.up * 0.7f,
+                    Vector3.up + impactDirection.normalized * 0.35f, true);
             ApplyImpactServer(damage, impactDirection, knockbackForce, upwardForce, true, directionalKnockback);
+        }
 
         private void ApplyImpactServer(float damage, Vector3 impactDirection, float knockbackForce,
             float upwardForce, bool allowPushWithoutDamage, bool directionalKnockback = false,

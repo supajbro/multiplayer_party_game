@@ -58,6 +58,7 @@ namespace CouchGuys.Gameplay.Enemies
         private Color m_tracerColour => m_settings != null
             ? m_settings.Combat.TracerColour : new(1f, 0.72f, 0.12f, 1f);
 
+        private readonly Dictionary<Component, RaycastHit> m_bloodHits = new(8);
         private readonly Dictionary<PlayerHealth, float> m_damageByPlayer = new();
         private readonly Dictionary<TruckController, float> m_damageByTruck = new();
         private readonly Dictionary<CouchGuys.Gameplay.Pedestrians.PedestrianController, float> m_damageByPedestrian = new();
@@ -182,6 +183,7 @@ namespace CouchGuys.Gameplay.Enemies
             m_damageByPlayer.Clear();
             m_damageByTruck.Clear();
             m_damageByPedestrian.Clear();
+            m_bloodHits.Clear();
             m_tracerEnds.Clear();
             for (int pellet = 0; pellet < m_pelletsPerShot; pellet++)
             {
@@ -198,6 +200,7 @@ namespace CouchGuys.Gameplay.Enemies
                     var pedestrian = hit.collider.GetComponentInParent<CouchGuys.Gameplay.Pedestrians.PedestrianController>();
                     if (pedestrian != null)
                     {
+                        if (!m_bloodHits.ContainsKey(pedestrian)) m_bloodHits.Add(pedestrian, hit);
                         m_damageByPedestrian.TryGetValue(pedestrian, out float total);
                         m_damageByPedestrian[pedestrian] = total + m_damagePerPellet;
                         break;
@@ -230,7 +233,10 @@ namespace CouchGuys.Gameplay.Enemies
             foreach (KeyValuePair<TruckController, float> damage in m_damageByTruck)
                 damage.Key.ApplyBulletDamageServer(damage.Value);
             foreach (var damage in m_damageByPedestrian)
-                damage.Key.ApplyBulletDamageServer(damage.Value);
+            {
+                RaycastHit bloodHit = m_bloodHits[damage.Key];
+                damage.Key.ApplyBulletDamageServer(damage.Value, bloodHit.point, (bloodHit.point - origin).normalized);
+            }
             if (m_weaponType == EnemyWeaponType.AssaultRifle)
                 m_rifleBurstActive = true;
             ShowShotObserversRpc(origin, m_tracerEnds.ToArray());

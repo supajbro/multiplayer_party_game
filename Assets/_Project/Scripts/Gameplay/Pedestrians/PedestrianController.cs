@@ -165,10 +165,12 @@ namespace CouchGuys.Gameplay.Pedestrians
             m_state.Value = MovementState.Frightened;
         }
 
-        public bool ApplyVehicleImpactServer(float speed)
+        public bool ApplyVehicleImpactServer(float speed, Vector3? impactPosition = null, Vector3? direction = null)
         {
             if (!IsServerInitialized || !m_initialised || m_state.Value == MovementState.Dead ||
                 speed < Mathf.Max(0.1f, m_settings.LethalVehicleSpeed)) return false;
+            PlayBloodObserversRpc(impactPosition ?? transform.position + Vector3.up * 0.7f,
+                Vector3.up + (direction ?? Vector3.zero) * 0.35f, true);
             DieServer();
             return true;
         }
@@ -179,6 +181,17 @@ namespace CouchGuys.Gameplay.Pedestrians
             m_health = Mathf.Max(0f, m_health - damage);
             if (m_health <= 0f) DieServer();
         }
+
+        public void ApplyBulletDamageServer(float damage, Vector3 position, Vector3 direction)
+        {
+            if (!IsServerInitialized || !m_initialised || !IsAlive || damage <= 0f) return;
+            PlayBloodObserversRpc(position, direction, false);
+            ApplyBulletDamageServer(damage);
+        }
+
+        [ObserversRpc]
+        private void PlayBloodObserversRpc(Vector3 position, Vector3 direction, bool vehicle) =>
+            CouchGuys.Gameplay.Weapons.BloodBurst.Play(position, direction, vehicle);
 
         private void DieServer()
         {
@@ -212,7 +225,7 @@ namespace CouchGuys.Gameplay.Pedestrians
                     transform.position + Vector3.up * 0.7f, ForceMode.Impulse);
             }
             Vector3 position = other.ClosestPoint(transform.position + Vector3.up * 0.7f);
-            if (ApplyVehicleImpactServer(speed))
+            if (ApplyVehicleImpactServer(speed, position, velocity.normalized))
             {
                 if (truck != null) truck.PlaySplatServer(position);
                 else car.PlaySplatServer(position);

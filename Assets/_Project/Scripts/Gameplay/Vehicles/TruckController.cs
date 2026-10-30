@@ -549,7 +549,8 @@ namespace CouchGuys.Gameplay.Vehicles
             if (pedestrian != null)
             {
                 if (pedestrian.ApplyVehicleImpactServer(Mathf.Max(collision.relativeVelocity.magnitude,
-                    Vector3.ProjectOnPlane(m_rigidbody.linearVelocity, Vector3.up).magnitude)))
+                    Vector3.ProjectOnPlane(m_rigidbody.linearVelocity, Vector3.up).magnitude),
+                    collision.GetContact(0).point, m_rigidbody.linearVelocity.normalized))
                     PlaySplatServer(collision.GetContact(0).point);
                 return;
             }
@@ -644,7 +645,8 @@ namespace CouchGuys.Gameplay.Vehicles
             {
                 bool alive = thief.IsAlive;
                 thief.ApplyVehicleImpactServer(Driver != null ? thief.CurrentHealth : damage,
-                    direction, Mathf.Max(knockback, impactSpeed), upwardKnockback);
+                    direction, Mathf.Max(knockback, impactSpeed), upwardKnockback,
+                    impactPosition: collision.GetContact(0).point);
                 if (alive) PlaySplatServer(collision.GetContact(0).point);
             }
         }
