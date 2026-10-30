@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a37c3d739994a41ac429ff570d171f1, type: 3}
+  m_Name: DistantSuburbs
+  m_EditorClassIdentifier:
+  ChunkPrefab: {fileID: 11400000, guid: 7b2ff4e570c84b59a62117b609addd18, type: 3}
+  ExtensionDistance: 600
+  BuildingDensity: 0.6
+  BuildingVariety: 1
+  HillHeight: 35
+  BuildingColours:
+  - {r: 0.86, g: 0.65, b: 0.43, a: 1}
+  - {r: 0.67, g: 0.79, b: 0.83, a: 1}
+  - {r: 0.87, g: 0.78, b: 0.61, a: 1}
+  - {r: 0.77, g: 0.53, b: 0.48, a: 1}
+  - {r: 0.64, g: 0.73, b: 0.58, a: 1}

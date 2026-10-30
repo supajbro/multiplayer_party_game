@@ -378,6 +378,7 @@ namespace CouchGuys.ProceduralGeneration
             GenerateResidentialDecorations(new System.Random(DeriveSeed(seed, 0x24C18E6B)));
             GenerateRoadsideDecorations(new System.Random(DeriveSeed(seed, 0x7B531D29)));
             CreateNeighbourhoodBorder();
+            CreateDistantSuburbs();
             GenerateRegionObjects(m_selectedRegion != null ? m_selectedRegion.Props : null, m_propsRoot,
                 new System.Random(DeriveSeed(seed, 0x15342E19)), false);
             GenerateRegionObjects(m_selectedRegion != null ? m_selectedRegion.Hazards : null, m_hazardsRoot,
@@ -503,6 +504,7 @@ namespace CouchGuys.ProceduralGeneration
             GenerateResidentialDecorations(new System.Random(DeriveSeed(seed, 0x24C18E6B)));
             GenerateRoadsideDecorations(new System.Random(DeriveSeed(seed, 0x7B531D29)));
             CreateNeighbourhoodBorder();
+            CreateDistantSuburbs();
             GenerateRegionObjects(
                 m_selectedRegion != null ? m_selectedRegion.Props : null,
                 m_propsRoot,
