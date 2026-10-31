@@ -157,6 +157,12 @@ namespace CouchGuys.Gameplay.Weapons
             }
 
             bool showAmmo = m_weapons.HasEquippedWeapon;
+            bool showCharge = showAmmo && m_weapons.EquippedWeapon == PlayerWeaponType.GrappleGun;
+            if (m_view.m_grappleChargeSlider != null)
+            {
+                m_view.m_grappleChargeSlider.gameObject.SetActive(showCharge);
+                m_view.m_grappleChargeSlider.SetValueWithoutNotify(m_weapons.GrappleChargeFraction);
+            }
             if (m_view.m_ammoPanel.activeSelf != showAmmo) m_view.m_ammoPanel.SetActive(showAmmo);
             if (showAmmo)
             {
@@ -167,8 +173,8 @@ namespace CouchGuys.Gameplay.Weapons
                 if (weaponName != m_lastWeaponName || magazine != m_lastMagazine ||
                     reserve != m_lastReserve || reloading != m_lastReloading)
                 {
-                    m_view.m_ammoText.text = m_weapons.HasEquippedWeapon && m_weapons.EquippedWeapon == PlayerWeaponType.GrappleGun
-                        ? $"{weaponName}\n<size=24>HOLD FIRE TO PULL</size>"
+                    m_view.m_ammoText.text = showCharge
+                        ? $"{weaponName}\n<size=18>{(magazine > 0 ? $"{Mathf.CeilToInt(m_weapons.GrappleChargeFraction * 100f)}% CHARGE" : "EMPTY")}</size>"
                         : reloading
                         ? $"{weaponName}\n<size=24>RELOADING  {magazine} / {reserve}</size>"
                         : $"{weaponName}\n<size=30>{magazine} / {reserve}</size>";

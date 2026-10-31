@@ -588,7 +588,7 @@ namespace CouchGuys.Editor
             SerializedProperty weaponModels = serializedController.FindProperty("m_weaponModels");
             SerializedProperty muzzles = serializedController.FindProperty("m_muzzles");
             if (weaponModels == null || muzzles == null ||
-                weaponModels.arraySize != 3 || muzzles.arraySize != 3)
+                weaponModels.arraySize < 3 || muzzles.arraySize < 3)
             {
                 return false;
             }

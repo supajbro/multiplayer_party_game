@@ -1,4 +1,5 @@
 using CouchGuys.Input;
+using CouchGuys.Gameplay.Weapons;
 using UnityEngine;
 
 namespace CouchGuys.CameraSystem
@@ -33,6 +34,15 @@ namespace CouchGuys.CameraSystem
         [SerializeField, Min(0.01f)] private float m_collisionRadius = 0.2f;
         [SerializeField, Min(0f)] private float m_collisionPadding = 0.1f;
 
+        [Header("Grapple Camera Tension")]
+        [SerializeField, Min(0f)] private float m_grappleResistance = 8f;
+        [Tooltip("Inset from each viewport edge, as a fraction of screen size.")]
+        [SerializeField, Range(0f, 0.2f)] private float m_grappleScreenMargin = 0.04f;
+        [Tooltip("Angular band in degrees over which looking away becomes heavier.")]
+        [SerializeField, Min(0.1f)] private float m_grappleTensionAngle = 15f;
+        [Tooltip("Time in seconds for resistance to respond to changes.")]
+        [SerializeField, Min(0.001f)] private float m_grappleSmoothing = 0.08f;
+
         [Header("Cursor")]
         [SerializeField] private bool m_lockCursor = true;
 
@@ -52,6 +62,9 @@ namespace CouchGuys.CameraSystem
         private float m_vehicleFollowSmoothing;
         private float m_vehicleRotationSmoothing;
         private float m_vehicleCollisionRadius;
+        private Camera m_camera;
+        private PlayerWeaponController m_grappleSource;
+        private Vector2 m_grappleLookScale = Vector2.one;
 
         public float VerticalAngle
         {
@@ -95,6 +108,10 @@ namespace CouchGuys.CameraSystem
         private void Awake()
         {
             m_playerRoot = m_cameraTarget != null ? m_cameraTarget.root : null;
+            // The orbit controller lives on CameraRig; PlayerCamera is its child.
+            m_camera = GetComponentInChildren<Camera>(true);
+            m_grappleSource = m_cameraTarget != null
+                ? m_cameraTarget.GetComponentInParent<PlayerWeaponController>() : null;
             m_yaw = m_playerRoot != null ? m_playerRoot.eulerAngles.y : transform.eulerAngles.y;
             m_pitch = Mathf.Clamp(m_initialVerticalAngle, m_minimumVerticalAngle, m_maximumVerticalAngle);
 
@@ -139,14 +156,30 @@ namespace CouchGuys.CameraSystem
             pivot = GetClearCollisionPivot(pivot);
 
             Vector2 lookInput = m_input.Look;
-            m_yaw += lookInput.x * m_mouseSensitivity;
+            Bounds grappleBounds = default;
+            bool constrained = m_camera != null && m_grappleSource != null &&
+                m_grappleSource.TryGetLocalGrappleBounds(out grappleBounds);
+            Vector2 lookDelta = new Vector2(lookInput.x, -lookInput.y) * m_mouseSensitivity;
+            // Throw intent must survive resistance and the hard visibility limit.
+            m_grappleSource?.RecordLocalGrappleLook(lookDelta);
+            if (constrained) lookDelta = ApplyGrappleResistance(lookDelta, grappleBounds);
+            else m_grappleLookScale = Vector2.one;
+            m_yaw += lookDelta.x;
             m_pitch = Mathf.Clamp(
-                m_pitch - lookInput.y * m_mouseSensitivity,
-                m_minimumVerticalAngle,
-                m_maximumVerticalAngle);
+                m_pitch + lookDelta.y,
+                // A moving grapple can require looking beyond the ordinary orbit limits.
+                // Let input return from there without snapping on release.
+                Mathf.Min(m_pitch, m_minimumVerticalAngle),
+                Mathf.Max(m_pitch, m_maximumVerticalAngle));
 
             Quaternion desiredRotation = Quaternion.Euler(m_pitch, m_yaw, 0f);
             Vector3 desiredPosition = CalculateCollisionPosition(pivot, desiredRotation);
+            if (constrained)
+            {
+                desiredRotation = ConstrainGrappleRotation(desiredPosition, desiredRotation, grappleBounds);
+                SetOrbitAngles(desiredRotation);
+                desiredPosition = CalculateCollisionPosition(pivot, desiredRotation);
+            }
 
             float positionBlend = 1f - Mathf.Exp(-m_followSmoothing * Time.deltaTime);
             float rotationBlend = 1f - Mathf.Exp(-m_rotationSmoothing * Time.deltaTime);
@@ -155,6 +188,94 @@ namespace CouchGuys.CameraSystem
             // Collision correction must be the last position operation of the frame.
             transform.position = ResolveCollisionPosition(pivot, smoothedPosition);
             transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, rotationBlend);
+            if (constrained)
+            {
+                // Enforce visibility at the actual, collision-corrected camera pose too.
+                // Smoothing alone can otherwise let a moving target cross the frame edge.
+                Quaternion corrected = ConstrainGrappleRotation(transform.position, transform.rotation, grappleBounds, true);
+                if (Quaternion.Angle(transform.rotation, corrected) > 0.001f)
+                {
+                    transform.rotation = corrected;
+                    SetOrbitAngles(corrected);
+                }
+            }
+        }
+
+        private Vector2 ApplyGrappleResistance(Vector2 delta, Bounds bounds)
+        {
+            // Integrate large mouse deltas in small angular steps so resistance cannot
+            // be skipped by a fast swipe or a long frame. Mouse deltas already include time.
+            int steps = Mathf.Clamp(Mathf.CeilToInt(delta.magnitude / 2f), 1, 180);
+            Vector2 step = delta / steps;
+            Vector2 applied = Vector2.zero;
+            float blend = 1f - Mathf.Exp(-Time.deltaTime / (steps * Mathf.Max(0.001f, m_grappleSmoothing)));
+            for (int i = 0; i < steps; i++)
+            {
+                Quaternion rotation = Quaternion.Euler(m_pitch + applied.y, m_yaw + applied.x, 0f);
+                GetGrappleAngularLimits(transform.position, rotation, bounds, out Vector2 lower, out Vector2 upper);
+                for (int axis = 0; axis < 2; axis++)
+                {
+                    float clearance = step[axis] >= 0f ? upper[axis] : -lower[axis];
+                    float tension = 1f - Mathf.Clamp01(clearance / Mathf.Max(0.1f, m_grappleTensionAngle));
+                    float scale = 1f / (1f + m_grappleResistance * tension * tension);
+                    // Returning toward the allowed region always retains full sensitivity.
+                    if ((step[axis] > 0f && lower[axis] > 0f) ||
+                        (step[axis] < 0f && upper[axis] < 0f)) scale = 1f;
+                    m_grappleLookScale[axis] = Mathf.Lerp(m_grappleLookScale[axis], scale, blend);
+                    applied[axis] += step[axis] * m_grappleLookScale[axis];
+                }
+            }
+            return applied;
+        }
+
+        private Quaternion ConstrainGrappleRotation(Vector3 position, Quaternion rotation, Bounds bounds, bool safetyLimit = false)
+        {
+            // Re-evaluate after each correction because yaw and pitch interact near corners.
+            for (int i = 0; i < 8; i++)
+            {
+                // The inset is a damping buffer. Only enforce the outer frame immediately,
+                // allowing ordinary target motion to be followed by the existing smoothing.
+                GetGrappleAngularLimits(position, rotation, bounds, out Vector2 lower, out Vector2 upper,
+                    safetyLimit ? 0.001f : m_grappleScreenMargin);
+                float yaw = lower.x <= upper.x ? Mathf.Clamp(0f, lower.x, upper.x) : (lower.x + upper.x) * 0.5f;
+                float pitch = lower.y <= upper.y ? Mathf.Clamp(0f, lower.y, upper.y) : (lower.y + upper.y) * 0.5f;
+                if (Mathf.Abs(yaw) + Mathf.Abs(pitch) < 0.001f) break;
+                Vector3 angles = rotation.eulerAngles;
+                rotation = Quaternion.Euler(Mathf.Clamp(Mathf.DeltaAngle(0f, angles.x) + pitch, -89f, 89f), angles.y + yaw, 0f);
+            }
+            return rotation;
+        }
+
+        private void GetGrappleAngularLimits(Vector3 position, Quaternion rotation, Bounds bounds,
+            out Vector2 lower, out Vector2 upper, float margin = -1f)
+        {
+            if (margin < 0f) margin = m_grappleScreenMargin;
+            float vertical = Mathf.Atan(Mathf.Tan(m_camera.fieldOfView * Mathf.Deg2Rad * 0.5f) *
+                (1f - 2f * margin)) * Mathf.Rad2Deg;
+            float horizontal = Mathf.Atan(Mathf.Tan(vertical * Mathf.Deg2Rad) * m_camera.aspect) * Mathf.Rad2Deg;
+            lower = new Vector2(float.NegativeInfinity, float.NegativeInfinity);
+            upper = new Vector2(float.PositiveInfinity, float.PositiveInfinity);
+            Quaternion inverse = Quaternion.Inverse(rotation);
+            Vector3 center = inverse * (bounds.center - position);
+            // A close object may surround the camera or exceed its FOV. In that case
+            // preserve a visible portion by constraining its bounds centre instead.
+            bool useCenter = center.magnitude <= bounds.extents.magnitude || center.z <= 0f;
+            for (int i = 0; i < (useCenter ? 1 : 8); i++)
+            {
+                Vector3 corner = bounds.center + Vector3.Scale(bounds.extents,
+                    new Vector3((i & 1) == 0 ? -1f : 1f, (i & 2) == 0 ? -1f : 1f, (i & 4) == 0 ? -1f : 1f));
+                Vector3 local = useCenter ? center : inverse * (corner - position);
+                float yaw = Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg;
+                float pitch = -Mathf.Atan2(local.y, local.z) * Mathf.Rad2Deg;
+                lower = Vector2.Max(lower, new Vector2(yaw - horizontal, pitch - vertical));
+                upper = Vector2.Min(upper, new Vector2(yaw + horizontal, pitch + vertical));
+            }
+        }
+
+        private void SetOrbitAngles(Quaternion rotation)
+        {
+            m_yaw += Mathf.DeltaAngle(m_yaw, rotation.eulerAngles.y);
+            m_pitch = Mathf.DeltaAngle(0f, rotation.eulerAngles.x);
         }
 
         private void UpdateVehicleCamera()

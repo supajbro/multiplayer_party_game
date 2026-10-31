@@ -127,7 +127,7 @@ namespace CouchGuys.Gameplay.Weapons
             for (int i = 0; i < WeaponCount; i++)
             {
                 WeaponDefinition weapon = GetWeapon(i);
-                m_magazine[i] = weapon.MagazineCapacity;
+                m_magazine[i] = GetMagazineCapacity(i);
                 m_reserve[i] = weapon.StartingReserve;
             }
             m_inventory.Clear();
@@ -266,7 +266,9 @@ namespace CouchGuys.Gameplay.Weapons
             if (ValidIndex(GetInventoryWeaponIndex(slot)) && !DropOwnedWeaponServer()) return false;
             WeaponDefinition weapon = GetWeapon(index);
             m_inventory[slot] = index;
-            m_storedMagazines[slot] = magazine < 0 ? weapon.MagazineCapacity : Mathf.Clamp(magazine, 0, weapon.MagazineCapacity);
+            int capacity = GetMagazineCapacity(index);
+            m_storedMagazines[slot] = magazine < 0 ? capacity : Mathf.Clamp(magazine, 0, capacity);
+            if (type == PlayerWeaponType.GrappleGun) m_grappleDrainRemainders[slot] = 0f;
             m_storedReserves[slot] = reserve < 0 ? weapon.StartingReserve : Mathf.Max(0, reserve);
             if (equip) EquipInventorySlotServer(slot);
             return true;
@@ -449,7 +451,7 @@ namespace CouchGuys.Gameplay.Weapons
             {
                 WeaponDefinition weapon = GetWeapon(index);
                 if (weapon == null) continue;
-                m_magazine[index] = weapon.MagazineCapacity;
+                m_magazine[index] = GetMagazineCapacity(index);
                 m_reserve[index] = weapon.StartingReserve;
             }
 
@@ -457,7 +459,8 @@ namespace CouchGuys.Gameplay.Weapons
             {
                 WeaponDefinition weapon = GetWeapon(m_inventory[slot]);
                 if (weapon == null) continue;
-                m_storedMagazines[slot] = weapon.MagazineCapacity;
+                m_storedMagazines[slot] = GetMagazineCapacity(m_inventory[slot]);
+                m_grappleDrainRemainders[slot] = 0f;
                 m_storedReserves[slot] = weapon.StartingReserve;
             }
 

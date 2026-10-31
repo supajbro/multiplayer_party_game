@@ -17,6 +17,7 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] public Text m_timerText;
         [SerializeField] public Text m_failureText;
         [SerializeField] public Text m_ammoText;
+        [SerializeField] public Slider m_grappleChargeSlider;
         [SerializeField] public PlayerStatusBar m_healthBar;
         [SerializeField] public PlayerStatusBar m_staminaBar;
         [SerializeField] public Image m_timerFill;

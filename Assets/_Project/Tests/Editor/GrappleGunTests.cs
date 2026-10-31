@@ -21,52 +21,57 @@ namespace CouchGuys.Tests.Editor
         {
             var settings = AssetDatabase.LoadAssetAtPath<GrappleGunSettings>("Assets/_Project/Settings/Weapons/GrappleGun.asset");
             Assert.That(settings, Is.Not.Null);
+            Assert.That(settings.ReleaseOnFlick, Is.False, "Directional flicks should keep the rope attached while fire is held.");
             var player = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Player.prefab");
             Assert.That(new SerializedObject(player.GetComponent<PlayerWeaponController>())
                 .FindProperty("m_grappleSettings").objectReferenceValue, Is.EqualTo(settings));
         }
 
-        [Test]
-        public void UpwardFlickScalesWithCameraSpeedAndRejectsSlowDownwardOrInvalidSamples()
+        [TestCase(0f, -10f, 0f, 1f)]
+        [TestCase(0f, 10f, 0f, -1f)]
+        [TestCase(10f, 0f, 1f, 0f)]
+        [TestCase(-10f, 0f, -1f, 0f)]
+        public void SwipeThrowsInItsDirectionWithStationaryCamera(float yaw, float pitch, float horizontal, float vertical)
         {
             var settings = ScriptableObject.CreateInstance<GrappleGunSettings>();
             try
             {
-                float sweep = 0f;
-                Vector3 tenDegreesUp = Quaternion.AngleAxis(-10f, Vector3.right) * Vector3.forward;
-                Assert.That(settings.TryCalculateFlick(Vector3.forward, tenDegreesUp, 0.2f, ref sweep, out _), Is.False);
-                Assert.That(settings.TryCalculateFlick(tenDegreesUp, Vector3.forward, 0.04f, ref sweep, out _), Is.False);
-                Assert.That(settings.TryCalculateFlick(Vector3.forward, tenDegreesUp, 0.04f, ref sweep, out Vector3 medium), Is.True);
-                Assert.That(medium.y, Is.GreaterThan(0f));
+                Vector2 sweep = Vector2.zero;
+                Vector2 gesture = new Vector2(yaw, pitch);
+                Assert.That(settings.TryCalculateFlick(gesture, Vector3.forward, 0.2f, ref sweep, out _), Is.False);
+                Assert.That(settings.TryCalculateFlick(gesture, Vector3.forward, 0.04f, ref sweep, out Vector3 medium), Is.True);
+                Assert.That(medium.x * horizontal + medium.y * vertical, Is.GreaterThan(0f));
                 Assert.That(medium.z, Is.GreaterThan(0f));
-                Vector3 fastUp = Quaternion.AngleAxis(-30f, Vector3.right) * Vector3.forward;
-                Assert.That(settings.TryCalculateFlick(Vector3.forward, fastUp, 0.04f, ref sweep, out Vector3 fast), Is.True);
+                Assert.That(settings.TryCalculateFlick(gesture * 3f, Vector3.forward, 0.04f, ref sweep, out Vector3 fast), Is.True);
                 Assert.That(fast.magnitude, Is.GreaterThan(medium.magnitude));
                 Assert.That(fast.magnitude, Is.LessThanOrEqualTo(settings.MaximumTargetSpeed));
-                Assert.That(settings.TryCalculateFlick(Vector3.forward, fastUp, 0f, ref sweep, out _), Is.False);
-                Assert.That(settings.TryCalculateFlick(Vector3.forward, fastUp, 1f, ref sweep, out _), Is.False);
-                Assert.That(settings.TryCalculateFlick(Vector3.forward, new Vector3(float.NaN, 0f, 0f), 0.04f, ref sweep, out _), Is.False);
+                Assert.That(settings.TryCalculateFlick(gesture, Vector3.forward, 0f, ref sweep, out _), Is.False);
+                Assert.That(settings.TryCalculateFlick(gesture, Vector3.forward, 1f, ref sweep, out _), Is.False);
+                Assert.That(settings.TryCalculateFlick(new Vector2(float.NaN, 0f), Vector3.forward, 0.04f, ref sweep, out _), Is.False);
+                Assert.That(settings.TryCalculateFlick(new Vector2(10f, 0f), Vector3.right, 0.04f, ref sweep, out Vector3 turned), Is.True);
+                Assert.That(turned.z, Is.LessThan(0f));
             }
             finally { Object.DestroyImmediate(settings); }
         }
 
         [Test]
-        public void TinyCameraJitterDoesNotThrowAndPowerIsConfigurable()
+        public void TinySwipesAndReversalsDoNotThrowAndPowerIsConfigurable()
         {
             var settings = ScriptableObject.CreateInstance<GrappleGunSettings>();
             try
             {
-                float sweep = 0f;
-                Vector3 jitter = Quaternion.AngleAxis(-1f, Vector3.right) * Vector3.forward;
-                Assert.That(settings.TryCalculateFlick(Vector3.forward, jitter, 0.005f, ref sweep, out _), Is.False);
+                Vector2 sweep = Vector2.zero;
+                Vector2 jitter = new Vector2(0f, -1f);
                 Assert.That(settings.TryCalculateFlick(jitter, Vector3.forward, 0.005f, ref sweep, out _), Is.False);
-                Assert.That(sweep, Is.Zero);
+                Assert.That(settings.TryCalculateFlick(-jitter, Vector3.forward, 0.005f, ref sweep, out _), Is.False);
+                Assert.That(sweep.magnitude, Is.EqualTo(1f).Within(0.001f));
+                Assert.That(settings.TryCalculateFlick(new Vector2(4f, 0f), Vector3.forward, 0.02f, ref sweep, out _), Is.False);
+                Assert.That(settings.TryCalculateFlick(new Vector2(-4f, 0f), Vector3.forward, 0.02f, ref sweep, out _), Is.False);
                 var serialized = new SerializedObject(settings);
                 serialized.FindProperty("m_minimumPower").floatValue = 5f;
                 serialized.FindProperty("m_maximumPower").floatValue = 5f;
                 serialized.ApplyModifiedPropertiesWithoutUndo();
-                Vector3 fastUp = Quaternion.AngleAxis(-30f, Vector3.right) * Vector3.forward;
-                Assert.That(settings.TryCalculateFlick(Vector3.forward, fastUp, 0.04f, ref sweep, out Vector3 impulse), Is.True);
+                Assert.That(settings.TryCalculateFlick(new Vector2(0f, -30f), Vector3.forward, 0.04f, ref sweep, out Vector3 impulse), Is.True);
                 Assert.That(impulse.magnitude, Is.EqualTo(5f).Within(0.001f));
             }
             finally { Object.DestroyImmediate(settings); }

@@ -60,7 +60,7 @@ namespace CouchGuys.Editor
         {
             GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(
                 type == PlayerWeaponType.GrappleGun
-                    ? "Assets/_Project/Resources/Weapons/GrappleGunModel.prefab"
+                    ? "Assets/_Project/Prefabs/Weapons/GrappleGun.prefab"
                     : $"Assets/_Project/Models/CouchGuy/Weapons/{type}.fbx");
             if (model == null) throw new UnityException($"Missing exported weapon {type}.");
             var root = new GameObject(type.ToString());

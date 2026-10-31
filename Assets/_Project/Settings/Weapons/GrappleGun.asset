@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4701cee38bdd4a4da602212b02041d7e, type: 3}
   m_Name: GrappleGun
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Weapons.GrappleGunSettings
+  m_depletionSeconds: 30
   m_enableFlick: 1
   m_minimumAngularSpeed: 100
   m_fullPowerAngularSpeed: 500
@@ -23,7 +24,7 @@ MonoBehaviour:
   m_upwardWeight: 0.85
   m_maximumTargetSpeed: 40
   m_couchSpin: 3
-  m_releaseOnFlick: 1
+  m_releaseOnFlick: 0
   m_pullPause: 0.5
   m_momentumDuration: 3
   m_airDrag: 1.5

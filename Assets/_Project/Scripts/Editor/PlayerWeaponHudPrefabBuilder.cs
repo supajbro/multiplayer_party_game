@@ -29,6 +29,7 @@ namespace CouchGuys.Editor
         private Text m_timerText;
         private Text m_failureText;
         private Text m_ammoText;
+        private Slider m_grappleChargeSlider;
         private PlayerStatusBar m_healthBar;
         private PlayerStatusBar m_staminaBar;
         private Image m_timerFill;
@@ -663,6 +664,23 @@ namespace CouchGuys.Editor
             m_ammoPanel = panel.gameObject;
             m_ammoText = Label("AmmoText", panel, string.Empty, 22, TextAnchor.MiddleRight, FontStyle.Bold);
             Stretch(m_ammoText.rectTransform, 14f);
+            RectTransform track = Rect("GrappleChargeSlider", panel);
+            SetRect(track, Vector2.zero, new Vector2(1f, 0f), new Vector2(0f, 8f), new Vector2(-28f, 10f), new Vector2(0.5f, 0f));
+            Image background = track.gameObject.AddComponent<Image>();
+            background.sprite = m_roundedSprite;
+            background.type = Image.Type.Sliced;
+            background.color = Inactive;
+            background.raycastTarget = false;
+            Image fill = Fill(track, "ChargeFill");
+            fill.raycastTarget = false;
+            fill.rectTransform.offsetMin = fill.rectTransform.offsetMax = Vector2.zero;
+            m_grappleChargeSlider = track.gameObject.AddComponent<Slider>();
+            m_grappleChargeSlider.fillRect = fill.rectTransform;
+            m_grappleChargeSlider.interactable = false;
+            m_grappleChargeSlider.transition = Selectable.Transition.None;
+            m_grappleChargeSlider.navigation = new Navigation { mode = Navigation.Mode.None };
+            m_grappleChargeSlider.SetValueWithoutNotify(1f);
+            track.gameObject.SetActive(false);
         }
 
         private RectTransform Panel(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 position, Vector2 size, Color outline, bool shadow = true, Vector2? pivot = null)

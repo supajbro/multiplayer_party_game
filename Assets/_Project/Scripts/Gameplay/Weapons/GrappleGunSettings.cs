@@ -5,12 +5,18 @@ namespace CouchGuys.Gameplay.Weapons
     [CreateAssetMenu(fileName = "GrappleGun", menuName = "Couch Guys/Weapons/Grapple Gun")]
     public sealed class GrappleGunSettings : ScriptableObject
     {
-        [Header("Upward camera flick")]
+        [Header("Charge")]
+        [InspectorName("Depletion Rate (Seconds)")]
+        [Tooltip("Total seconds of attached grapple use available from a full charge. Charge does not regenerate.")]
+        [SerializeField, Min(0.1f)] private float m_depletionSeconds = 30f;
+        public float DepletionSeconds => Mathf.Max(0.1f, m_depletionSeconds);
+
+        [Header("Directional camera flick")]
         [SerializeField] private bool m_enableFlick = true;
-        [Tooltip("Upward camera speed in degrees/second needed to start a throw.")]
+        [Tooltip("Intended camera speed before grapple resistance, in degrees/second, needed to start a throw.")]
         [SerializeField, Min(1f)] private float m_minimumAngularSpeed = 100f;
         [SerializeField, Min(1f)] private float m_fullPowerAngularSpeed = 500f;
-        [Tooltip("Minimum upward sweep in degrees. Filters small camera jitters.")]
+        [Tooltip("Minimum consistent swipe in degrees. Filters small camera jitters.")]
         [SerializeField, Min(0.1f)] private float m_minimumSweep = 6f;
         [SerializeField, Min(0f)] private float m_cooldown = 0.65f;
 
@@ -18,13 +24,15 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField, Min(0f)] private float m_minimumPower = 14f;
         [SerializeField, Min(0f)] private float m_maximumPower = 32f;
         [SerializeField, Min(0f)] private float m_forwardWeight = 1f;
+        [Tooltip("Weight along the swipe direction (up, down, left or right), relative to forward weight.")]
+        [InspectorName("Swipe Direction Weight")]
         [SerializeField, Min(0f)] private float m_upwardWeight = 0.85f;
         [SerializeField, Min(1f)] private float m_maximumTargetSpeed = 40f;
         [SerializeField, Min(0f)] private float m_couchSpin = 3f;
 
         [Header("Momentum and release")]
-        [Tooltip("Automatically let go when flicking so the grapple cannot reel the throw back in.")]
-        [SerializeField] private bool m_releaseOnFlick = true;
+        [Tooltip("Opt in to detaching after a flick. Leave off to keep the rope attached while holding fire.")]
+        [SerializeField] private bool m_releaseOnFlick = false;
         [Tooltip("When auto release is off, suspend pulling briefly after a flick.")]
         [SerializeField, Min(0f)] private float m_pullPause = 0.5f;
         [Tooltip("Preserve throw momentum this long before normal character damping / couch safety caps resume.")]
@@ -42,37 +50,38 @@ namespace CouchGuys.Gameplay.Weapons
         public float AirDrag => Mathf.Max(0f, m_airDrag);
         public float GravityMultiplier => Mathf.Max(0.1f, m_gravityMultiplier);
 
-        // Only direction samples arrive from the owner. Power is derived from this
-        // server-side settings asset, never from an impulse supplied by a client.
-        public bool TryCalculateFlick(Vector3 previous, Vector3 current, float deltaTime,
-            ref float upwardSweep, out Vector3 impulse)
+        // Raw look angles ride the existing heartbeat. Power, cooldown and application
+        // remain server-authoritative; the camera's visibility correction is never a gesture.
+        public bool TryCalculateFlick(Vector2 lookDelta, Vector3 aimDirection, float deltaTime,
+            ref Vector2 sweep, out Vector3 impulse)
         {
             impulse = Vector3.zero;
             if (!m_enableFlick || deltaTime < 0.005f || deltaTime > 0.25f ||
-                !float.IsFinite(deltaTime) || !Finite(previous) || !Finite(current) ||
-                previous.sqrMagnitude < 0.5f || current.sqrMagnitude < 0.5f)
+                !float.IsFinite(deltaTime) || !Finite(aimDirection) ||
+                !float.IsFinite(lookDelta.x) || !float.IsFinite(lookDelta.y) ||
+                aimDirection.sqrMagnitude < 0.5f)
             {
-                upwardSweep = 0f;
+                sweep = Vector2.zero;
                 return false;
             }
-            previous.Normalize();
-            current.Normalize();
-            float rise = (Mathf.Asin(Mathf.Clamp(current.y, -1f, 1f)) -
-                Mathf.Asin(Mathf.Clamp(previous.y, -1f, 1f))) * Mathf.Rad2Deg;
-            float speed = rise / deltaTime;
+            float speed = lookDelta.magnitude / deltaTime;
             if (speed < m_minimumAngularSpeed)
             {
-                upwardSweep = 0f;
+                sweep = Vector2.zero;
                 return false;
             }
-            upwardSweep += rise;
-            if (upwardSweep < m_minimumSweep) return false;
-            upwardSweep = 0f;
-            Vector3 forward = Vector3.ProjectOnPlane(current, Vector3.up);
-            if (forward.sqrMagnitude < 0.001f) forward = Vector3.ProjectOnPlane(previous, Vector3.up);
+            // Reversals start a new sweep rather than building power by wiggling.
+            if (Vector2.Dot(sweep, lookDelta) < 0f) sweep = Vector2.zero;
+            sweep += lookDelta;
+            if (sweep.magnitude < m_minimumSweep) return false;
+            Vector2 swipe = sweep.normalized;
+            sweep = Vector2.zero;
+            Vector3 forward = Vector3.ProjectOnPlane(aimDirection, Vector3.up);
             if (forward.sqrMagnitude < 0.001f) forward = Vector3.forward;
-            Vector3 direction = forward.normalized * Mathf.Max(0f, m_forwardWeight) +
-                Vector3.up * Mathf.Max(0f, m_upwardWeight);
+            forward.Normalize();
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            Vector3 direction = forward * Mathf.Max(0f, m_forwardWeight) +
+                (right * swipe.x - Vector3.up * swipe.y) * Mathf.Max(0f, m_upwardWeight);
             float strength = Mathf.InverseLerp(m_minimumAngularSpeed,
                 Mathf.Max(m_minimumAngularSpeed + 1f, m_fullPowerAngularSpeed), speed);
             impulse = direction.normalized * Mathf.Min(MaximumTargetSpeed,

@@ -11,10 +11,36 @@ namespace CouchGuys.Gameplay.Weapons
     public sealed partial class PlayerWeaponController
     {
         [SerializeField] private GrappleGunSettings m_grappleSettings;
-        private Vector3 m_previousGrappleAim;
+        // Fixed-point charge uses the existing per-slot ammo/pickup storage and owner RPC.
+        private const int GrappleChargeCapacity = 10000;
+        private readonly float[] m_grappleDrainRemainders = new float[InventorySlotCount];
+        private float m_nextGrappleChargeSync;
+        public float GrappleChargeFraction => Mathf.Clamp01(
+            m_magazine[(int)PlayerWeaponType.GrappleGun] / (float)GrappleChargeCapacity);
+
+        private int GetMagazineCapacity(int index) => index == (int)PlayerWeaponType.GrappleGun
+            ? GrappleChargeCapacity : GetWeapon(index).MagazineCapacity;
+
+        private bool DepleteGrappleCharge()
+        {
+            int index = (int)PlayerWeaponType.GrappleGun;
+            int slot = SelectedHotbarSlot;
+            float duration = m_grappleSettings != null ? m_grappleSettings.DepletionSeconds : 30f;
+            m_grappleDrainRemainders[slot] += Time.fixedDeltaTime * GrappleChargeCapacity / duration;
+            int spent = Mathf.FloorToInt(m_grappleDrainRemainders[slot]);
+            m_grappleDrainRemainders[slot] -= spent;
+            m_magazine[index] = Mathf.Max(0, m_magazine[index] - spent);
+            if (m_magazine[index] == 0 || Time.unscaledTime >= m_nextGrappleChargeSync)
+            {
+                if (Owner.IsValid) SendWeaponStateTargetRpc(Owner, index, m_magazine[index], m_reserve[index], false);
+                m_nextGrappleChargeSync = Time.unscaledTime + 0.1f;
+            }
+            return m_magazine[index] > 0;
+        }
         private float m_previousGrappleSampleTime;
         private float m_previousGrappleReceiptTime;
-        private float m_grappleUpwardSweep;
+        private Vector2 m_grappleSweep;
+        private Vector2 m_pendingGrappleLook;
         private float m_nextServerFlickTime;
         private float m_resumeGrapplePullAt;
         // One server simulation per target, including when several shooters hit it.
@@ -26,21 +52,61 @@ namespace CouchGuys.Gameplay.Weapons
         private float m_nextGrappleHeartbeat;
         private bool m_localGrappleHeld;
         private LineRenderer m_grappleLine;
+        private Transform m_cameraBoundsTarget;
+        private Renderer[] m_cameraBoundsRenderers;
+
+        public void RecordLocalGrappleLook(Vector2 orbitDelta)
+        {
+            if (isActiveAndEnabled && IsClientInitialized && IsOwner && m_localGrappleHeld)
+                m_pendingGrappleLook += orbitDelta;
+        }
+
+        // Read-only local presentation state; no additional replication or predicted attachment.
+        public bool TryGetLocalGrappleBounds(out Bounds bounds)
+        {
+            bounds = default;
+            NetworkObject target = m_grappleTarget.Value;
+            if (!isActiveAndEnabled || !IsOwner || !IsClientInitialized || !m_localGrappleHeld ||
+                m_input == null || !m_input.isActiveAndEnabled || !m_input.ShootHeld ||
+                m_equippedIndex.Value != (int)PlayerWeaponType.GrappleGun ||
+                m_health == null || !m_health.IsAlive || m_health.IsKnockedDown ||
+                (m_couchCarrier != null && m_couchCarrier.IsCarrying) ||
+                target == null || !target.IsSpawned || !target.gameObject.activeInHierarchy)
+                return false;
+
+            if (m_cameraBoundsTarget != target.transform)
+            {
+                m_cameraBoundsTarget = target.transform;
+                m_cameraBoundsRenderers = target.GetComponentsInChildren<Renderer>(true);
+            }
+            bool found = false;
+            foreach (Renderer renderer in m_cameraBoundsRenderers)
+            {
+                // Ropes, trails and particles can extend far beyond the attached object.
+                if (renderer == null || !renderer.enabled || !renderer.gameObject.activeInHierarchy ||
+                    !(renderer is MeshRenderer || renderer is SkinnedMeshRenderer)) continue;
+                if (!found) bounds = renderer.bounds;
+                else bounds.Encapsulate(renderer.bounds);
+                found = true;
+            }
+            if (!found) bounds = new Bounds(target.transform.TransformPoint(m_grappleLocalPoint.Value), Vector3.zero);
+            return true;
+        }
 
         private void EnsureGrappleModel()
         {
+            if (m_weaponModels[(int)PlayerWeaponType.GrappleGun] != null) return;
             if (FindDescendant(transform, "Weapon_GrappleGun") != null) return;
             Transform pistol = m_weaponModels[0] != null ? m_weaponModels[0] : FindDescendant(transform, "Weapon_Pistol");
             if (pistol == null) return;
-            GameObject prefab = Resources.Load<GameObject>("Weapons/GrappleGunModel");
+            GameObject prefab = Resources.Load<GrappleGunAssets>("Weapons/GrappleGunAssets")?.EquippedPrefab;
             if (prefab == null) return;
             GameObject model = Instantiate(prefab, pistol.parent, false);
             model.name = "Weapon_GrappleGun";
             model.transform.localPosition = pistol.localPosition;
-            model.transform.localRotation = pistol.localRotation;
-            // The imported character rig is scaled up (50 in the player prefab).
-            // This Unity primitive is authored in metres, unlike the FBX weapons,
-            // so compensate for the socket's scale before positioning its muzzle.
+            model.transform.rotation = Quaternion.LookRotation(
+                pistol.TransformDirection(Vector3.down), pistol.TransformDirection(Vector3.forward));
+            // The prefab is authored in metres; compensate for the imported hand rig's scale.
             Vector3 parentScale = pistol.parent.lossyScale;
             Vector3 size = prefab.transform.localScale;
             model.transform.localScale = new Vector3(
@@ -53,19 +119,22 @@ namespace CouchGuys.Gameplay.Weapons
         {
             if (!IsOwner) return;
             bool held = m_equippedIndex.Value == (int)PlayerWeaponType.GrappleGun &&
+                m_magazine[(int)PlayerWeaponType.GrappleGun] > 0 &&
                 m_input != null && m_input.isActiveAndEnabled && m_input.ShootHeld &&
                 m_health != null && m_health.IsAlive && !m_health.IsKnockedDown &&
                 !(m_couchCarrier != null && m_couchCarrier.IsCarrying);
             if (!held)
             {
                 if (m_localGrappleHeld && IsClientInitialized)
-                    ReleaseGrappleServerRpc(CurrentGrappleAimDirection(), Time.unscaledTime);
+                    ReleaseGrappleServerRpc(CurrentGrappleAimDirection(), m_pendingGrappleLook, Time.unscaledTime);
                 m_localGrappleHeld = false;
+                m_pendingGrappleLook = Vector2.zero;
                 return;
             }
             if (!m_localGrappleHeld && Time.time >= m_nextLocalRequestTime)
             {
                 m_localGrappleHeld = true;
+                m_pendingGrappleLook = Vector2.zero;
                 Ray ray = m_aimCamera != null
                     ? m_aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f))
                     : new Ray(m_health.AimPoint, transform.forward);
@@ -75,7 +144,8 @@ namespace CouchGuys.Gameplay.Weapons
             }
             else if (m_localGrappleHeld && Time.unscaledTime >= m_nextGrappleHeartbeat)
             {
-                HoldGrappleServerRpc(CurrentGrappleAimDirection(), Time.unscaledTime);
+                HoldGrappleServerRpc(CurrentGrappleAimDirection(), m_pendingGrappleLook, Time.unscaledTime);
+                m_pendingGrappleLook = Vector2.zero;
                 m_nextGrappleHeartbeat = Time.unscaledTime + 0.04f;
             }
         }
@@ -92,6 +162,7 @@ namespace CouchGuys.Gameplay.Weapons
             int index = (int)PlayerWeaponType.GrappleGun;
             WeaponDefinition weapon = GetWeapon(index);
             if (!CanHandleWeaponServer || m_equippedIndex.Value != index ||
+                m_magazine[index] <= 0 ||
                 GetInventoryWeaponIndex(SelectedHotbarSlot) != index ||
                 Time.time < m_switchCompleteAt || Time.time < m_nextServerFireTime[index] ||
                 !float.IsFinite(sampleTime) || !IsFinite(aimOrigin) || !IsFinite(aimDirection) || aimDirection.sqrMagnitude < 0.5f ||
@@ -125,30 +196,29 @@ namespace CouchGuys.Gameplay.Weapons
             m_grappleLocalPoint.Value = target.transform.InverseTransformPoint(hit.point);
             m_grappleTarget.Value = target;
             m_grappleLeaseUntil = Time.unscaledTime + 0.6f;
-            m_previousGrappleAim = forward;
             m_previousGrappleSampleTime = sampleTime;
             m_previousGrappleReceiptTime = Time.unscaledTime;
-            m_grappleUpwardSweep = 0f;
+            m_grappleSweep = Vector2.zero;
             m_resumeGrapplePullAt = 0f;
         }
 
         [ServerRpc]
-        private void HoldGrappleServerRpc(Vector3 aimDirection, float sampleTime)
+        private void HoldGrappleServerRpc(Vector3 aimDirection, Vector2 lookDelta, float sampleTime)
         {
             if (m_grappleTarget.Value == null) return;
-            UpdateGrappleFlickServer(aimDirection, sampleTime);
+            UpdateGrappleFlickServer(aimDirection, lookDelta, sampleTime);
             m_grappleLeaseUntil = Time.unscaledTime + 0.6f;
         }
 
         [ServerRpc]
-        private void ReleaseGrappleServerRpc(Vector3 aimDirection, float sampleTime)
+        private void ReleaseGrappleServerRpc(Vector3 aimDirection, Vector2 lookDelta, float sampleTime)
         {
-            // Include the final camera pose: a flick and release may happen between heartbeats.
-            UpdateGrappleFlickServer(aimDirection, sampleTime);
+            // Include the final gesture: a flick and release may happen between heartbeats.
+            UpdateGrappleFlickServer(aimDirection, lookDelta, sampleTime);
             StopGrappleServer();
         }
 
-        private void UpdateGrappleFlickServer(Vector3 aimDirection, float sampleTime)
+        private void UpdateGrappleFlickServer(Vector3 aimDirection, Vector2 lookDelta, float sampleTime)
         {
             NetworkObject target = m_grappleTarget.Value;
             if (m_grappleSettings == null || !CanHandleWeaponServer ||
@@ -160,17 +230,15 @@ namespace CouchGuys.Gameplay.Weapons
             // Use sample spacing to tolerate packets arriving in a batch, but never
             // let a client compress a long server interval into a high-power flick.
             float delta = Mathf.Max(sampleDelta, Time.unscaledTime - m_previousGrappleReceiptTime - 0.1f, 0.016f);
-            Vector3 previous = m_previousGrappleAim;
-            m_previousGrappleAim = aimDirection.normalized;
             m_previousGrappleSampleTime = sampleTime;
             m_previousGrappleReceiptTime = Time.unscaledTime;
             if (Time.unscaledTime < m_nextServerFlickTime)
             {
-                m_grappleUpwardSweep = 0f;
+                m_grappleSweep = Vector2.zero;
                 return;
             }
-            if (!m_grappleSettings.TryCalculateFlick(previous, aimDirection, delta,
-                ref m_grappleUpwardSweep, out Vector3 impulse)) return;
+            if (!m_grappleSettings.TryCalculateFlick(lookDelta, aimDirection, delta,
+                ref m_grappleSweep, out Vector3 impulse)) return;
             Vector3 muzzle = GetMuzzlePosition((int)PlayerWeaponType.GrappleGun, m_health.AimPoint);
             if ((target.transform.TransformPoint(m_grappleLocalPoint.Value) - muzzle).sqrMagnitude >
                 GetWeapon((int)PlayerWeaponType.GrappleGun).Range * GetWeapon((int)PlayerWeaponType.GrappleGun).Range) return;
@@ -231,6 +299,11 @@ namespace CouchGuys.Gameplay.Weapons
                 StopGrappleServer();
                 return;
             }
+            if (!DepleteGrappleCharge())
+            {
+                StopGrappleServer();
+                return;
+            }
             if (Time.unscaledTime < m_resumeGrapplePullAt) return;
             // Ease off near the muzzle without cancelling existing momentum on release.
             float speed = Mathf.Min(weapon.PullSpeed, Mathf.Max(0f, offset.magnitude - 1.1f) * 4f);
@@ -251,6 +324,11 @@ namespace CouchGuys.Gameplay.Weapons
         private void StopGrappleServer()
         {
             if (!IsServerInitialized) return;
+            if (m_grappleTarget.Value != null && Owner.IsValid)
+            {
+                int index = (int)PlayerWeaponType.GrappleGun;
+                SendWeaponStateTargetRpc(Owner, index, m_magazine[index], m_reserve[index], false);
+            }
             if (!ReferenceEquals(m_claimedGrappleTarget, null) &&
                 GrappleClaims.TryGetValue(m_claimedGrappleTarget, out PlayerWeaponController claimant) && claimant == this)
             {
