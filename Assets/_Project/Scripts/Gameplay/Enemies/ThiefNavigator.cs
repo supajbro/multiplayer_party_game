@@ -320,12 +320,11 @@ namespace CouchGuys.Gameplay.Enemies
         private void UpdateStealObjective(CouchCarryController couch)
         {
             if (couch.IsLoaded) return;
-            m_weapon?.SetTargetServer(null);
             if (couch.ThiefCarrierCountServer() >= MaximumThiefCouchCarriers)
             {
                 // Leave two points open so players can contest the couch while the
                 // remaining thieves escort or screen the carriers.
-                if ((m_memberIndex & 1) == 0) MoveTo(couch.transform.position, 3f);
+                if ((m_memberIndex & 1) == 0) UpdateEscortObjective(couch);
                 else UpdateFightObjective(GetClosestLivingTarget());
                 return;
             }
@@ -334,11 +333,12 @@ namespace CouchGuys.Gameplay.Enemies
             {
                 // Split full squads into escort and combat roles rather than having
                 // every thief crowd the same couch position.
-                if ((m_memberIndex & 1) == 0) MoveTo(couch.transform.position, 3f);
+                if ((m_memberIndex & 1) == 0) UpdateEscortObjective(couch);
                 else UpdateFightObjective(GetClosestLivingTarget());
                 return;
             }
 
+            m_weapon?.SetTargetServer(null);
             if ((point.transform.position - transform.position).sqrMagnitude <=
                 CouchGrabDistance * CouchGrabDistance &&
                 couch.TryGrabPointServer(this, point.PointIndex))
@@ -349,6 +349,14 @@ namespace CouchGuys.Gameplay.Enemies
             }
 
             MoveTo(point.transform.position, 0.65f);
+        }
+
+        private void UpdateEscortObjective(CouchCarryController couch)
+        {
+            // Only non-combat roles clear the target. Clearing it before choosing
+            // a combat role restarts the weapon's reaction delay every frame.
+            m_weapon?.SetTargetServer(null);
+            MoveTo(couch.transform.position, 3f);
         }
 
         private void UpdateCarryingObjective(PlayerHealth closestPlayer)

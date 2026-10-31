@@ -1,6 +1,9 @@
 using System;
 using System.Reflection;
 using CouchGuys.Gameplay.Enemies;
+using CouchGuys.Gameplay.Couch;
+using CouchGuys.Player;
+using FishNet.Object.Synchronizing;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -10,6 +13,53 @@ namespace CouchGuys.Tests.Editor
 {
     public sealed class ThiefSettingsTests
     {
+        [TestCase(1, true)]
+        [TestCase(0, false)]
+        public void UnavailableCouchCombatPreservesWeaponReactionDelay(int memberIndex, bool fighting)
+        {
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            var root = new GameObject("Thief combat transition test");
+            root.SetActive(false);
+            try
+            {
+                var thief = new GameObject("Thief");
+                thief.transform.SetParent(root.transform);
+                var weapon = thief.AddComponent<EnemyWeapon>();
+                var navigator = thief.AddComponent<ThiefNavigator>();
+                thief.GetComponent<NavMeshAgent>().enabled = false;
+                var playerObject = new GameObject("Player");
+                playerObject.transform.SetParent(root.transform);
+                var player = playerObject.AddComponent<PlayerHealth>();
+                ((SyncVar<float>)typeof(PlayerHealth).GetField("m_currentHealth", flags)
+                    .GetValue(player)).Value = 100f;
+                var couchObject = new GameObject("Couch without available grips");
+                couchObject.transform.SetParent(root.transform);
+                var couch = couchObject.AddComponent<CouchCarryController>();
+
+                typeof(ThiefNavigator).GetField("m_weapon", flags).SetValue(navigator, weapon);
+                typeof(ThiefNavigator).GetField("m_memberIndex", flags).SetValue(navigator, memberIndex);
+                typeof(ThiefNavigator).GetField("m_closestPlayer", flags).SetValue(navigator, player);
+                typeof(ThiefNavigator).GetField("m_nextPlayerSearchTime", flags)
+                    .SetValue(navigator, float.PositiveInfinity);
+                typeof(EnemyWeapon).GetField("m_target", flags).SetValue(weapon, player);
+                // An elapsed reaction timer must stay elapsed on subsequent combat updates.
+                typeof(EnemyWeapon).GetField("m_reactionEndsAt", flags).SetValue(weapon, -1f);
+                MethodInfo update = typeof(ThiefNavigator).GetMethod("UpdateStealObjective", flags);
+                for (int frame = 0; frame < 3; frame++)
+                    update.Invoke(navigator, new object[] { couch });
+
+                Assert.That(typeof(EnemyWeapon).GetField("m_target", flags).GetValue(weapon),
+                    Is.EqualTo(fighting ? player : null));
+                if (fighting)
+                    Assert.That(typeof(EnemyWeapon).GetField("m_reactionEndsAt", flags).GetValue(weapon),
+                        Is.EqualTo(-1f), "Combat must not restart the firing reaction delay each frame.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
         [TestCase(EnemyWeaponType.Pistol)]
         [TestCase(EnemyWeaponType.AssaultRifle)]
         [TestCase(EnemyWeaponType.Shotgun)]
