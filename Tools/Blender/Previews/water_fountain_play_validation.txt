@@ -1,0 +1,23 @@
+PASS near culling band 0 expected 0
+PASS near particle activation
+PASS near independent offscreen fountain stays off
+PASS medium culling band 1 expected 1
+PASS medium particle activation
+PASS medium independent offscreen fountain stays off
+PASS Medium emission reduced to 30%
+PASS far culling band -1 expected -1
+PASS far particle activation
+PASS far independent offscreen fountain stays off
+PASS offscreen culling band -1 expected -1
+PASS offscreen particle activation
+PASS offscreen independent offscreen fountain stays off
+PASS return culling band 0 expected 0
+PASS return particle activation
+PASS return independent offscreen fountain stays off
+PASS Jet has upward and falling particles; world heights 0.8753526..3.355229
+PASS Landing splashes and expanding ripples simulate
+PASS camera replacement culling band 0 expected 0
+PASS camera replacement particle activation
+PASS camera replacement independent offscreen fountain stays off
+PASS Basin shader visibly changes across play time
+Failures: 0

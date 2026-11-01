@@ -138,13 +138,9 @@ namespace CouchGuys.Editor
                 Cube(root, "LegL", new Vector3(-0.82f, 0.27f, 0f), new Vector3(0.2f, 0.55f, 0.55f), "MetalDark");
                 Cube(root, "LegR", new Vector3(0.82f, 0.27f, 0f), new Vector3(0.2f, 0.55f, 0.55f), "MetalDark");
             });
-            GameObject fountain = CreatePrefab("Fountain_Placeholder", new Vector2(5.5f, 5.5f), 1f, root =>
-            {
-                Cube(root, "Basin", new Vector3(0f, 0.35f, 0f), new Vector3(5.5f, 0.7f, 5.5f), "Concrete");
-                Cube(root, "Water", new Vector3(0f, 0.73f, 0f), new Vector3(4.7f, 0.12f, 4.7f), "Water");
-                Cube(root, "Centre", new Vector3(0f, 1.25f, 0f), new Vector3(1.15f, 1.7f, 1.15f), "Concrete");
-                Cube(root, "Jet", new Vector3(0f, 2.45f, 0f), new Vector3(0.22f, 1.1f, 0.22f), "Water");
-            });
+            GameObject fountain = AssetDatabase.LoadAssetAtPath<GameObject>(WaterFountainAuthoring.PrefabPath);
+            if (fountain == null)
+                throw new System.InvalidOperationException("Create the saved water_fountain prefab using Tools > Couch Guys > Water Fountain first.");
             GameObject statue = CreatePrefab("Statue_Placeholder", new Vector2(3.2f, 3.2f), 0.8f, root =>
             {
                 Cube(root, "Pedestal", new Vector3(0f, 0.65f, 0f), new Vector3(2.7f, 1.3f, 2.7f), "Concrete");

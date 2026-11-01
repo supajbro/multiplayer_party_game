@@ -1,0 +1,3 @@
+Validated saved prefab: 3 LODs, 4 live particle simulations, no particle collisions, 7 box colliders, material/shader validity, original prefab GUID, root fileID and generator reference.
+Play-mode culling, trajectories and water animation passed; see water_fountain_play_validation.txt.
+
