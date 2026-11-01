@@ -32,6 +32,10 @@ namespace CouchGuys.ProceduralGeneration
         [Tooltip("Optional large home used for one-lot blocks. Empty uses the normal house selection.")]
         [SerializeField] private GameObject m_mansionPrefab;
 
+        [Tooltip("Equal-weight variants used only for easy house slots. Empty preserves the existing house.")]
+        [SerializeField] private GameObject[] m_easyHouseVariants = Array.Empty<GameObject>();
+        public GameObject[] EasyHouseVariants => m_easyHouseVariants;
+
         [Header("Lots")]
         [SerializeField] private WeightedLot[] m_lots = Array.Empty<WeightedLot>();
         [SerializeField, Range(0f, 1f)] private float m_lotDensity = 1f;

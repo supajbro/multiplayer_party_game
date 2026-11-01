@@ -200,8 +200,8 @@ for obj in root.children_recursive:
     obj.select_set(True)
 bpy.context.view_layer.objects.active=root
 bpy.context.preferences.filepaths.save_version = 0
-bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT/'CouchGuys_House_02.blend'))
-bpy.ops.export_scene.fbx(filepath=str(OUTPUT/'CouchGuys_House_02.fbx'),use_selection=True,
+bpy.ops.wm.save_as_mainfile(filepath=str(OUTPUT/'SmallHouses/small_house_01.blend'))
+bpy.ops.export_scene.fbx(filepath=str(OUTPUT/'SmallHouses/small_house_01.fbx'),use_selection=True,
     object_types={'MESH','EMPTY'},apply_unit_scale=True,axis_forward='-Z',axis_up='Y',
     use_mesh_modifiers=True,bake_anim=False,add_leaf_bones=False)
 print('HOUSE02_BUILD_OK',len(root.children_recursive),'objects',

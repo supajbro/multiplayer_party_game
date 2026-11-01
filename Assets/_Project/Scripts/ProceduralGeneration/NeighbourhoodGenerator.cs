@@ -3541,6 +3541,25 @@ namespace CouchGuys.ProceduralGeneration
                 ? roadZone
                 : CalculateZone(GridToLocal(candidate.Road).y);
             SelectHouseForZone(zone, ref definition, ref prefab);
+            if (zone <= SuburbZone.Easy && prefab != null &&
+                prefab.TryGetComponent(out GeneratedProperty easyProperty) && easyProperty.IsEasyDeliveryHouse)
+            {
+                GameObject[] variants = m_selectedRegion != null ? m_selectedRegion.EasyHouseVariants : null;
+                if (variants != null && variants.Length > 0)
+                {
+                    // Separate deterministic stream preserves layout and medium/hard selection.
+                    int slotSeed = unchecked(CurrentSeed * 486187739 + candidate.Anchor.X * 73856093 + candidate.Anchor.Y * 19349663);
+                    var variantRandom = new System.Random(slotSeed);
+                    GameObject selected = null;
+                    int validCount = 0;
+                    foreach (GameObject variant in variants)
+                        if (ValidateLotPrefab(variant) != null &&
+                            variant.TryGetComponent(out GeneratedProperty identity) && identity.IsEasyDeliveryHouse &&
+                            identity.GridFootprint == easyProperty.GridFootprint &&
+                            variantRandom.Next(++validCount) == 0) selected = variant;
+                    if (selected != null) prefab = selected;
+                }
+            }
             GameObject property = prefab != null
                 ? Instantiate(prefab, centre, Quaternion.identity, parent)
                 : CreatePlaceholderHouse(centre, footprint);

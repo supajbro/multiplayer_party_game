@@ -510,6 +510,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 609861a003c4cdc47acfc5ab0d313c99, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.ProceduralGeneration.NeighbourhoodGenerator
+  m_distantSuburbs: {fileID: 0}
   m_generateOnStart: 1
   m_useRandomSeed: 1
   m_seed: 12345
@@ -1475,7 +1476,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c819270627d841b7abd917cd596d7056, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.UI.MainMenuMusic
   m_clip: {fileID: 8300000, guid: 0332dc568768e5c40b160843280ca566, type: 3}
   m_volume: 0.5

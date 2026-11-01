@@ -16,14 +16,13 @@ namespace CouchGuys.Editor
         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets,
             string[] movedAssets, string[] movedFromAssetPaths)
         {
-            if (!importedAssets.Contains(HousePrefabBuilder.House02ModelPath) &&
-                !importedAssets.Contains(HousePrefabBuilder.House03ModelPath)) return;
+            if (!importedAssets.Contains(HousePrefabBuilder.House03ModelPath)) return;
             EditorApplication.delayCall += () =>
             {
                 if (!EditorApplication.isPlayingOrWillChangePlaymode)
                 {
                     foreach (string path in importedAssets)
-                        if (path == HousePrefabBuilder.House02ModelPath || path == HousePrefabBuilder.House03ModelPath)
+                        if (path == HousePrefabBuilder.House03ModelPath)
                             HousePrefabBuilder.RebuildImportedHouse(path);
                     HousePrefabBuilder.EnsureHousePrefabs();
                 }
@@ -33,7 +32,7 @@ namespace CouchGuys.Editor
         private void OnPreprocessModel()
         {
             if (assetPath != HousePrefabBuilder.HouseModelPath &&
-                assetPath != HousePrefabBuilder.House02ModelPath && assetPath != HousePrefabBuilder.House03ModelPath)
+                assetPath != HousePrefabBuilder.House02ModelPath && assetPath != HousePrefabBuilder.SmallHouse02ModelPath && assetPath != HousePrefabBuilder.House03ModelPath)
             {
                 return;
             }

@@ -114,6 +114,9 @@ MonoBehaviour:
   m_startingAreaPrefab: {fileID: 0}
   m_deliveryNpcPrefab: {fileID: 0}
   m_mansionPrefab: {fileID: 4271396772608569660, guid: 2b7a3bbfba241044cae6b210d5d811e0, type: 3}
+  m_easyHouseVariants:
+  - {fileID: 100000, guid: b8b918f438cf4837ba31ec4e98de36a3, type: 3}
+  - {fileID: 2181625618289386113, guid: c114e23197d34214d9bfe7364942d271, type: 3}
   m_lots:
   - Definition: {fileID: 11400000, guid: 15aab6b7cac24f2499d3f3ef9c445f8b, type: 2}
     Weight: 1

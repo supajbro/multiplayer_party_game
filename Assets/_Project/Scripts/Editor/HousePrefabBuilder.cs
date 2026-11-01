@@ -13,11 +13,13 @@ namespace CouchGuys.Editor
         public const string HouseModelPath =
             "Assets/_Project/Models/Houses/CouchGuys_House_01.fbx";
         public const string House02ModelPath =
-            "Assets/_Project/Models/Houses/CouchGuys_House_02.fbx";
+            "Assets/_Project/Models/Houses/SmallHouses/small_house_01.fbx";
         public const string House01PrefabPath = "Assets/_Project/Prefabs/Houses/House_01.prefab";
         public const string House02PrefabPath = "Assets/_Project/Prefabs/Houses/House_02.prefab";
         public const string House03ModelPath = "Assets/_Project/Models/Houses/CouchGuys_House_03.fbx";
         public const string House03PrefabPath = "Assets/_Project/Prefabs/Houses/House_03.prefab";
+        public const string SmallHouse02ModelPath = "Assets/_Project/Models/Houses/SmallHouses/small_house_02.fbx";
+        public const string SmallHouse02PrefabPath = "Assets/_Project/Prefabs/Houses/small_house_02.prefab";
         private const string GeneratedLodMeshFolder = "Assets/_Project/Generated/HouseLods";
         private const int HouseLodCount = 4;
 
@@ -25,7 +27,7 @@ namespace CouchGuys.Editor
         private static void BuildMissingPrefabsAfterImport()
         {
             if (!PrefabUsesCurrentModel(House01PrefabPath) ||
-                !PrefabUsesCurrentModel(House02PrefabPath) || !PrefabUsesCurrentModel(House03PrefabPath))
+                !PrefabUsesCurrentModel(House03PrefabPath))
             {
                 EditorApplication.delayCall += EnsureHousePrefabs;
             }
@@ -39,7 +41,7 @@ namespace CouchGuys.Editor
             EnsureFolder("Assets/_Project/Generated", "HouseLods");
             if (!PrefabUsesCurrentModel(House01PrefabPath))
                 BuildWrapper(HouseModelPath, House01PrefabPath, "House_01");
-            if (!PrefabUsesCurrentModel(House02PrefabPath))
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(House02PrefabPath) == null)
                 BuildWrapper(House02ModelPath, House02PrefabPath, "House_02");
             if (!PrefabUsesCurrentModel(House03PrefabPath))
                 BuildWrapper(House03ModelPath, House03PrefabPath, "House_03");
@@ -77,6 +79,14 @@ namespace CouchGuys.Editor
         public static void BuildFromCommandLine()
         {
             EnsureHousePrefabs();
+        }
+
+        // Explicit authoring only; preserve existing Inspector customizations.
+        public static void BuildSmallHouse02(bool rebuild = false)
+        {
+            if (rebuild || AssetDatabase.LoadAssetAtPath<GameObject>(SmallHouse02PrefabPath) == null)
+                BuildWrapper(SmallHouse02ModelPath, SmallHouse02PrefabPath, "small_house_02");
+            AssetDatabase.SaveAssets();
         }
 
         public static void RebuildImportedHouse(string modelPath)
@@ -147,7 +157,7 @@ namespace CouchGuys.Editor
                 List<Transform> authoredDoors = FindNamedDescendants(modelInstance.transform, "FrontDoorAnchor");
                 if (authoredDoors.Count > 0) deliveryPoint.position = authoredDoors[0].position;
                 GeneratedProperty property = root.AddComponent<GeneratedProperty>();
-                property.SetEasyDeliveryHouse(modelPath == House02ModelPath);
+                property.SetEasyDeliveryHouse(modelPath == House02ModelPath || modelPath == SmallHouse02ModelPath);
                 property.ConfigurePrefab(
                     modelPath == House03ModelPath ? new Vector2Int(3, 3) : new Vector2Int(2, 2),
                     roadConnection,
@@ -309,7 +319,7 @@ namespace CouchGuys.Editor
                     MeshRenderer sourceRenderer = sourceRenderers[rendererIndex];
                     // House 02 sheds small trim at distance, while its silhouette, windows,
                     // entrance and garage remain present at every level.
-                    if ((lod0Model.name.StartsWith("CouchGuys_House_02") || lod0Model.name.StartsWith("CouchGuys_House_03")) &&
+                    if ((lod0Model.name.StartsWith("small_house_") || lod0Model.name.StartsWith("CouchGuys_House_02") || lod0Model.name.StartsWith("CouchGuys_House_03")) &&
                         sourceRenderer.name.StartsWith("Detail_") &&
                         (level >= 3 || (level >= 2 && !sourceRenderer.name.StartsWith("Detail_Shrub_")) ||
                          (level >= 1 && sourceRenderer.name.StartsWith("Detail_RoofSeam_"))))
