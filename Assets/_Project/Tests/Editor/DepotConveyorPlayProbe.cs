@@ -88,12 +88,26 @@ namespace CouchGuys.Tests.Editor
                 {lastLog=Time.time;File.AppendAllText(Result,$"Motion: body={body.position:F3}, transform={body.transform.position:F3}, kinematic={body.isKinematic}\n");}
                 yield return null;
             }
-            controller.SetDepotTransportActiveServer(false);
+            controller.ReleaseDepotTransportServer(depot.ConveyorExitVelocity);
             var last=depot.ConveyorPath[depot.ConveyorPath.Count-1];
             if(Vector3.Distance(body.position,last.position)>.04f)throw new Exception("Couch did not reach pickup point");
             if(!controller.IsPickupAvailable||body.isKinematic)throw new Exception("Couch did not return to pickup physics");
             if(controller.GetComponentsInChildren<Renderer>().Count(r=>r.enabled)==0)throw new Exception("Couch visual was not spawned");
-            File.AppendAllText(Result,$"PASS: network-spawned couch reached pickup at {body.position:F3}, visible and pickup enabled; elapsed={Time.time-start:F2}s\n");
+            float released=Time.time;
+            while(Time.time-released<3f)yield return null;
+            var target=depot.CouchDropOffPoint;
+            if(target!=null)
+            {
+                Vector3 horizontal=body.position-target.position;horizontal.y=0;
+                if(horizontal.magnitude>1.6f)throw new Exception($"Couch missed marked drop zone: {body.position:F3}, target={target.position:F3}");
+                var own=controller.GetComponent<BoxCollider>();
+                if(own.bounds.min.y>target.position.y+.15f)throw new Exception("Couch did not settle on the floor");
+                foreach(var belt in depot.GetComponentsInChildren<Collider>().Where(c=>c.name.StartsWith("D02_Collider_Conveyor")))
+                    if(Physics.ComputePenetration(own,own.transform.position,own.transform.rotation,belt,belt.transform.position,belt.transform.rotation,out _,out float depth)&&depth>.01f)
+                        throw new Exception("Couch still overlaps belt after discharge: "+belt.name);
+                File.AppendAllText(Result,$"PASS: couch physically discharged into marked zone at {body.position:F3}, target offset={horizontal.magnitude:F2}m, floor contact and no conveyor overlap\n");
+            }
+            File.AppendAllText(Result,$"PASS: network-spawned couch traversed saved curved route, visible and pickup enabled; elapsed={Time.time-start:F2}s\n");
         }
     }
 }

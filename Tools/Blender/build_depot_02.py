@@ -167,21 +167,10 @@ for i,x in enumerate((3.75,5.25)):
     o.keyframe_insert(data_path='location',frame=1);o.location.x+=(-1.55 if i==0 else 1.55);o.keyframe_insert(data_path='location',frame=61)
     o.keyframe_insert(data_path='location',frame=71);o.location.x=x;o.keyframe_insert(data_path='location',frame=121)
 # ================= CONVEYOR: LEFT WALL =================
-# Receiving section crosses the side wall, then turns towards the pickup bay.
-for name,p,d in [('Feed',(14.6,1.8,.8),(5.1,2.9,.5)),('Main',(11.8,-1.6,.8),(2.9,9.7,.5))]:box('D02_Collider_Conveyor'+name,p,d,'Teal','Conveyor',.12)
-box('D02_BeltMain',(11.8,-1.6,1.08),(2.6,9.5,.12),'Rubber','Conveyor')
-box('D02_BeltFeed',(14.55,1.8,1.08),(5.1,2.6,.12),'Rubber','Conveyor')
-for i in range(22):cyl('D02_MainRoller',(11.8,-6.15+i*.43,1.17),.065,2.55,'Silver','Conveyor','X',12)
-for x in (13.4,14.1,14.8,15.5,16.2):cyl('D02_FeedRoller',(x,1.8,1.17),.065,2.55,'Silver','Conveyor','Y',12)
-for x in (10.35,13.25):
-    box('D02_ConveyorRim',(x,-2.1,1.28),(.16,8.6,.28),'Teal','Conveyor',.06)
-    box('D02_ConveyorTopRail',(x,-2.1,1.46),(.14,8.6,.09),'Silver','Conveyor')
-    for y in (-5.5,-2.3,.3):
-        box('D02_ConveyorLamp',(x,y,.78),(.06,.8,.1),'Light','Conveyor')
-        box('D02_ConveyorLeg',(x,y,.36),(.18,.22,.72),'Silver','Conveyor')
-# Curved receiving portal on the side wall, rotated around Z.
-portal=arch('D02_ReceivingPortal',0,0,4.05,3.55,group='Conveyor');portal.rotation_euler[2]=math.pi/2;portal.location=(13.72,1.8,0)
-for i in range(9):box('D02_IntakeCurtain',(14.04,.1+i*.42,2.28),(.06,.4,2.25),'Rubber','Conveyor',.015)
+import sys
+sys.path.insert(0,str(ROOT/'Tools/Blender'))
+from depot02_conveyor import build_conveyor
+build_conveyor(globals())
 for x,y in ((10.1,-6.8),(13.4,-6.8),(-11.6,-8.9),(-3.4,-8.9)):bollard('D02_SafetyBollard',x,y)
 # ================= SIGNAGE / MARKINGS =================
 plaque('D02_StaffSign','STAFF ENTRANCE / EXIT',4.5,-9.7,4.18,5.05,.72,.29)

@@ -9,6 +9,8 @@ namespace CouchGuys.Gameplay.Weapons
         [Header("Holder and normalized artwork layout")]
         [SerializeField] private Image m_holder;
         [SerializeField] private RectTransform m_holderRect;
+        [Tooltip("Scales the complete artwork, wave and segments together relative to the panel fit.")]
+        [SerializeField, Min(0.1f)] private float m_artworkScale = 3f;
         [SerializeField] private Image m_energy;
         [Tooltip("Normalized artwork coordinates: left, bottom, right, top.")]
         [SerializeField] private Vector4 m_energyWindow = new(0.147f, 0.404f, 0.853f, 0.603f);
@@ -100,7 +102,7 @@ namespace CouchGuys.Gameplay.Weapons
             if (m_holderRect == null || m_holder == null || m_holder.sprite == null) return;
             Rect parent = ((RectTransform)transform).rect;
             Rect sprite = m_holder.sprite.rect;
-            float scale = Mathf.Min(parent.width / sprite.width, parent.height / sprite.height);
+            float scale = Mathf.Min(parent.width / sprite.width, parent.height / sprite.height) * m_artworkScale;
             m_holderRect.anchorMin = m_holderRect.anchorMax = new Vector2(0.5f, 0.5f);
             m_holderRect.sizeDelta = sprite.size * scale;
             m_holderRect.anchoredPosition = Vector2.zero;

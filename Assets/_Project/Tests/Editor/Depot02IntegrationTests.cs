@@ -88,7 +88,7 @@ namespace CouchGuys.Tests.Editor
                 type.GetProperty("GeneratedStartingArea").SetValue(generator,area);
                 Assert.That(area.Depot,Is.Not.Null);
                 Assert.That(area.Depot.HasConveyor,Is.True);
-                Assert.That(area.Depot.ConveyorPath.Count,Is.EqualTo(5));
+                Assert.That(area.Depot.ConveyorPath.Count,Is.GreaterThan(20));
                 Assert.That(area.PlayerSpawnPoints.All(p=>p!=null&&p.IsChildOf(area.transform)),Is.True);
                 Assert.That(area.GetComponentsInChildren<Transform>().Any(t=>t.name=="D02_RollerSlat_00"),Is.True);
                 Assert.That(Vector3.Dot(area.Depot.VehicleArrival.forward,area.RoadConnection.forward),Is.GreaterThan(.999f));
@@ -122,12 +122,12 @@ namespace CouchGuys.Tests.Editor
             try
             {
                 var depot=root.GetComponent<DepotController>();var area=root.GetComponent<StartingArea>();
-                Assert.That(depot.HasConveyor,Is.True);Assert.That(depot.ConveyorPath.Count,Is.EqualTo(5));
+                Assert.That(depot.HasConveyor,Is.True);Assert.That(depot.ConveyorPath.Count,Is.GreaterThan(20));
                 Assert.That(area.PlayerSpawnPoints.Length,Is.EqualTo(4));Assert.That(area.Depot,Is.EqualTo(depot));
                 Assert.That(depot.DeliveryNpcMarker,Is.Not.Null);
                 Assert.That(depot.VehicleArrival.localPosition.x,Is.EqualTo(7.5f).Within(.01));
                 Assert.That(Vector3.Dot(depot.VehicleArrival.forward,root.transform.forward),Is.GreaterThan(.999f));
-                Assert.That(depot.ConveyorPath.All(t=>t.localPosition.x<-10),Is.True,"Conveyor belongs to left perimeter");
+                Assert.That(depot.ConveyorPath.All(t=>t.localPosition.x<-9),Is.True,"Conveyor belongs to left perimeter");
                 Assert.That(root.GetComponentsInChildren<Transform>().Count(t=>t.name.StartsWith("D02_RollerSlat_")),Is.EqualTo(16));
                 Assert.That(root.GetComponentsInChildren<Transform>().Count(t=>t.name.StartsWith("D02_GlassPanel_")),Is.EqualTo(2));
                 Assert.That(root.GetComponentsInChildren<MeshFilter>().All(f=>f.sharedMesh!=null),Is.True);
@@ -188,6 +188,31 @@ namespace CouchGuys.Tests.Editor
             }
             finally {Object.DestroyImmediate(player);root.GetComponent<DepotController>().ReleaseDoorAnimations();Object.DestroyImmediate(root);}
         }
+        [Test]
+        public void ConveyorCurvesSupportTheRouteAndAimAtTheMarkedDropZone()
+        {
+            var root=Create();
+            try
+            {
+                var depot=root.GetComponent<DepotController>();
+                var belt=root.GetComponentsInChildren<Collider>().Where(c=>c.name.StartsWith("D02_Collider_Conveyor")).ToArray();
+                Assert.That(belt.Count(c=>c is MeshCollider),Is.EqualTo(2),"Curved sections need curved collision, not enclosing boxes");
+                Transform previous=depot.CouchHiddenSpawn;
+                foreach(var point in depot.ConveyorPath)
+                {
+                    Assert.That(Quaternion.Angle(previous.rotation,point.rotation),Is.LessThan(7f),"No abrupt 90-degree couch turns");
+                    var ray=new Ray(point.position+Vector3.up,Vector3.down);
+                    Assert.That(belt.Any(c=>c.Raycast(ray,out _,1.5f)),Is.True,point.name+" is not supported by the conveyor geometry");
+                    previous=point;
+                }
+                var last=depot.ConveyorPath[depot.ConveyorPath.Count-1];
+                Vector3 toward=depot.CouchDropOffPoint.position-last.position;toward.y=0;
+                Assert.That(Vector3.Dot(toward.normalized,depot.ConveyorExitVelocity.normalized),Is.GreaterThan(.99f));
+                Assert.That(depot.ConveyorExitVelocity.magnitude,Is.GreaterThan(1f));
+                Assert.That(toward.magnitude,Is.GreaterThan(1f),"Pickup location must be off the belt");
+            }
+            finally {root.GetComponent<DepotController>().ReleaseDoorAnimations();Object.DestroyImmediate(root);}
+        }
         [MenuItem("Couch Guys/Depot 02/Run Checks %#&v")]
         public static void Run()
         {
@@ -197,7 +222,7 @@ namespace CouchGuys.Tests.Editor
                 File.WriteAllText("Temp/depot02-road-tests.txt","");
                 foreach(float yaw in new[]{0f,90f,180f,270f})tests.DepotExitConnectsToEntireGeneratedRoadGraph(22884574,yaw);
                 tests.DepotExitConnectsToEntireGeneratedRoadGraph(12345,0);tests.DepotExitConnectsToEntireGeneratedRoadGraph(87654321,0);
-                tests.RuntimeRegionSelectionConnectsDepot02ToGeneratorAndDispatcher();tests.LayoutAndGameplayReferencesMatchNewPlan();tests.BothDoorsAnimateWithCollisionAfterWorldRotation();tests.AutomaticDoorDetectsPlayersAndClosesAfterDelay();
+                tests.ConveyorCurvesSupportTheRouteAndAimAtTheMarkedDropZone();tests.RuntimeRegionSelectionConnectsDepot02ToGeneratorAndDispatcher();tests.LayoutAndGameplayReferencesMatchNewPlan();tests.BothDoorsAnimateWithCollisionAfterWorldRotation();tests.AutomaticDoorDetectsPlayersAndClosesAfterDelay();
                 File.WriteAllText("Temp/depot02-tests.txt","PASS: runtime region selection, generated depot_02, dispatcher/DeliveryManager and spawn/conveyor connections, new reference layout, one roller/one glass entrance, connected gameplay references, truck spawn and doorway clearance, rotated door motion/collision, automatic detection and close delay.");Debug.Log("Depot 02 integration checks passed");
             }
             catch(Exception e){File.WriteAllText("Temp/depot02-tests.txt",e.ToString());throw;}

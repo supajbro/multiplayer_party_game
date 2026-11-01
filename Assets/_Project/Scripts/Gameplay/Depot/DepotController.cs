@@ -143,6 +143,9 @@ namespace CouchGuys.Gameplay.Depot
         [Header("Conveyor")]
         [SerializeField, Min(0.1f)] private float m_conveyorSpeed = 2.25f;
         [SerializeField, Min(0f)] private float m_arrivalDelay = 0.75f;
+        [Tooltip("Forward speed retained when leaving the final belt waypoint. Zero preserves a stationary handoff.")]
+        [SerializeField, Min(0f)] private float m_conveyorExitSpeed;
+        [SerializeField] private Transform m_couchDropOffPoint;
 
         [Header("Doors")]
         [SerializeField] private Transform m_entranceDetectionCentre;
@@ -166,6 +169,10 @@ namespace CouchGuys.Gameplay.Depot
         public IReadOnlyList<Transform> ConveyorPath => m_conveyorPath;
         public float ConveyorSpeed => m_conveyorSpeed;
         public float ArrivalDelay => m_arrivalDelay;
+        public Transform CouchDropOffPoint => m_couchDropOffPoint;
+        public Vector3 ConveyorExitVelocity => m_conveyorPath != null && m_conveyorPath.Length > 0 &&
+            m_conveyorPath[m_conveyorPath.Length - 1] != null
+            ? m_conveyorPath[m_conveyorPath.Length - 1].forward * m_conveyorExitSpeed : Vector3.zero;
         public bool HasConveyor => m_couchHiddenSpawn != null && m_conveyorPath != null && m_conveyorPath.Length > 0;
 
         private void Update()

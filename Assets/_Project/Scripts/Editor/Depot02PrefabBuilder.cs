@@ -53,7 +53,9 @@ namespace CouchGuys.Editor
                     bool moving=filter.name.StartsWith("D02_RollerSlat_")||filter.name.StartsWith("D02_GlassPanel_");
                     if(filter.name.StartsWith("D02_Collider_")||moving)
                     {
-                        var box=filter.gameObject.AddComponent<BoxCollider>();box.center=filter.sharedMesh.bounds.center;box.size=filter.sharedMesh.bounds.size;
+                        if(filter.name.StartsWith("D02_Collider_Conveyor")&&filter.name.Contains("Curve"))
+                            filter.gameObject.AddComponent<MeshCollider>().sharedMesh=filter.sharedMesh;
+                        else {var box=filter.gameObject.AddComponent<BoxCollider>();box.center=filter.sharedMesh.bounds.center;box.size=filter.sharedMesh.bounds.size;}
                     }
                     if(filter.name.StartsWith("D02_Module_")||filter.name.StartsWith("D02_BrandSign"))AddLods(filter,renderer);
                     if(filter.name.StartsWith("D02_PendantGlow"))
@@ -69,11 +71,10 @@ namespace CouchGuys.Editor
                 var spawn=Marker(markers,"TruckSpawnPoint",new Vector3(7.5f,.18f,-3.5f));
                 var fallback=Marker(markers,"TruckFallback",new Vector3(7.5f,.18f,1));
                 var npc=Marker(markers,"DeliveryNpcSpawnPoint",new Vector3(-4.4f,.08f,-2.7f));
-                var hidden=Marker(markers,"CouchHiddenSpawn",new Vector3(-16.2f,1.53f,-1.8f));
-                Vector3[] pathPositions={new(-14.7f,1.53f,-1.8f),new(-11.8f,1.53f,-1.8f),new(-11.8f,1.53f,0),new(-11.8f,1.53f,3),new(-11.8f,1.53f,5.8f)};
-                var path=pathPositions.Select((p,i)=>Marker(markers,"ConveyorPoint_"+i,p)).ToArray();
-                // Couch broad dimension follows the belt, including the receiving bend.
-                hidden.localRotation=Quaternion.Euler(0,90,0);path[0].localRotation=Quaternion.Euler(0,90,0);
+                var layout=LoadConveyorLayout();
+                var hidden=Marker(markers,"CouchHiddenSpawn",layout.hiddenPosition);
+                hidden.localRotation=Quaternion.Euler(0,layout.hiddenYaw,0);
+                var path=ConfigureConveyorPath(markers,layout);
                 var playerSpawns=new[]{new Vector3(-3,.08f,5),new Vector3(-5,.08f,5),new Vector3(-3,.08f,3),new Vector3(-5,.08f,3)}
                     .Select((p,i)=>Marker(markers,"PlayerSpawnPoint_"+i,p)).ToArray();
                 var glassSafety=Volume(markers,"GlassSafety",new Vector3(-4.5f,1.7f,10),new Vector3(3.1f,3.5f,2.8f));
@@ -96,6 +97,8 @@ namespace CouchGuys.Editor
                 var depot=root.AddComponent<DepotController>();
                 depot.Configure(npc,spawn,new[]{fallback},hidden,path,glass,roller,buttons.ToArray());depot.SetTruckSpawnPoint(spawn);
                 var data=new SerializedObject(depot);
+                data.FindProperty("m_conveyorExitSpeed").floatValue=layout.exitSpeed;
+                data.FindProperty("m_couchDropOffPoint").objectReferenceValue=Marker(markers,"CouchDropOffPoint",layout.dropOff);
                 data.FindProperty("m_vehicleSpawnSurface").objectReferenceValue=model.GetComponentsInChildren<Collider>().Single(c=>c.name=="D02_Collider_Floor");
                 data.FindProperty("m_entranceDetectionCentre").objectReferenceValue=glassSafety.transform;
                 data.FindProperty("m_entranceDetectionRadius").floatValue=3.4f;
@@ -110,6 +113,63 @@ namespace CouchGuys.Editor
                 Debug.Log("depot_02 built separately; active region was not changed.");
             }
             finally {Object.DestroyImmediate(root);}
+        }
+        [Serializable] sealed class ConveyorPoint { public Vector3 position; public float yaw; }
+        [Serializable] sealed class ConveyorLayout
+        {
+            public Vector3 hiddenPosition; public float hiddenYaw; public ConveyorPoint[] points;
+            public Vector3 dropOff; public float exitSpeed;
+        }
+        static ConveyorLayout LoadConveyorLayout() => JsonUtility.FromJson<ConveyorLayout>(
+            File.ReadAllText("ArtSource/Depot02/depot_02_conveyor.json"));
+        static Transform[] ConfigureConveyorPath(Transform markers,ConveyorLayout layout)
+        {
+            return layout.points.Select((point,i)=>
+            {
+                string name="ConveyorPoint_"+i;
+                var t=markers.Find(name);if(t==null)t=Marker(markers,name,point.position);
+                t.localPosition=point.position;t.localRotation=Quaternion.Euler(0,point.yaw,0);return t;
+            }).ToArray();
+        }
+        [MenuItem("Couch Guys/Depot 02/Update Curved Conveyor Only %#&F7")]
+        public static void UpdateConveyorOnly()
+        {
+            AssetDatabase.ImportAsset(ModelPath,ImportAssetOptions.ForceSynchronousImport);
+            var root=PrefabUtility.LoadPrefabContents(PrefabPath);
+            GameObject source=null;
+            try
+            {
+                source=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath));
+                var visuals=root.transform.Find("Depot02_Visuals");
+                foreach(var input in source.GetComponentsInChildren<MeshFilter>())
+                {
+                    if(input.name!="D02_Module_Conveyor"&&!input.name.StartsWith("D02_Collider_Conveyor"))continue;
+                    var part=visuals.GetComponentsInChildren<Transform>().FirstOrDefault(t=>t.name==input.name);
+                    if(part==null){part=Object.Instantiate(input.gameObject,visuals,false).transform;part.name=input.name;}
+                    var group=part.GetComponent<LODGroup>();if(group!=null)Object.DestroyImmediate(group);
+                    foreach(Transform child in part.Cast<Transform>().ToArray())
+                        if(child.name=="LOD1"||child.name=="LOD2")Object.DestroyImmediate(child.gameObject);
+                    part.localPosition=input.transform.localPosition;part.localRotation=input.transform.localRotation;part.localScale=input.transform.localScale;
+                    var filter=part.GetComponent<MeshFilter>();filter.sharedMesh=input.sharedMesh;
+                    var renderer=part.GetComponent<MeshRenderer>();
+                    renderer.sharedMaterials=input.GetComponent<MeshRenderer>().sharedMaterials.Select(m=>AssetDatabase.LoadAssetAtPath<Material>(Generated+"/"+m.name+".mat")??m).ToArray();
+                    foreach(var old in part.GetComponents<Collider>())Object.DestroyImmediate(old);
+                    if(part.name.Contains("Curve"))part.gameObject.AddComponent<MeshCollider>().sharedMesh=input.sharedMesh;
+                    else if(part.name.StartsWith("D02_Collider_"))
+                    {var box=part.gameObject.AddComponent<BoxCollider>();box.center=input.sharedMesh.bounds.center;box.size=input.sharedMesh.bounds.size;}
+                    else AddLods(filter,renderer);
+                }
+                var markers=root.transform.Find("Depot02_Gameplay");var layout=LoadConveyorLayout();
+                var hidden=markers.Find("CouchHiddenSpawn");hidden.localPosition=layout.hiddenPosition;hidden.localRotation=Quaternion.Euler(0,layout.hiddenYaw,0);
+                var path=ConfigureConveyorPath(markers,layout);
+                var drop=markers.Find("CouchDropOffPoint");if(drop==null)drop=Marker(markers,"CouchDropOffPoint",layout.dropOff);drop.localPosition=layout.dropOff;
+                var data=new SerializedObject(root.GetComponent<DepotController>());var array=data.FindProperty("m_conveyorPath");array.arraySize=path.Length;
+                for(int i=0;i<path.Length;i++)array.GetArrayElementAtIndex(i).objectReferenceValue=path[i];
+                data.FindProperty("m_couchDropOffPoint").objectReferenceValue=drop;data.FindProperty("m_conveyorExitSpeed").floatValue=layout.exitSpeed;
+                data.ApplyModifiedPropertiesWithoutUndo();PrefabUtility.SaveAsPrefabAsset(root,PrefabPath);AssetDatabase.SaveAssets();
+                Debug.Log("Updated only conveyor geometry, curved route, discharge velocity and drop-off marker. Other prefab customizations preserved.");
+            }
+            finally {if(source!=null)Object.DestroyImmediate(source);PrefabUtility.UnloadPrefabContents(root);}
         }
         static Transform Marker(Transform parent,string name,Vector3 p)
         {

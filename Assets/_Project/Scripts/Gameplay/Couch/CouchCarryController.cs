@@ -599,6 +599,16 @@ namespace CouchGuys.Gameplay.Couch
             }
         }
 
+        /// <summary>Hand off the belt's velocity to normal server physics at the discharge lip.</summary>
+        [Server]
+        public void ReleaseDepotTransportServer(Vector3 exitVelocity)
+        {
+            if (!IsServerInitialized || m_rigidbody == null) return;
+            SetDepotTransportActiveServer(false);
+            m_rigidbody.linearVelocity = exitVelocity;
+            m_rigidbody.WakeUp();
+        }
+
         internal PlayerCouchCarrier GetFirstHumanCarrierServer(PlayerCouchCarrier excludedCarrier)
         {
             if (!IsServerInitialized)

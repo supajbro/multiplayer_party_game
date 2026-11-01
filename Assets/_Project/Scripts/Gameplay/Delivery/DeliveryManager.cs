@@ -732,7 +732,7 @@ namespace CouchGuys.Gameplay.Delivery
                 yield return motion.Current;
 
             if (couch == null || !couch.IsSpawned) yield break;
-            couch.SetDepotTransportActiveServer(false);
+            couch.ReleaseDepotTransportServer(m_depot != null ? m_depot.ConveyorExitVelocity : Vector3.zero);
             StartDeliveryTimerServer(destination, tier);
             SetStateServer(DeliveryState.Transport, DeliveryObjectiveStep.DeliverCouch);
             m_conveyorDispatch = null;
@@ -749,6 +749,7 @@ namespace CouchGuys.Gameplay.Delivery
                 if (waypoint == null) continue;
                 if (body == null) yield break;
                 Vector3 start = body.position;
+                Quaternion startRotation = body.rotation;
                 Vector3 target = waypoint.position;
                 Quaternion targetRotation = waypoint.rotation;
                 float duration = Vector3.Distance(start, target) / speed;
@@ -760,8 +761,7 @@ namespace CouchGuys.Gameplay.Delivery
                     if (body == null) yield break;
                     elapsed = Mathf.Min(duration, elapsed + Time.fixedDeltaTime);
                     body.MovePosition(Vector3.Lerp(start, target, elapsed / duration));
-                    body.MoveRotation(Quaternion.RotateTowards(body.rotation, targetRotation,
-                        120f * Time.fixedDeltaTime));
+                    body.MoveRotation(Quaternion.Slerp(startRotation, targetRotation, elapsed / duration));
                     yield return new WaitForFixedUpdate();
                 }
                 body.position = target;
