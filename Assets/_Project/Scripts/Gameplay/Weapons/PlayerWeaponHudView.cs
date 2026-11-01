@@ -7,6 +7,8 @@ namespace CouchGuys.Gameplay.Weapons
     {
         [SerializeField] public InteractionPromptView m_interactionPrompt;
         [SerializeField] public RectTransform m_minimapRoot;
+        [Tooltip("Decorative frame only; adjust its RectTransform independently of the live map.")]
+        [SerializeField] public Image m_minimapFrame;
         [SerializeField] public RectTransform m_expandedMapRoot;
         [SerializeField] public Text m_healthText;
         [SerializeField] public Text m_downedText;
@@ -14,6 +16,8 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] public Text m_deliveryDetail;
         [SerializeField] public Text m_deliveryDistance;
         [SerializeField] public Text m_currencyText;
+        [SerializeField] public Image m_currencyHolder;
+        [SerializeField] public Image m_currencySymbol;
         [SerializeField] public Text m_timerText;
         [SerializeField] public Text m_failureText;
         [SerializeField] public Text m_ammoText;
@@ -25,6 +29,45 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] public Image[] m_slotBackgrounds;
         [SerializeField] public Outline[] m_slotOutlines;
         [SerializeField] public GameObject m_ammoPanel;
+
+        [Header("Item hotbar")]
+        [SerializeField] private Image m_hotbarHolder;
+        [SerializeField] private Image m_activeSlotHighlight;
+        [SerializeField] private RectTransform[] m_hotbarSlots;
+        [SerializeField] private Vector2 m_highlightOffset;
+        [SerializeField] private Vector2 m_highlightScale = Vector2.one;
+        [SerializeField, Min(0f)] private float m_highlightAnimationDuration = 0.12f;
+        private int m_highlightSlot = -1;
+        private Vector3 m_highlightFrom;
+        private float m_highlightElapsed;
+
+        public void PresentHotbar(int selected)
+        {
+            if (m_activeSlotHighlight == null) return;
+            bool visible = m_hotbarSlots != null && selected >= 0 && selected < m_hotbarSlots.Length &&
+                m_hotbarSlots[selected] != null;
+            m_activeSlotHighlight.gameObject.SetActive(visible);
+            if (!visible)
+            {
+                m_highlightSlot = -1;
+                return;
+            }
+            RectTransform highlight = m_activeSlotHighlight.rectTransform;
+            RectTransform slot = m_hotbarSlots[selected];
+            Vector3 target = highlight.parent.InverseTransformPoint(slot.TransformPoint(slot.rect.center));
+            target += (Vector3)m_highlightOffset;
+            if (selected != m_highlightSlot)
+            {
+                m_highlightFrom = m_highlightSlot < 0 ? target : highlight.localPosition;
+                m_highlightSlot = selected;
+                m_highlightElapsed = 0f;
+            }
+            m_highlightElapsed += Time.unscaledDeltaTime;
+            float t = m_highlightAnimationDuration > 0f
+                ? Mathf.Clamp01(m_highlightElapsed / m_highlightAnimationDuration) : 1f;
+            highlight.localPosition = Vector3.Lerp(m_highlightFrom, target, Mathf.SmoothStep(0f, 1f, t));
+            highlight.localScale = new Vector3(m_highlightScale.x, m_highlightScale.y, 1f);
+        }
 
         [Header("Weapon display (independent of reticle)")]
         [SerializeField] private CanvasGroup m_ammoGroup;

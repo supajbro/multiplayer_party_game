@@ -287,6 +287,17 @@ namespace CouchGuys.Gameplay.Couch
 
         private void FixedUpdate()
         {
+            // Host/client initialization may reconfigure the Rigidbody after spawn.
+            // The conveyor retains pose ownership until the server releases pickup.
+            if (IsServerInitialized && m_depotTransportActive.Value)
+            {
+                if (m_rigidbody != null)
+                {
+                    m_rigidbody.isKinematic = true;
+                    m_rigidbody.interpolation = RigidbodyInterpolation.None;
+                }
+                return;
+            }
             if (IsServerInitialized) UpdateCargoCollisionRecovery();
             if (!IsServerInitialized || IsLoaded || m_cargoTransition != null || m_rigidbody == null || m_rigidbody.isKinematic)
             {
@@ -573,9 +584,19 @@ namespace CouchGuys.Gameplay.Couch
             if (!IsServerInitialized || m_rigidbody == null) return;
             if (active) ReleaseAllOccupantsServer();
             m_depotTransportActive.Value = active;
-            m_rigidbody.linearVelocity = Vector3.zero;
-            m_rigidbody.angularVelocity = Vector3.zero;
+            if (!m_rigidbody.isKinematic)
+            {
+                m_rigidbody.linearVelocity = Vector3.zero;
+                m_rigidbody.angularVelocity = Vector3.zero;
+            }
             m_rigidbody.isKinematic = active;
+            m_rigidbody.interpolation = active
+                ? RigidbodyInterpolation.None : RigidbodyInterpolation.Interpolate;
+            if (!active)
+            {
+                m_rigidbody.linearVelocity = Vector3.zero;
+                m_rigidbody.angularVelocity = Vector3.zero;
+            }
         }
 
         internal PlayerCouchCarrier GetFirstHumanCarrierServer(PlayerCouchCarrier excludedCarrier)
@@ -856,8 +877,8 @@ namespace CouchGuys.Gameplay.Couch
                     m_rigidbody.linearVelocity = Vector3.zero;
                     m_rigidbody.angularVelocity = Vector3.zero;
                 }
-                m_rigidbody.isKinematic = loaded || !IsServerInitialized;
-                m_rigidbody.interpolation = loaded || !IsServerInitialized
+                m_rigidbody.isKinematic = loaded || m_depotTransportActive.Value || !IsServerInitialized;
+                m_rigidbody.interpolation = loaded || m_depotTransportActive.Value || !IsServerInitialized
                     ? RigidbodyInterpolation.None : RigidbodyInterpolation.Interpolate;
             }
             if (loaded && m_modelRoot != null)

@@ -14,7 +14,6 @@ namespace CouchGuys.Gameplay.Weapons
     public sealed class PlayerWeaponHud : MonoBehaviour
     {
         private Text[] m_slotIcons;
-        private static readonly Color CharcoalSoft = new(0.08f, 0.1f, 0.13f, 0.88f);
         private static readonly Color Gold = new(1f, 0.66f, 0.08f, 1f);
         private static readonly Color Inactive = new(0.36f, 0.4f, 0.45f, 1f);
         private static readonly Color Yellow = new(1f, 0.7f, 0.08f, 1f);
@@ -35,9 +34,7 @@ namespace CouchGuys.Gameplay.Weapons
         private float m_healthTarget = 1f;
         private float m_healthDisplay = 1f;
         private float m_staminaTarget = 1f;
-        private float m_staminaDisplay = 1f;
         private float m_nextSlowRefresh;
-        private int m_lastSelectedSlot = -1;
         private int m_lastTimerSecond = -1;
         private int m_seenFailureSequence;
         private float m_failureVisibleUntil;
@@ -77,9 +74,8 @@ namespace CouchGuys.Gameplay.Weapons
             }
 
             m_healthDisplay = Mathf.MoveTowards(m_healthDisplay, m_healthTarget, Time.unscaledDeltaTime * 2.8f);
-            m_staminaDisplay = Mathf.MoveTowards(m_staminaDisplay, m_staminaTarget, Time.unscaledDeltaTime * 3.5f);
             m_view.m_healthBar.SetValue(m_healthDisplay);
-            m_view.m_staminaBar.SetValue(m_staminaDisplay);
+            m_view.m_staminaBar.SetValue(m_staminaTarget);
 
             RefreshWeapons();
             if (m_view.m_downedText != null)
@@ -139,18 +135,7 @@ namespace CouchGuys.Gameplay.Weapons
                     icon.color = index >= 0 ? new Color(1f, 0.55f, 0.12f) : Inactive;
                 }
             }
-            int selected = m_weapons.SelectedHotbarSlot;
-            if (selected != m_lastSelectedSlot)
-            {
-                for (int i = 0; i < m_view.m_slotBackgrounds.Length; i++)
-                {
-                    bool active = i == selected;
-                    m_view.m_slotBackgrounds[i].color = active ? new Color(0.13f, 0.14f, 0.15f, 0.98f) : CharcoalSoft;
-                    m_view.m_slotOutlines[i].effectColor = active ? Gold : Inactive;
-                    m_view.m_slotOutlines[i].effectDistance = active ? new Vector2(4f, -4f) : new Vector2(2f, -2f);
-                }
-                m_lastSelectedSlot = selected;
-            }
+            m_view.PresentHotbar(m_weapons.SelectedHotbarSlot);
 
             m_view.PresentWeapon(m_weapons);
         }
@@ -241,7 +226,6 @@ namespace CouchGuys.Gameplay.Weapons
             m_canvasRoot = null;
             m_view = null;
             m_hudBuilt = false;
-            m_lastSelectedSlot = -1;
             m_lastTimerSecond = -1;
             m_nextSlowRefresh = 0f;
         }

@@ -261,11 +261,13 @@ namespace CouchGuys.Editor
                 view.m_expandedMapRoot.Find("Viewport/StaticMap/DynamicMarkers") == null ||
                 view.m_expandedMapRoot.Find("CloseHint").GetComponent<Text>().text != "M - Close Map")
                 throw new UnityException("Expanded map must be complete and disabled by default.");
-            foreach (PlayerStatusBar bar in new[] { view.m_healthBar, view.m_staminaBar })
+            foreach (PlayerStatusBar bar in new[] { view.m_healthBar })
             {
                 if (bar.transform.Find("BadgeMask").GetComponent<Mask>() == null) throw new UnityException("Portrait mask is missing.");
                 if (bar.transform.Find("Fill").GetComponent<Image>().type != Image.Type.Filled) throw new UnityException("Bar must use filled Image.");
             }
+            if (view.m_staminaBar.GetComponent<StaminaHudVisual>() == null)
+                throw new UnityException("Stamina energy presentation is missing.");
             foreach (var field in typeof(PlayerWeaponHudView).GetFields())
             {
                 object value = field.GetValue(view);
@@ -377,7 +379,7 @@ namespace CouchGuys.Editor
                 view.m_healthBar.SetValue(-1f);
                 view.m_staminaBar.SetValue(2f);
                 if (view.m_healthBar.transform.Find("Fill").GetComponent<Image>().fillAmount != 0f ||
-                    view.m_staminaBar.transform.Find("Fill").GetComponent<Image>().fillAmount != 1f)
+                    view.m_staminaBar.GetComponent<StaminaHudVisual>().NormalizedValue != 1f)
                     throw new UnityException("Status fill must clamp to capacity.");
                 view.m_staminaBar.SetValue(0.5f);
                 camera.Render();
@@ -634,7 +636,9 @@ namespace CouchGuys.Editor
         {
             RectTransform panel = Rect("StaminaPanel", m_canvasRoot.transform);
             SetRect(panel, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -25f), new Vector2(410f, 42f), new Vector2(0.5f, 1f));
-            m_staminaBar = CreateStatus(panel, true);
+            GameObject staminaPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(UiRoot + "StaminaHUD.prefab");
+            if (staminaPrefab == null) throw new UnityException("Saved StaminaHUD prefab is missing.");
+            m_staminaBar = ((GameObject)PrefabUtility.InstantiatePrefab(staminaPrefab, panel)).GetComponent<PlayerStatusBar>();
         }
 
         private void BuildHotbar()

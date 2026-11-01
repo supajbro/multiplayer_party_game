@@ -134,6 +134,8 @@ namespace CouchGuys.Gameplay.Depot
         [SerializeField] private Transform m_vehicleArrival;
         [Tooltip("Purchased trucks use this transform's position and heading. Local +Z faces the exit.")]
         [SerializeField] private Transform m_truckSpawnPoint;
+        [Tooltip("Authored floor used to ground purchased trucks inside a roofed depot.")]
+        [SerializeField] private Collider m_vehicleSpawnSurface;
         [SerializeField] private Transform[] m_vehicleFallbacks = Array.Empty<Transform>();
         [SerializeField] private Transform m_couchHiddenSpawn;
         [SerializeField] private Transform[] m_conveyorPath = Array.Empty<Transform>();
@@ -142,7 +144,13 @@ namespace CouchGuys.Gameplay.Depot
         [SerializeField, Min(0.1f)] private float m_conveyorSpeed = 2.25f;
         [SerializeField, Min(0f)] private float m_arrivalDelay = 0.75f;
 
-        [Header("Roller Doors")]
+        [Header("Doors")]
+        [SerializeField] private Transform m_entranceDetectionCentre;
+        [SerializeField, Min(1f)] private float m_entranceDetectionRadius = 4.5f;
+        [SerializeField, Min(0.1f)] private float m_entranceOpeningSpeed = 1.4f;
+        [SerializeField, Min(0.1f)] private float m_entranceClosingSpeed = 1f;
+        [SerializeField, Min(0f)] private float m_entranceClosingDelay = 1.2f;
+        private float m_entranceLastOccupied = float.NegativeInfinity;
         [SerializeField, Min(0.1f)] private float m_doorAnimationSpeed = 0.65f;
         [SerializeField] private DepotDoorRig m_exitDoor = new();
         [SerializeField] private DepotDoorRig m_vehicleGarageDoor = new();
@@ -151,6 +159,7 @@ namespace CouchGuys.Gameplay.Depot
         private readonly Collider[] m_safetyHits = new Collider[32];
 
         public Transform DeliveryNpcMarker => m_deliveryNpc;
+        public Collider VehicleSpawnSurface => m_vehicleSpawnSurface;
         public Transform VehicleArrival => m_truckSpawnPoint != null ? m_truckSpawnPoint : m_vehicleArrival;
         public IReadOnlyList<Transform> VehicleFallbacks => m_vehicleFallbacks;
         public Transform CouchHiddenSpawn => m_couchHiddenSpawn;
@@ -161,7 +170,7 @@ namespace CouchGuys.Gameplay.Depot
 
         private void Update()
         {
-            m_exitDoor?.Tick(m_doorAnimationSpeed, Time.deltaTime);
+            m_exitDoor?.Tick(m_exitDoor.TargetOpen ? m_entranceOpeningSpeed : m_entranceClosingSpeed, Time.deltaTime);
             m_vehicleGarageDoor?.Tick(m_doorAnimationSpeed, Time.deltaTime);
         }
 
@@ -179,6 +188,22 @@ namespace CouchGuys.Gameplay.Depot
         {
             ApplyDoorState(m_exitDoor, exitOpen, immediate);
             ApplyDoorState(m_vehicleGarageDoor, garageOpen, immediate);
+        }
+
+        // Called only by DeliveryManager on the server; its SyncVar replicates the result.
+        public bool ShouldOpenAutomaticEntrance()
+        {
+            if (m_entranceDetectionCentre == null) return IsDoorwayBlocked(DepotDoorKind.Exit);
+            int count = Physics.OverlapSphereNonAlloc(m_entranceDetectionCentre.position,
+                m_entranceDetectionRadius, m_safetyHits, ~0, QueryTriggerInteraction.Collide);
+            bool occupied = count >= m_safetyHits.Length;
+            for (int i = 0; i < count; i++)
+                if (m_safetyHits[i] != null &&
+                    m_safetyHits[i].GetComponentInParent<PlayerCouchCarrier>() != null)
+                    occupied = true;
+            if (occupied || IsDoorwayBlocked(DepotDoorKind.Exit))
+                m_entranceLastOccupied = Time.time;
+            return Time.time - m_entranceLastOccupied <= m_entranceClosingDelay;
         }
 
         public bool IsDoorwayBlocked(DepotDoorKind kind)
@@ -256,205 +281,10 @@ namespace CouchGuys.Gameplay.Depot
         private static Vector3 Abs(Vector3 value) =>
             new(Mathf.Abs(value.x), Mathf.Abs(value.y), Mathf.Abs(value.z));
 
-        /// <summary>
-        /// Runtime-safe fallback for a directly assigned depot model. This also keeps
-        /// Game-scene testing functional before/after the editor-authored wrapper prefab
-        /// is rebuilt.
-        /// </summary>
-        public static bool TryConfigureImportedModel(GameObject root,
-            out StartingArea startingArea)
+        public static bool TryConfigureImportedModel(GameObject root, out StartingArea startingArea)
         {
-            startingArea = null;
-            if (root == null || Find(root.transform, "CGD_MARK_Player_InitialSpawn") == null)
-                return false;
-
-            Transform roadSource = Find(root.transform, "CGD_MARK_ExitDoor_SuburbsOutside");
-            Transform npc = Find(root.transform, "CGD_MARK_DeliveryMan_Frog");
-            Transform player = Find(root.transform, "CGD_MARK_Player_InitialSpawn");
-            Transform vehicle = Find(root.transform, "CGD_MARK_Truck_RearOffstageArrival");
-            Transform couchHidden = Find(root.transform, "CGD_MARK_Couch_OffstageHiddenSpawn");
-            if (roadSource == null || npc == null || player == null || vehicle == null || couchHidden == null)
-                return false;
-
-            Transform road = CreateRuntimeMarker(root.transform, "RoadConnection", roadSource);
-            Transform interiorApproach = Find(root.transform,
-                "CGD_MARK_ExitDoor_InteriorApproach");
-            Vector3 outward = Vector3.ProjectOnPlane(roadSource.position -
-                (interiorApproach != null ? interiorApproach.position : root.transform.position),
-                Vector3.up).normalized;
-            road.rotation = Quaternion.LookRotation(outward.sqrMagnitude > 0.01f
-                ? outward : -root.transform.forward, Vector3.up);
-            Transform staging = Find(root.transform, "CGD_MARK_Truck_DispatchStaging");
-            Transform truckSpawn = Find(root.transform, "TruckSpawnPoint") ??
-                CreateRuntimeMarker(root.transform, "TruckSpawnPoint", staging != null ? staging : vehicle);
-            truckSpawn.rotation = road.rotation;
-            npc.localScale = Vector3.one;
-            Transform npcSpawn = CreateRuntimeMarker(root.transform,
-                "DeliveryNpcSpawnPoint", npc);
-
-            Transform spawnRoot = new GameObject("PlayerSpawnPoints").transform;
-            spawnRoot.SetParent(root.transform, false);
-            Vector3[] offsets =
-            {
-                new(-1.1f, 0f, -0.8f), new(1.1f, 0f, -0.8f),
-                new(-1.1f, 0f, 0.8f), new(1.1f, 0f, 0.8f)
-            };
-            Transform[] spawns = new Transform[offsets.Length];
-            for (int index = 0; index < offsets.Length; index++)
-            {
-                spawns[index] = CreateRuntimeMarker(spawnRoot,
-                    $"PlayerSpawnPoint{index + 1:00}", player);
-                spawns[index].position += root.transform.TransformVector(offsets[index]);
-                spawns[index].rotation = road.rotation;
-            }
-
-            AddRuntimeColliders(root.transform);
-            DepotDoorRig garage = CreateRuntimeDoorRig(root.transform, "TruckGarageDoor",
-                new Vector3(8.05f, 5.4f, 0.45f));
-            DepotDoorRig exit = CreateRuntimeDoorRig(root.transform, "ExitRollerDoor",
-                new Vector3(7.85f, 5.4f, 0.45f));
-            DepotDoorButton exterior = AddRuntimeButton(root.transform,
-                "CGD_INTERACT_ExitDoor_ExteriorButton");
-            DepotDoorButton interior = AddRuntimeButton(root.transform,
-                "CGD_INTERACT_ExitDoor_InteriorButton");
-
-            Transform[] fallbacks =
-            {
-                Find(root.transform, "CGD_MARK_Truck_Path_01_InsideRear"),
-                Find(root.transform, "CGD_MARK_Truck_Path_02_Centre"),
-                Find(root.transform, "CGD_MARK_Truck_DispatchStaging")
-            };
-            Transform[] conveyor = new Transform[5];
-            for (int index = 0; index < conveyor.Length; index++)
-                conveyor[index] = Find(root.transform, $"CGD_MARK_Couch_ConveyorPoint_{index}");
-
-            DepotController depot = root.GetComponent<DepotController>() ??
-                                    root.AddComponent<DepotController>();
-            depot.Configure(npcSpawn, vehicle, fallbacks, couchHidden, conveyor, exit, garage,
-                new[] { exterior, interior });
-            depot.SetTruckSpawnPoint(truckSpawn);
-            foreach (Transform fallback in fallbacks)
-                if (fallback != null) fallback.rotation = truckSpawn.rotation;
-            startingArea = root.GetComponent<StartingArea>() ?? root.AddComponent<StartingArea>();
-            startingArea.Initialise(road, spawns, npcSpawn, new Vector2Int(5, 5));
-            startingArea.SetDepot(depot);
-            return true;
-        }
-
-        private static DepotDoorRig CreateRuntimeDoorRig(Transform root, string prefix,
-            Vector3 blockerSize)
-        {
-            Transform[] slats = new Transform[12];
-            Vector3[] closedPositions = new Vector3[12];
-            Quaternion[] closedRotations = new Quaternion[12];
-            Vector3[] openPositions = new Vector3[12];
-            Quaternion[] openRotations = new Quaternion[12];
-            float top = float.NegativeInfinity;
-            for (int index = 0; index < slats.Length; index++)
-            {
-                slats[index] = Find(root, $"{prefix}_Slat_{index:00}");
-                if (slats[index] == null) continue;
-                closedPositions[index] = slats[index].localPosition;
-                closedRotations[index] = slats[index].localRotation;
-                top = Mathf.Max(top, slats[index].position.y);
-            }
-            Transform animationMarker = Find(root, $"CGD_MARK_{prefix}_AnimationRoot");
-            Vector3 inward = animationMarker != null
-                ? Vector3.ProjectOnPlane(root.position - animationMarker.position, Vector3.up).normalized
-                : root.forward;
-            float openHeight = float.IsNegativeInfinity(top) ? root.position.y + 6f : top + 0.84f;
-            for (int index = 0; index < slats.Length; index++)
-            {
-                if (slats[index] == null) continue;
-                Vector3 world = slats[index].position;
-                world.y = openHeight;
-                world += inward * (1.5f + index * 0.445f);
-                openPositions[index] = slats[index].parent.InverseTransformPoint(world);
-                Quaternion worldRotation = slats[index].rotation * Quaternion.Euler(-90f, 0f, 0f);
-                openRotations[index] = Quaternion.Inverse(slats[index].parent.rotation) * worldRotation;
-            }
-
-            Vector3 markerPosition = animationMarker != null
-                ? animationMarker.position
-                : root.position;
-            BoxCollider blocker = CreateRuntimeBox(root, $"{prefix}_Collision",
-                markerPosition, blockerSize, false);
-            string safetyName = prefix == "ExitRollerDoor"
-                ? "CGD_MARK_ExitDoor_SafetyVolume"
-                : "CGD_MARK_TruckDoor_SafetyVolume";
-            Transform safetyMarker = Find(root, safetyName);
-            BoxCollider safety = CreateRuntimeBox(root, $"{prefix}_SafetyVolume",
-                safetyMarker != null ? safetyMarker.position : markerPosition,
-                new Vector3(blockerSize.x, 4.8f, 3.2f), true);
-            DepotDoorRig rig = new();
-            rig.Configure(slats, closedPositions, closedRotations, openPositions,
-                openRotations, blocker, safety);
-            return rig;
-        }
-
-        private static BoxCollider CreateRuntimeBox(Transform root, string name,
-            Vector3 position, Vector3 size, bool trigger)
-        {
-            GameObject value = new GameObject(name);
-            value.transform.SetParent(root, false);
-            value.transform.position = position;
-            value.transform.rotation = root.rotation;
-            BoxCollider collider = value.AddComponent<BoxCollider>();
-            collider.size = size;
-            collider.isTrigger = trigger;
-            return collider;
-        }
-
-        private static void AddRuntimeColliders(Transform root)
-        {
-            string[] tokens =
-            {
-                "WarehouseInterior_WalkableFloor", "Foundation_Main", "BrickFront_Solid",
-                "PaleWood_Solid", "BelowWindow", "RearWall_", "TruckArrival_RearWallHeader", "RealLintel",
-                "Backstage_LeftOpaquePartition", "Backstage_FrontWall",
-                "Conveyor_VisibilityBaffle", "Conveyor_MainBody", "Conveyor_Guardrail",
-                "FrogCounter_Main", "ArrivalServiceTunnel_SideWall", "RearPortal_Bumper",
-                "WarehouseCornerSupport", "DispatchSafetyBollard"
-            };
-            foreach (MeshFilter filter in root.GetComponentsInChildren<MeshFilter>(true))
-            {
-                if (filter.sharedMesh == null || filter.GetComponent<Collider>() != null) continue;
-                bool selected = false;
-                foreach (string token in tokens)
-                    if (filter.name.Contains(token, StringComparison.Ordinal)) { selected = true; break; }
-                if (!selected) continue;
-                BoxCollider collider = filter.gameObject.AddComponent<BoxCollider>();
-                collider.center = filter.sharedMesh.bounds.center;
-                collider.size = filter.sharedMesh.bounds.size;
-            }
-        }
-
-        private static DepotDoorButton AddRuntimeButton(Transform root, string name)
-        {
-            Transform marker = Find(root, name);
-            if (marker == null) return null;
-            DepotDoorButton button = marker.GetComponent<DepotDoorButton>() ??
-                                     marker.gameObject.AddComponent<DepotDoorButton>();
-            button.Configure(DepotDoorKind.Exit);
-            return button;
-        }
-
-        private static Transform CreateRuntimeMarker(Transform parent, string name,
-            Transform source)
-        {
-            Transform marker = new GameObject(name).transform;
-            marker.SetParent(parent, false);
-            marker.SetPositionAndRotation(source.position, source.rotation);
-            return marker;
-        }
-
-        private static Transform Find(Transform root, string name)
-        {
-            if (root == null) return null;
-            foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
-                if (child.name == name) return child;
-            return null;
+            startingArea = root != null ? root.GetComponent<StartingArea>() : null;
+            return startingArea != null && root.GetComponent<DepotController>() != null;
         }
     }
-
 }

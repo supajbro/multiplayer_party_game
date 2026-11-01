@@ -15,6 +15,9 @@ namespace CouchGuys.Input
         [Header("Input Actions")]
         [SerializeField] private InputActionAsset m_inputActions;
 
+        [Header("Hotbar")]
+        [SerializeField] private bool m_invertHotbarScroll;
+
         private InputActionMap m_playerMap;
         private InputAction m_moveAction;
         private InputAction m_lookAction;
@@ -62,6 +65,20 @@ namespace CouchGuys.Input
                 if (Keyboard.current?.digit4Key.wasPressedThisFrame ?? false) return 3;
                 if (Keyboard.current?.digit5Key.wasPressedThisFrame ?? false) return 4;
                 return -1;
+            }
+        }
+        // Read once by the owning weapon controller; scroll deltas reset every input update.
+        public int HotbarScrollDirection
+        {
+            get
+            {
+                if (!isActiveAndEnabled || GameplaySuppressed || Time.timeScale <= 0f ||
+                    Cursor.lockState != CursorLockMode.Locked) return 0;
+                var ui = UnityEngine.EventSystems.EventSystem.current;
+                if (ui != null && (ui.IsPointerOverGameObject() || ui.currentSelectedGameObject != null)) return 0;
+                float scroll = Mouse.current?.scroll.ReadValue().y ?? 0f;
+                int direction = scroll > 0f ? -1 : scroll < 0f ? 1 : 0;
+                return m_invertHotbarScroll ? -direction : direction;
             }
         }
         public int WeaponSelectionPressedThisFrame => HotbarSelectionPressedThisFrame < 3

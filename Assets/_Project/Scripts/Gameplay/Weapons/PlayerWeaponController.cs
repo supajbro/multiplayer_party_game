@@ -71,6 +71,8 @@ namespace CouchGuys.Gameplay.Weapons
         private float m_reloadCompleteAt;
         private int m_reloadingIndex = -1;
         private float m_nextLocalRequestTime;
+        private int m_pendingHotbarSlot = -1;
+        private float m_pendingHotbarUntil;
         private bool m_localReloading;
         private int m_localReloadIndex = -1;
         private float m_localReloadCompleteAt;
@@ -183,9 +185,25 @@ namespace CouchGuys.Gameplay.Weapons
                 return;
 
             if (m_input.DropWeaponPressedThisFrame) RequestDropWeaponServerRpc();
+            if (m_pendingHotbarSlot == SelectedHotbarSlot || Time.unscaledTime >= m_pendingHotbarUntil)
+                m_pendingHotbarSlot = -1;
+            int currentSlot = m_pendingHotbarSlot >= 0 ? m_pendingHotbarSlot : SelectedHotbarSlot;
             int selection = m_input.HotbarSelectionPressedThisFrame;
-            if (selection >= 0 && selection != m_selectedHotbarSlot.Value)
+            int scroll = m_input.HotbarScrollDirection;
+            if (selection < 0 && scroll != 0)
             {
+                for (int step = 1; step <= InventorySlotCount; step++)
+                {
+                    int slot = (currentSlot + scroll * step + InventorySlotCount) % InventorySlotCount;
+                    if (!ValidIndex(GetInventoryWeaponIndex(slot))) continue;
+                    selection = slot;
+                    break;
+                }
+            }
+            if (selection >= 0 && selection != currentSlot)
+            {
+                m_pendingHotbarSlot = selection;
+                m_pendingHotbarUntil = Time.unscaledTime + 1f;
                 EndLocalRifleBurst();
                 m_localReloading = false;
                 RequestHotbarSelectionServerRpc(selection);

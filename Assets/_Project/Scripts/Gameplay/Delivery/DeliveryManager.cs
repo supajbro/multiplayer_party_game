@@ -209,9 +209,9 @@ namespace CouchGuys.Gameplay.Delivery
             }
             if (IsServerInitialized && m_depot != null)
             {
-                if (!m_exitDoorOpen.Value &&
-                    m_depot.IsDoorwayBlocked(DepotDoorKind.Exit))
-                    m_exitDoorOpen.Value = true;
+                bool entranceOpen = m_depot.ShouldOpenAutomaticEntrance();
+                if (m_exitDoorOpen.Value != entranceOpen)
+                    m_exitDoorOpen.Value = entranceOpen;
                 if (!m_vehicleGarageDoorOpen.Value &&
                     m_depot.IsDoorwayBlocked(DepotDoorKind.VehicleGarage))
                     m_vehicleGarageDoorOpen.Value = true;
@@ -394,7 +394,7 @@ namespace CouchGuys.Gameplay.Delivery
                     $"{selectedMetrics.ProgressionZone}/{selectedMetrics.Zone}, " +
                     $"route {selectedMetrics.RouteLength:F0}m, " +
                     $"ascent {selectedMetrics.CumulativeElevationGain:F1}m, " +
-                    $"max grade {selectedMetrics.MaximumRoadGrade:F1}°, " +
+                    $"max grade {selectedMetrics.MaximumRoadGrade:F1}Ãƒâ€šÃ‚Â°, " +
                     $"score {selectedMetrics.DifficultyScore:F0}.",
                     this);
             }
@@ -600,6 +600,11 @@ namespace CouchGuys.Gameplay.Delivery
             DeliveryNPC npc,
             out RaycastHit ground)
         {
+            // The saved depot floor is authoritative for indoor spawn markers.
+            // A probe from above the building must not choose its roof or skylights.
+            if (m_depot != null && m_depot.VehicleSpawnSurface != null)
+                return m_depot.VehicleSpawnSurface.Raycast(new Ray(probeOrigin, Vector3.down),
+                    out ground, m_vehicleGroundProbeDistance);
             RaycastHit[] hits = Physics.RaycastAll(
                 probeOrigin,
                 Vector3.down,
@@ -722,32 +727,46 @@ namespace CouchGuys.Gameplay.Delivery
             if (m_depot.ArrivalDelay > 0f)
                 yield return new WaitForSeconds(m_depot.ArrivalDelay);
 
-            IReadOnlyList<Transform> path = m_depot.ConveyorPath;
-            for (int index = 0; index < path.Count; index++)
-            {
-                Transform waypoint = path[index];
-                if (waypoint == null) continue;
-                while (couch != null && couch.IsSpawned &&
-                       Vector3.Distance(couch.transform.position, waypoint.position) > 0.015f)
-                {
-                    Vector3 next = Vector3.MoveTowards(couch.transform.position,
-                        waypoint.position, m_depot.ConveyorSpeed * Time.fixedDeltaTime);
-                    Quaternion rotation = Quaternion.RotateTowards(couch.transform.rotation,
-                        waypoint.rotation, 120f * Time.fixedDeltaTime);
-                    couch.CouchRigidbody.MovePosition(next);
-                    couch.CouchRigidbody.MoveRotation(rotation);
-                    yield return new WaitForFixedUpdate();
-                }
-                if (couch == null || !couch.IsSpawned) yield break;
-                couch.CouchRigidbody.position = waypoint.position;
-                couch.CouchRigidbody.rotation = waypoint.rotation;
-            }
+            IEnumerator motion = MoveCouchAlongConveyor(couch.CouchRigidbody, m_depot.ConveyorPath, m_depot.ConveyorSpeed);
+            while (couch != null && couch.IsSpawned && motion.MoveNext())
+                yield return motion.Current;
 
             if (couch == null || !couch.IsSpawned) yield break;
             couch.SetDepotTransportActiveServer(false);
             StartDeliveryTimerServer(destination, tier);
             SetStateServer(DeliveryState.Transport, DeliveryObjectiveStep.DeliverCouch);
             m_conveyorDispatch = null;
+        }
+
+        internal static IEnumerator MoveCouchAlongConveyor(Rigidbody body,
+            IReadOnlyList<Transform> path, float speed)
+        {
+            if (body == null || path == null) yield break;
+            speed = Mathf.Max(.1f, speed);
+            for (int index = 0; index < path.Count; index++)
+            {
+                Transform waypoint = path[index];
+                if (waypoint == null) continue;
+                if (body == null) yield break;
+                Vector3 start = body.position;
+                Vector3 target = waypoint.position;
+                Quaternion targetRotation = waypoint.rotation;
+                float duration = Vector3.Distance(start, target) / speed;
+                float elapsed = 0f;
+                // Interpolated render transforms can lag physics. A timed segment
+                // cannot wait forever for that displayed pose to reach a waypoint.
+                while (elapsed < duration)
+                {
+                    if (body == null) yield break;
+                    elapsed = Mathf.Min(duration, elapsed + Time.fixedDeltaTime);
+                    body.MovePosition(Vector3.Lerp(start, target, elapsed / duration));
+                    body.MoveRotation(Quaternion.RotateTowards(body.rotation, targetRotation,
+                        120f * Time.fixedDeltaTime));
+                    yield return new WaitForFixedUpdate();
+                }
+                body.position = target;
+                body.rotation = targetRotation;
+            }
         }
 
         private void CompleteDeliveryServer(CouchCarryController couch)

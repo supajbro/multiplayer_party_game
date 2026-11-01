@@ -7,6 +7,7 @@ namespace CouchGuys.Gameplay.Weapons
     public sealed class PlayerStatusBar : MonoBehaviour
     {
         [SerializeField] private Image m_fill;
+        [SerializeField] private StaminaHudVisual m_staminaVisual;
         [SerializeField] private Image m_expression;
         [SerializeField] private Sprite[] m_happyFrames;
         [Tooltip("Optional; falls back to Happy when empty. Used below 60% health.")]
@@ -143,6 +144,11 @@ namespace CouchGuys.Gameplay.Weapons
 
         public void SetValue(float value)
         {
+            if (m_staminaVisual != null)
+            {
+                m_staminaVisual.SetValue(value);
+                return;
+            }
             m_fill.fillAmount = Mathf.Clamp01(value);
             if (m_fillMaterial == null) return;
 
@@ -161,6 +167,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void OnEnable()
         {
+            if (m_staminaVisual != null) return;
             if (m_selectedFrames == null) SetHealthExpression(1f);
             m_animation = FaceAnimation.Idle;
             m_activeFrames = m_selectedFrames;

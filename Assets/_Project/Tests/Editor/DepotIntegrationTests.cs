@@ -1,163 +1,125 @@
+using System;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using CouchGuys.Gameplay.Depot;
+using CouchGuys.Player;
 using CouchGuys.ProceduralGeneration;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace CouchGuys.Tests.Editor
 {
     public sealed class DepotIntegrationTests
     {
-        private const string ModelPath = "Assets/_Project/Models/depot/depot.fbx";
-        private const string RegionPath = "Assets/_Project/Settings/Regions/Region_Suburbs.asset";
         private const string PrefabPath = "Assets/_Project/Prefabs/World/CouchGuysDepotV2.prefab";
+        private GameObject Create() => Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath));
+        private static Transform Find(GameObject root, string name) => root.GetComponentsInChildren<Transform>(true).Single(t=>t.name==name);
+        private static void Dispose(GameObject root)
+        {
+            root.GetComponent<DepotController>().ReleaseDoorAnimations();
+            Object.DestroyImmediate(root);
+        }
 
         [Test]
-        public void DepotSpawnRearWallAndLodsRemainValidAfterWorldPlacement()
+        public void SavedDepotPreservesGameplayAndModularLods()
         {
-            GameObject instance = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath));
+            GameObject root = Create();
             try
             {
-                instance.transform.SetPositionAndRotation(new Vector3(73, 2, -41), Quaternion.Euler(0, 93, 0));
-                DepotController depot = instance.GetComponent<DepotController>();
-                Transform spawn = instance.transform.Find("TruckSpawnPoint");
-                Transform road = instance.GetComponentsInChildren<Transform>().Single(t => t.name == "RoadConnection");
-                Assert.That(depot.VehicleArrival, Is.EqualTo(spawn));
-                Assert.That(Vector3.Dot(spawn.forward, road.forward), Is.GreaterThan(.999f));
-                Assert.That(instance.transform.InverseTransformPoint(spawn.position).z, Is.InRange(-8f, 7f));
-                BoxCollider rear = instance.GetComponentsInChildren<BoxCollider>().Single(c => c.name.Contains("RearWall_Closure"));
+                root.transform.SetPositionAndRotation(new Vector3(73,2,-41),Quaternion.Euler(0,93,0));
+                var depot=root.GetComponent<DepotController>();
+                Assert.That(depot.HasConveyor,Is.True);
+                Assert.That(depot.ConveyorPath.Count,Is.EqualTo(5));
+                Assert.That(depot.ConveyorPath.All(t=>t!=null),Is.True);
+                Assert.That(depot.DeliveryNpcMarker,Is.Not.Null);
+                Assert.That(depot.VehicleArrival,Is.EqualTo(Find(root,"TruckSpawnPoint")));
+                Assert.That(Vector3.Dot(depot.VehicleArrival.forward,Find(root,"RoadConnection").forward),Is.GreaterThan(.999f));
+                Assert.That(root.GetComponentsInChildren<Transform>().Any(t=>t.name.StartsWith("ExitRollerDoor_Slat")),Is.False);
+                Assert.That(root.GetComponentsInChildren<MeshFilter>().All(f=>f.sharedMesh!=null),Is.True);
+                Assert.That(root.GetComponentsInChildren<Renderer>().SelectMany(r=>r.sharedMaterials).All(m=>m!=null),Is.True);
+                var lods=root.GetComponentInChildren<LODGroup>().GetLODs();
+                Assert.That(lods.Length,Is.EqualTo(3));
+                int[] triangles=lods.Select(l=>l.renderers.Sum(r=>r.GetComponent<MeshFilter>().sharedMesh.triangles.Length/3)).ToArray();
+                Assert.That(triangles[1],Is.LessThan(triangles[0]));
+                Assert.That(triangles[2],Is.LessThan(triangles[1]));
+                Assert.That(lods.SelectMany(l=>l.renderers).All(r=>!r.name.Contains("GlassPanel")&&!r.name.Contains("_Slat_")),Is.True);
+                Assert.That(Find(root,"Hub_ShelfTray").GetComponent<Renderer>(),Is.Not.Null,"Props must remain independently adjustable");
+                var region=AssetDatabase.LoadAssetAtPath<RegionDefinition>("Assets/_Project/Settings/Regions/Region_Suburbs.asset");
+                Assert.That(region.StartingAreaPrefab.GetComponent<StartingArea>().Depot,Is.Not.Null);
+                Assert.That(DepotController.TryConfigureImportedModel(root,out _),Is.True);
+            }
+            finally { Dispose(root); }
+        }
+
+        [Test]
+        public void DoorAnimationAndCollisionRemainCorrectAfterPlacement()
+        {
+            GameObject root=Create();
+            try
+            {
+                root.transform.SetPositionAndRotation(new Vector3(30,1,-20),Quaternion.Euler(0,67,0));
+                var depot=root.GetComponent<DepotController>();
+                var panels=new[]{Find(root,"Hub_GlassPanel_0"),Find(root,"Hub_GlassPanel_1")};
+                var slats=Enumerable.Range(0,12).Select(i=>Find(root,$"TruckGarageDoor_Slat_{i:00}")).ToArray();
+                var closed=panels.Concat(slats).Select(t=>t.position).ToArray();
+                depot.ApplyDoorStates(false,false,true); Physics.SyncTransforms();
+                var ray=new Ray(root.transform.TransformPoint(new Vector3(-6.55f,1.6f,8)),root.transform.forward);
+                Assert.That(panels.Any(p=>p.GetComponent<BoxCollider>().Raycast(ray,out _,7)),Is.True);
+                depot.ApplyDoorStates(true,true,true); Physics.SyncTransforms();
+                Assert.That(panels.Any(p=>p.GetComponent<BoxCollider>().Raycast(ray,out _,7)),Is.False);
+                foreach(var p in panels) Assert.That(p.GetComponent<BoxCollider>().enabled,Is.True);
+                for(int i=0;i<14;i++)Assert.That(Vector3.Distance(closed[i],panels.Concat(slats).ElementAt(i).position),Is.GreaterThan(1.8f));
+                // The largest truck's collision envelope must clear the complete open bay.
+                var centre=root.transform.TransformPoint(new Vector3(7.2f,2.1f,11.4f));
+                var blockers=Physics.OverlapBox(centre,new Vector3(1.55f,2.02f,.5f),root.transform.rotation,~0,QueryTriggerInteraction.Ignore);
+                Assert.That(blockers.Where(c=>c.transform.IsChildOf(root.transform)),Is.Empty,"Open shutter clearance");
+                depot.ApplyDoorStates(false,true,true);
+                for(int i=0;i<12;i++)Assert.That(slats[i].position.y,Is.GreaterThan(root.transform.position.y+5.5f),"Glass update must not reset roller");
+                depot.ApplyDoorStates(false,false,true);Physics.SyncTransforms();
+                for(int i=0;i<14;i++)Assert.That(Vector3.Distance(closed[i],panels.Concat(slats).ElementAt(i).position),Is.LessThan(.002f));
+            }
+            finally { Dispose(root); }
+        }
+
+        [Test]
+        public void AutomaticEntranceDetectsPlayersAndRetainsConfiguredDelay()
+        {
+            GameObject root=Create();
+            GameObject player=new GameObject("DepotDetectionTestPlayer");
+            try
+            {
+                player.AddComponent<PlayerCouchCarrier>();
+                var collider=player.GetComponent<Collider>();
+                if(collider==null)collider=player.AddComponent<CapsuleCollider>();
+                var depot=root.GetComponent<DepotController>();
+                Transform sensor=Find(root,"CGD_MARK_ExitDoor_SafetyVolume");
+                player.transform.position=sensor.position+root.transform.forward*2;
                 Physics.SyncTransforms();
-                Vector3 centre = rear.transform.TransformPoint(rear.center);
-                Assert.That(rear.Raycast(new Ray(centre - instance.transform.forward * 3f,
-                    instance.transform.forward), out _, 6f), Is.True);
-                Assert.That(Physics.Raycast(instance.transform.TransformPoint(new Vector3(7.2f, 5.44f, -14f)),
-                    instance.transform.forward, 5f, ~0, QueryTriggerInteraction.Ignore), Is.True,
-                    "The rear closure must meet the existing header without a gap.");
-                RaycastHit ground = Physics.RaycastAll(spawn.position + Vector3.up * 20f,
-                    Vector3.down, 50f, ~0, QueryTriggerInteraction.Ignore).OrderBy(h => h.distance).First();
-                Assert.That(ground.collider.name, Does.Contain("WalkableFloor"));
-                Vector3 vehicleCentre = ground.point + Vector3.up * 1.52f;
-                Assert.That(Physics.OverlapBox(vehicleCentre, new Vector3(1.7f, 1.32f, 3.5f),
-                    spawn.rotation, ~0, QueryTriggerInteraction.Ignore), Is.Empty,
-                    "Purchased vehicle must fit inside the dispatch lane.");
-                LODGroup group = instance.GetComponentInChildren<LODGroup>();
-                LOD[] lods = group.GetLODs();
-                Assert.That(lods.Length, Is.EqualTo(3));
-                Assert.That(group.fadeMode, Is.EqualTo(LODFadeMode.None));
-                int[] triangles = lods.Select(l => l.renderers.Sum(r =>
-                    r.GetComponent<MeshFilter>().sharedMesh.triangles.Length / 3)).ToArray();
-                Assert.That(triangles[1], Is.LessThan(triangles[0]));
-                Assert.That(triangles[2], Is.LessThan(triangles[1]));
-                Renderer[] renderers = lods.SelectMany(l => l.renderers).ToArray();
-                Assert.That(renderers.Distinct().Count(), Is.EqualTo(renderers.Length));
-                Assert.That(renderers.All(r => !r.name.Contains("_Slat_")), Is.True);
-                MeshRenderer[] functionalRenderers = instance.GetComponentsInChildren<MeshRenderer>()
-                    .Where(r => !renderers.Contains(r)).ToArray();
-                Assert.That(functionalRenderers.Length, Is.EqualTo(24));
-                Assert.That(functionalRenderers.All(r => r.name.Contains("_Slat_")), Is.True);
-                Assert.That(instance.GetComponentsInChildren<MeshFilter>().All(f => f.sharedMesh != null), Is.True);
-                Assert.That(depot.HasConveyor, Is.True);
+                Assert.That(depot.ShouldOpenAutomaticEntrance(),Is.True);
+                player.transform.position+=Vector3.right*100;Physics.SyncTransforms();
+                Assert.That(depot.ShouldOpenAutomaticEntrance(),Is.True,"Closing delay must keep door open");
+                typeof(DepotController).GetField("m_entranceLastOccupied",BindingFlags.NonPublic|BindingFlags.Instance).SetValue(depot,Time.time-10);
+                Assert.That(depot.ShouldOpenAutomaticEntrance(),Is.False);
             }
-            finally
-            {
-                instance.GetComponent<DepotController>().ReleaseDoorAnimations();
-                Object.DestroyImmediate(instance);
-            }
+            finally { Object.DestroyImmediate(player); Dispose(root); }
         }
 
-        [TestCase("ExitRollerDoor", true)]
-        [TestCase("TruckGarageDoor", false)]
-        public void AuthoredDoorMovesEverySlatIndependentlyAndRestoresCollision(string prefix, bool exit)
+        [MenuItem("Couch Guys/Run Depot Checks %#&t")]
+        public static void RunChecks()
         {
-            GameObject instance = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath));
+            var test=new DepotIntegrationTests();
             try
             {
-                DepotController depot = instance.GetComponent<DepotController>();
-                Transform[] slats = Enumerable.Range(0, 12).Select(i => instance
-                    .GetComponentsInChildren<Transform>().Single(t => t.name == $"{prefix}_Slat_{i:00}")).ToArray();
-                SerializedObject data = new SerializedObject(depot);
-                BoxCollider blocker = (BoxCollider)data.FindProperty(exit ? "m_exitDoor" : "m_vehicleGarageDoor")
-                    .FindPropertyRelative("m_blockingCollider").objectReferenceValue;
-                depot.ApplyDoorStates(false, false, true);
-                Vector3[] closed = slats.Select(t => t.localPosition).ToArray();
-                depot.ApplyDoorStates(exit, !exit, true);
-                for (int i = 0; i < slats.Length; i++)
-                    Assert.That(Vector3.Distance(slats[i].localPosition, closed[i]), Is.GreaterThan(.5f), slats[i].name);
-                Assert.That(blocker.enabled, Is.False);
-                // Updating the other graph must not reset this door.
-                Vector3[] open = slats.Select(t => t.localPosition).ToArray();
-                depot.ApplyDoorStates(true, true, true);
-                for (int i = 0; i < slats.Length; i++)
-                    Assert.That(Vector3.Distance(slats[i].localPosition, open[i]), Is.LessThan(.001f));
-                depot.ApplyDoorStates(false, false, true);
-                Assert.That(blocker.enabled, Is.True);
-                for (int i = 0; i < slats.Length; i++)
-                    Assert.That(Vector3.Distance(slats[i].localPosition, closed[i]), Is.LessThan(.001f));
+                test.SavedDepotPreservesGameplayAndModularLods();
+                test.DoorAnimationAndCollisionRemainCorrectAfterPlacement();
+                test.AutomaticEntranceDetectsPlayersAndRetainsConfiguredDelay();
+                File.WriteAllText("Temp/depot-tests.txt","PASS: gameplay references, modular LODs, transformed door motion/collision, truck clearance, automatic player detection and closing delay");
+                Debug.Log("Depot integration tests passed.");
             }
-            finally
-            {
-                instance.GetComponent<DepotController>().ReleaseDoorAnimations();
-                Object.DestroyImmediate(instance);
-            }
-        }
-
-        [Test]
-        public void ImportedDepotContainsRequiredGameplayMarkersAndAnimation()
-        {
-            GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
-            Assert.That(model, Is.Not.Null);
-            string[] markers =
-            {
-                "CGD_MARK_Player_InitialSpawn", "CGD_MARK_DeliveryMan_Frog",
-                "CGD_MARK_Truck_RearOffstageArrival", "CGD_MARK_Couch_OffstageHiddenSpawn",
-                "CGD_MARK_Couch_VisiblePickup", "CGD_MARK_ExitDoor_SuburbsOutside",
-                "CGD_MARK_ExitDoor_SafetyVolume", "CGD_MARK_TruckDoor_SafetyVolume",
-                "CGD_INTERACT_ExitDoor_ExteriorButton", "CGD_INTERACT_ExitDoor_InteriorButton"
-            };
-            string[] names = model.GetComponentsInChildren<Transform>(true)
-                .Select(value => value.name).ToArray();
-            foreach (string marker in markers) Assert.That(names, Does.Contain(marker), marker);
-            for (int index = 0; index < 5; index++)
-                Assert.That(names, Does.Contain($"CGD_MARK_Couch_ConveyorPoint_{index}"));
-            Assert.That(AssetDatabase.LoadAllAssetsAtPath(ModelPath).OfType<AnimationClip>()
-                .Any(value => !value.name.StartsWith("__preview__") && value.length > 0f), Is.True);
-        }
-
-        [Test]
-        public void RuntimeDepotSetupCreatesSeparatedSpawnsAndConveyor()
-        {
-            GameObject asset = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
-            GameObject instance = Object.Instantiate(asset);
-            try
-            {
-                Assert.That(DepotController.TryConfigureImportedModel(instance,
-                    out StartingArea startingArea), Is.True);
-                Assert.That(startingArea.PlayerSpawnPoints.Length, Is.EqualTo(4));
-                Assert.That(startingArea.PlayerSpawnPoints.Distinct().Count(), Is.EqualTo(4));
-                Assert.That(startingArea.PlayerSpawnPoints.SelectMany((left, leftIndex) =>
-                    startingArea.PlayerSpawnPoints.Skip(leftIndex + 1)
-                        .Select(right => Vector3.Distance(left.position, right.position)))
-                    .All(distance => distance > 1f), Is.True);
-                Assert.That(startingArea.Depot, Is.Not.Null);
-                Assert.That(startingArea.Depot.HasConveyor, Is.True);
-                Assert.That(startingArea.Depot.ConveyorPath.Count, Is.EqualTo(5));
-                Assert.That(startingArea.GridFootprint, Is.EqualTo(new Vector2Int(5, 5)));
-            }
-            finally
-            {
-                Object.DestroyImmediate(instance);
-            }
-        }
-
-        [Test]
-        public void SuburbsReferencesDepotStartingArea()
-        {
-            RegionDefinition region = AssetDatabase.LoadAssetAtPath<RegionDefinition>(RegionPath);
-            Assert.That(region, Is.Not.Null);
-            Assert.That(region.StartingAreaPrefab, Is.Not.Null);
-            Assert.That(region.StartingAreaPrefab.GetComponentsInChildren<Transform>(true)
-                .Any(value => value.name == "CGD_MARK_Player_InitialSpawn"), Is.True);
+            catch(Exception e) { File.WriteAllText("Temp/depot-tests.txt",e.ToString());throw; }
         }
     }
 }

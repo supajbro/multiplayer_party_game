@@ -17,103 +17,197 @@ namespace CouchGuys.Editor
         private const string ModelPath = "Assets/_Project/Models/depot/depot.fbx";
         private const string MeshPath = "Assets/_Project/Generated/DepotLods/Depot_CombinedLods.asset";
 
-        [MenuItem("Couch Guys/Update Depot Prefab")]
+        [MenuItem("Couch Guys/Update Depot Prefab %#&d")]
         public static void Build()
         {
-            ModelImporter importer = (ModelImporter)AssetImporter.GetAtPath(ModelPath);
-            // Same imported mesh reduction used by the house builder.
-            if (!importer.generateMeshLods)
-            {
-                importer.generateMeshLods = true;
-                importer.SaveAndReimport();
-            }
+            var importer = (ModelImporter)AssetImporter.GetAtPath(ModelPath);
+            if (importer.isReadable) { importer.isReadable = false; importer.SaveAndReimport(); }
+            AssetDatabase.ImportAsset(ModelPath, ImportAssetOptions.ForceSynchronousImport);
             GameObject root = PrefabUtility.LoadPrefabContents(PrefabPath);
             GameObject model = null;
             try
             {
                 Transform visuals = Find(root.transform, "DepotVisuals");
-                if (visuals == null) throw new InvalidOperationException("DepotVisuals is missing.");
                 Transform oldLods = root.transform.Find("DepotStaticLODs");
                 if (oldLods != null) Object.DestroyImmediate(oldLods.gameObject);
-                foreach (Transform child in visuals.GetComponentsInChildren<Transform>(true))
-                {
-                    if (child == null) continue;
-                    if (IsRetired(child.name) || child.name.StartsWith("DepotPolish_"))
-                        Object.DestroyImmediate(child.gameObject);
-                }
-
                 model = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath));
-                // Existing FBX mesh references and all functional objects keep their IDs.
-                foreach (Transform child in model.GetComponentsInChildren<Transform>(true))
-                {
-                    if (!child.name.StartsWith("DepotPolish_"))
+                var inputs = model.GetComponentsInChildren<MeshFilter>(true);
+                var names = new HashSet<string>(inputs.Select(f => f.name));
+                foreach (MeshFilter old in visuals.GetComponentsInChildren<MeshFilter>(true))
+                    if (!names.Contains(old.name))
                     {
-                        // Restore only build inputs on repeat runs. The saved prefab
-                        // contains combined static renderers, not duplicate originals.
-                        MeshRenderer source = child.GetComponent<MeshRenderer>();
-                        Transform existing = Find(visuals, child.name);
-                        if (source != null && existing != null && !IsRetired(child.name) &&
-                            !child.name.Contains("_Slat_"))
+                        // Authored architecture modules share renderers; preserve the saved simple collision shapes.
+                        if (old.GetComponent<Collider>() != null)
                         {
-                            MeshRenderer renderer = existing.GetComponent<MeshRenderer>();
-                            if (renderer == null) renderer = existing.gameObject.AddComponent<MeshRenderer>();
-                            renderer.sharedMaterials = source.sharedMaterials;
+                            var renderer = old.GetComponent<MeshRenderer>();
+                            if (renderer != null) Object.DestroyImmediate(renderer);
+                            Object.DestroyImmediate(old);
                         }
-                        continue;
+                        else Object.DestroyImmediate(old.gameObject);
                     }
-                    GameObject part = Object.Instantiate(child.gameObject, visuals, false);
-                    part.name = child.name;
-                    if (part.name.Contains("RearWall_Closure"))
+                foreach (MeshFilter source in inputs)
+                {
+                    Transform existing = Find(visuals, source.name);
+                    if (existing == null)
                     {
-                        Mesh mesh = part.GetComponent<MeshFilter>().sharedMesh;
-                        BoxCollider wall = part.AddComponent<BoxCollider>();
-                        wall.center = mesh.bounds.center;
-                        wall.size = mesh.bounds.size;
+                        existing = Object.Instantiate(source.gameObject, visuals, false).transform;
+                        existing.name = source.name;
                     }
+                    existing.localPosition = source.transform.localPosition;
+                    existing.localRotation = source.transform.localRotation;
+                    existing.localScale = source.transform.localScale;
+                    existing.GetComponent<MeshFilter>().sharedMesh = source.sharedMesh;
+                    MeshRenderer renderer = existing.GetComponent<MeshRenderer>();
+                    if (renderer == null) renderer = existing.gameObject.AddComponent<MeshRenderer>();
+                    renderer.sharedMaterials = source.GetComponent<MeshRenderer>().sharedMaterials;
+                    // Refit retained collision after structural changes.
+                    BoxCollider box = existing.GetComponent<BoxCollider>();
+                    bool solid = existing.name.Contains("WallInfill") || existing.name.Contains("Entrance_Header") ||
+                        existing.name.Contains("Frame_Jamb") || existing.name.Contains("Bollard") ||
+                        existing.name.Contains("Hub_Carton") || existing.name.Contains("Hub_PlantPot") ||
+                        existing.name.Contains("Hub_GlassPanel") || existing.name.Contains("_Slat_");
+                    if (box == null && solid) box = existing.gameObject.AddComponent<BoxCollider>();
+                    if (box != null) { box.center = source.sharedMesh.bounds.center; box.size = source.sharedMesh.bounds.size; }
+                    if (existing.name.StartsWith("Hub_GlassPanel")) ConfigureGlassMaterial(renderer);
                 }
-                Object.DestroyImmediate(model);
-                model = null;
-
-                Transform rearHeader = Find(visuals, "TruckArrival_RearWallHeader");
-                if (rearHeader != null && rearHeader.GetComponent<Collider>() == null)
-                {
-                    Mesh mesh = rearHeader.GetComponent<MeshFilter>().sharedMesh;
-                    BoxCollider wall = rearHeader.gameObject.AddComponent<BoxCollider>();
-                    wall.center = mesh.bounds.center;
-                    wall.size = mesh.bounds.size;
-                }
-
-                DepotController depot = root.GetComponent<DepotController>();
-                Transform spawn = root.transform.Find("TruckSpawnPoint");
-                if (spawn == null)
-                {
-                    spawn = new GameObject("TruckSpawnPoint").transform;
-                    spawn.SetParent(root.transform, false);
-                    spawn.position = Find(root.transform, "CGD_MARK_Truck_DispatchStaging").position;
-                    spawn.rotation = Find(root.transform, "RoadConnection").rotation;
-                }
-                depot.SetTruckSpawnPoint(spawn);
-                // The old offstage marker is retained for compatibility, but no longer used.
-                SerializedObject data = new SerializedObject(depot);
-                Transform[] fallbacks = { Find(root.transform, "CGD_MARK_Truck_Path_02_Centre"),
-                    Find(root.transform, "CGD_MARK_Truck_Path_01_InsideRear") };
-                SerializedProperty fallbackData = data.FindProperty("m_vehicleFallbacks");
-                fallbackData.arraySize = fallbacks.Length;
-                for (int i = 0; i < fallbacks.Length; i++)
-                    fallbackData.GetArrayElementAtIndex(i).objectReferenceValue = fallbacks[i];
-                data.ApplyModifiedPropertiesWithoutUndo();
-                ConfigureDoor(root, visuals, "m_exitDoor", "ExitRollerDoor");
+                Object.DestroyImmediate(model); model = null;
+                var data = new SerializedObject(root.GetComponent<DepotController>());
+                // Keep the purchased truck heading aligned with the existing exit.
+                Transform spawn = Find(root.transform, "TruckSpawnPoint");
+                spawn.rotation = Find(root.transform, "RoadConnection").rotation;
                 ConfigureDoor(root, visuals, "m_vehicleGarageDoor", "TruckGarageDoor");
+                ConfigureGlass(root, visuals);
+                data.Update();
+                // Individual moving slats now provide physical collision throughout travel.
+                var garage = data.FindProperty("m_vehicleGarageDoor");
+                var blocker = (BoxCollider)garage.FindPropertyRelative("m_blockingCollider").objectReferenceValue;
+                if (blocker != null) blocker.enabled = false;
+                garage.FindPropertyRelative("m_blockingCollider").objectReferenceValue = null;
+                Transform centre = Find(root.transform, "CGD_MARK_ExitDoor_SafetyVolume");
+                data.FindProperty("m_entranceDetectionCentre").objectReferenceValue = centre;
+                data.ApplyModifiedPropertiesWithoutUndo();
+                foreach (DepotDoorButton button in root.GetComponentsInChildren<DepotDoorButton>(true))
+                {
+                    button.Configure(DepotDoorKind.VehicleGarage);
+                    Vector3 p = button.transform.localPosition;
+                    p.x = 2.5f; p.y = 1.6f; button.transform.localPosition = p;
+                }
+                // Keep decorative props editable, combine only fixed architectural parts.
                 BuildLods(root, visuals);
+                foreach (Transform lamp in visuals.GetComponentsInChildren<Transform>().Where(t => t.name.StartsWith("Hub_PendantGlow")))
+                {
+                    Light light = lamp.GetComponent<Light>();
+                    if (light == null) light = lamp.gameObject.AddComponent<Light>();
+                    light.type = LightType.Point; light.color = new Color(1f,.83f,.55f);
+                    light.intensity = 2f; light.range = 8f; light.shadows = LightShadows.None;
+                }
                 PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
                 AssetDatabase.SaveAssets();
-                Debug.Log("Depot prefab updated: interior spawn, enclosed rear, authored doors and three combined LODs.");
+                Validate();
+                Debug.Log("Depot concept integration complete: one truck roller, two automatic glass panels, preserved gameplay references.");
             }
             finally
             {
                 if (model != null) Object.DestroyImmediate(model);
                 PrefabUtility.UnloadPrefabContents(root);
             }
+        }
+
+        [MenuItem("Couch Guys/Preview Depot %#&p")]
+        public static void Preview()
+        {
+            var preview = new PreviewRenderUtility();
+            try
+            {
+                var instance = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath));
+                preview.AddSingleGO(instance);
+                foreach (LODGroup group in instance.GetComponentsInChildren<LODGroup>()) group.ForceLOD(0);
+                preview.camera.transform.position = new Vector3(0,4.4f,-3.2f);
+                preview.camera.transform.LookAt(new Vector3(0,3.5f,10f));
+                preview.camera.fieldOfView = 90;
+                preview.camera.nearClipPlane = .05f; preview.camera.farClipPlane = 100;
+                preview.camera.clearFlags = CameraClearFlags.SolidColor;
+                preview.camera.backgroundColor = new Color(.12f,.2f,.3f);
+                preview.lights[0].intensity = 1.8f;
+                preview.lights[0].transform.rotation = Quaternion.Euler(35,160,0);
+                preview.lights[1].intensity = 1.3f;
+                preview.ambientColor = new Color(.55f,.6f,.7f);
+                preview.BeginStaticPreview(new Rect(0,0,1400,850));
+                preview.Render(true);
+                Texture2D result = preview.EndStaticPreview();
+                File.WriteAllBytes("Temp/depot-unity-preview.png", result.EncodeToPNG());
+                Object.DestroyImmediate(result);
+                instance.GetComponent<DepotController>().ReleaseDoorAnimations();
+            }
+            finally { preview.Cleanup(); }
+        }
+        private static void ConfigureGlassMaterial(MeshRenderer renderer)
+        {
+            const string path = "Assets/_Project/Generated/DepotLods/DepotGlass.mat";
+            Material glass = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (glass == null)
+            {
+                glass = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                glass.name = "DepotGlass";
+                glass.SetFloat("_Surface", 1); glass.SetFloat("_Blend", 0);
+                glass.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha);
+                glass.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+                glass.SetFloat("_ZWrite", 0); glass.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                glass.SetColor("_BaseColor", new Color(.12f,.62f,.76f,.32f));
+                glass.SetFloat("_Smoothness", .75f); glass.renderQueue = 3000;
+                AssetDatabase.CreateAsset(glass, path);
+            }
+            renderer.sharedMaterials = renderer.sharedMaterials.Select(m => m.name.Contains("TintedGlass") ? glass : m).ToArray();
+        }
+
+        private static void ConfigureGlass(GameObject root, Transform visuals)
+        {
+            var data = new SerializedObject(root.GetComponent<DepotController>());
+            var rig = data.FindProperty("m_exitDoor");
+            var panels = new[] { Find(visuals, "Hub_GlassPanel_0"), Find(visuals, "Hub_GlassPanel_1") };
+            rig.FindPropertyRelative("m_authoredAnimation").objectReferenceValue = null;
+            rig.FindPropertyRelative("m_animationRoot").objectReferenceValue = null;
+            var blocker = (BoxCollider)rig.FindPropertyRelative("m_blockingCollider").objectReferenceValue;
+            if (blocker != null) blocker.enabled = false;
+            rig.FindPropertyRelative("m_blockingCollider").objectReferenceValue = null;
+            foreach (string field in new[] { "m_slats", "m_closedPositions", "m_openPositions", "m_closedRotations", "m_openRotations" })
+                rig.FindPropertyRelative(field).arraySize = 2;
+            for (int i=0;i<2;i++)
+            {
+                rig.FindPropertyRelative("m_slats").GetArrayElementAtIndex(i).objectReferenceValue = panels[i];
+                Vector3 closed = panels[i].localPosition;
+                rig.FindPropertyRelative("m_closedPositions").GetArrayElementAtIndex(i).vector3Value = closed;
+                rig.FindPropertyRelative("m_openPositions").GetArrayElementAtIndex(i).vector3Value = closed + new Vector3(i == 0 ? 2.05f : -2.05f,0,0);
+                rig.FindPropertyRelative("m_closedRotations").GetArrayElementAtIndex(i).quaternionValue = panels[i].localRotation;
+                rig.FindPropertyRelative("m_openRotations").GetArrayElementAtIndex(i).quaternionValue = panels[i].localRotation;
+                GameObjectUtility.SetStaticEditorFlags(panels[i].gameObject,0);
+            }
+            BoxCollider safety = (BoxCollider)rig.FindPropertyRelative("m_safetyVolume").objectReferenceValue;
+            safety.size = new Vector3(4f,3.5f,2.5f);
+            data.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        [MenuItem("Couch Guys/Validate Depot")]
+        public static void Validate()
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            var instance = Object.Instantiate(asset);
+            try
+            {
+                var depot = instance.GetComponent<DepotController>();
+                if (!depot.HasConveyor || depot.ConveyorPath.Count != 5) throw new Exception("Conveyor references lost");
+                if (Find(instance.transform,"ExitRollerDoor_Slat_00") != null) throw new Exception("Extra roller remains");
+                var panels = new[] { Find(instance.transform,"Hub_GlassPanel_0"), Find(instance.transform,"Hub_GlassPanel_1") };
+                var closed = panels.Select(p => p.localPosition).ToArray();
+                depot.ApplyDoorStates(true,true,true);
+                for(int i=0;i<2;i++) if (Vector3.Distance(closed[i],panels[i].localPosition)<2f) throw new Exception("Glass panel failed to open");
+                depot.ApplyDoorStates(false,false,true);
+                for(int i=0;i<2;i++) if (Vector3.Distance(closed[i],panels[i].localPosition)>.001f) throw new Exception("Glass panel failed to close");
+                if (instance.GetComponentsInChildren<MeshFilter>().Any(f => f.sharedMesh == null)) throw new Exception("Missing mesh");
+                if(Vector3.Dot(depot.VehicleArrival.forward,Find(instance.transform,"RoadConnection").forward)<.999f) throw new Exception("Truck heading mismatch");
+                File.WriteAllText("Temp/depot-validation.txt", "PASS: saved prefab, 2 sliding panels, animated roller, conveyor references, truck heading, mesh references");
+            }
+            finally { instance.GetComponent<DepotController>().ReleaseDoorAnimations(); Object.DestroyImmediate(instance); }
         }
 
         private static void ConfigureDoor(GameObject root, Transform visuals, string field, string prefix)
@@ -171,7 +265,7 @@ namespace CouchGuys.Editor
             GameObject lodRoot = new GameObject("DepotStaticLODs");
             lodRoot.transform.SetParent(root.transform, false);
             MeshRenderer[] sources = visuals.GetComponentsInChildren<MeshRenderer>(true)
-                .Where(r => !r.name.Contains("_Slat_")).ToArray();
+                .Where(r => !r.name.Contains("_Slat_") && !IsAdjustable(r.name)).ToArray();
             LOD[] lods = new LOD[3];
             for (int level = 0; level < 3; level++)
             {
@@ -234,6 +328,8 @@ namespace CouchGuys.Editor
             lodGroup.RecalculateBounds();
         }
 
+        private static bool IsAdjustable(string name) => name.StartsWith("Hub_");
+
         private static bool OmitDetail(string name, int level)
         {
             if (level == 0) return false;
@@ -252,11 +348,23 @@ namespace CouchGuys.Editor
             Mesh mesh = new Mesh { indexFormat = source.indexFormat };
             using (Mesh.MeshDataArray data = Mesh.AcquireReadOnlyMeshData(source))
             {
-                mesh.SetVertexBufferParams(source.vertexCount, source.GetVertexAttributes());
-                for (int stream = 0; stream < source.vertexBufferCount; stream++)
+                using var positions = new Unity.Collections.NativeArray<Vector3>(source.vertexCount, Unity.Collections.Allocator.Temp);
+                data[0].GetVertices(positions); mesh.SetVertices(positions);
+                if (source.HasVertexAttribute(VertexAttribute.Normal))
                 {
-                    var vertices = data[0].GetVertexData<byte>(stream);
-                    mesh.SetVertexBufferData(vertices, 0, 0, vertices.Length, stream);
+                    using var normals = new Unity.Collections.NativeArray<Vector3>(source.vertexCount, Unity.Collections.Allocator.Temp);
+                    data[0].GetNormals(normals); mesh.SetNormals(normals);
+                }
+                if (source.HasVertexAttribute(VertexAttribute.Tangent))
+                {
+                    using var tangents = new Unity.Collections.NativeArray<Vector4>(source.vertexCount, Unity.Collections.Allocator.Temp);
+                    data[0].GetTangents(tangents); mesh.SetTangents(tangents);
+                }
+                for (int channel=0;channel<2;channel++)
+                {
+                    if (!source.HasVertexAttribute((VertexAttribute)((int)VertexAttribute.TexCoord0+channel))) continue;
+                    using var uv = new Unity.Collections.NativeArray<Vector2>(source.vertexCount, Unity.Collections.Allocator.Temp);
+                    data[0].GetUVs(channel,uv); mesh.SetUVs(channel,uv);
                 }
             }
             int lod = source.lodCount > 0 ? Mathf.Clamp(level, 0, source.lodCount - 1) : -1;
