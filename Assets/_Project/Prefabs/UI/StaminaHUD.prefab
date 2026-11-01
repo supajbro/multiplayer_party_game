@@ -74,6 +74,9 @@ MonoBehaviour:
   m_waveFrequency: 2
   m_waveAmplitude: 0.24
   m_glowIntensity: 1.4
+  m_crestWidthPixels: 2.2
+  m_fillFeatherPixels: 1.5
+  m_fillSmoothTime: 0.08
   m_cyan: {r: 0, g: 0.88, b: 1, a: 1}
   m_orange: {r: 1, g: 0.38, b: 0.025, a: 1}
   m_red: {r: 1, g: 0.035, b: 0.025, a: 1}

@@ -8,6 +8,8 @@ Shader "CouchGuys/UI/StaminaEnergy"
         _Wave ("Speed, Frequency, Amplitude", Vector) = (0.35,2,0.24,0)
         _Glow ("Glow", Range(0,4)) = 1.4
         _Aspect ("Window Aspect", Float) = 8
+        _CrestWidth ("Crest Width (Pixels)", Float) = 2.2
+        _FillFeather ("Fill Edge Feather (Pixels)", Float) = 1.5
         _Segment ("Segment Mode", Float) = 0
         _StencilComp ("Stencil Comparison", Float) = 8
         _Stencil ("Stencil ID", Float) = 0
@@ -37,7 +39,7 @@ Shader "CouchGuys/UI/StaminaEnergy"
             struct appdata { float4 vertex : POSITION; float4 color : COLOR; float2 uv : TEXCOORD0; UNITY_VERTEX_INPUT_INSTANCE_ID };
             struct v2f { float4 vertex : SV_POSITION; fixed4 color : COLOR; float2 uv : TEXCOORD0; float4 world : TEXCOORD1; float4 mask : TEXCOORD2; UNITY_VERTEX_OUTPUT_STEREO };
             fixed4 _Color;
-            float _Fill, _Glow, _Aspect, _Segment;
+            float _Fill, _Glow, _Aspect, _Segment, _CrestWidth, _FillFeather;
             float4 _Wave, _ClipRect;
             float _UIMaskSoftnessX, _UIMaskSoftnessY;
             v2f vert(appdata v)
@@ -66,19 +68,27 @@ Shader "CouchGuys/UI/StaminaEnergy"
                 float alpha = 1 - smoothstep(-aa, aa, distance);
                 float phase = (uv.x * _Wave.y - _Time.y * _Wave.x) * 6.2831853;
                 float wave = 0.5 + sin(phase) * _Wave.z;
-                float d = abs(uv.y - wave);
-                float core = 1 - smoothstep(0.032, 0.032 + max(fwidth(d), 0.008), d);
+                float curve = uv.y - wave;
+                float d = abs(curve);
+                // Differentiate the signed curve, before abs: its centre cannot cancel the derivatives.
+                float curvePixel = max(length(float2(ddx(curve), ddy(curve))), 0.00001);
+                float halfWidth = max(_CrestWidth, 1.0) * 0.5;
+                float core = 1 - smoothstep(max(halfWidth - 0.5, 0.0), halfWidth + 0.5, d / curvePixel);
                 float halo = exp2(-d * d * 45) * _Glow;
-                float gradient = 0.12 + 0.55 * exp2(-d * d * 8);
-                float3 energy = i.color.rgb * (gradient + halo);
+                float3 energy = i.color.rgb * (0.35 + halo * 0.65);
                 energy = lerp(energy, float3(0.93, 1, 1), core);
+                // No opaque base coat: reveal the supplied holder away from the energy/glow.
+                float energyOpacity = saturate(core + halo * 0.7);
+                float fillWidth = max(fwidth(uv.x) * max(_FillFeather, 1.0), 0.00001);
+                float fillCoverage = 1 - smoothstep(_Fill - fillWidth, _Fill, uv.x);
+                fillCoverage = lerp(fillCoverage, 1.0, step(1.0, _Fill));
                 // Segment Images use a static rounded glow; their mesh handles partial filling.
                 float segmentHighlight = pow(saturate(uv.y), 9) * 0.85;
                 float3 segment = lerp(i.color.rgb * (0.85 + 0.2 * uv.y), float3(0.94, 1, 1), segmentHighlight);
                 float edgeLight = exp2(-abs(distance + 0.05) * 28) * 0.35;
                 segment += i.color.rgb * edgeLight * _Glow;
                 float3 rgb = lerp(energy, segment, _Segment);
-                alpha *= step(uv.x, _Fill) * step(0.00001, _Fill) * i.color.a;
+                alpha *= lerp(energyOpacity * fillCoverage, 1.0, _Segment) * step(0.00001, _Fill) * i.color.a;
                 #ifdef UNITY_UI_CLIP_RECT
                 float2 mask = saturate((_ClipRect.zw - _ClipRect.xy - abs(i.mask.xy)) * i.mask.zw);
                 alpha *= mask.x * mask.y;

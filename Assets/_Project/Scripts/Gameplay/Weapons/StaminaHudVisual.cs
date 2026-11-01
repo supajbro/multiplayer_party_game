@@ -20,6 +20,10 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField, Min(0f)] private float m_waveFrequency = 2f;
         [SerializeField, Range(0f, 0.4f)] private float m_waveAmplitude = 0.24f;
         [SerializeField, Min(0f)] private float m_glowIntensity = 1.4f;
+        [SerializeField, Min(1f)] private float m_crestWidthPixels = 2.2f;
+        [SerializeField, Min(1f)] private float m_fillFeatherPixels = 1.5f;
+        [Tooltip("Visual response time in seconds; zero disables smoothing. Empty stamina always clears immediately.")]
+        [SerializeField, Min(0f)] private float m_fillSmoothTime = 0.08f;
         [SerializeField] private Color m_cyan = new(0f, 0.88f, 1f, 1f);
         [SerializeField] private Color m_orange = new(1f, 0.38f, 0.025f, 1f);
         [SerializeField] private Color m_red = new(1f, 0.035f, 0.025f, 1f);
@@ -39,9 +43,14 @@ namespace CouchGuys.Gameplay.Weapons
         private static readonly int Wave = Shader.PropertyToID("_Wave");
         private static readonly int Glow = Shader.PropertyToID("_Glow");
         private static readonly int Aspect = Shader.PropertyToID("_Aspect");
+        private static readonly int CrestWidth = Shader.PropertyToID("_CrestWidth");
+        private static readonly int FillFeather = Shader.PropertyToID("_FillFeather");
         private Material m_instance;
         private float m_value = 1f;
+        private float m_displayValue = 1f;
+        private bool m_hasValue;
         public float NormalizedValue => m_value;
+        public float DisplayedValue => m_displayValue;
 
         private void OnEnable()
         {
@@ -51,19 +60,41 @@ namespace CouchGuys.Gameplay.Weapons
                 m_energy.material = m_instance;
             }
             ApplyLayout();
-            SetValue(m_value);
+            m_hasValue = false;
+            Present();
         }
 
         public void SetValue(float value)
         {
             m_value = Mathf.Clamp01(value);
+            if (!m_hasValue || m_value == 0f || m_fillSmoothTime <= 0f)
+            {
+                m_displayValue = m_value;
+                Present();
+            }
+            m_hasValue = true;
+        }
+
+        private void LateUpdate() => AdvancePresentation(Time.unscaledDeltaTime);
+
+        private void AdvancePresentation(float deltaTime)
+        {
+            // Exponential response is independent of frame rate and shared by both displays.
+            float blend = m_fillSmoothTime > 0f ? 1f - Mathf.Exp(-deltaTime / m_fillSmoothTime) : 1f;
+            m_displayValue = Mathf.Lerp(m_displayValue, m_value, blend);
+            if (Mathf.Abs(m_displayValue - m_value) < 0.0001f) m_displayValue = m_value;
+            Present();
+        }
+
+        private void Present()
+        {
             Color colour = Color.Lerp(m_red, m_orange, Blend(m_lowThreshold));
             colour = Color.Lerp(colour, m_cyan, Blend(m_highThreshold));
             if (m_energy != null)
             {
                 m_energy.color = colour;
                 // Keep the geometry full width: the shader clips the fill without stretching the wave.
-                m_energy.enabled = m_value > 0f;
+                m_energy.enabled = m_displayValue > 0f;
                 if (m_instance != null)
                 {
                     Configure(m_instance);
@@ -77,19 +108,21 @@ namespace CouchGuys.Gameplay.Weapons
             for (int i = 0; i < m_segments.Length; i++)
             {
                 if (m_segments[i] == null) continue;
-                m_segments[i].fillAmount = Mathf.Clamp01(m_value * 8f - i);
+                m_segments[i].fillAmount = Mathf.Clamp01(m_displayValue * 8f - i);
                 m_segments[i].color = segmentColour;
             }
         }
 
         private float Blend(float threshold) => Mathf.SmoothStep(0f, 1f,
-            Mathf.InverseLerp(threshold, threshold + Mathf.Max(0.001f, m_colourBlendWidth), m_value));
+            Mathf.InverseLerp(threshold, threshold + Mathf.Max(0.001f, m_colourBlendWidth), m_displayValue));
 
         private void Configure(Material material)
         {
-            material.SetFloat(Fill, m_value);
+            material.SetFloat(Fill, m_displayValue);
             material.SetVector(Wave, new Vector4(m_waveSpeed, m_waveFrequency, m_waveAmplitude, 0f));
             material.SetFloat(Glow, m_glowIntensity);
+            material.SetFloat(CrestWidth, m_crestWidthPixels);
+            material.SetFloat(FillFeather, m_fillFeatherPixels);
             Rect rect = m_energy.rectTransform.rect;
             material.SetFloat(Aspect, rect.width / Mathf.Max(0.001f, rect.height));
         }
@@ -141,7 +174,7 @@ namespace CouchGuys.Gameplay.Weapons
         private void OnValidate()
         {
             ApplyLayout();
-            if (Application.isPlaying) SetValue(m_value);
+            if (Application.isPlaying) Present();
         }
 #endif
     }
