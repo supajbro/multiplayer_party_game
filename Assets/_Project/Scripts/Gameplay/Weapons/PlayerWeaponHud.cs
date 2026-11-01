@@ -38,10 +38,6 @@ namespace CouchGuys.Gameplay.Weapons
         private float m_staminaDisplay = 1f;
         private float m_nextSlowRefresh;
         private int m_lastSelectedSlot = -1;
-        private string m_lastWeaponName;
-        private int m_lastMagazine = int.MinValue;
-        private int m_lastReserve = int.MinValue;
-        private bool m_lastReloading;
         private int m_lastTimerSecond = -1;
         private int m_seenFailureSequence;
         private float m_failureVisibleUntil;
@@ -156,34 +152,7 @@ namespace CouchGuys.Gameplay.Weapons
                 m_lastSelectedSlot = selected;
             }
 
-            bool showAmmo = m_weapons.HasEquippedWeapon;
-            bool showCharge = showAmmo && m_weapons.EquippedWeapon == PlayerWeaponType.GrappleGun;
-            if (m_view.m_grappleChargeSlider != null)
-            {
-                m_view.m_grappleChargeSlider.gameObject.SetActive(showCharge);
-                m_view.m_grappleChargeSlider.SetValueWithoutNotify(m_weapons.GrappleChargeFraction);
-            }
-            if (m_view.m_ammoPanel.activeSelf != showAmmo) m_view.m_ammoPanel.SetActive(showAmmo);
-            if (showAmmo)
-            {
-                string weaponName = m_weapons.EquippedWeaponName;
-                int magazine = m_weapons.CurrentMagazine;
-                int reserve = m_weapons.CurrentReserve;
-                bool reloading = m_weapons.IsReloading;
-                if (weaponName != m_lastWeaponName || magazine != m_lastMagazine ||
-                    reserve != m_lastReserve || reloading != m_lastReloading)
-                {
-                    m_view.m_ammoText.text = showCharge
-                        ? $"{weaponName}\n<size=18>{(magazine > 0 ? $"{Mathf.CeilToInt(m_weapons.GrappleChargeFraction * 100f)}% CHARGE" : "EMPTY")}</size>"
-                        : reloading
-                        ? $"{weaponName}\n<size=24>RELOADING  {magazine} / {reserve}</size>"
-                        : $"{weaponName}\n<size=30>{magazine} / {reserve}</size>";
-                    m_lastWeaponName = weaponName;
-                    m_lastMagazine = magazine;
-                    m_lastReserve = reserve;
-                    m_lastReloading = reloading;
-                }
-            }
+            m_view.PresentWeapon(m_weapons);
         }
 
         private void RefreshDeliveryAndCurrency()
@@ -273,8 +242,6 @@ namespace CouchGuys.Gameplay.Weapons
             m_view = null;
             m_hudBuilt = false;
             m_lastSelectedSlot = -1;
-            m_lastWeaponName = null;
-            m_lastMagazine = int.MinValue;
             m_lastTimerSecond = -1;
             m_nextSlowRefresh = 0f;
         }

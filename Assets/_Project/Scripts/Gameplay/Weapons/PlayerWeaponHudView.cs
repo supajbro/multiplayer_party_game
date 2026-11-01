@@ -25,5 +25,80 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] public Image[] m_slotBackgrounds;
         [SerializeField] public Outline[] m_slotOutlines;
         [SerializeField] public GameObject m_ammoPanel;
+
+        [Header("Weapon display (independent of reticle)")]
+        [SerializeField] private CanvasGroup m_ammoGroup;
+        [SerializeField] private WeaponReloadRing m_reloadRing;
+        [SerializeField] private Outline m_ammoGlow;
+        [SerializeField] private Outline m_chargeGlow;
+        [SerializeField] private Shadow m_ammoShadow;
+        [SerializeField] private Shadow m_chargeShadow;
+        [SerializeField] private Color m_weaponColour = new(0.15f, 0.94f, 1f, 1f);
+        [SerializeField, Range(0f, 1f)] private float m_glowIntensity = 0.35f;
+        [SerializeField, Min(0f)] private float m_glowSpread = 2f;
+        [SerializeField] private Color m_shadowColour = new(0f, 0.03f, 0.06f, 0.8f);
+        [SerializeField] private Vector2 m_shadowOffset = new(1f, -2f);
+        [SerializeField, Min(0f)] private float m_ammoTransitionDuration = 0.15f;
+        [SerializeField, Range(0.1f, 1f)] private float m_hiddenAmmoScale = 0.75f;
+        [SerializeField, Min(0.1f)] private float m_ammoScale = 1f;
+        [SerializeField, Min(0f)] private float m_chargeResponse = 12f;
+        private float m_ammoVisibility = 1f;
+        private bool m_wasCharge;
+        private int m_presentedSlot = -1;
+
+        public void PresentWeapon(PlayerWeaponController weapons)
+        {
+            bool equipped = weapons.HasEquippedWeapon;
+            bool charge = equipped && weapons.EquippedWeapon == PlayerWeaponType.GrappleGun;
+            bool reloading = equipped && !charge && weapons.IsReloading;
+            bool switched = m_presentedSlot != weapons.SelectedHotbarSlot || charge != m_wasCharge;
+            m_presentedSlot = weapons.SelectedHotbarSlot;
+            m_wasCharge = charge;
+            m_ammoPanel.SetActive(equipped);
+            m_ammoText.gameObject.SetActive(equipped && !charge);
+            m_ammoText.color = m_weaponColour;
+            string ammo = $"{weapons.CurrentMagazine} / {weapons.CurrentReserve}";
+            if (!charge && m_ammoText.text != ammo) m_ammoText.text = ammo;
+            float target = equipped && !charge && !reloading ? 1f : 0f;
+            m_ammoVisibility = switched ? target : Mathf.MoveTowards(m_ammoVisibility, target,
+                m_ammoTransitionDuration > 0f ? Time.unscaledDeltaTime / m_ammoTransitionDuration : 1f);
+            if (m_ammoGroup != null) m_ammoGroup.alpha = m_ammoVisibility;
+            m_ammoText.rectTransform.localScale = Vector3.one *
+                (m_ammoScale * Mathf.Lerp(m_hiddenAmmoScale, 1f, m_ammoVisibility));
+            Style(m_ammoGlow, m_ammoShadow);
+            Style(m_chargeGlow, m_chargeShadow);
+            if (m_reloadRing != null)
+            {
+                m_reloadRing.gameObject.SetActive(reloading);
+                m_reloadRing.color = m_weaponColour;
+                m_reloadRing.Progress = reloading ? weapons.ReloadProgress : 0f;
+            }
+            if (m_grappleChargeSlider != null)
+            {
+                m_grappleChargeSlider.gameObject.SetActive(charge);
+                float value = weapons.GrappleChargeFraction;
+                float displayed = switched || m_chargeResponse <= 0f || value <= m_grappleChargeSlider.value ? value : Mathf.Lerp(
+                    m_grappleChargeSlider.value, value, 1f - Mathf.Exp(-m_chargeResponse * Time.unscaledDeltaTime));
+                m_grappleChargeSlider.SetValueWithoutNotify(displayed);
+                if (m_grappleChargeSlider.fillRect != null)
+                    m_grappleChargeSlider.fillRect.GetComponent<Image>().color = m_weaponColour;
+            }
+        }
+
+        private void Style(Outline glow, Shadow shadow)
+        {
+            if (glow != null)
+            {
+                Color colour = m_weaponColour;
+                colour.a *= m_glowIntensity;
+                glow.effectColor = colour;
+                glow.effectDistance = Vector2.one * m_glowSpread;
+            }
+            if (shadow != null)
+            {
+                shadow.effectColor = m_shadowColour;
+                shadow.effectDistance = m_shadowOffset;
+            }
+        }
     }
 }

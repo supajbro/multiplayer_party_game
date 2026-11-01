@@ -72,6 +72,9 @@ namespace CouchGuys.Gameplay.Weapons
         private int m_reloadingIndex = -1;
         private float m_nextLocalRequestTime;
         private bool m_localReloading;
+        private int m_localReloadIndex = -1;
+        private float m_localReloadCompleteAt;
+        private float m_localReloadDuration;
         private readonly Quaternion[] m_weaponBaseRotations = new Quaternion[WeaponCount];
         private readonly Vector3[] m_weaponBasePositions = new Vector3[WeaponCount];
         private float m_visualRecoil;
@@ -90,7 +93,20 @@ namespace CouchGuys.Gameplay.Weapons
             ? Mathf.Max(0, m_magazine[m_equippedIndex.Value] - m_pendingLocalShots[m_equippedIndex.Value])
             : 0;
         public int CurrentReserve => ValidIndex(m_equippedIndex.Value) ? m_reserve[m_equippedIndex.Value] : 0;
-        public bool IsReloading => m_localReloading || m_reloadingIndex >= 0;
+        public bool IsReloading => HasEquippedWeapon && (IsServerInitialized
+            ? m_reloadingIndex == m_equippedIndex.Value
+            : m_localReloading && m_localReloadIndex == m_equippedIndex.Value);
+        // Presentation follows the gameplay deadline; completion/cancellation still comes from the server.
+        public float ReloadProgress
+        {
+            get
+            {
+                if (!IsReloading) return 0f;
+                float duration = IsServerInitialized ? GetWeapon(m_reloadingIndex).ReloadDuration : m_localReloadDuration;
+                float deadline = IsServerInitialized ? m_reloadCompleteAt : m_localReloadCompleteAt;
+                return duration > 0f ? Mathf.Clamp01(1f - (deadline - Time.time) / duration) : 1f;
+            }
+        }
         public bool HasEquippedWeapon => ValidIndex(m_equippedIndex.Value);
         public bool CanHandleWeaponServer => IsServerInitialized && m_health != null && m_health.IsAlive &&
             !m_health.IsKnockedDown && !(m_couchCarrier != null && m_couchCarrier.IsCarrying) &&
@@ -797,15 +813,30 @@ namespace CouchGuys.Gameplay.Weapons
             }
         }
 
-        [TargetRpc]
         private void SendWeaponStateTargetRpc(NetworkConnection connection, int index, int magazine,
             int reserve, bool reloading)
+        {
+            float duration = reloading ? GetWeapon(index).ReloadDuration : 0f;
+            ReceiveWeaponStateTargetRpc(connection, index, magazine, reserve, reloading,
+                reloading ? Mathf.Max(0f, m_reloadCompleteAt - Time.time) : 0f, duration);
+        }
+
+        [TargetRpc]
+        private void ReceiveWeaponStateTargetRpc(NetworkConnection connection, int index, int magazine,
+            int reserve, bool reloading, float reloadRemaining, float reloadDuration)
         {
             if (!ValidIndex(index)) return;
             m_magazine[index] = magazine;
             m_reserve[index] = reserve;
             m_pendingLocalShots[index] = 0;
-            m_localReloading = reloading;
+            if (reloading || index == m_localReloadIndex || index == m_equippedIndex.Value)
+            {
+                m_localReloading = reloading;
+                m_localReloadIndex = reloading ? index : -1;
+                m_localReloadDuration = reloadDuration;
+                float latency = IsServerInitialized ? 0f : TimeManager.HalfRoundTripTime * 0.001f;
+                m_localReloadCompleteAt = Time.time + Mathf.Max(0f, reloadRemaining - latency);
+            }
             if (reloading)
                 EndLocalRifleBurst();
         }
