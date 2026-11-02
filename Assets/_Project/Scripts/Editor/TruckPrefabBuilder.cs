@@ -13,33 +13,20 @@ using UnityEngine.SceneManagement;
 
 namespace CouchGuys.Editor
 {
-    /// <summary>Builds the network-ready vehicle variants around the shared delivery truck visual.</summary>
+    /// <summary>Explicit authoring tool for the saved delivery truck prefab.</summary>
     public static class TruckPrefabBuilder
     {
         private const string SettingsFolder = "Assets/_Project/Settings/Vehicles";
         private const string PrefabFolder = "Assets/_Project/Prefabs/Vehicles";
         private const string ScenePath = "Assets/Scenes/SampleScene.unity";
 
-        [InitializeOnLoadMethod]
-        private static void BuildMissingTruckAssetsAfterImport()
-        {
-            GameObject light = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/LightTruck.prefab");
-            Transform imported = light != null ? FindDescendant(light.transform, "ImportedTruckModel") : null;
-            if (light == null || imported == null)
-                EditorApplication.delayCall += BuildTruckSystem;
-        }
-
         [MenuItem("Couch Guys/Vehicles/Build Truck System")]
         public static void BuildTruckSystem()
         {
             EnsureFolder("Assets/_Project/Settings", "Vehicles");
             EnsureFolder("Assets/_Project/Prefabs", "Vehicles");
-            TruckSettings light = BuildSettings("LightTruckSettings", TruckQuality.Light, "Light Truck", 45f, 60f, .35f, 100f, 5f, .62f, 1.25f);
-            TruckSettings good = BuildSettings("GoodTruckSettings", TruckQuality.Good, "Good Truck", 65f, 90f, .25f, 175f, 8f, .78f, 1f);
-            TruckSettings best = BuildSettings("BestTruckSettings", TruckQuality.Best, "Best Truck", 90f, 130f, .16f, 275f, 12f, .9f, .72f);
-            BuildPrefab("LightTruck", light);
-            BuildPrefab("GoodTruck", good);
-            BuildPrefab("BestTruck", best);
+            TruckSettings truck = BuildSettings();
+            BuildPrefab("Truck", truck);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             RegisterTruckPrefabs();
@@ -52,28 +39,30 @@ namespace CouchGuys.Editor
 
         public static void BuildFromCommandLine() => BuildTruckSystem();
 
-        private static TruckSettings BuildSettings(string file, TruckQuality quality, string displayName,
-            float speed, float fuel, float drivingConsumption, float health, float acceleration, float traction, float bulletMultiplier)
+        private static TruckSettings BuildSettings()
         {
-            string path = $"{SettingsFolder}/{file}.asset";
+            string path = $"{SettingsFolder}/Truck.asset";
             TruckSettings settings = AssetDatabase.LoadAssetAtPath<TruckSettings>(path);
-            if (settings == null) { settings = ScriptableObject.CreateInstance<TruckSettings>(); AssetDatabase.CreateAsset(settings, path); }
+            if (settings != null) return settings;
+            settings = ScriptableObject.CreateInstance<TruckSettings>();
+            AssetDatabase.CreateAsset(settings, path);
             SerializedObject so = new(settings);
-            Set(so, "m_quality", (int)quality); Set(so, "m_displayName", displayName);
-            Set(so, "m_maxForwardSpeed", speed); Set(so, "m_maxFuel", fuel);
-            Set(so, "m_fuelConsumptionDriving", drivingConsumption); Set(so, "m_maxHealth", health);
-            Set(so, "m_acceleration", acceleration); Set(so, "m_traction", traction);
-            Set(so, "m_bulletDamageMultiplier", bulletMultiplier);
-            Set(so, "m_collisionDamageMultiplier", quality == TruckQuality.Light ? 5f : quality == TruckQuality.Good ? 3.5f : 2.3f);
-            Set(so, "m_maximumCollisionDamage", quality == TruckQuality.Light ? 55f : quality == TruckQuality.Good ? 42f : 32f);
-            Set(so, "m_steeringSensitivity", quality == TruckQuality.Light ? 72f : quality == TruckQuality.Good ? 92f : 108f);
-            Set(so, "m_highSpeedSteeringMultiplier", quality == TruckQuality.Light ? .32f : quality == TruckQuality.Good ? .44f : .55f);
-            Set(so, "m_vehicleMass", quality == TruckQuality.Light ? 1250f : quality == TruckQuality.Good ? 1450f : 1650f);
-            Set(so, "m_doorOpenAngle", quality == TruckQuality.Light ? 100f : quality == TruckQuality.Good ? 110f : 120f);
-            Set(so, "m_doorAnimationDuration", quality == TruckQuality.Light ? .7f : quality == TruckQuality.Good ? .55f : .42f);
-            SetInteger(so, "m_cargoCapacity", quality == TruckQuality.Best ? 2 : 1);
-            Set(so, "m_couchLoadingDuration", quality == TruckQuality.Light ? 1f : quality == TruckQuality.Good ? .72f : .5f);
-            Set(so, "m_couchUnloadingDuration", quality == TruckQuality.Light ? .85f : quality == TruckQuality.Good ? .65f : .48f);
+            Set(so, "m_displayName", "Truck");
+            Set(so, "m_maxForwardSpeed", 45f); Set(so, "m_maxFuel", 60f);
+            Set(so, "m_fuelConsumptionDriving", .35f); Set(so, "m_maxHealth", 100f);
+            Set(so, "m_acceleration", 5f); Set(so, "m_traction", .62f);
+            Set(so, "m_uphillPowerMultiplier", .22f);
+            Set(so, "m_bulletDamageMultiplier", 1.25f);
+            Set(so, "m_collisionDamageMultiplier", 5f);
+            Set(so, "m_maximumCollisionDamage", 55f);
+            Set(so, "m_steeringSensitivity", 72f);
+            Set(so, "m_highSpeedSteeringMultiplier", .32f);
+            Set(so, "m_vehicleMass", 1250f);
+            Set(so, "m_doorOpenAngle", 100f);
+            Set(so, "m_doorAnimationDuration", .7f);
+            SetInteger(so, "m_cargoCapacity", 1);
+            Set(so, "m_couchLoadingDuration", 1f);
+            Set(so, "m_couchUnloadingDuration", .85f);
             SetBool(so, "m_allowDrivingWithDoorsOpen", false);
             SetBool(so, "m_autoPositionLoadedCouches", true);
             so.ApplyModifiedPropertiesWithoutUndo(); EditorUtility.SetDirty(settings); return settings;
@@ -219,9 +208,9 @@ namespace CouchGuys.Editor
             Scene scene = SceneManager.GetSceneByPath(ScenePath); bool temporary = !scene.IsValid() || !scene.isLoaded;
             if (temporary) scene = EditorSceneManager.OpenScene(ScenePath, OpenSceneMode.Additive);
             foreach (GameObject root in scene.GetRootGameObjects())
-                if (root.name == "TestTruck_Light" || root.name == "TestVan_Light") Object.DestroyImmediate(root);
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/LightTruck.prefab");
-            GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene); instance.name = "TestTruck_Light";
+                if (root.name == "TestTruck" || root.name == "TestTruck_Light" || root.name == "TestVan_Light") Object.DestroyImmediate(root);
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/Truck.prefab");
+            GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene); instance.name = "TestTruck";
             NeighbourhoodGenerator generator = Object.FindFirstObjectByType<NeighbourhoodGenerator>();
             Vector3 position = new(5f, .1f, 5f); Quaternion rotation = Quaternion.identity;
             if (generator != null && generator.GeneratedStartingArea != null)
@@ -240,7 +229,7 @@ namespace CouchGuys.Editor
         {
             SinglePrefabObjects collection = AssetDatabase.LoadAssetAtPath<SinglePrefabObjects>("Assets/_Project/Settings/NetworkSpawnablePrefabs.asset");
             if (collection == null) return false;
-            string[] names = { "LightTruck", "GoodTruck", "BestTruck" };
+            string[] names = { "Truck" };
             foreach (string name in names)
             {
                 NetworkObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/{name}.prefab")?.GetComponent<NetworkObject>();
@@ -253,15 +242,13 @@ namespace CouchGuys.Editor
         {
             SinglePrefabObjects collection = AssetDatabase.LoadAssetAtPath<SinglePrefabObjects>("Assets/_Project/Settings/NetworkSpawnablePrefabs.asset");
             if (collection == null) return;
-            string[] names = { "LightTruck", "GoodTruck", "BestTruck" };
+            string[] names = { "Truck" };
             foreach (string name in names)
             {
                 NetworkObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"{PrefabFolder}/{name}.prefab")?.GetComponent<NetworkObject>();
                 if (prefab != null && !collection.Prefabs.Contains(prefab)) collection.AddObject(prefab, false, false);
             }
-            // The FishNet asset postprocessor may run between the three SaveAsPrefabAsset
-            // calls and see a partially-built collection. Initialize every collection
-            // entry here so newly generated prefabs never retain the sentinel hash of 0.
+            // Initialize registered prefabs so newly authored assets never retain a hash of 0.
             foreach (NetworkObject prefab in collection.Prefabs)
             {
                 if (prefab == null) continue;

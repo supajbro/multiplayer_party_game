@@ -134,7 +134,7 @@ namespace CouchGuys.Gameplay.Vehicles
         private void ConfigureArcadeColliderFriction()
         {
             // The placeholder is a flat-bottomed cube rather than a wheeled mesh. Default
-            // static friction can exceed the Light Truck's configured acceleration and pin it
+            // static friction can exceed the Truck's configured acceleration and pin it
             // to the road. Physical contact stays slippery while lateral grip remains under
             // the explicit TruckSettings.Traction calculation below.
             m_runtimePhysicsMaterial = new PhysicsMaterial("Truck Arcade Contact")
@@ -572,6 +572,8 @@ namespace CouchGuys.Gameplay.Vehicles
                 (severity - m_settings.MinimumCollisionDamageSpeed) *
                 m_settings.CollisionDamageMultiplier,
                 m_settings.MaximumCollisionDamage);
+            var streetlight = collision.collider.GetComponentInParent<StreetlightPlaceholder>();
+            if (streetlight != null) damage *= streetlight.TruckCollisionDamageMultiplier;
             if (damage <= 0f) return;
             m_nextCollisionDamageTime = Time.time + m_settings.CollisionDamageCooldown;
             ApplyDamageServer(damage);

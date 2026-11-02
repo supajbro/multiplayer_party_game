@@ -27,7 +27,7 @@ namespace CouchGuys.Editor
             if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling) return;
             if (AssetDatabase.LoadAssetAtPath<GameObject>(ShutterPath) == null ||
                 AssetDatabase.LoadAssetAtPath<GameObject>(HatchbackPath) == null) return;
-            foreach (string name in new[] { "LightTruck", "GoodTruck", "BestTruck" })
+            foreach (string name in new[] { "Truck" })
             {
                 string path = $"Assets/_Project/Prefabs/Vehicles/{name}.prefab";
                 GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);

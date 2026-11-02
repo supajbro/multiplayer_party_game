@@ -80,6 +80,9 @@ namespace CouchGuys.Gameplay.Enemies
         private float m_nextCouchSearchTime;
         private float m_nextCarryDecisionTime;
         private float m_fightUntil;
+        private float m_retaliationChance;
+        private float m_retaliationUntil;
+        private PlayerHealth m_retaliationTarget;
         private float m_slotAngle;
         private float m_rangeMultiplier = 1f;
         private int m_memberIndex;
@@ -124,6 +127,12 @@ namespace CouchGuys.Gameplay.Enemies
         public override void OnStartServer()
         {
             base.OnStartServer();
+            float baseChance = m_settings != null ? m_settings.Combat.RetaliationChance : 50f;
+            float variation = m_settings != null ? m_settings.Combat.RetaliationChanceVariation : 25f;
+            m_retaliationChance = Random.Range(Mathf.Max(0f, baseChance - variation),
+                Mathf.Min(100f, baseChance + variation));
+            m_retaliationTarget = null;
+            m_retaliationUntil = 0f;
             m_alerting.Value = false;
             m_alertEncounterChecked = false;
             m_alertUntil = 0f;
@@ -207,6 +216,13 @@ namespace CouchGuys.Gameplay.Enemies
                 return;
             }
 
+            if (m_retaliationTarget != null && m_retaliationTarget.IsAlive && Time.time < m_retaliationUntil)
+            {
+                UpdateFightObjective(m_retaliationTarget);
+                return;
+            }
+            m_retaliationTarget = null;
+
             if (UpdateProximityAlert(GetClosestLivingTarget())) return;
 
             CouchCarryController couch = GetActiveCouch();
@@ -253,6 +269,24 @@ namespace CouchGuys.Gameplay.Enemies
                 UpdateStealObjective(couch);
             else
                 UpdateFightObjective(humanCarrier != null ? humanCarrier.GetComponent<PlayerHealth>() : closestPlayer);
+        }
+
+        // Called by server-side damage handling, once per damaging hit (not per pellet).
+        internal void ReactToAttackServer(PlayerHealth attacker)
+        {
+            if (m_grappler != null || attacker == null || !attacker.IsAlive ||
+                (m_health != null && !m_health.IsAlive) || Random.value * 100f >= m_retaliationChance)
+                return;
+
+            ReleaseCarriedCouchServer();
+            m_alerting.Value = false;
+            m_retaliationTarget = attacker;
+            m_retaliationUntil = Time.time + Mathf.Max(0.1f,
+                m_settings != null ? m_settings.Combat.RetaliationDuration : 5f);
+            m_hasDestination = false;
+            m_nextPathTime = 0f;
+            SetTargetServer(attacker, m_weapon != null ? m_weapon.PreferredRange : 1.25f);
+            m_weapon?.SetTargetServer(attacker);
         }
 
         private void UpdateGrapplerObjective()

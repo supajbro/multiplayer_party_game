@@ -32,8 +32,8 @@ namespace CouchGuys.Editor
 
         private static readonly InitialVehicle[] InitialVehicles =
         {
-            new("truck_light", "Light Truck", "Nimble starter truck with room for one couch.", 250,
-                "Assets/_Project/Prefabs/Vehicles/LightTruck.prefab")
+            new("truck", "Truck", "Nimble starter truck with room for one couch.", 250,
+                "Assets/_Project/Prefabs/Vehicles/Truck.prefab")
         };
 
         public static ShopCatalogue EnsureDefaultCatalogue()

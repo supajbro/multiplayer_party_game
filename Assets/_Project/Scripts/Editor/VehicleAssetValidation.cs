@@ -18,7 +18,7 @@ namespace CouchGuys.Editor
         public static void Run()
         {
             VehicleAssetUpgrade.EnsureAssets();
-            foreach (string name in new[] { "LightTruck", "GoodTruck", "BestTruck" })
+            foreach (string name in new[] { "Truck" })
             {
                 GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/_Project/Prefabs/Vehicles/{name}.prefab");
                 TruckController truck = prefab.GetComponent<TruckController>();
@@ -60,7 +60,8 @@ namespace CouchGuys.Editor
             Check(glass != null && glass.GetFloat("_Surface") == 1f && glass.GetColor("_BaseColor").a < .5f, "Glass is opaque");
             ShopCatalogue shop = AssetDatabase.LoadAssetAtPath<ShopCatalogue>(ShopAssetBuilder.CataloguePath);
             Check(shop.Items.Count(i => i != null && i.PurchaseBehaviour is VehiclePurchaseBehaviour) == 1, "Extra trucks remain purchasable");
-            Check(shop.Find("van_light") == shop.Find("truck_light") && shop.Find("truck_light").Price == 250, "Legacy purchase ID/price compatibility");
+            Check(shop.Find("van_light") == shop.Find("truck") && shop.Find("truck_light") == shop.Find("truck") &&
+                shop.Find("truck").Price == 250, "Legacy purchase ID/price compatibility");
             AssetDatabase.SaveAssets();
             Directory.CreateDirectory("Logs");
             File.WriteAllText("Logs/vehicle-validation-passed.txt", "Vehicle prefab, door alignment, original seat anchors, shutter axes, traffic LODs/wheels/glass and shop checks passed.");

@@ -10,12 +10,8 @@ namespace CouchGuys.Tests.Editor
     {
         private const string RegionPath =
             "Assets/_Project/Settings/Regions/Region_Suburbs.asset";
-        private const string LightTruckPath =
-            "Assets/_Project/Settings/Vehicles/LightTruckSettings.asset";
-        private const string GoodTruckPath =
-            "Assets/_Project/Settings/Vehicles/GoodTruckSettings.asset";
-        private const string BestTruckPath =
-            "Assets/_Project/Settings/Vehicles/BestTruckSettings.asset";
+        private const string TruckPath =
+            "Assets/_Project/Settings/Vehicles/Truck.asset";
 
         [Test]
         public void Suburbs_EnablesHillyBoundaryAndSummitRoad()
@@ -45,32 +41,22 @@ namespace CouchGuys.Tests.Editor
         }
 
         [Test]
-        public void VehicleTiers_HaveGenuineProgressiveClimbCapability()
+        public void Truck_PreservesStarterClimbCapability()
         {
             RegionDefinition region = AssetDatabase.LoadAssetAtPath<RegionDefinition>(RegionPath);
-            TruckSettings light = AssetDatabase.LoadAssetAtPath<TruckSettings>(LightTruckPath);
-            TruckSettings good = AssetDatabase.LoadAssetAtPath<TruckSettings>(GoodTruckPath);
-            TruckSettings best = AssetDatabase.LoadAssetAtPath<TruckSettings>(BestTruckPath);
+            TruckSettings light = AssetDatabase.LoadAssetAtPath<TruckSettings>(TruckPath);
             Assert.That(region, Is.Not.Null);
             Assert.That(light, Is.Not.Null);
-            Assert.That(good, Is.Not.Null);
-            Assert.That(best, Is.Not.Null);
+            Assert.That(light.DisplayName, Is.EqualTo("Truck"));
+            Assert.That(AssetDatabase.FindAssets("t:TruckSettings", new[] { "Assets/_Project/Settings/Vehicles" }),
+                Has.Length.EqualTo(1), "Only the retained truck configuration should remain.");
 
             float gravityAlongSlope = Physics.gravity.magnitude * Mathf.Sin(
                 region.LandmarkRoads.MaximumSlope * Mathf.Deg2Rad);
             float lightClimbAcceleration = light.Acceleration * light.UphillPowerMultiplier;
-            float goodClimbAcceleration = good.Acceleration * good.UphillPowerMultiplier;
-            float bestClimbAcceleration = best.Acceleration * best.UphillPowerMultiplier;
 
             Assert.That(lightClimbAcceleration, Is.LessThan(gravityAlongSlope),
                 "The starter truck should naturally stall on the summit grade.");
-            Assert.That(goodClimbAcceleration, Is.LessThan(gravityAlongSlope),
-                "The mid-tier truck should improve on the starter but still stall on the summit grade.");
-            Assert.That(bestClimbAcceleration, Is.GreaterThan(gravityAlongSlope),
-                "The best truck should be able to overcome gravity on the summit grade.");
-            Assert.That(bestClimbAcceleration, Is.GreaterThan(goodClimbAcceleration));
-            Assert.That(light.Traction, Is.LessThan(good.Traction));
-            Assert.That(good.Traction, Is.LessThan(best.Traction));
         }
     }
 }

@@ -13,6 +13,46 @@ namespace CouchGuys.Tests.Editor
 {
     public sealed class ThiefSettingsTests
     {
+        [TestCase(0f, true, false)]
+        [TestCase(100f, true, true)]
+        [TestCase(100f, false, false)]
+        public void RetaliationRollTargetsOnlyLivingAttackers(float chance, bool alive, bool retaliates)
+        {
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            var root = new GameObject("Retaliation test");
+            root.SetActive(false);
+            try
+            {
+                var thief = new GameObject("Thief");
+                thief.transform.SetParent(root.transform);
+                var navigator = thief.AddComponent<ThiefNavigator>();
+                thief.GetComponent<NavMeshAgent>().enabled = false;
+                var attackerObject = new GameObject("Attacker");
+                attackerObject.transform.SetParent(root.transform);
+                var attacker = attackerObject.AddComponent<PlayerHealth>();
+                ((SyncVar<float>)typeof(PlayerHealth).GetField("m_currentHealth", flags)
+                    .GetValue(attacker)).Value = alive ? 100f : 0f;
+                typeof(ThiefNavigator).GetField("m_retaliationChance", flags).SetValue(navigator, chance);
+
+                typeof(ThiefNavigator).GetMethod("ReactToAttackServer", flags)
+                    .Invoke(navigator, new object[] { attacker });
+
+                Assert.That(typeof(ThiefNavigator).GetField("m_retaliationTarget", flags).GetValue(navigator),
+                    Is.EqualTo(retaliates ? attacker : null));
+                if (retaliates)
+                {
+                    Assert.That(typeof(ThiefNavigator).GetField("m_target", flags).GetValue(navigator),
+                        Is.SameAs(attacker));
+                    Assert.That((float)typeof(ThiefNavigator).GetField("m_retaliationUntil", flags)
+                        .GetValue(navigator), Is.EqualTo(Time.time + 5f).Within(0.01f));
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
         [TestCase(1, true)]
         [TestCase(0, false)]
         public void UnavailableCouchCombatPreservesWeaponReactionDelay(int memberIndex, bool fighting)

@@ -8,7 +8,7 @@ namespace CouchGuys.Tests.Editor
 {
     public sealed class TruckSeatingTests
     {
-        private static readonly string[] PrefabNames = { "LightTruck", "GoodTruck", "BestTruck" };
+        private static readonly string[] PrefabNames = { "Truck" };
         private static readonly string[] ModelMarkerNames =
         {
             "SeatAnchor_Front_Right",

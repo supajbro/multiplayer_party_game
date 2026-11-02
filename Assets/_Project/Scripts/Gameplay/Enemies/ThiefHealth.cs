@@ -175,16 +175,23 @@ namespace CouchGuys.Gameplay.Enemies
         }
 
         [Server]
-        public void ApplyDamageServer(float damage, Vector3 impactDirection, float knockbackForce) =>
+        public void ApplyDamageServer(float damage, Vector3 impactDirection, float knockbackForce,
+            CouchGuys.Player.PlayerHealth attacker = null)
+        {
+            bool wasAlive = IsAlive;
             ApplyImpactServer(damage, impactDirection, knockbackForce, 0f, false,
                 ragdollImpulseScale: m_damageRagdollImpulseScale);
+            if (wasAlive && IsAlive && damage > 0f && attacker != null)
+                m_navigator?.ReactToAttackServer(attacker);
+        }
 
         [Server]
-        public void ApplyBulletDamageServer(float damage, Vector3 direction, float force, Vector3 position)
+        public void ApplyBulletDamageServer(float damage, Vector3 direction, float force, Vector3 position,
+            CouchGuys.Player.PlayerHealth attacker = null)
         {
             if (!IsAlive || damage <= 0f) return;
             PlayBloodObserversRpc(position, direction, false);
-            ApplyDamageServer(damage, direction, force);
+            ApplyDamageServer(damage, direction, force, attacker);
         }
 
         [ObserversRpc]

@@ -427,7 +427,7 @@ namespace CouchGuys.Gameplay.Weapons
                 nearest = thief;
                 nearestDistance = offset.magnitude;
             }
-            nearest?.ApplyDamageServer(m_punchDamage, transform.forward, m_punchKnockback);
+            nearest?.ApplyDamageServer(m_punchDamage, transform.forward, m_punchKnockback, m_health);
         }
 
         [ObserversRpc(RunLocally = true)]
@@ -726,7 +726,7 @@ namespace CouchGuys.Gameplay.Weapons
                 float force = weapon.Knockback * Mathf.Lerp(0.25f, 1f,
                     Mathf.Clamp01(entry.Value / maximumShotDamage));
                 RaycastHit bloodHit = m_bloodHits[entry.Key];
-                entry.Key.ApplyBulletDamageServer(entry.Value, forward, force, bloodHit.point);
+                entry.Key.ApplyBulletDamageServer(entry.Value, forward, force, bloodHit.point, m_health);
             }
             if (m_thiefDamage.Count > 0 && Owner.IsValid)
             {

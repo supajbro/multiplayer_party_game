@@ -67,6 +67,11 @@ namespace CouchGuys.Gameplay.Enemies
         [Serializable]
         public sealed class CombatSettings
         {
+            [Header("Retaliation")]
+            [Range(0f, 100f)] public float RetaliationChance = 50f;
+            [Range(0f, 100f), Tooltip("Each thief rolls a fixed chance within this many percentage points of the base chance when spawned.")]
+            public float RetaliationChanceVariation = 25f;
+            [Min(0.1f)] public float RetaliationDuration = 5f;
             [Header("Weapon")] public EnemyWeaponType WeaponType = EnemyWeaponType.Pistol;
             [Min(0.05f)] public float FireInterval = 0.8f;
             [Min(1f)] public float Range = 30f;

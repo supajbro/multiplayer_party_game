@@ -70,9 +70,7 @@ namespace CouchGuys.Editor
             ("Assets/_Project/Prefabs/Enemies/Thief_Pistol.prefab", Profile.Props),
             ("Assets/_Project/Prefabs/Enemies/Thief_Shotgun.prefab", Profile.Props),
             ("Assets/_Project/Prefabs/Enemies/Thief_AssaultRifle.prefab", Profile.Props),
-            ("Assets/_Project/Prefabs/Vehicles/LightTruck.prefab", Profile.Props),
-            ("Assets/_Project/Prefabs/Vehicles/GoodTruck.prefab", Profile.Props),
-            ("Assets/_Project/Prefabs/Vehicles/BestTruck.prefab", Profile.Props)
+            ("Assets/_Project/Prefabs/Vehicles/Truck.prefab", Profile.Props),
         };
 
         [InitializeOnLoadMethod]

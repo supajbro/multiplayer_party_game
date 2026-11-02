@@ -9,8 +9,11 @@ namespace CouchGuys.ProceduralGeneration
     {
         [SerializeField] private Light m_light;
         [SerializeField, Min(0.1f)] private float m_minimumTruckSpeed = 1f;
+        [SerializeField, Min(0f), Tooltip("Multiplier on the truck's final obstacle collision damage when hitting this pole. 0 disables damage; 1 uses normal damage.")]
+        private float m_truckCollisionDamageMultiplier = 0.2f;
         private Rigidbody m_body;
         public bool IsKnockedDown { get; private set; }
+        public float TruckCollisionDamageMultiplier => Mathf.Max(0f, m_truckCollisionDamageMultiplier);
 
         private void Awake()
         {

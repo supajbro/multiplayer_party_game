@@ -1,5 +1,4 @@
 using System.Linq;
-using CouchGuys.Gameplay.Shop;
 using CouchGuys.Gameplay.Sled;
 using CouchGuys.Testing;
 using FishNet.Component.Transforming;
@@ -13,16 +12,13 @@ using UnityEngine.SceneManagement;
 
 namespace CouchGuys.Editor
 {
-    /// <summary>Builds the authored sled model into its gameplay, shop, and test assets.</summary>
+    /// <summary>Builds the authored sled model into its gameplay and test assets.</summary>
     public static class SledSystemBuilder
     {
         private const string ModelPath = "Assets/_Project/Models/Sled/sled_01.fbx";
         private const string PrefabPath = "Assets/_Project/Prefabs/Vehicles/Sled.prefab";
         private const string SettingsPath = "Assets/_Project/Settings/Gameplay/SledSettings.asset";
         private const string SpawnablesPath = "Assets/_Project/Settings/NetworkSpawnablePrefabs.asset";
-        private const string CataloguePath = "Assets/_Project/Resources/Shop/DeliveryManagerShop.asset";
-        private const string PurchasePath = "Assets/_Project/Settings/Shop/sled_purchase.asset";
-        private const string ItemPath = "Assets/_Project/Settings/Shop/sled.asset";
         private const string TestScenePath = "Assets/Scenes/CouchPhysicsTest.unity";
 
         [InitializeOnLoadMethod]
@@ -39,11 +35,10 @@ namespace CouchGuys.Editor
             SledSettings settings = BuildSettings();
             NetworkObject prefab = BuildPrefab(settings);
             RegisterPrefab(prefab);
-            BuildShopAssets(prefab);
             AssignTestScene(prefab);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("Built server-authoritative Sled prefab, settings, shop item, spawn registration, and test-scene reference.");
+            Debug.Log("Built server-authoritative Sled prefab, settings, spawn registration, and test-scene reference.");
         }
 
         public static void BuildFromCommandLine() => BuildSledSystem();
@@ -160,47 +155,6 @@ namespace CouchGuys.Editor
             prefab.SetAssetPathHash(stableName.GetStableHashU64());
             EditorUtility.SetDirty(prefab);
             EditorUtility.SetDirty(collection);
-        }
-
-        private static void BuildShopAssets(NetworkObject prefab)
-        {
-            SledPurchaseBehaviour purchase = AssetDatabase.LoadAssetAtPath<SledPurchaseBehaviour>(PurchasePath);
-            if (purchase == null)
-            {
-                purchase = ScriptableObject.CreateInstance<SledPurchaseBehaviour>();
-                AssetDatabase.CreateAsset(purchase, PurchasePath);
-            }
-            SetReference(purchase, "m_sledPrefab", prefab);
-
-            ShopItemDefinition item = AssetDatabase.LoadAssetAtPath<ShopItemDefinition>(ItemPath);
-            if (item == null)
-            {
-                item = ScriptableObject.CreateInstance<ShopItemDefinition>();
-                AssetDatabase.CreateAsset(item, ItemPath);
-            }
-            SerializedObject itemSo = new(item);
-            itemSo.FindProperty("m_itemId").stringValue = "sled";
-            itemSo.FindProperty("m_displayName").stringValue = "Sled";
-            itemSo.FindProperty("m_description").stringValue =
-                "A physical couch hauler that shines downhill. Hold on tight.";
-            itemSo.FindProperty("m_price").intValue = 150;
-            itemSo.FindProperty("m_category").enumValueIndex = (int)ShopItemCategory.Vehicle;
-            itemSo.FindProperty("m_purchaseBehaviour").objectReferenceValue = purchase;
-            itemSo.ApplyModifiedPropertiesWithoutUndo();
-
-            ShopCatalogue catalogue = AssetDatabase.LoadAssetAtPath<ShopCatalogue>(CataloguePath);
-            if (catalogue == null) throw new UnityException($"Missing {CataloguePath}.");
-            SerializedObject catalogueSo = new(catalogue);
-            SerializedProperty items = catalogueSo.FindProperty("m_items");
-            bool exists = false;
-            for (int index = 0; index < items.arraySize; index++)
-                exists |= items.GetArrayElementAtIndex(index).objectReferenceValue == item;
-            if (!exists)
-            {
-                items.arraySize++;
-                items.GetArrayElementAtIndex(items.arraySize - 1).objectReferenceValue = item;
-            }
-            catalogueSo.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static void AssignTestScene(NetworkObject prefab)

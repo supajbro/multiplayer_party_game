@@ -2,15 +2,12 @@ using UnityEngine;
 
 namespace CouchGuys.Gameplay.Vehicles
 {
-    public enum TruckQuality { Light, Good, Best }
-
     /// <summary>Single source of truth for a truck's configurable behaviour. Runtime state is never stored here.</summary>
     [CreateAssetMenu(fileName = "TruckSettings", menuName = "Couch Guys/Vehicles/Truck Settings")]
     [UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "CouchGuys.Gameplay.Vehicles", sourceAssembly: "Assembly-CSharp", sourceClassName: "VanSettings")]
     public sealed class TruckSettings : ScriptableObject
     {
         [Header("General")]
-        [SerializeField] private TruckQuality m_quality;
         [SerializeField] private string m_displayName = "Truck";
 
         [Header("Driving")]
@@ -86,7 +83,7 @@ namespace CouchGuys.Gameplay.Vehicles
         [SerializeField, Range(0f, 20f)] private float m_bodyPitchAmount = 3f;
         [SerializeField, Min(0.01f)] private float m_visualSmoothing = 8f;
 
-        public TruckQuality Quality => m_quality; public string DisplayName => m_displayName;
+        public string DisplayName => m_displayName;
         public float MaxForwardSpeed => m_maxForwardSpeed; public float MaxReverseSpeed => m_maxReverseSpeed;
         public float Acceleration => m_acceleration; public float ReverseAcceleration => m_reverseAcceleration;
         public float BrakingForce => m_brakingForce; public float NaturalDeceleration => m_naturalDeceleration;

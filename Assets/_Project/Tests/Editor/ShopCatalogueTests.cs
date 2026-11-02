@@ -10,18 +10,15 @@ namespace CouchGuys.Tests.Editor
             "Assets/_Project/Resources/Shop/DeliveryManagerShop.asset";
 
         [Test]
-        public void DefaultCatalogueContainsConfiguredTrucks()
+        public void DefaultCatalogueContainsTruckAndExcludesRemovedVehicles()
         {
             ShopCatalogue catalogue = AssetDatabase.LoadAssetAtPath<ShopCatalogue>(CataloguePath);
             Assert.That(catalogue, Is.Not.Null);
             AssertItem(catalogue, "van_light", 250);
-            AssertItem(catalogue, "van_good", 500);
-            AssertItem(catalogue, "van_best", 1000);
-            ShopItemDefinition sled = catalogue.Find("sled");
-            Assert.That(sled, Is.Not.Null, "Missing sled");
-            Assert.That(sled.Price, Is.EqualTo(150));
-            Assert.That(sled.PurchaseBehaviour, Is.TypeOf<SledPurchaseBehaviour>());
-            Assert.That(((SledPurchaseBehaviour)sled.PurchaseBehaviour).SledPrefab, Is.Not.Null);
+            AssertItem(catalogue, "truck", 250);
+            Assert.That(catalogue.Find("van_good"), Is.Null);
+            Assert.That(catalogue.Find("van_best"), Is.Null);
+            Assert.That(catalogue.Find("sled"), Is.Null);
         }
 
         private static void AssertItem(ShopCatalogue catalogue, string itemId, int price)
