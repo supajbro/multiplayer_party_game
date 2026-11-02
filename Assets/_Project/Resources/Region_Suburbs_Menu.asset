@@ -117,6 +117,9 @@ MonoBehaviour:
   m_easyHouseVariants:
   - {fileID: 100000, guid: b8b918f438cf4837ba31ec4e98de36a3, type: 3}
   - {fileID: 2181625618289386113, guid: c114e23197d34214d9bfe7364942d271, type: 3}
+  m_mediumHouseVariants:
+  - {fileID: 100000, guid: a14321c10e5647e78aa2b0fd2e4e9cb1, type: 3}
+  - {fileID: 9020402326782235797, guid: b2f149be89796f04984dd61acf0214cb, type: 3}
   m_lots:
   - Definition: {fileID: 11400000, guid: 15aab6b7cac24f2499d3f3ef9c445f8b, type: 2}
     Weight: 1

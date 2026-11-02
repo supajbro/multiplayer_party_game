@@ -36,6 +36,10 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private GameObject[] m_easyHouseVariants = Array.Empty<GameObject>();
         public GameObject[] EasyHouseVariants => m_easyHouseVariants;
 
+        [Tooltip("Equal-weight variants for standard medium delivery houses. Empty preserves the existing house. Excludes easy houses and mansions.")]
+        [SerializeField] private GameObject[] m_mediumHouseVariants = Array.Empty<GameObject>();
+        public GameObject[] MediumHouseVariants => m_mediumHouseVariants;
+
         [Header("Lots")]
         [SerializeField] private WeightedLot[] m_lots = Array.Empty<WeightedLot>();
         [SerializeField, Range(0f, 1f)] private float m_lotDensity = 1f;

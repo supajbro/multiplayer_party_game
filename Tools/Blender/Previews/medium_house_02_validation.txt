@@ -1,0 +1,13 @@
+Reference active LOD0 bounds: Center: (-0.35, 8.15, -2.18), Extents: (17.70, 8.26, 11.18)
+LOD0: 13444 triangles (100.0%), 10 renderers
+LOD0 bounds: Center: (-0.35, 8.26, -1.66), Extents: (17.70, 8.15, 11.70)
+LOD1: 5512 triangles (41.0%), 10 renderers
+LOD1 bounds: Center: (-0.35, 8.26, -1.66), Extents: (17.70, 8.15, 11.70)
+LOD2: 1436 triangles (10.7%), 8 renderers
+LOD2 bounds: Center: (-0.35, 8.26, -1.66), Extents: (17.70, 8.15, 11.70)
+Original active LOD0 bounds: Center: (-0.35, 8.15, -2.18), Extents: (17.70, 8.26, 11.18); new: Center: (-0.35, 8.26, -1.66), Extents: (17.70, 8.15, 11.70)
+Seed 10000: medium_house_01=11, medium_house_02=5
+Seed 10001: medium_house_01=6, medium_house_02=9
+Seed 12345: medium_house_01=6, medium_house_02=9
+Seed 10000: medium_house_01=11, medium_house_02=5
+PASS: prefab, materials, colliders, entrance, footprint, LOD ratios, generation and tier validation.

@@ -11,7 +11,7 @@ namespace CouchGuys.Editor
     public static class HousePrefabBuilder
     {
         public const string HouseModelPath =
-            "Assets/_Project/Models/Houses/CouchGuys_House_01.fbx";
+            "Assets/_Project/Models/Houses/MediumHouses/medium_house_01.fbx";
         public const string House02ModelPath =
             "Assets/_Project/Models/Houses/SmallHouses/small_house_01.fbx";
         public const string House01PrefabPath = "Assets/_Project/Prefabs/Houses/House_01.prefab";

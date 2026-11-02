@@ -17,7 +17,7 @@ def build_mansion(project):
             bpy.data.objects.remove(obj, do_unlink=True)
         bpy.data.objects.remove(previous, do_unlink=True)
     before = set(bpy.data.objects)
-    bpy.ops.import_scene.fbx(filepath=output + 'CouchGuys_House_01.fbx')
+    bpy.ops.import_scene.fbx(filepath=output + 'MediumHouses/medium_house_01.fbx')
     imported = set(bpy.data.objects) - before
     reference = next(o for o in imported if o.type == 'EMPTY' and o.parent is None)
     reference.name = 'CG_House_03_ROOT'

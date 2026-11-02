@@ -18,7 +18,7 @@ empty = utils['make_empty']
 # Background build, never edits the reference file or the user's open Blender scene.
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
-bpy.ops.import_scene.fbx(filepath=str(OUTPUT / 'CouchGuys_House_01.fbx'))
+bpy.ops.import_scene.fbx(filepath=str(OUTPUT / 'MediumHouses/medium_house_01.fbx'))
 palette = {m.name: m for m in bpy.data.materials}
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.object.delete(use_global=False)
