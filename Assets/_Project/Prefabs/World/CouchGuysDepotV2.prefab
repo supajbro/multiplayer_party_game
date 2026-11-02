@@ -5260,6 +5260,40 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1587502348780812306}
   m_Mesh: {fileID: -5149689768402146980, guid: 2805e4a8e5ffc454088f372e1586cf9b, type: 3}
+--- !u!1 &1608752474049598630
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4782293900346787689}
+  m_Layer: 0
+  m_Name: DispatcherRoamingWaypoints
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4782293900346787689
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1608752474049598630}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 5143828880953197015}
+  - {fileID: 2635629495869099187}
+  - {fileID: 5519923726718884886}
+  m_Father: {fileID: 2775812737021810372}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1610338947737048381
 GameObject:
   m_ObjectHideFlags: 0
@@ -19084,6 +19118,37 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &5633388942642037390
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2635629495869099187}
+  m_Layer: 0
+  m_Name: SafeRoamingPoint_2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2635629495869099187
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5633388942642037390}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -8.5, y: 0.13, z: 3.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4782293900346787689}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5643271542643815590
 GameObject:
   m_ObjectHideFlags: 0
@@ -21011,6 +21076,37 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &6077482034809862915
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5519923726718884886}
+  m_Layer: 0
+  m_Name: SafeRoamingPoint_3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5519923726718884886
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6077482034809862915}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -10.6, y: 0.13, z: 4.8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4782293900346787689}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6082892876352155145
 GameObject:
   m_ObjectHideFlags: 0
@@ -26349,6 +26445,7 @@ GameObject:
   - component: {fileID: 2775812737021810372}
   - component: {fileID: 1417481110828290109}
   - component: {fileID: 7883186568613956020}
+  - component: {fileID: 2232647061375658140}
   m_Layer: 0
   m_Name: CouchGuysDepotV2
   m_TagString: Untagged
@@ -26379,6 +26476,7 @@ Transform:
   - {fileID: 4043085435650834799}
   - {fileID: 2182689290980956523}
   - {fileID: 3530179915705078447}
+  - {fileID: 4782293900346787689}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1417481110828290109
@@ -26394,8 +26492,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Depot.DepotController
   m_deliveryNpc: {fileID: 6177880476428705427}
+  m_counterInteractionArea:
+    m_Center: {x: -10.1, y: 1, z: -3.1}
+    m_Extent: {x: 2.4, y: 1.5, z: 0.9}
+  m_counterDispatcherDistance: 1.5
   m_vehicleArrival: {fileID: 3063923292146174979}
   m_truckSpawnPoint: {fileID: 2182689290980956523}
+  m_vehicleSpawnSurface: {fileID: 0}
   m_vehicleFallbacks:
   - {fileID: 3379386828388911818}
   - {fileID: 7346048904604588548}
@@ -26408,6 +26511,8 @@ MonoBehaviour:
   - {fileID: 1933960915218364201}
   m_conveyorSpeed: 2.25
   m_arrivalDelay: 0.75
+  m_conveyorExitSpeed: 0
+  m_couchDropOffPoint: {fileID: 0}
   m_entranceDetectionCentre: {fileID: 7408750372680709563}
   m_entranceDetectionRadius: 4.5
   m_entranceOpeningSpeed: 1.4
@@ -26434,6 +26539,11 @@ MonoBehaviour:
     m_safetyVolume: {fileID: 5968484233577341037}
     m_animationRoot: {fileID: 0}
     m_authoredAnimation: {fileID: 0}
+  m_garageDetectionRadius: 4.5
+  m_garageClosingDelay: 2
+  m_truckInterior:
+    m_Center: {x: 0, y: 2, z: 0}
+    m_Extent: {x: 13.4, y: 4, z: 11}
   m_vehicleGarageDoor:
     m_slats:
     - {fileID: 1455600812842882307}
@@ -26528,6 +26638,30 @@ MonoBehaviour:
   m_deliveryNpcSpawnPoint: {fileID: 6177880476428705427}
   m_gridFootprint: {x: 5, y: 5}
   m_depot: {fileID: 1417481110828290109}
+--- !u!114 &2232647061375658140
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7676411037448871107}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8bf5a4ac2dc64a42af83b5fb6219504, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Delivery.DispatcherRoamingArea
+  m_waypoints:
+  - {fileID: 5143828880953197015}
+  - {fileID: 2635629495869099187}
+  - {fileID: 5519923726718884886}
+  m_interior:
+    m_Center: {x: -9.775, y: 0.5, z: 2.65}
+    m_Extent: {x: 2.625, y: 2, z: 3.15}
+  m_exclusions:
+  - m_Center: {x: 7.5, y: 1, z: 0}
+    m_Extent: {x: 6, y: 4, z: 15}
+  - m_Center: {x: 0, y: 1, z: 10.5}
+    m_Extent: {x: 20, y: 4, z: 3}
 --- !u!1 &7721753822271122042
 GameObject:
   m_ObjectHideFlags: 0
@@ -29721,6 +29855,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.0783, y: 0.0018999999, z: 0.004178333}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &8687597316296250602
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5143828880953197015}
+  m_Layer: 0
+  m_Name: SafeRoamingPoint_1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5143828880953197015
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8687597316296250602}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -10, y: 0.13, z: 2.3}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4782293900346787689}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8710838316035839494
 GameObject:
   m_ObjectHideFlags: 0

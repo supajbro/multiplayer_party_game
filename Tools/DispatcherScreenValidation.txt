@@ -1,0 +1,4 @@
+PASS: serialized shader/material/controller GUIDs, three existing screen renderer references, and all three LOD screen material assignments checked.
+Unity imported DispatcherWaveform.shader and compiled scripts without new errors in Editor.log.
+LIMITATION: Editor UI connection timed out and subsequent refresh did not run; the explicit Unity validation menu, visual gameplay review, and multiplayer playtest remain unexecuted.
+

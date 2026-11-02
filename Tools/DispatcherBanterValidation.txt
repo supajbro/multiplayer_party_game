@@ -1,0 +1,4 @@
+PASS: standalone C# shuffle deck: 30,000 draws, 100 seeds, full unique rotations and no consecutive repeats, duplicate/blank filtering, empty/single-line inputs.
+PASS: Unity compiled runtime scripts and imported DispatcherSpeechBubble.prefab without reported errors.
+LIMITATION: Editor UI control timed out. Optional Unity validation menu and gameplay/multiplayer presentation remain unexecuted.
+

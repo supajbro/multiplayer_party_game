@@ -1,0 +1,8 @@
+Playing=True, time=184.5091, scale=1
+NPC=DeliveryNPC, enabled=True, state=Roaming, started=True, network=Name [NeighbourhoodGenerator] ComponentId [0] NetworkObject Name [NeighbourhoodGenerator] NetworkObject Id [0], server=True, client=False, ready=True, area=StartingArea (CouchGuys.Gameplay.Delivery.DispatcherRoamingArea), home=DeliveryNpcSpawnPoint (UnityEngine.Transform), wait=-9.208069, position=(-7.00, 0.08, 2.50)
+Point0=(-6.60, 0.08, -0.80), bounds=True, travel=True, clear=True, floor=True
+Floor=D02_Collider_Floor, normal=(0.00, 1.00, 0.00)
+Point1=(-3.50, 0.08, 1.50), bounds=True, travel=True, clear=True, floor=True
+Floor=D02_Collider_Floor, normal=(0.00, 1.00, 0.00)
+Point2=(-7.00, 0.08, 2.50), bounds=True, travel=True, clear=True, floor=True
+Floor=D02_Collider_Floor, normal=(0.00, 1.00, 0.00)

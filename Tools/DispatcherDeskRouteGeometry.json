@@ -1,0 +1,27 @@
+{
+  "boxes": 73,
+  "meshColliders": [
+    "D02_Collider_ConveyorExitCurve",
+    "D02_Collider_ConveyorIntakeCurve"
+  ],
+  "homeToFrontBlockedBy": [
+    "D02_Collider_DispatchDesk"
+  ],
+  "detour": [
+    {
+      "from": "DeliveryNpcSpawnPoint",
+      "to": "SafeRoamingPoint_5",
+      "blockedBy": []
+    },
+    {
+      "from": "SafeRoamingPoint_5",
+      "to": "SafeRoamingPoint_1",
+      "blockedBy": []
+    },
+    {
+      "from": "SafeRoamingPoint_1",
+      "to": "SafeRoamingPoint_2",
+      "blockedBy": []
+    }
+  ]
+}

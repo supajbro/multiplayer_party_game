@@ -1,0 +1,85 @@
+{
+  "LOD0": {
+    "triangles": 5416,
+    "mesh_count": 2,
+    "bounds_min": [
+      -0.5454999804496765,
+      -0.3479999899864197,
+      -8.797717043762532e-08
+    ],
+    "bounds_max": [
+      0.5454999804496765,
+      0.5400004386901855,
+      2.4639999866485596
+    ],
+    "screen_uv": "ScreenUV",
+    "materials": [
+      "Dispatcher_Base",
+      "Dispatcher_Bezel",
+      "Dispatcher_LightBlue",
+      "Dispatcher_OrangeButtons",
+      "Dispatcher_OrangeRedPanel",
+      "Dispatcher_Pole",
+      "Dispatcher_RearBlue",
+      "Dispatcher_Screen",
+      "Dispatcher_WheelHub",
+      "Dispatcher_WheelRubber",
+      "Dispatcher_YellowBeacon"
+    ]
+  },
+  "LOD1": {
+    "triangles": 3088,
+    "mesh_count": 2,
+    "bounds_min": [
+      -0.5454999804496765,
+      -0.3479999899864197,
+      -8.797717043762532e-08
+    ],
+    "bounds_max": [
+      0.5454999804496765,
+      0.5400004386901855,
+      2.4639999866485596
+    ],
+    "screen_uv": "ScreenUV",
+    "materials": [
+      "Dispatcher_Base.001",
+      "Dispatcher_Bezel.001",
+      "Dispatcher_LightBlue.001",
+      "Dispatcher_OrangeButtons.001",
+      "Dispatcher_OrangeRedPanel.001",
+      "Dispatcher_Pole.001",
+      "Dispatcher_RearBlue.001",
+      "Dispatcher_Screen.001",
+      "Dispatcher_WheelHub.001",
+      "Dispatcher_WheelRubber.001",
+      "Dispatcher_YellowBeacon.001"
+    ]
+  },
+  "LOD2": {
+    "triangles": 1000,
+    "mesh_count": 2,
+    "bounds_min": [
+      -0.5400000214576721,
+      -0.34299999475479126,
+      -8.797717043762532e-08
+    ],
+    "bounds_max": [
+      0.5400000214576721,
+      0.5400004386901855,
+      2.4639999866485596
+    ],
+    "screen_uv": "ScreenUV",
+    "materials": [
+      "Dispatcher_Base.002",
+      "Dispatcher_Bezel.002",
+      "Dispatcher_LightBlue.002",
+      "Dispatcher_OrangeButtons.002",
+      "Dispatcher_OrangeRedPanel.002",
+      "Dispatcher_Pole.002",
+      "Dispatcher_RearBlue.002",
+      "Dispatcher_Screen.002",
+      "Dispatcher_WheelRubber.002",
+      "Dispatcher_YellowBeacon.002"
+    ]
+  }
+}

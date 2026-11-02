@@ -1,0 +1,3 @@
+PASS depot_02: counter interaction at home; rejected away/distant interaction; empty auto-close; nearby player auto-open; closing delay; indoor truck hold-open; outdoor truck ignored; doorway safety.
+PASS CouchGuysDepotV2: counter interaction at home; rejected away/distant interaction; empty auto-close; nearby player auto-open; closing delay; indoor truck hold-open; outdoor truck ignored; doorway safety.
+Existing DeliveryManager door SyncVars retained. Multi-client gameplay/UI playtest outstanding.

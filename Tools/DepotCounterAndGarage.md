@@ -1,0 +1,13 @@
+# Depot counter interaction and automatic truck roller door
+
+Both Assets/_Project/Prefabs/World/depot_02.prefab and CouchGuysDepotV2.prefab have saved settings on DepotController.
+
+Counter Interaction Area is a depot-local Bounds covering the customer side of the desk. Standing there lets the normal dispatcher interaction open the existing dialogue/shop UI while the dispatcher is within Counter Dispatcher Distance (default 1.5 m) of his home marker. When he roams away, interaction follows his actual position. Client target selection and server acquisition, distance release, and purchase checks use the same rule. This does not bypass the existing single-player conversation lock or purchase authority. A selected depot displays the counter bounds in yellow.
+
+The truck roller door opens for any active truck whose root is within Truck Interior, for a player within Garage Detection Radius of the doorway (default 4.5 m), or for an occupied doorway. With no occupants it closes after Garage Closing Delay (default 2 s). Truck detection uses the existing ActiveTrucks registry; proximity is checked at 5 Hz using a reused collider buffer. Doorway safety remains checked every server frame. Manual opening holds the door briefly; manual closing cannot override active automatic occupancy. Existing pedestrian entrance behavior is preserved.
+
+Truck Interior is a depot-local Bounds and is shown in blue when the depot is selected. Automatic decisions run on the server and reuse DeliveryManager's existing garage-door SyncVar and local door animation. No extra network object, RPC or rendering system was added.
+
+Validation: Couch Guys > Dispatcher > Validate Counter and Automatic Garage passed for both depot assets, including counter activation/deactivation, NPC interaction distance, empty auto-close, nearby-player opening, closing delay, indoor/outdoor truck presence and doorway obstruction safety. Results: Tools/DepotCounterDoorValidation.txt. Multi-client gameplay and the actual dialogue/shop UI still need a playtest. Stop and restart Play mode to use changed prefab settings on regenerated depots.
+
+Counter reach correction: interaction now uses the player's normal reach measured from the closest point of the customer area, rather than requiring the player root to be inside the bounds. The server uses the same distance rule for opening, retaining and purchasing. Added a regression check 0.75 m beyond the front edge. Runtime source compilation passed. The attempted solo-host end-to-end interaction test was stopped when the user stopped Computer Use; its temporary automatic test script was removed.

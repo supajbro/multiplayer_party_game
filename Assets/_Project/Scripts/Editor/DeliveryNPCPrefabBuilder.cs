@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace CouchGuys.Editor
 {
-    /// <summary>Creates and maintains the reusable frog delivery NPC prefab.</summary>
+    /// <summary>Legacy authoring helpers; saved dispatcher prefabs are never rebuilt on reload.</summary>
     public static class DeliveryNPCPrefabBuilder
     {
         public const string PrefabPath = "Assets/_Project/Prefabs/DeliveryNPC.prefab";
@@ -16,22 +16,18 @@ namespace CouchGuys.Editor
         private const string VisualName = "FrogVisual";
         private const float TargetHeight = 2.2f;
 
-        [InitializeOnLoadMethod]
-        private static void BuildMissingPrefabAfterImport()
-        {
-            EditorApplication.delayCall += BuildAfterImport;
-        }
-
         [MenuItem("Couch Guys/Build Delivery NPC Prefab")]
         public static void BuildDeliveryNpcPrefab()
         {
-            ConfigureFrogImporter();
-            Selection.activeObject = EnsureDeliveryNpcPrefab(true);
+            DispatcherTVPrefabSetup.Apply();
         }
 
         public static GameObject EnsureDeliveryNpcPrefab(bool forceRebuild = false)
         {
             GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            // Compatibility for callers of the old builder: preserve the authored TV asset.
+            if (existing != null && existing.transform.Find("TVVisual") != null)
+                return existing;
             if (!forceRebuild && IsConfigured(existing))
             {
                 return existing;
@@ -91,13 +87,6 @@ namespace CouchGuys.Editor
             return animator != null &&
                 AssetDatabase.GetAssetPath(animator.runtimeAnimatorController) == ControllerPath;
         }
-        private static void BuildAfterImport()
-        {
-            ConfigureFrogImporter();
-            EnsureDeliveryNpcPrefab();
-            EnsureWaitingVisual();
-        }
-
         public static void EnsureWaitingVisual()
         {
             const string path = "Assets/_Project/Resources/DeliveryWaitingNPC.prefab";

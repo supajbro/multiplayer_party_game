@@ -3,6 +3,7 @@ using FishNet.Object.Synchronizing;
 using UnityEngine;
 using CouchGuys.UI;
 using System.Collections.Generic;
+using CouchGuys.Gameplay.Delivery;
 
 namespace CouchGuys.ProceduralGeneration
 {
@@ -24,6 +25,8 @@ namespace CouchGuys.ProceduralGeneration
     {
         private readonly SyncVar<int> m_authoritativeSeed = new SyncVar<int>();
         private readonly SyncVar<int> m_authoritativeRegionIndex = new SyncVar<int>(-1);
+        private readonly SyncVar<DispatcherRoamingPose> m_dispatcherPose = new(new SyncTypeSettings(.1f));
+        private uint m_dispatcherRevision;
         [SerializeField] private NeighbourhoodGenerator m_generator;
 
         private int? m_appliedSeed;
@@ -65,6 +68,23 @@ namespace CouchGuys.ProceduralGeneration
 
         public int AuthoritativeSeed => m_authoritativeSeed.Value;
         public int AuthoritativeRegionIndex => m_authoritativeRegionIndex.Value;
+
+        public void PublishDispatcherPose(Vector3 position, Quaternion rotation, bool snap)
+        {
+            if (!IsServerInitialized || m_generator == null) return;
+            m_dispatcherPose.Value = new DispatcherRoamingPose
+            {
+                Valid = true, Seed = m_generator.CurrentSeed, Region = m_generator.SelectedRegionIndex,
+                Revision = ++m_dispatcherRevision, Position = position, Rotation = rotation, Snap = snap
+            };
+        }
+
+        public bool TryGetDispatcherPose(out DispatcherRoamingPose pose)
+        {
+            pose = m_dispatcherPose.Value;
+            return pose.Valid && m_generator != null && m_generator.IsGenerationReady &&
+                pose.Seed == m_generator.CurrentSeed && pose.Region == m_generator.SelectedRegionIndex;
+        }
 
         private void Awake()
         {

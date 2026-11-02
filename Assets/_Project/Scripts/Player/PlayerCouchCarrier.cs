@@ -498,7 +498,7 @@ namespace CouchGuys.Player
             DeliveryNPC[] npcs = FindObjectsByType<DeliveryNPC>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
             foreach (DeliveryNPC npc in npcs)
             {
-                float distanceSquared = (npc.transform.position - transform.position).sqrMagnitude;
+                float distanceSquared = npc.InteractionDistanceSquared(transform.position);
                 if (distanceSquared <= closestDistanceSquared)
                 {
                     closestDistanceSquared = distanceSquared;
@@ -621,7 +621,7 @@ namespace CouchGuys.Player
             float closestDistanceSquared = allowedRange * allowedRange;
             foreach (DeliveryNPC npc in npcs)
             {
-                float distanceSquared = (npc.transform.position - transform.position).sqrMagnitude;
+                float distanceSquared = npc.InteractionDistanceSquared(transform.position);
                 if (distanceSquared <= closestDistanceSquared)
                 {
                     closestDistanceSquared = distanceSquared;

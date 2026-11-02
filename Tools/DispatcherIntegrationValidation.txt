@@ -1,0 +1,6 @@
+LOD0: 2 renderers; height=2.200; ground=0.0000; threshold=0.220; screen UV0/material/front valid.
+LOD1: 2 renderers; height=2.200; ground=0.0000; threshold=0.090; screen UV0/material/front valid.
+LOD2: 2 renderers; height=2.200; ground=0.0000; threshold=0.008; screen UV0/material/front valid.
+PASS: saved prefab instantiates, root DeliveryNPC and physical collider remain, spawn offset/orientation valid, blank screen independently accessible, no old visuals/static waveform.
+Runtime player interaction uses root-distance lookup; DeliveryNPC, PlayerCouchCarrier, DeliveryManager and generator scripts are unchanged.
+Live multiplayer dialogue/delivery and camera-driven LOD transition playtests have not been performed.

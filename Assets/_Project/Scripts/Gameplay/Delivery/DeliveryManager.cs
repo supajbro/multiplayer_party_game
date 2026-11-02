@@ -74,8 +74,13 @@ namespace CouchGuys.Gameplay.Delivery
         {
             new List<int>(), new List<int>(), new List<int>()
         };
+        // Ownership is server-only; replicate activity only on open/close for spectators and late joiners.
+        private readonly SyncVar<bool> m_dispatcherSpeaking = new();
+        public bool IsDispatcherSpeaking => m_dispatcherSpeaking.Value;
         private PlayerCouchCarrier m_dialoguePlayer;
         private DeliveryNPC m_dialogueNpc;
+        // Read-only roaming integration; dialogue acquisition/release stays unchanged.
+        public bool IsDispatcherInDialogue(DeliveryNPC npc) => m_dialogueNpc == npc && m_dialoguePlayer != null;
         private uint m_lastShopPurchaseRequestId;
         private bool m_candidatesReady;
         private readonly Collider[] m_vehicleClearanceHits = new Collider[64];
@@ -175,6 +180,7 @@ namespace CouchGuys.Gameplay.Delivery
         public override void OnStartServer()
         {
             base.OnStartServer();
+            m_dispatcherSpeaking.Value = false;
             m_usedDestinationIndices.Clear();
             m_exitDoorOpen.Value = false;
             m_vehicleGarageDoorOpen.Value = false;
@@ -202,8 +208,8 @@ namespace CouchGuys.Gameplay.Delivery
                 FailAndResetActiveDeliveryServer();
             if (IsServerInitialized && m_dialoguePlayer != null &&
                 (m_dialogueNpc == null ||
-                 Vector3.Distance(m_dialoguePlayer.transform.position, m_dialogueNpc.transform.position) >
-                 m_dialogueMaximumDistance))
+                 m_dialogueNpc.InteractionDistanceSquared(m_dialoguePlayer.transform.position) >
+                 m_dialogueMaximumDistance * m_dialogueMaximumDistance))
             {
                 ReleaseDialogueLockServer(m_dialoguePlayer, true, "You moved too far from the Delivery Manager.");
             }
@@ -212,9 +218,10 @@ namespace CouchGuys.Gameplay.Delivery
                 bool entranceOpen = m_depot.ShouldOpenAutomaticEntrance();
                 if (m_exitDoorOpen.Value != entranceOpen)
                     m_exitDoorOpen.Value = entranceOpen;
-                if (!m_vehicleGarageDoorOpen.Value &&
-                    m_depot.IsDoorwayBlocked(DepotDoorKind.VehicleGarage))
-                    m_vehicleGarageDoorOpen.Value = true;
+                if (m_depot.IsDoorwayBlocked(DepotDoorKind.VehicleGarage)) m_depot.HoldGarageDoorOpen();
+                bool garageOpen = m_depot.ShouldOpenAutomaticGarage();
+                if (m_vehicleGarageDoorOpen.Value != garageOpen)
+                    m_vehicleGarageDoorOpen.Value = garageOpen;
             }
         }
 
@@ -274,6 +281,8 @@ namespace CouchGuys.Gameplay.Delivery
         {
             if (!IsServerInitialized || npc == null || player == null || !player.Owner.IsValid)
                 return false;
+            if (npc.InteractionDistanceSquared(player.transform.position) > m_dialogueMaximumDistance * m_dialogueMaximumDistance)
+                return false;
             if (m_dialoguePlayer != null && m_dialoguePlayer != player)
             {
                 player.DeliveryNpcBusyTargetRpc(player.Owner);
@@ -282,6 +291,7 @@ namespace CouchGuys.Gameplay.Delivery
             if (player.TryGetComponent(out PlayerHealth health) && !health.IsAlive) return false;
             m_dialoguePlayer = player;
             m_dialogueNpc = npc;
+            m_dispatcherSpeaking.Value = true;
             m_lastShopPurchaseRequestId = 0;
             SendDialogueState(player);
             return true;
@@ -299,6 +309,7 @@ namespace CouchGuys.Gameplay.Delivery
             if (player == null || m_dialoguePlayer != player) return;
             m_dialoguePlayer = null;
             m_dialogueNpc = null;
+            m_dispatcherSpeaking.Value = false;
             if (closeClient && player.Owner.IsValid)
                 player.CloseDeliveryDialogueTargetRpc(player.Owner, message);
         }
@@ -323,8 +334,8 @@ namespace CouchGuys.Gameplay.Delivery
                 if (player == m_dialoguePlayer) SendDialogueState(player);
                 return false;
             }
-            if (Vector3.Distance(player.transform.position, npc.transform.position) >
-                m_dialogueMaximumDistance)
+            if (npc.InteractionDistanceSquared(player.transform.position) >
+                m_dialogueMaximumDistance * m_dialogueMaximumDistance)
             {
                 ReleaseDialogueLockServer(player, true, "You moved too far from the Delivery Manager.");
                 return false;
@@ -431,8 +442,8 @@ namespace CouchGuys.Gameplay.Delivery
                 return false;
             m_lastShopPurchaseRequestId = requestId;
 
-            if (Vector3.Distance(player.transform.position, npc.transform.position) >
-                m_dialogueMaximumDistance)
+            if (npc.InteractionDistanceSquared(player.transform.position) >
+                m_dialogueMaximumDistance * m_dialogueMaximumDistance)
             {
                 ReleaseDialogueLockServer(player, true, "You moved too far from the Delivery Manager.");
                 return false;
@@ -713,6 +724,8 @@ namespace CouchGuys.Gameplay.Delivery
             {
                 bool open = !m_vehicleGarageDoorOpen.Value;
                 if (!open && m_depot.IsDoorwayBlocked(kind)) return false;
+                if (!open && m_depot.ShouldOpenAutomaticGarage()) return false;
+                if (open) m_depot.HoldGarageDoorOpen();
                 m_vehicleGarageDoorOpen.Value = open;
             }
             return true;

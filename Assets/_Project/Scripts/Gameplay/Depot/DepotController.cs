@@ -131,6 +131,10 @@ namespace CouchGuys.Gameplay.Depot
     {
         [Header("Dispatch Markers")]
         [SerializeField] private Transform m_deliveryNpc;
+        [SerializeField, Tooltip("Depot-local customer area in front of the dispatcher desk.")]
+        private Bounds m_counterInteractionArea;
+        [SerializeField, Min(0f), Tooltip("Counter interaction is available only while the dispatcher is near his home marker.")]
+        private float m_counterDispatcherDistance = 1.5f;
         [SerializeField] private Transform m_vehicleArrival;
         [Tooltip("Purchased trucks use this transform's position and heading. Local +Z faces the exit.")]
         [SerializeField] private Transform m_truckSpawnPoint;
@@ -157,9 +161,78 @@ namespace CouchGuys.Gameplay.Depot
         [SerializeField, Min(0.1f)] private float m_doorAnimationSpeed = 0.65f;
         [SerializeField] private DepotDoorRig m_exitDoor = new();
         [SerializeField] private DepotDoorRig m_vehicleGarageDoor = new();
+        [SerializeField, Min(1f)] private float m_garageDetectionRadius = 4.5f;
+        [SerializeField, Min(0f)] private float m_garageClosingDelay = 2f;
+        [SerializeField, Tooltip("Depot-local truck presence bounds; a truck inside keeps the roller door open.")]
+        private Bounds m_truckInterior;
         [SerializeField] private DepotDoorButton[] m_doorButtons = Array.Empty<DepotDoorButton>();
 
         private readonly Collider[] m_safetyHits = new Collider[32];
+        private readonly Collider[] m_proximityHits = new Collider[64];
+        private float m_garageLastOccupied = float.NegativeInfinity;
+        private float m_nextGarageCheck;
+        private bool m_cachedGarageOpen;
+
+        public bool CanUseDispatcherCounter(Vector3 dispatcherPosition, Vector3 playerPosition)
+        {
+            return DispatcherCounterDistanceSquared(dispatcherPosition, playerPosition) <= .0001f;
+        }
+
+        public float DispatcherCounterDistanceSquared(Vector3 dispatcherPosition, Vector3 playerPosition)
+        {
+            if (m_deliveryNpc == null || m_counterInteractionArea.size.sqrMagnitude <= 0f ||
+                (dispatcherPosition - m_deliveryNpc.position).sqrMagnitude > m_counterDispatcherDistance * m_counterDispatcherDistance)
+                return float.PositiveInfinity;
+            // Measure reach from the counter, rather than requiring the player's root
+            // to enter a strict box. Transform back so scaled/rotated depots use world metres.
+            Vector3 closest = m_counterInteractionArea.ClosestPoint(transform.InverseTransformPoint(playerPosition));
+            return (playerPosition - transform.TransformPoint(closest)).sqrMagnitude;
+        }
+
+        // Called on the server. Reuse the existing door SyncVar; proximity needs no network traffic.
+        public bool ShouldOpenAutomaticGarage()
+        {
+            if (Time.time < m_nextGarageCheck) return m_cachedGarageOpen;
+            m_nextGarageCheck = Time.time + .2f;
+            bool occupied = false;
+            foreach (var truck in TruckController.ActiveTrucks)
+            {
+                if (truck != null && truck.gameObject.activeInHierarchy &&
+                    m_truckInterior.Contains(transform.InverseTransformPoint(truck.transform.position)))
+                { occupied = true; break; }
+            }
+            var volume = m_vehicleGarageDoor?.SafetyVolume;
+            if (!occupied && volume != null)
+            {
+                Vector3 centre = volume.transform.TransformPoint(volume.center);
+                centre.y = (m_deliveryNpc != null ? m_deliveryNpc.position.y : transform.position.y) + 1f;
+                int count = Physics.OverlapSphereNonAlloc(centre, m_garageDetectionRadius,
+                    m_proximityHits, ~0, QueryTriggerInteraction.Collide);
+                occupied = count == m_proximityHits.Length;
+                for (int i = 0; i < count && !occupied; i++)
+                    occupied = m_proximityHits[i] != null && m_proximityHits[i].GetComponentInParent<PlayerCouchCarrier>() != null;
+            }
+            // DeliveryManager also checks doorway safety every frame for immediate reopening.
+            if (occupied || IsDoorwayBlocked(DepotDoorKind.VehicleGarage)) m_garageLastOccupied = Time.time;
+            m_cachedGarageOpen = Time.time - m_garageLastOccupied <= m_garageClosingDelay;
+            return m_cachedGarageOpen;
+        }
+
+        public void HoldGarageDoorOpen()
+        {
+            m_garageLastOccupied = Time.time;
+            m_cachedGarageOpen = true;
+            m_nextGarageCheck = Time.time + .2f;
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            Gizmos.matrix = transform.localToWorldMatrix;
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireCube(m_counterInteractionArea.center, m_counterInteractionArea.size);
+            Gizmos.color = Color.blue;
+            Gizmos.DrawWireCube(m_truckInterior.center, m_truckInterior.size);
+        }
 
         public Transform DeliveryNpcMarker => m_deliveryNpc;
         public Collider VehicleSpawnSurface => m_vehicleSpawnSurface;

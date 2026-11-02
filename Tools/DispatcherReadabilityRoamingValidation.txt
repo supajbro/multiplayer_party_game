@@ -1,0 +1,5 @@
+PASS: C# runtime sources compiled with Unity 6.3 compiler and existing project references (warnings only).
+PASS: actual RecordArrival method tested for 10,000 visits: bounded return trail, loop erasure, current endpoint, retained home.
+Saved settings: idle 5-15 s; outing 45-75 s including return; pauses 0.5-1.5 s. Bubble fixed 32-point font; 520x164 design size; bounded distance compensation.
+LIMITATION: gameplay layout, updated Unity collision validation menu and multiplayer have not been rerun.
+

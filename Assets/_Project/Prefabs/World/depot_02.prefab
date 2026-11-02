@@ -2224,7 +2224,7 @@ Transform:
   m_GameObject: {fileID: 1378181842788239129}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -4.4, y: 0.08, z: -2.7}
+  m_LocalPosition: {x: -4.4, y: 0.08, z: -5.99}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4793,6 +4793,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.0007, y: 0.0372, z: 0.022}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &2352547603877279796
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2853070389810977839}
+  m_Layer: 0
+  m_Name: SafeRoamingPoint_4
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2853070389810977839
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2352547603877279796}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.27, y: 0.08, z: -4.83}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5272202328772882791}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2380261630362202693
 GameObject:
   m_ObjectHideFlags: 0
@@ -4963,8 +4994,8 @@ Transform:
   m_GameObject: {fileID: 2408485220882374488}
   serializedVersion: 2
   m_LocalRotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
-  m_LocalPosition: {x: -4.4, y: 1.55, z: -4.3}
-  m_LocalScale: {x: 100, y: 100, z: 100}
+  m_LocalPosition: {x: -4.4, y: 0.9523, z: -4.3}
+  m_LocalScale: {x: 100, y: 100, z: 61.440002}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4198840696446715641}
@@ -5068,6 +5099,7 @@ GameObject:
   - component: {fileID: 7458685624488558582}
   - component: {fileID: 1890660436387168417}
   - component: {fileID: 2798973954868819096}
+  - component: {fileID: 426607588951215100}
   m_Layer: 0
   m_Name: depot_02
   m_TagString: Untagged
@@ -5090,6 +5122,7 @@ Transform:
   m_Children:
   - {fileID: 4198840696446715641}
   - {fileID: 1725435677535227799}
+  - {fileID: 5272202328772882791}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1890660436387168417
@@ -5105,6 +5138,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Depot.DepotController
   m_deliveryNpc: {fileID: 281614463060734790}
+  m_counterInteractionArea:
+    m_Center: {x: -4.4, y: 1, z: -2.8}
+    m_Extent: {x: 2.4, y: 1.5, z: 0.9}
+  m_counterDispatcherDistance: 1.5
   m_vehicleArrival: {fileID: 7998096986243496426}
   m_truckSpawnPoint: {fileID: 7998096986243496426}
   m_vehicleSpawnSurface: {fileID: 6056181008040434518}
@@ -5269,6 +5306,11 @@ MonoBehaviour:
     m_safetyVolume: {fileID: 8892288069758624108}
     m_animationRoot: {fileID: 0}
     m_authoredAnimation: {fileID: 0}
+  m_garageDetectionRadius: 4.5
+  m_garageClosingDelay: 2
+  m_truckInterior:
+    m_Center: {x: 0, y: 2, z: 0}
+    m_Extent: {x: 13.4, y: 4, z: 11}
   m_doorButtons:
   - {fileID: 699309920983212909}
   - {fileID: 5926416097167393720}
@@ -5293,6 +5335,32 @@ MonoBehaviour:
   m_deliveryNpcSpawnPoint: {fileID: 281614463060734790}
   m_gridFootprint: {x: 5, y: 5}
   m_depot: {fileID: 1890660436387168417}
+--- !u!114 &426607588951215100
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2422709034906193783}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8bf5a4ac2dc64a42af83b5fb6219504, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Delivery.DispatcherRoamingArea
+  m_waypoints:
+  - {fileID: 7709669906514468447}
+  - {fileID: 155492175025106931}
+  - {fileID: 8852894982620046154}
+  - {fileID: 2853070389810977839}
+  - {fileID: 7635425716485782793}
+  m_interior:
+    m_Center: {x: -6.55, y: 0.5, z: -0.35}
+    m_Extent: {x: 6.05, y: 2, z: 6.65}
+  m_exclusions:
+  - m_Center: {x: 7.5, y: 1, z: 0}
+    m_Extent: {x: 6, y: 4, z: 15}
+  - m_Center: {x: 0, y: 1, z: 10.5}
+    m_Extent: {x: 20, y: 4, z: 3}
 --- !u!1 &2437177698368178540
 GameObject:
   m_ObjectHideFlags: 0
@@ -5421,7 +5489,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &6431934496814473197
 Transform:
   m_ObjectHideFlags: 0
@@ -6804,6 +6872,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.0037999998, y: 0.19999999, z: 0.049999997}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &3410827297625876168
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 155492175025106931}
+  m_Layer: 0
+  m_Name: SafeRoamingPoint_2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &155492175025106931
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3410827297625876168}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -2.14, y: 0.08, z: 5.27}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5272202328772882791}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3424177941719741756
 GameObject:
   m_ObjectHideFlags: 0
@@ -7006,6 +7105,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.0007, y: 0.0372, z: 0.022}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!1 &3501793957471051186
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7635425716485782793}
+  m_Layer: 0
+  m_Name: SafeRoamingPoint_5
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7635425716485782793
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3501793957471051186}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -11.64, y: 0.08, z: -4.83}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5272202328772882791}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3540248194804549584
 GameObject:
   m_ObjectHideFlags: 0
@@ -7618,6 +7748,37 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.0698, y: 0.004482786, z: 0.0034062504}
   m_Center: {x: 0, y: 0.001591393, z: 0.0000000011641532}
+--- !u!1 &3703331044412930868
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8852894982620046154}
+  m_Layer: 0
+  m_Name: SafeRoamingPoint_3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8852894982620046154
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3703331044412930868}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.27, y: 0.08, z: 2.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5272202328772882791}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3741528614332214366
 GameObject:
   m_ObjectHideFlags: 0
@@ -12022,6 +12183,42 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &6602525462024586857
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5272202328772882791}
+  m_Layer: 0
+  m_Name: DispatcherRoamingWaypoints
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5272202328772882791
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6602525462024586857}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7709669906514468447}
+  - {fileID: 155492175025106931}
+  - {fileID: 8852894982620046154}
+  - {fileID: 2853070389810977839}
+  - {fileID: 7635425716485782793}
+  m_Father: {fileID: 7458685624488558582}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &6653323630267172650
 GameObject:
   m_ObjectHideFlags: 0
@@ -12601,8 +12798,8 @@ Transform:
   m_GameObject: {fileID: 7031187630480110453}
   serializedVersion: 2
   m_LocalRotation: {x: -0.7071068, y: 0, z: -0, w: 0.7071067}
-  m_LocalPosition: {x: -4.4, y: 0.75, z: -4.3}
-  m_LocalScale: {x: 100, y: 100, z: 100}
+  m_LocalPosition: {x: -4.4, y: 0.4608, z: -4.3}
+  m_LocalScale: {x: 100, y: 100, z: 61.440002}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4198840696446715641}
@@ -13442,7 +13639,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &6018558820252253300
 Transform:
   m_ObjectHideFlags: 0
@@ -14192,6 +14389,37 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &8218368711846265642
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7709669906514468447}
+  m_Layer: 0
+  m_Name: SafeRoamingPoint_1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7709669906514468447
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8218368711846265642}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -6.6, y: 0.08, z: -0.8}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5272202328772882791}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8252388941070710926
 GameObject:
   m_ObjectHideFlags: 0

@@ -1,9 +1,10 @@
 using CouchGuys.Player;
+using CouchGuys.Gameplay.Depot;
 using UnityEngine;
 
 namespace CouchGuys.Gameplay.Delivery
 {
-    /// <summary>Local interaction marker for the stationary delivery dispatcher.</summary>
+    /// <summary>Local interaction marker for the delivery dispatcher.</summary>
     [DisallowMultipleComponent]
     public sealed class DeliveryNPC : MonoBehaviour
     {
@@ -13,6 +14,16 @@ namespace CouchGuys.Gameplay.Delivery
         private Vector3 m_vehicleSpawnOffset = new Vector3(6f, 0f, 1.5f);
         [SerializeField] private Transform m_couchSpawnPoint;
         [SerializeField] private Transform m_vehicleSpawnPoint;
+        internal DeliveryManager Manager => m_deliveryManager;
+        private DepotController m_depot;
+
+        public float InteractionDistanceSquared(Vector3 playerPosition)
+        {
+            if (m_depot == null) m_depot = GetComponentInParent<DepotController>();
+            float distance = (transform.position - playerPosition).sqrMagnitude;
+            return m_depot != null ? Mathf.Min(distance,
+                m_depot.DispatcherCounterDistanceSquared(transform.position, playerPosition)) : distance;
+        }
 
         public Vector3 CouchSpawnPosition => m_couchSpawnPoint != null
             ? m_couchSpawnPoint.position
@@ -30,6 +41,7 @@ namespace CouchGuys.Gameplay.Delivery
         public void SetDeliveryManager(DeliveryManager deliveryManager)
         {
             m_deliveryManager = deliveryManager;
+            if (TryGetComponent<DispatcherRoaming>(out var roaming)) roaming.Initialise(deliveryManager);
         }
 
         public void SetDispatchPoints(Transform couchSpawnPoint, Transform vehicleSpawnPoint)
