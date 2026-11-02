@@ -223,6 +223,8 @@ namespace CouchGuys.Player
 
             transform.SetPositionAndRotation(position, rotation);
             m_verticalVelocity = 0f;
+            m_externalVelocity = Vector3.zero;
+            m_grappleFlightUntil = 0f;
             m_currentSpeed = 0f;
             MovementIntent = Vector3.zero;
 

@@ -22,9 +22,6 @@ namespace CouchGuys.Player
         private static readonly int EmissiveColourId = Shader.PropertyToID("_EmissiveColor");
         private static readonly int BaseColourId = Shader.PropertyToID("_BaseColor");
         private static readonly int ColourId = Shader.PropertyToID("_Color");
-        private static RobotHoverVFXSettings s_fallbackSettings;
-        private static Mesh s_groundGlowMesh;
-        private static Material s_groundGlowMaterial;
 
         [Header("Configuration")]
         [SerializeField] private RobotHoverVFXSettings m_settings;
@@ -48,6 +45,8 @@ namespace CouchGuys.Player
         private Vector3 m_robotBaseLocalPosition;
         private Vector3 m_ringPivotBaseLocalPosition;
         private Quaternion m_ringBaseLocalRotation;
+        private Vector3 m_ringFollowLocalPosition;
+        private PlayerHealth m_health;
         private float m_ringAngle;
         private float m_phase;
         private float m_ringMovementBlend;
@@ -63,18 +62,20 @@ namespace CouchGuys.Player
         /// subtract this from visual sockets to retain an unbobbed authoritative origin.
         /// </summary>
         public Vector3 VisualWorldOffset { get; private set; }
+        public Vector3 RingWorldPosition => m_hoverRing != null ? m_hoverRing.position : transform.position;
 
         private void Awake()
         {
             CacheReferences();
-            EnsureRuntimePresentation();
-            CacheReferences();
+            m_health = GetComponent<PlayerHealth>();
             if (m_robotVisual != null) m_robotBaseLocalPosition = m_robotVisual.localPosition;
             if (m_ringPivot != null) m_ringPivotBaseLocalPosition = m_ringPivot.localPosition;
 
-            if (m_hoverRing != null && m_ringPivot != null && m_hoverRing.parent != m_ringPivot)
-                m_hoverRing.SetParent(m_ringPivot, true);
-            if (m_hoverRing != null) m_ringBaseLocalRotation = m_hoverRing.localRotation;
+            if (m_hoverRing != null)
+            {
+                m_ringBaseLocalRotation = Quaternion.Inverse(transform.rotation) * m_hoverRing.rotation;
+                m_ringFollowLocalPosition = transform.InverseTransformPoint(m_hoverRing.position);
+            }
 
             CacheRingMaterials();
             m_groundBlock = new MaterialPropertyBlock();
@@ -110,7 +111,9 @@ namespace CouchGuys.Player
             VisualWorldOffset = Vector3.zero;
             if (m_robotVisual != null) m_robotVisual.localPosition = m_robotBaseLocalPosition;
             if (m_ringPivot != null) m_ringPivot.localPosition = m_ringPivotBaseLocalPosition;
-            if (m_hoverRing != null) m_hoverRing.localRotation = m_ringBaseLocalRotation;
+            if (m_hoverRing != null)
+                m_hoverRing.SetPositionAndRotation(transform.TransformPoint(m_ringFollowLocalPosition),
+                    transform.rotation * m_ringBaseLocalRotation);
             foreach (Renderer ringRenderer in m_ringRenderers)
                 if (ringRenderer != null) ringRenderer.enabled = false;
             if (m_floatingParticles != null) m_floatingParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
@@ -120,7 +123,7 @@ namespace CouchGuys.Player
 
         private void AnimateHover()
         {
-            float bob = Mathf.Sin(Time.time * m_settings.HoverBobFrequency + m_phase) *
+            float bob = m_health != null && m_health.IsKnockedDown ? 0f : Mathf.Sin(Time.time * m_settings.HoverBobFrequency + m_phase) *
                 m_settings.HoverBobAmplitude;
             if (m_robotVisual != null)
             {
@@ -144,7 +147,11 @@ namespace CouchGuys.Player
                 Mathf.Lerp(1f, m_settings.RingSprintIntensity, sprintBlend);
             float frequency = m_settings.RingBobFrequency * Mathf.Lerp(1f, 1.18f, m_ringMovementBlend);
             float ringBob = Mathf.Sin(Time.time * frequency + m_phase + 1.17f) * amplitude;
-            m_ringPivot.localPosition = m_ringPivotBaseLocalPosition + Vector3.up * ringBob;
+            Vector3 position = m_health != null && m_health.IsKnockedDown
+                ? m_health.RingAnchor
+                : transform.TransformPoint(m_ringFollowLocalPosition) + Vector3.up * ringBob;
+            m_ringPivot.SetPositionAndRotation(position, Quaternion.identity);
+            if (m_hoverRing != null) m_hoverRing.position = position;
         }
 
         private void AnimateRing()
@@ -153,8 +160,8 @@ namespace CouchGuys.Player
             m_ringAngle = Mathf.Repeat(
                 m_ringAngle + m_settings.RingRotationSpeed * Time.deltaTime,
                 360f);
-            m_hoverRing.localRotation = m_ringBaseLocalRotation *
-                Quaternion.AngleAxis(m_ringAngle, Vector3.up);
+            m_hoverRing.rotation = Quaternion.AngleAxis(m_ringAngle, Vector3.up) *
+                m_ringBaseLocalRotation;
 
             if (m_ringEffects != null)
                 m_ringEffects.localRotation = Quaternion.AngleAxis(-m_ringAngle * 0.18f, Vector3.up);
@@ -218,7 +225,7 @@ namespace CouchGuys.Player
 
         private void FindGround()
         {
-            Vector3 origin = transform.position + Vector3.up * GroundCastHeight;
+            Vector3 origin = RingWorldPosition + Vector3.up * GroundCastHeight;
             int hitCount = Physics.RaycastNonAlloc(
                 origin,
                 Vector3.down,
@@ -283,144 +290,13 @@ namespace CouchGuys.Player
             m_settings ??= Resources.Load<RobotHoverVFXSettings>("RobotHoverVFXSettings");
             m_animationDriver ??= GetComponent<CouchGuyAnimationDriver>();
             m_robotVisual ??= transform.Find("Visual/CouchGuy");
-            m_hoverRing ??= FindDescendant(transform, "HoverRing");
+            m_hoverRing ??= FindDescendant(transform, "HoverAssembly");
             m_ringPivot ??= transform.Find("Visual/HoverVFX/HoverRingPivot");
             m_ringEffects ??= transform.Find("Visual/HoverVFX/HoverRingPivot/RingEffects");
             m_energyRipples ??= FindParticleSystem("HoverEnergyRipples");
             m_floatingParticles ??= FindParticleSystem("HoverEnergyWisps");
             Transform glow = transform.Find("Visual/HoverVFX/GroundGlow");
             m_groundGlow ??= glow != null ? glow.GetComponent<Renderer>() : null;
-        }
-
-        private void EnsureRuntimePresentation()
-        {
-            if (m_settings == null)
-            {
-                if (s_fallbackSettings == null)
-                {
-                    s_fallbackSettings = ScriptableObject.CreateInstance<RobotHoverVFXSettings>();
-                    s_fallbackSettings.hideFlags = HideFlags.HideAndDontSave;
-                }
-                m_settings = s_fallbackSettings;
-            }
-
-            Transform visual = transform.Find("Visual");
-            if (visual == null || m_hoverRing == null) return;
-
-            Transform hoverVfx = visual.Find("HoverVFX");
-            if (hoverVfx == null)
-            {
-                hoverVfx = new GameObject("HoverVFX").transform;
-                hoverVfx.SetParent(visual, false);
-                Renderer ringRenderer = m_hoverRing.GetComponentInChildren<Renderer>();
-                hoverVfx.position = ringRenderer != null ? ringRenderer.bounds.center : m_hoverRing.position;
-            }
-
-            if (m_ringPivot == null)
-            {
-                m_ringPivot = new GameObject("HoverRingPivot").transform;
-                m_ringPivot.SetParent(hoverVfx, false);
-            }
-            if (m_ringEffects == null)
-            {
-                m_ringEffects = new GameObject("RingEffects").transform;
-                m_ringEffects.SetParent(m_ringPivot, false);
-                if (m_energyRipples != null) m_energyRipples.transform.SetParent(m_ringEffects, true);
-                if (m_floatingParticles != null) m_floatingParticles.transform.SetParent(m_ringEffects, true);
-            }
-            if (m_groundGlow == null)
-                m_groundGlow = CreateRuntimeGroundGlow(hoverVfx);
-        }
-
-        private Renderer CreateRuntimeGroundGlow(Transform parent)
-        {
-            EnsureGroundGlowResources();
-            GameObject glow = new("GroundGlow");
-            glow.transform.SetParent(parent, false);
-            MeshFilter filter = glow.AddComponent<MeshFilter>();
-            filter.sharedMesh = s_groundGlowMesh;
-            MeshRenderer renderer = glow.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = s_groundGlowMaterial;
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            renderer.receiveShadows = false;
-            renderer.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
-            renderer.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
-            renderer.enabled = false;
-
-            Renderer ringRenderer = m_hoverRing.GetComponentInChildren<Renderer>();
-            float radius = ringRenderer != null
-                ? Mathf.Max(ringRenderer.bounds.extents.x, ringRenderer.bounds.extents.z)
-                : 0.34f;
-            glow.transform.localScale = Vector3.one * (radius * 2.45f);
-            return renderer;
-        }
-
-        private static void EnsureGroundGlowResources()
-        {
-            if (s_groundGlowMesh == null)
-            {
-                s_groundGlowMesh = new Mesh { name = "Runtime Hover Ground Glow Quad" };
-                s_groundGlowMesh.hideFlags = HideFlags.HideAndDontSave;
-                s_groundGlowMesh.vertices = new[]
-                {
-                    new Vector3(-0.5f, -0.5f, 0f), new Vector3(0.5f, -0.5f, 0f),
-                    new Vector3(-0.5f, 0.5f, 0f), new Vector3(0.5f, 0.5f, 0f)
-                };
-                s_groundGlowMesh.uv = new[]
-                {
-                    new Vector2(0f, 0f), new Vector2(1f, 0f),
-                    new Vector2(0f, 1f), new Vector2(1f, 1f)
-                };
-                s_groundGlowMesh.triangles = new[] { 0, 2, 1, 2, 3, 1 };
-                s_groundGlowMesh.RecalculateNormals();
-                s_groundGlowMesh.RecalculateBounds();
-            }
-
-            if (s_groundGlowMaterial != null) return;
-            Shader shader = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null
-                ? Shader.Find("Universal Render Pipeline/Particles/Unlit")
-                : Shader.Find("Particles/Standard Unlit");
-            shader ??= Shader.Find("Particles/Standard Unlit") ??
-                Shader.Find("Legacy Shaders/Particles/Alpha Blended");
-            if (shader == null) return;
-
-            const int size = 32;
-            Texture2D texture = new(size, size, TextureFormat.RGBA32, false, true)
-            {
-                name = "Runtime Hover Ground Glow",
-                hideFlags = HideFlags.HideAndDontSave,
-                wrapMode = TextureWrapMode.Clamp,
-                filterMode = FilterMode.Bilinear
-            };
-            Color[] pixels = new Color[size * size];
-            Vector2 centre = new((size - 1) * 0.5f, (size - 1) * 0.5f);
-            for (int y = 0; y < size; y++)
-                for (int x = 0; x < size; x++)
-                {
-                    float distance = Vector2.Distance(new Vector2(x, y), centre) / centre.x;
-                    float alpha = Mathf.Pow(Mathf.Clamp01(1f - distance), 2.15f);
-                    pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
-                }
-            texture.SetPixels(pixels);
-            texture.Apply(false, true);
-
-            s_groundGlowMaterial = new Material(shader)
-            {
-                name = "Runtime Hover Ground Glow",
-                hideFlags = HideFlags.HideAndDontSave,
-                renderQueue = 3000
-            };
-            if (s_groundGlowMaterial.HasProperty("_MainTex"))
-                s_groundGlowMaterial.SetTexture("_MainTex", texture);
-            if (s_groundGlowMaterial.HasProperty("_BaseMap"))
-                s_groundGlowMaterial.SetTexture("_BaseMap", texture);
-            if (s_groundGlowMaterial.HasProperty("_Surface")) s_groundGlowMaterial.SetFloat("_Surface", 1f);
-            if (s_groundGlowMaterial.HasProperty("_Blend")) s_groundGlowMaterial.SetFloat("_Blend", 0f);
-            if (s_groundGlowMaterial.HasProperty("_Mode")) s_groundGlowMaterial.SetFloat("_Mode", 2f);
-            if (s_groundGlowMaterial.HasProperty("_SrcBlend")) s_groundGlowMaterial.SetFloat("_SrcBlend", 5f);
-            if (s_groundGlowMaterial.HasProperty("_DstBlend")) s_groundGlowMaterial.SetFloat("_DstBlend", 10f);
-            if (s_groundGlowMaterial.HasProperty("_ZWrite")) s_groundGlowMaterial.SetFloat("_ZWrite", 0f);
-            s_groundGlowMaterial.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
         }
 
         private void CacheRingMaterials()

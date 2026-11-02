@@ -288,6 +288,7 @@ MonoBehaviour:
   m_respawnDelay: 30
   m_reviveDuration: 3
   m_reviveRange: 1.8
+  m_ringRecoveryDuration: 0.45
   m_knockdownDuration: 2.25
   m_upwardImpulse: 2.5
   m_fallAngle: 78
@@ -736,7 +737,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.RobotHoverVFX
   m_settings: {fileID: 11400000, guid: bd4fc231397f4e18be40aaefb33e067b, type: 2}
   m_robotVisual: {fileID: 2135271257120216723}
-  m_hoverRing: {fileID: 1222063305675067885}
+  m_hoverRing: {fileID: 1222063305675067886}
   m_ringPivot: {fileID: 7107327489835700334}
   m_ringEffects: {fileID: 5001066303659193964}
   m_energyRipples: {fileID: 3058579010959606800}
@@ -11728,4 +11729,9 @@ Transform:
 Transform:
   m_CorrespondingSourceObject: {fileID: 400, guid: 20e58c28bd3444a9841eea921ba60e64, type: 3}
   m_PrefabInstance: {fileID: 8385542164326235895}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1222063305675067886 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 7832136324030907501, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+  m_PrefabInstance: {fileID: 1884959408463409528}
   m_PrefabAsset: {fileID: 0}

@@ -171,6 +171,7 @@ namespace CouchGuys.Gameplay.Weapons
             if (m_view.m_timerPanel.activeSelf != active) m_view.m_timerPanel.SetActive(active);
             if (active)
             {
+                bool reset = m_lastTimerSecond < 0;
                 float remaining = m_delivery.RemainingDeliveryTime;
                 int second = Mathf.Max(0, Mathf.CeilToInt(remaining));
                 if (second != m_lastTimerSecond)
@@ -180,12 +181,7 @@ namespace CouchGuys.Gameplay.Weapons
                 }
                 float ratio = m_delivery.DeliveryDuration > 0f
                     ? remaining / m_delivery.DeliveryDuration : 0f;
-                SetBar(m_view.m_timerFill, ratio);
-                Color urgency = remaining < 10f ? Red : remaining < 30f ? new Color(1f, 0.42f, 0.06f) : Gold;
-                m_view.m_timerFill.color = urgency;
-                m_view.m_timerText.color = urgency;
-                float pulse = remaining < 10f ? 1f + Mathf.Sin(Time.unscaledTime * 8f) * 0.035f : 1f;
-                m_view.m_timerText.rectTransform.localScale = Vector3.one * pulse;
+                m_view.PresentDeliveryTimer(ratio, reset);
             }
             else m_lastTimerSecond = -1;
 
@@ -209,11 +205,6 @@ namespace CouchGuys.Gameplay.Weapons
                     prompt = m_vehicleHud.GetInteractionPrompt(out progress, out duration);
                 m_view.m_interactionPrompt.Present(prompt, progress, duration);
             }
-        }
-
-        private static void SetBar(Image fill, float value)
-        {
-            if (fill != null) fill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(value), 1f);
         }
 
         private void OnDisable() => ReleaseHud();

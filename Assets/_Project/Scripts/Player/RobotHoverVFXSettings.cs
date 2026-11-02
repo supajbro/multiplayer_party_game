@@ -6,7 +6,7 @@ namespace CouchGuys.Player
     [CreateAssetMenu(fileName = "RobotHoverVFXSettings", menuName = "Couch Guys/Robot Hover VFX Settings")]
     public sealed class RobotHoverVFXSettings : ScriptableObject
     {
-        [SerializeField] private float m_ringRotationSpeed = 135f;
+        [SerializeField] private float m_ringRotationSpeed = 180f;
         [SerializeField, Range(0.03f, 0.06f)] private float m_hoverBobAmplitude = 0.045f;
         [SerializeField, Min(0.01f)] private float m_hoverBobFrequency = 1.8f;
         [Header("Independent Ring Motion")]

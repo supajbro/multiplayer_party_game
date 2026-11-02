@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 51dbfe0c49fc4f19a2484688987c62a6, type: 3}
   m_Name: RobotHoverVFXSettings
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.RobotHoverVFXSettings
-  m_ringRotationSpeed: 135
+  m_ringRotationSpeed: 180
   m_hoverBobAmplitude: 0.045
   m_hoverBobFrequency: 1.8
   m_ringBobAmplitude: 0.018

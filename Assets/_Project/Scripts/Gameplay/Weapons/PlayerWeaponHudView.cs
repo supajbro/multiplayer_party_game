@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -18,7 +19,7 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] public Text m_currencyText;
         [SerializeField] public Image m_currencyHolder;
         [SerializeField] public Image m_currencySymbol;
-        [SerializeField] public Text m_timerText;
+        [SerializeField] public TMP_Text m_timerText;
         [SerializeField] public Text m_failureText;
         [SerializeField] public Text m_ammoText;
         [SerializeField] public Slider m_grappleChargeSlider;
@@ -29,6 +30,39 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] public Image[] m_slotBackgrounds;
         [SerializeField] public Outline[] m_slotOutlines;
         [SerializeField] public GameObject m_ammoPanel;
+
+        [Header("Delivery timer")]
+        [SerializeField] private Color m_timerFillColour = new(0.05f, 0.9f, 1f, 1f);
+        [SerializeField] private Color m_timerCountdownColour = new(1f, 0.7f, 0.08f, 1f);
+        [SerializeField, Range(0f, 1f)] private float m_timerWarningThreshold = 0.3f;
+        [SerializeField, Range(0f, 1f)] private float m_timerCriticalThreshold = 0.1f;
+        [SerializeField] private Color m_timerWarningColour = new(1f, 0.42f, 0.06f, 1f);
+        [SerializeField] private Color m_timerCriticalColour = new(1f, 0.15f, 0.1f, 1f);
+        [SerializeField, Range(0f, 0.5f)] private float m_timerPulseIntensity = 0.18f;
+        [Tooltip("Critical fill pulses per second.")]
+        [SerializeField, Min(0f)] private float m_timerPulseSpeed = 2f;
+        [Tooltip("Visual response to network ticks; zero disables smoothing.")]
+        [SerializeField, Min(0f)] private float m_timerFillResponse = 18f;
+
+        public void PresentDeliveryTimer(float ratio, bool reset)
+        {
+            ratio = Mathf.Clamp01(ratio);
+            bool critical = ratio <= Mathf.Min(m_timerCriticalThreshold, m_timerWarningThreshold);
+            Color colour = critical ? m_timerCriticalColour :
+                ratio <= m_timerWarningThreshold ? m_timerWarningColour : m_timerFillColour;
+            if (critical)
+                colour.a *= 1f - m_timerPulseIntensity *
+                    (0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * m_timerPulseSpeed * Mathf.PI * 2f));
+            if (m_timerFill != null)
+            {
+                m_timerFill.fillAmount = reset || ratio <= 0f || m_timerFillResponse <= 0f ? ratio :
+                    Mathf.Lerp(m_timerFill.fillAmount, ratio,
+                        1f - Mathf.Exp(-m_timerFillResponse * Time.unscaledDeltaTime));
+                m_timerFill.color = colour;
+            }
+            if (m_timerText != null)
+                m_timerText.color = critical ? m_timerCriticalColour : m_timerCountdownColour;
+        }
 
         [Header("Item hotbar")]
         [SerializeField] private Image m_hotbarHolder;

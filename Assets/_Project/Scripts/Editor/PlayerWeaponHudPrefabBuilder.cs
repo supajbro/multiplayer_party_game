@@ -5,6 +5,7 @@ using CouchGuys.Gameplay.Weapons;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using Object = UnityEngine.Object;
 
 namespace CouchGuys.Editor
@@ -26,7 +27,7 @@ namespace CouchGuys.Editor
         private Text m_deliveryDetail;
         private Text m_deliveryDistance;
         private Text m_currencyText;
-        private Text m_timerText;
+        private TMP_Text m_timerText;
         private Text m_failureText;
         private Text m_ammoText;
         private Slider m_grappleChargeSlider;
@@ -589,22 +590,45 @@ namespace CouchGuys.Editor
 
         private void BuildDeliveryTimerPanel()
         {
-            RectTransform panel = Panel("DeliveryTimerPanel", m_canvasRoot.transform,
-                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(24f, -181f),
-                new Vector2(480f, 92f), Gold);
+            RectTransform panel = Rect("DeliveryTimerHUD", m_canvasRoot.transform);
+            SetRect(panel, new Vector2(0f, 1f), new Vector2(0f, 1f),
+                new Vector2(24f, -157f), new Vector2(360f, 120f), new Vector2(0f, 1f));
             m_timerPanel = panel.gameObject;
-            Text label = Label("TimerLabel", panel, "DELIVERY TIME", 19,
-                TextAnchor.MiddleLeft, FontStyle.Bold);
-            SetRect(label.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f),
-                new Vector2(22f, -12f), new Vector2(260f, 34f), new Vector2(0f, 1f));
-            m_timerText = Label("TimerValue", panel, "00:00", 32,
-                TextAnchor.MiddleRight, FontStyle.Bold, Gold);
-            SetRect(m_timerText.rectTransform, new Vector2(1f, 1f), new Vector2(1f, 1f),
-                new Vector2(-20f, -10f), new Vector2(150f, 38f), new Vector2(1f, 1f));
-            RectTransform track = Panel("TimerTrack", panel, Vector2.zero, Vector2.zero,
-                new Vector2(22f, 15f), new Vector2(436f, 14f), Inactive, false);
-            track.pivot = Vector2.zero;
-            m_timerFill = Fill(track, "TimerFill");
+            RectTransform holder = Rect("HolderImage", panel);
+            SetRect(holder, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            Image image = holder.gameObject.AddComponent<Image>();
+            image.sprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/UI/delivery_time_holder.png");
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            RectTransform track = Rect("ProgressTrack", panel);
+            SetRect(track, new Vector2(0f, 0.5f), new Vector2(1f, 0.5f),
+                new Vector2(-12f, 0f), new Vector2(-184f, 10f));
+            Image trackImage = track.gameObject.AddComponent<Image>();
+            trackImage.sprite = m_roundedSprite;
+            trackImage.type = Image.Type.Sliced;
+            trackImage.color = new Color(0.01f, 0.035f, 0.055f, 1f);
+            trackImage.raycastTarget = false;
+            m_timerFill = Fill(track, "ProgressFill");
+            m_timerFill.rectTransform.sizeDelta = new Vector2(-4f, -4f);
+            m_timerFill.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            m_timerFill.rectTransform.anchoredPosition = Vector2.zero;
+            m_timerFill.type = Image.Type.Filled;
+            m_timerFill.fillMethod = Image.FillMethod.Horizontal;
+            m_timerFill.fillOrigin = 0;
+            m_timerFill.color = new Color(0.05f, 0.9f, 1f, 1f);
+            m_timerFill.raycastTarget = false;
+            RectTransform countdown = Rect("CountdownText", panel);
+            SetRect(countdown, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f),
+                new Vector2(-27f, 0f), new Vector2(70f, 36f), new Vector2(1f, 0.5f));
+            m_timerText = countdown.gameObject.AddComponent<TextMeshProUGUI>();
+            m_timerText.font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(
+                "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset");
+            m_timerText.text = "00:00";
+            m_timerText.fontSize = 24f;
+            m_timerText.fontStyle = FontStyles.Bold;
+            m_timerText.alignment = TextAlignmentOptions.Right;
+            m_timerText.color = Yellow;
+            m_timerText.raycastTarget = false;
             m_timerPanel.SetActive(false);
 
             m_failureText = Label("DeliveryFailed", m_canvasRoot.transform, "DELIVERY FAILED!",

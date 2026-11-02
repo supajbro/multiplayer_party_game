@@ -29,6 +29,7 @@ namespace CouchGuys.Player
 
         [Header("Knockdown")]
         [SerializeField, Min(0.1f)] private float m_knockdownDuration = 2.25f;
+        [SerializeField, Min(0.1f)] private float m_ringRecoveryDuration = 0.45f;
         [SerializeField, Min(0f)] private float m_upwardImpulse = 2.5f;
         [SerializeField, Range(10f, 90f)] private float m_fallAngle = 78f;
         [SerializeField, Min(1f)] private float m_fallDegreesPerSecond = 360f;
@@ -39,6 +40,15 @@ namespace CouchGuys.Player
         private readonly SyncVar<float> m_currentHealth = new();
         private readonly SyncVar<bool> m_knockedDown = new();
         private readonly SyncVar<Vector3> m_knockdownDirection = new(Vector3.forward);
+        private readonly SyncVar<Vector3> m_ringAnchor = new();
+        private readonly SyncVar<Vector3> m_ringReturnPosition = new();
+        private readonly SyncVar<bool> m_returningToRing = new();
+        private RobotHoverVFX m_hover;
+        private DebugCouchBotController m_ringRecoveryBot;
+        private bool m_localRingRecovery;
+        private bool m_recoveryReported;
+        private float m_ringRecoveryElapsed;
+        private Vector3 m_ringRecoveryStart;
         private readonly SyncVar<int> m_aiTeammateIndex = new(-1);
 
         private readonly SyncVar<float> m_downedRemaining = new();
@@ -76,6 +86,8 @@ namespace CouchGuys.Player
             (m_carrier == null || !m_carrier.IsCarrying) && (m_truck == null || m_truck.CurrentTruck == null);
         public bool HasReviveInteraction => FindReviveTarget() != null;
         public bool IsKnockedDown => m_knockedDown.Value;
+        public bool IsReturningToRing => m_returningToRing.Value;
+        public Vector3 RingAnchor => m_ringAnchor.Value;
         public bool IsAiTeammate => m_aiTeammateIndex.Value >= 0;
         public int AiTeammateIndex => m_aiTeammateIndex.Value;
         public Vector3 AimPoint
@@ -97,6 +109,8 @@ namespace CouchGuys.Player
             m_carrier = GetComponent<PlayerCouchCarrier>();
             m_truck = GetComponent<PlayerTruckInteractor>();
             m_faceExpression = GetComponent<RobotFaceExpressionController>();
+            m_hover = GetComponent<RobotHoverVFX>();
+            m_ringRecoveryBot = GetComponent<DebugCouchBotController>();
             m_visualRoot ??= transform.Find("Visual");
             if (m_visualRoot != null)
             {
@@ -105,6 +119,7 @@ namespace CouchGuys.Player
 
             m_currentHealth.OnChange += OnHealthChanged;
             m_knockedDown.OnChange += OnKnockedDownChanged;
+            m_returningToRing.OnChange += OnReturningToRingChanged;
         }
 
         private void OnDestroy()
@@ -112,6 +127,7 @@ namespace CouchGuys.Player
             s_instances.Remove(this);
             m_currentHealth.OnChange -= OnHealthChanged;
             m_knockedDown.OnChange -= OnKnockedDownChanged;
+            m_returningToRing.OnChange -= OnReturningToRingChanged;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -122,6 +138,7 @@ namespace CouchGuys.Player
             base.OnStartServer();
             m_currentHealth.Value = m_maxHealth;
             m_knockedDown.Value = false;
+            m_returningToRing.Value = false;
             m_respawnAtServerTime = float.PositiveInfinity;
             m_nextRespawnAttempt = 0f;
             m_downedRemaining.Value = 0f;
@@ -136,6 +153,7 @@ namespace CouchGuys.Player
         {
             base.OnStartClient();
             ApplyKnockdownState(m_knockedDown.Value);
+            OnReturningToRingChanged(false, m_returningToRing.Value, false);
             HealthChanged?.Invoke(m_currentHealth.Value, m_maxHealth);
         }
 
@@ -151,10 +169,70 @@ namespace CouchGuys.Player
             else if (IsServerInitialized && IsAlive && m_knockedDown.Value &&
                      Time.time >= m_recoverAtServerTime)
             {
-                m_knockedDown.Value = false;
+                BeginRingRecoveryServer();
             }
 
             UpdateKnockdownVisual();
+        }
+
+        [Server]
+        private void BeginRingRecoveryServer()
+        {
+            if (m_returningToRing.Value) return;
+            m_recoverAtServerTime = float.PositiveInfinity;
+            m_returningToRing.Value = true;
+        }
+
+        private void OnReturningToRingChanged(bool previous, bool next, bool asServer)
+        {
+            if (!next)
+            {
+                if (m_localRingRecovery) m_playerController?.SetExternalControlPaused(false);
+                m_localRingRecovery = false;
+                return;
+            }
+            bool movementAuthority = IsOwner || (IsServerInitialized && !Owner.IsValid);
+            if (!next || !movementAuthority || m_localRingRecovery) return;
+            m_localRingRecovery = true;
+            m_recoveryReported = false;
+            m_ringRecoveryElapsed = 0f;
+            m_ringRecoveryStart = transform.position;
+            m_playerController?.SetExternalControlPaused(true);
+        }
+
+        private void LateUpdate()
+        {
+            if (!m_localRingRecovery) return;
+            if (!m_returningToRing.Value)
+            {
+                m_localRingRecovery = false;
+                m_playerController?.SetExternalControlPaused(false);
+                return;
+            }
+            m_ringRecoveryElapsed += Time.deltaTime;
+            float progress = Mathf.Clamp01(m_ringRecoveryElapsed / m_ringRecoveryDuration);
+            Vector3 position = Vector3.Lerp(m_ringRecoveryStart, m_ringReturnPosition.Value,
+                Mathf.SmoothStep(0f, 1f, progress));
+            m_playerController?.Teleport(position, transform.rotation);
+            if (IsServerInitialized && !Owner.IsValid)
+                m_ringRecoveryBot?.SetRingRecoveryPositionServer(position);
+            if (progress < 1f || m_recoveryReported) return;
+            m_recoveryReported = true;
+            if (IsServerInitialized) FinishRingRecoveryServer();
+            else FinishRingRecoveryServerRpc();
+        }
+
+        // Completion comes from the movement owner so network latency cannot unlock
+        // controls before that owner reaches the ring. NetworkTransform carries the motion.
+        [ServerRpc]
+        private void FinishRingRecoveryServerRpc() => FinishRingRecoveryServer();
+
+        [Server]
+        private void FinishRingRecoveryServer()
+        {
+            if (!m_returningToRing.Value || !IsAlive) return;
+            m_returningToRing.Value = false;
+            m_knockedDown.Value = false;
         }
 
         public PlayerHealth FindReviveTarget()
@@ -255,8 +333,7 @@ namespace CouchGuys.Player
                 m_respawnAtServerTime = float.PositiveInfinity;
                 m_downedRemaining.Value = 0f;
                 m_currentHealth.Value = m_maxHealth * 0.5f;
-                m_knockedDown.Value = false;
-                m_recoverAtServerTime = 0f;
+                BeginRingRecoveryServer();
                 return;
             }
             if (Time.time < m_nextStatePublish) return;
@@ -335,6 +412,12 @@ namespace CouchGuys.Player
             impulse += Vector3.up * Mathf.Max(0f, explicitUpwardForce);
             if (severeHit)
             {
+                if (!m_knockedDown.Value)
+                {
+                    m_ringReturnPosition.Value = transform.position;
+                    m_ringAnchor.Value = m_hover != null ? m_hover.RingWorldPosition : transform.position;
+                }
+                m_returningToRing.Value = false;
                 impulse += Vector3.up * Mathf.Max(0f, m_upwardImpulse - explicitUpwardForce);
                 m_knockdownDirection.Value = horizontalDirection;
                 m_recoverAtServerTime = died
@@ -493,6 +576,7 @@ namespace CouchGuys.Player
             }
 
             m_currentHealth.Value = m_maxHealth;
+            m_returningToRing.Value = false;
             m_knockedDown.Value = false;
             m_recoverAtServerTime = 0f;
             m_respawnAtServerTime = float.PositiveInfinity;
@@ -528,8 +612,10 @@ namespace CouchGuys.Player
                 return;
             }
 
-            float speed = m_knockedDown.Value ? m_fallDegreesPerSecond : m_getUpDegreesPerSecond;
-            float target = m_knockedDown.Value ? 1f : 0f;
+            bool falling = m_knockedDown.Value && !m_returningToRing.Value;
+            float speed = falling ? m_fallDegreesPerSecond :
+                m_returningToRing.Value ? m_fallAngle / m_ringRecoveryDuration : m_getUpDegreesPerSecond;
+            float target = falling ? 1f : 0f;
             m_visualFallProgress = Mathf.MoveTowards(
                 m_visualFallProgress,
                 target,
@@ -553,6 +639,7 @@ namespace CouchGuys.Player
             base.OnValidate();
             m_maxHealth = Mathf.Max(1f, m_maxHealth);
             m_knockdownDuration = Mathf.Max(0.1f, m_knockdownDuration);
+            m_ringRecoveryDuration = Mathf.Max(0.1f, m_ringRecoveryDuration);
             m_respawnDelay = Mathf.Max(0.1f, m_respawnDelay);
             m_reviveDuration = Mathf.Max(0.1f, m_reviveDuration);
             m_reviveRange = Mathf.Max(0.1f, m_reviveRange);

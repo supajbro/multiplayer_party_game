@@ -13,7 +13,6 @@ namespace CouchGuys.Editor
     /// rendered height, ground contact and facing are measured first so replacement is stable.
     /// Hover effects intentionally use a combined maximum of 27 particles.
     /// </summary>
-    [InitializeOnLoad]
     public static class CouchGuyPlayerVisualInstaller
     {
         private const string PlayerPrefabPath = "Assets/_Project/Prefabs/Player.prefab";
@@ -27,20 +26,6 @@ namespace CouchGuys.Editor
         private const string GroundGlowTexturePath = VfxFolder + "/HoverGroundGlow.png";
         private const string SettingsFolder = "Assets/_Project/Resources";
         private const string SettingsPath = SettingsFolder + "/RobotHoverVFXSettings.asset";
-
-        static CouchGuyPlayerVisualInstaller()
-        {
-            EditorApplication.delayCall += InstallIfRequired;
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-        }
-
-        private static void OnPlayModeStateChanged(PlayModeStateChange state)
-        {
-            if (state == PlayModeStateChange.EnteredEditMode)
-            {
-                EditorApplication.delayCall += InstallIfRequired;
-            }
-        }
 
         [MenuItem("Couch Guys/Player/Install Redesigned Robot + Hover VFX")]
         public static void Install()
@@ -166,7 +151,7 @@ namespace CouchGuys.Editor
                 if (hoverController == null) hoverController = player.AddComponent<RobotHoverVFX>();
                 SetObjectReference(hoverController, "m_settings", settings);
                 SetObjectReference(hoverController, "m_robotVisual", model.transform);
-                SetObjectReference(hoverController, "m_hoverRing", hoverRing);
+                SetObjectReference(hoverController, "m_hoverRing", FindDescendant(model.transform, "HoverAssembly"));
                 SetObjectReference(hoverController, "m_ringPivot", ringPivot.transform);
                 SetObjectReference(hoverController, "m_ringEffects", ringEffects.transform);
                 SetObjectReference(hoverController, "m_energyRipples", ripples);
@@ -184,59 +169,6 @@ namespace CouchGuys.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log("Installed CouchGuy_Redesigned on Player with optimised hover wisps and energy ripples.");
-        }
-
-        private static void InstallIfRequired()
-        {
-            if (EditorApplication.isPlayingOrWillChangePlaymode)
-            {
-                return;
-            }
-
-            GameObject player = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
-            GameObject model = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
-            if (player == null || model == null)
-            {
-                return;
-            }
-
-            Transform couchGuy = player.transform.Find("Visual/CouchGuy");
-            Transform vfx = player.transform.Find("Visual/HoverVFX");
-            string sourcePath = couchGuy != null
-                ? PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(couchGuy.gameObject)
-                : string.Empty;
-            bool hoverVfxComplete = vfx != null &&
-                vfx.Find("HoverRingPivot/RingEffects/HoverEnergyWisps") != null &&
-                vfx.Find("HoverRingPivot/RingEffects/HoverEnergyRipples") != null &&
-                vfx.Find("GroundGlow") != null &&
-                player.GetComponent<RobotHoverVFX>() != null;
-            bool weaponBindingsComplete = AreWeaponReferencesComplete(player);
-            bool hasMissingComponent = false;
-            if (vfx != null)
-            {
-                foreach (Component component in vfx.GetComponents<Component>())
-                {
-                    if (component == null)
-                    {
-                        hasMissingComponent = true;
-                        break;
-                    }
-                }
-            }
-            if (sourcePath == ModelPath && hoverVfxComplete &&
-                weaponBindingsComplete && !hasMissingComponent)
-            {
-                return;
-            }
-
-            try
-            {
-                Install();
-            }
-            catch (Exception exception)
-            {
-                Debug.LogException(exception);
-            }
         }
 
         private static bool IsInsideWeapon(Transform transform, Transform modelRoot)

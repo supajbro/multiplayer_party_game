@@ -205,6 +205,13 @@ namespace CouchGuys.Player
             }
 
             m_deadStateApplied = false;
+            if (m_health.IsReturningToRing)
+            {
+                StopAgent();
+                m_externalVelocity = Vector3.zero;
+                m_grappleFlying = false;
+                return;
+            }
             if (m_grappleFlying)
             {
                 m_carrier.SetDebugBotMovementIntentServer(Vector3.zero);
@@ -702,6 +709,13 @@ namespace CouchGuys.Player
                 m_agent.isStopped = false;
                 m_agent.SetDestination(hit.position);
             }
+        }
+
+        internal void SetRingRecoveryPositionServer(Vector3 position)
+        {
+            m_externalVelocity = Vector3.zero;
+            m_verticalVelocity = 0f;
+            if (m_agent != null && m_agent.enabled) m_agent.Warp(position);
         }
 
         private void StopAgent()
