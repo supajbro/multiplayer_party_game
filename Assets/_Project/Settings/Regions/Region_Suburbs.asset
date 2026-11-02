@@ -151,7 +151,7 @@ MonoBehaviour:
       FogColour: {r: 0.62, g: 0.82, b: 0.96, a: 1}
       FogStartDistance: 180
       FogEndDistance: 520
-      SkyboxMaterial: {fileID: 2100000, guid: e60effc5f4fed0148b0227f6ad608afb, type: 2}
+      SkyboxMaterial: {fileID: 2100000, guid: 26a5cae073663d4418f9d07bafb20cd3, type: 2}
       PostProcessingProfile: {fileID: 11400000, guid: ecef0f2599bb0c34db79514a416cba63, type: 2}
     Streetlights:
       Enabled: 1
