@@ -498,6 +498,11 @@ namespace CouchGuys.Gameplay.Enemies
 
         private NetworkObject SelectEnemyPrefab()
         {
+            DeliveryTierConfig tier = m_deliveryManager != null
+                ? m_deliveryManager.GetTierConfig(m_deliveryManager.ActiveTierIndex) : null;
+            if (tier != null && tier.ShouldReplaceWithGrappler(CountActiveGrapplers(), Random.value))
+                return tier.GrapplerThiefPrefab;
+
             if (!HasEnemyPrefabs())
             {
                 return null;
@@ -507,13 +512,22 @@ namespace CouchGuys.Gameplay.Enemies
             for (int offset = 0; offset < m_enemyPrefabs.Length; offset++)
             {
                 NetworkObject candidate = m_enemyPrefabs[(startIndex + offset) % m_enemyPrefabs.Length];
-                if (candidate != null)
+                if (candidate != null && candidate.GetComponent<GrapplerThief>() == null)
                 {
                     return candidate;
                 }
             }
 
             return null;
+        }
+
+        private int CountActiveGrapplers()
+        {
+            int count = 0;
+            foreach (NetworkObject thief in m_activeThieves)
+                if (thief != null && thief.IsSpawned && thief.TryGetComponent(out GrapplerThief _) &&
+                    thief.TryGetComponent(out ThiefHealth health) && health.IsAlive) count++;
+            return count;
         }
 
         private void PruneMissingThieves()

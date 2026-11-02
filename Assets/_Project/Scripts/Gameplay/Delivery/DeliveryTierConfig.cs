@@ -54,6 +54,16 @@ namespace CouchGuys.Gameplay.Delivery
         [SerializeField, Min(1)] private int m_minThievesPerWave = 1;
         [SerializeField, Min(1)] private int m_maxThievesPerWave = 2;
 
+        [Header("Grappler Thief replacements")]
+        [SerializeField] private NetworkObject m_grapplerThiefPrefab;
+        [SerializeField, Range(0f, 1f)] private float m_grapplerThiefChance;
+        [SerializeField, Min(0)] private int m_maxActiveGrapplerThieves;
+        public NetworkObject GrapplerThiefPrefab => m_grapplerThiefPrefab;
+        public float GrapplerThiefChance => m_tier == DeliveryTier.Easy ? 0f : Mathf.Clamp01(m_grapplerThiefChance);
+        public int MaxActiveGrapplerThieves => m_tier == DeliveryTier.Easy ? 0 : Mathf.Max(0, m_maxActiveGrapplerThieves);
+        public bool ShouldReplaceWithGrappler(int activeCount, float roll) =>
+            m_grapplerThiefPrefab != null && activeCount < MaxActiveGrapplerThieves && roll < GrapplerThiefChance;
+
         [Header("Rogue Cars (Hard deliveries only)")]
         [SerializeField] private RogueCarSettings m_rogueCarSettings;
         [SerializeField, Tooltip("Dedicated network prefab used only by Rogue Car spawns.")]

@@ -17,7 +17,7 @@ namespace CouchGuys.Tests.Editor
         [TestCase(0, false)]
         public void UnavailableCouchCombatPreservesWeaponReactionDelay(int memberIndex, bool fighting)
         {
-            const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
             var root = new GameObject("Thief combat transition test");
             root.SetActive(false);
             try
@@ -35,6 +35,18 @@ namespace CouchGuys.Tests.Editor
                 var couchObject = new GameObject("Couch without available grips");
                 couchObject.transform.SetParent(root.transform);
                 var couch = couchObject.AddComponent<CouchCarryController>();
+
+                // Dynamically assembled edit-mode objects need the references normally
+                // saved in network prefabs before invoking their gameplay methods.
+                foreach (var behaviour in root.GetComponentsInChildren<FishNet.Object.NetworkBehaviour>(true))
+                {
+                    var network = behaviour.GetComponent<FishNet.Object.NetworkObject>();
+                    if (network == null) network = behaviour.gameObject.AddComponent<FishNet.Object.NetworkObject>();
+                    var data = new SerializedObject(behaviour);
+                    data.FindProperty("_networkObjectCache").objectReferenceValue = network;
+                    data.FindProperty("_addedNetworkObject").objectReferenceValue = network;
+                    data.ApplyModifiedPropertiesWithoutUndo();
+                }
 
                 typeof(ThiefNavigator).GetField("m_weapon", flags).SetValue(navigator, weapon);
                 typeof(ThiefNavigator).GetField("m_memberIndex", flags).SetValue(navigator, memberIndex);
@@ -97,7 +109,7 @@ namespace CouchGuys.Tests.Editor
                 NavMeshAgent agent = root.AddComponent<NavMeshAgent>();
                 agent.speed = 1f;
                 ThiefNavigator navigator = root.AddComponent<ThiefNavigator>();
-                const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
                 typeof(ThiefNavigator).GetField("m_settings", flags).SetValue(navigator, settings);
                 settings.Movement.Speed = 6.5f;
                 settings.Movement.Acceleration = 22f;

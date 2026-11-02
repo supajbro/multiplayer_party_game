@@ -12,7 +12,7 @@ namespace CouchGuys.Tests.Editor
     {
         private static IEnumerable<TestCaseData> Cases()
         {
-            foreach (string variant in new[] { "Thief", "Thief_Pistol", "Thief_AssaultRifle", "Thief_Shotgun" })
+            foreach (string variant in new[] { "Thief", "Thief_Pistol", "Thief_AssaultRifle", "Thief_Shotgun", "GrapplerThief" })
             foreach (bool authority in new[] { true, false })
             foreach (bool permanent in new[] { true, false })
                 yield return new TestCaseData(variant, authority, permanent);

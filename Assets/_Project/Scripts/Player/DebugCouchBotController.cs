@@ -138,6 +138,12 @@ namespace CouchGuys.Player
         private float m_grappleFlightDrag;
         private float m_grappleFlightGravity;
 
+        internal void ApplyEnemyGrappleThrowServer(Vector3 velocity, float drag)
+        {
+            m_externalVelocity = Vector3.zero;
+            ApplyGrappleFlickServer(velocity, velocity.magnitude, drag, 1f);
+        }
+
         internal void ApplyGrappleFlickServer(Vector3 impulse, float maximumSpeed, float drag, float gravity)
         {
             if (!CanSimulate() || !m_health.IsAlive || m_characterController == null) return;

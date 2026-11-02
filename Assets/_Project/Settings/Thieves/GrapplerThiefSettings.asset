@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca6becb679776da4bb2cad4ffa59c039, type: 3}
+  m_Name: GrapplerThiefSettings
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Enemies.GrapplerThiefSettings
+  GrappleRange: 20
+  PreferredDistance: 12
+  AttackCooldown: 5
+  AimWindup: 0.6
+  HoldDuration: 0.5
+  ThrowHorizontalVelocity: 24
+  ThrowUpwardVelocity: 10
+  LateralVariationDegrees: 12
+  TargetEvaluationInterval: 1
+  PlayerRecoveryTime: 4
+  PullAcceleration: 18
+  PullSpeed: 10
+  MomentumDuration: 3
+  AirDrag: 1.5
+  HitMask:
+    serializedVersion: 2
+    m_Bits: 4294967295

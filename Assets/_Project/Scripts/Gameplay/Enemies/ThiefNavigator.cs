@@ -64,6 +64,7 @@ namespace CouchGuys.Gameplay.Enemies
         private PlayerHealth m_target;
         private PlayerHealth m_closestPlayer;
         private EnemyWeapon m_weapon;
+        private GrapplerThief m_grappler;
         private ThiefHealth m_health;
         private DeliveryManager m_deliveryManager;
         private CouchCarryController m_carriedCouch;
@@ -90,13 +91,14 @@ namespace CouchGuys.Gameplay.Enemies
         private CouchCarryController m_collisionIgnoredCouch;
 
         NetworkObject ICouchCarrierServer.CarrierNetworkObject => NetworkObject;
-        bool ICouchCarrierServer.IsCarrierAvailable => IsSpawned &&
+        bool ICouchCarrierServer.IsCarrierAvailable => m_grappler == null && IsSpawned &&
             (m_health == null || m_health.IsAlive);
 
         private void Awake()
         {
             m_agent ??= GetComponent<NavMeshAgent>();
             m_weapon ??= GetComponent<EnemyWeapon>();
+            m_grappler = GetComponent<GrapplerThief>();
             m_health ??= GetComponent<ThiefHealth>();
             m_audio = GetComponent<ThiefAudioEmitter>();
             m_carrierCollider = GetComponent<Collider>();
@@ -199,6 +201,12 @@ namespace CouchGuys.Gameplay.Enemies
 
             if (m_health != null && !m_health.IsAlive) return;
 
+            if (m_grappler != null)
+            {
+                UpdateGrapplerObjective();
+                return;
+            }
+
             if (UpdateProximityAlert(GetClosestLivingTarget())) return;
 
             CouchCarryController couch = GetActiveCouch();
@@ -245,6 +253,43 @@ namespace CouchGuys.Gameplay.Enemies
                 UpdateStealObjective(couch);
             else
                 UpdateFightObjective(humanCarrier != null ? humanCarrier.GetComponent<PlayerHealth>() : closestPlayer);
+        }
+
+        private void UpdateGrapplerObjective()
+        {
+            PlayerHealth target = m_grappler.Target;
+            SetTargetServer(target, m_grappler.PreferredDistance);
+            if (m_agent == null || !m_agent.enabled || !m_agent.isOnNavMesh) return;
+            m_agent.updateRotation = false;
+            if (!GrapplerThief.IsTargetable(target))
+            {
+                m_agent.isStopped = true;
+                return;
+            }
+            Vector3 aim = Vector3.ProjectOnPlane(target.AimPoint - transform.position, Vector3.up);
+            if (aim.sqrMagnitude > 0.001f)
+                transform.rotation = Quaternion.RotateTowards(transform.rotation,
+                    Quaternion.LookRotation(aim), m_aimTurnSpeed * Time.deltaTime);
+            if (m_grappler.IsHolding)
+            {
+                m_agent.isStopped = true;
+                return;
+            }
+            if (Time.time < m_nextPathTime) return;
+            m_nextPathTime = Time.time + m_pathRefreshInterval;
+            m_agent.stoppingDistance = 0.5f;
+            float distance = aim.magnitude;
+            if (Mathf.Abs(distance - m_grappler.PreferredDistance) < 1.5f && m_grappler.HasLineOfSight(target))
+            {
+                m_agent.isStopped = true;
+                m_hasDestination = false;
+                return;
+            }
+            if (!m_hasDestination || Time.time >= m_nextRepositionTime ||
+                (target.transform.position - m_lastTargetPosition).sqrMagnitude >
+                    m_targetMovementThreshold * m_targetMovementThreshold)
+                RecalculateCombatDestination(target.transform.position);
+            ApplyDestination();
         }
 
         private bool UpdateProximityAlert(PlayerHealth player)
@@ -588,12 +633,26 @@ namespace CouchGuys.Gameplay.Enemies
             Vector3 forward = Vector3.ProjectOnPlane(target.forward, Vector3.up);
             if (forward.sqrMagnitude < 0.01f) forward = transform.position - targetPosition;
             forward = forward.sqrMagnitude > 0.01f ? forward.normalized : Vector3.forward;
-            float range = Mathf.Max(1f, m_weapon != null ? m_weapon.PreferredRange : m_agent.stoppingDistance) * m_rangeMultiplier;
+            float range = m_grappler != null ? m_grappler.PreferredDistance :
+                Mathf.Max(1f, m_weapon != null ? m_weapon.PreferredRange : m_agent.stoppingDistance) * m_rangeMultiplier;
             for (int i = 0; i < m_tacticalPositionAttempts; i++)
             {
-                Vector3 radial = Quaternion.AngleAxis(m_slotAngle + (i == 0 ? 0f : Random.Range(-18f, 18f)), Vector3.up) * forward;
+                float angle = m_grappler != null ? Random.Range(-180f, 180f) :
+                    m_slotAngle + (i == 0 ? 0f : Random.Range(-18f, 18f));
+                Vector3 radial = Quaternion.AngleAxis(angle, Vector3.up) * forward;
                 Vector2 jitter = Random.insideUnitCircle * m_positionVariation;
                 if (TryCombatDestination(targetPosition + radial * range + new Vector3(jitter.x, 0f, jitter.y))) return;
+            }
+            if (m_grappler != null)
+            {
+                // Advance around cover using the same complete-path navigation. Try sighted
+                // combat slots again on the next tactical refresh, without closing to melee.
+                Vector3 away = Vector3.ProjectOnPlane(transform.position - targetPosition, Vector3.up).normalized;
+                Vector3 approach = targetPosition + away * Mathf.Min(range, 4f);
+                if (NavMesh.SamplePosition(approach, out NavMeshHit approachHit, m_targetNavMeshSampleRadius, m_agent.areaMask) &&
+                    HasPath(approachHit.position))
+                { m_destination = approachHit.position; m_hasDestination = true; }
+                return;
             }
             if (NavMesh.SamplePosition(targetPosition, out NavMeshHit hit, m_targetNavMeshSampleRadius, m_agent.areaMask) &&
                 HasPath(hit.position)) { m_destination = hit.position; m_hasDestination = true; }
@@ -603,6 +662,7 @@ namespace CouchGuys.Gameplay.Enemies
         {
             if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, m_tacticalSampleRadius, m_agent.areaMask) ||
                 (hit.position - m_lastTargetPosition).sqrMagnitude < m_minimumSlotSeparation * m_minimumSlotSeparation ||
+                (m_grappler != null && !m_grappler.HasSightFrom(hit.position + Vector3.up * 1.1f, m_target)) ||
                 !HasPath(hit.position)) return false;
             m_destination = hit.position;
             m_hasDestination = true;

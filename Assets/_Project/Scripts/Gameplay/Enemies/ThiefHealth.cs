@@ -221,6 +221,10 @@ namespace CouchGuys.Gameplay.Enemies
                     CouchGuys.Gameplay.Weapons.WeaponPickup.SpawnServer(
                         (CouchGuys.Gameplay.Weapons.PlayerWeaponType)weapon.WeaponType,
                         transform.position + Vector3.up, transform.rotation, Vector3.up * 1.5f);
+                else if (weapon == null && TryGetComponent(out GrapplerThief _) && UnityEngine.Random.value * 100f < chance)
+                    CouchGuys.Gameplay.Weapons.WeaponPickup.SpawnServer(
+                        CouchGuys.Gameplay.Weapons.PlayerWeaponType.GrappleGun,
+                        transform.position + Vector3.up, transform.rotation, Vector3.up * 1.5f);
                 m_despawnAt = Time.time + (m_settings != null ? m_settings.Health.DeathDespawnDelay : 2.5f);
                 return;
             }

@@ -122,6 +122,14 @@ namespace CouchGuys.Player
         private float m_grappleFlightDrag;
         private float m_grappleFlightGravity = 1f;
 
+        internal void ApplyEnemyGrappleThrow(Vector3 velocity, float duration, float drag)
+        {
+            m_externalVelocity = Vector3.zero;
+            m_verticalVelocity = 0f;
+            m_currentSpeed = 0f;
+            ApplyGrappleFlick(velocity, velocity.magnitude, duration, drag, 1f);
+        }
+
         internal void ApplyGrappleFlick(Vector3 impulse, float maximumSpeed, float duration, float drag, float gravity)
         {
             // Put upward momentum in the motor's gravity-integrated velocity,

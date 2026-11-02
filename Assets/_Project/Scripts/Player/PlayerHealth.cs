@@ -372,6 +372,33 @@ namespace CouchGuys.Player
             if (appliedDamage > 0f) PlayHitObserversRpc();
         }
 
+        private float m_enemyGrappleAvailableAt;
+        internal bool CanBeEnemyGrappled => Time.time >= m_enemyGrappleAvailableAt;
+
+        [Server]
+        internal bool TryClaimEnemyGrappleServer(float protectionDuration)
+        {
+            if (!IsAlive || IsKnockedDown || !CanBeEnemyGrappled) return false;
+            m_enemyGrappleAvailableAt = Time.time + Mathf.Max(1f, protectionDuration);
+            return true;
+        }
+
+        [Server]
+        internal void ApplyEnemyGrappleThrowServer(Vector3 velocity, float duration, float drag)
+        {
+            if (!IsAlive || IsKnockedDown) return;
+            GetComponent<PlayerCouchCarrier>()?.ReleaseForDamageServer();
+            if (Owner.IsValid) ApplyEnemyGrappleThrowTargetRpc(Owner, velocity, duration, drag);
+            else GetComponent<DebugCouchBotController>()?.ApplyEnemyGrappleThrowServer(velocity, drag);
+        }
+
+        [TargetRpc]
+        private void ApplyEnemyGrappleThrowTargetRpc(NetworkConnection connection, Vector3 velocity, float duration, float drag)
+        {
+            if (IsOwner && IsAlive && !IsKnockedDown)
+                m_playerController?.ApplyEnemyGrappleThrow(velocity, duration, drag);
+        }
+
         // Server chooses every pull. The owning movement motor applies it once,
         // just like impacts, and its existing NetworkTransform replicates movement.
         [Server]

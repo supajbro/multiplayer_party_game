@@ -112,6 +112,10 @@ namespace CouchGuys.Tests.Editor
                 var pistol = new GameObject("TestPistol").transform;
                 pistol.SetParent(socket, false);
                 var controller = player.GetComponent<PlayerWeaponController>();
+                // The player now ships with a saved equipped gun. Remove that instance
+                // before testing the legacy attachment fallback beneath a scaled socket.
+                foreach (Transform child in player.GetComponentsInChildren<Transform>(true))
+                    if (child != null && child.name == "Weapon_GrappleGun") Object.DestroyImmediate(child.gameObject);
                 typeof(PlayerWeaponController).GetField("m_weaponModels", PrivateInstance)
                     .SetValue(controller, new Transform[] { pistol, null, null, null });
                 typeof(PlayerWeaponController).GetMethod("EnsureGrappleModel", PrivateInstance).Invoke(controller, null);
@@ -120,11 +124,10 @@ namespace CouchGuys.Tests.Editor
                 Assert.That(model, Is.Not.Null);
                 Transform muzzle = model.Find("Muzzle");
                 Vector3 barrelOffset = muzzle.position - model.position;
-                Assert.That(barrelOffset.magnitude, Is.EqualTo(0.24f).Within(0.001f));
-                Vector3 size = model.GetComponent<Renderer>().bounds.size;
-                Assert.That(size.x, Is.EqualTo(0.22f).Within(0.001f));
-                Assert.That(size.y, Is.EqualTo(0.2f).Within(0.001f));
-                Assert.That(size.z, Is.EqualTo(0.4f).Within(0.001f));
+                var source = Resources.Load<GrappleGunAssets>("Weapons/GrappleGunAssets").EquippedPrefab;
+                Assert.That(barrelOffset.magnitude, Is.EqualTo(source.transform.Find("Muzzle").localPosition.magnitude).Within(0.001f));
+                Assert.That(Vector3.Distance(model.lossyScale, source.transform.localScale), Is.LessThan(0.001f));
+                Assert.That(model.GetComponentsInChildren<MeshFilter>().All(filter => filter.sharedMesh != null), Is.True);
             }
             finally { Object.DestroyImmediate(player); }
         }
@@ -144,7 +147,7 @@ namespace CouchGuys.Tests.Editor
             var spawnables = AssetDatabase.LoadAssetAtPath<SinglePrefabObjects>(
                 "Assets/_Project/Settings/NetworkSpawnablePrefabs.asset");
             Assert.That(spawnables.Prefabs.Contains(pickup.GetComponent<NetworkObject>()), Is.True);
-            GameObject model = Resources.Load<GameObject>("Weapons/GrappleGunModel");
+            GameObject model = Resources.Load<GrappleGunAssets>("Weapons/GrappleGunAssets").EquippedPrefab;
             Assert.That(model.GetComponentInChildren<MeshFilter>().sharedMesh, Is.Not.Null);
             Assert.That(model.transform.Find("Muzzle"), Is.Not.Null);
             Assert.That(Resources.Load<Material>("Weapons/GrappleRope"), Is.Not.Null);
