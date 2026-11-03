@@ -12,7 +12,8 @@ namespace CouchGuys.Gameplay.Weapons
         private int m_magazine = -1;
         private int m_reserve = -1;
         private bool m_claimed;
-        public string DisplayName => m_weaponType == PlayerWeaponType.GrappleGun ? "Grapple Gun" :
+        public string DisplayName => m_weaponType == PlayerWeaponType.RocketLauncher ? "Rocket Launcher" :
+            m_weaponType == PlayerWeaponType.GrappleGun ? "Grapple Gun" :
             m_weaponType == PlayerWeaponType.AssaultRifle ? "Assault Rifle" : m_weaponType.ToString();
 
         public override void OnStartClient()
@@ -25,7 +26,9 @@ namespace CouchGuys.Gameplay.Weapons
             Vector3 velocity, int magazine = -1, int reserve = -1)
         {
             if (!InstanceFinder.IsServerStarted) return null;
-            GameObject prefab = Resources.Load<GameObject>($"WeaponPickups/{type}");
+            GameObject prefab = type == PlayerWeaponType.RocketLauncher
+                ? Resources.Load<RocketLauncherAssets>("Weapons/RocketLauncherAssets")?.PickupPrefab
+                : Resources.Load<GameObject>($"WeaponPickups/{type}");
             if (prefab == null) { Debug.LogError($"Missing weapon pickup prefab: {type}"); return null; }
             WeaponPickup pickup = Instantiate(prefab, position, rotation).GetComponent<WeaponPickup>();
             pickup.m_magazine = magazine;

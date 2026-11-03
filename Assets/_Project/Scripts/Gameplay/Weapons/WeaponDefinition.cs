@@ -31,6 +31,16 @@ namespace CouchGuys.Gameplay.Weapons
         public float PullForce => m_pullForce;
         public float PullSpeed => m_pullSpeed;
 
+        [Header("Rocket Launcher")]
+        [SerializeField, Min(0f)] private float m_explosionDamage = 80f;
+        [SerializeField, Min(0.1f)] private float m_explosionRadius = 5f;
+        [SerializeField, Min(0.01f)] private float m_projectileCollisionRadius = 0.09f;
+        [SerializeField, Min(0f)] private float m_explosionUpwardForce = 10f;
+        public float ExplosionDamage => m_explosionDamage;
+        public float ExplosionRadius => m_explosionRadius;
+        public float ProjectileCollisionRadius => m_projectileCollisionRadius;
+        public float ExplosionUpwardForce => m_explosionUpwardForce;
+
         [Header("Projectile Visuals")]
         [SerializeField] private GameObject m_bulletPrefab;
         [SerializeField, Min(1f)] private float m_bulletSpeed = 70f;
@@ -87,7 +97,8 @@ namespace CouchGuys.Gameplay.Weapons
                 Create(PlayerWeaponType.Pistol, "Pistol", false, 0.42f, 45f, 1, 0.8f, 28f, 0.8f, 0.72f, 8f, 12, 60, 1.25f, 2.5f, 75f, new Vector3(0.065f, 0.065f, 0.24f), 0.035f, 0.045f, 1f),
                 Create(PlayerWeaponType.AssaultRifle, "Assault Rifle", true, 0.095f, 55f, 1, 1.8f, 12f, 0.65f, 0.55f, 3f, 30, 120, 1.8f, 1.5f, 105f, new Vector3(0.045f, 0.045f, 0.34f), 0.018f, 0.022f, 0.8f),
                 Create(PlayerWeaponType.Shotgun, "Shotgun", false, 0.9f, 28f, 9, 7.5f, 11f, 0.22f, 0.3f, 14f, 6, 36, 2.2f, 12f, 62f, new Vector3(0.055f, 0.055f, 0.18f), 0.075f, 0.1f, 1.5f),
-                Create(PlayerWeaponType.GrappleGun, "Grapple Gun", false, 0.4f, 30f, 1, 0f, 0f, 1f, 1f, 0f, 1, 0, 1f, 0f, 70f, Vector3.one, 0f, 0f, 1f)
+                Create(PlayerWeaponType.GrappleGun, "Grapple Gun", false, 0.4f, 30f, 1, 0f, 0f, 1f, 1f, 0f, 1, 0, 1f, 0f, 70f, Vector3.one, 0f, 0f, 1f),
+                Create(PlayerWeaponType.RocketLauncher, "Rocket Launcher", false, 1.5f, 150f, 1, 0f, 60f, 1f, 1f, 12f, 1, 5, 2.5f, 24f, 25f, new Vector3(.14f, .14f, .55f), .09f, .11f, 1f)
             };
         }
 
@@ -106,7 +117,8 @@ namespace CouchGuys.Gameplay.Weapons
                 m_recoil = recoil, m_magazineCapacity = magazine,
                 m_startingReserve = reserve, m_reloadDuration = reload,
                 m_knockback = knockback, m_bulletSpeed = bulletSpeed, m_bulletSize = bulletSize,
-                m_recoilDistance = recoilDistance, m_cameraShake = cameraShake, m_impactScale = impactScale
+                m_recoilDistance = recoilDistance, m_cameraShake = cameraShake, m_impactScale = impactScale,
+                m_bulletLifetime = type == PlayerWeaponType.RocketLauncher ? 6f : 1f
             };
         }
     }

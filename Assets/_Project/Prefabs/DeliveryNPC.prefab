@@ -116,7 +116,7 @@ MonoBehaviour:
   m_intervalSeconds: {x: 5, y: 25}
   m_displaySeconds: 5
   m_fadeSeconds: 0.2
-  m_maximumDistance: 12
+  m_maximumDistance: 50
   m_lines:
   - These couches won't deliver themselves.
   - When's knock off time.

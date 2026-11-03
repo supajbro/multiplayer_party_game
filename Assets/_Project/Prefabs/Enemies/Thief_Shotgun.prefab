@@ -259,6 +259,8 @@ MonoBehaviour:
   m_agent: {fileID: 6091760547220716315}
   m_collider: {fileID: 7061547564633968353}
   m_ragdoll: {fileID: 3165226771624875819}
+  m_groundedRecoveryDuration: 2.5
+  m_navigationSurfaceTolerance: 0.35
   m_damageRagdollImpulseScale: 0.2
 --- !u!114 &4131775180735103772
 MonoBehaviour:

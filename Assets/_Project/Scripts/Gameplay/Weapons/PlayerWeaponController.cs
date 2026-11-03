@@ -20,7 +20,7 @@ namespace CouchGuys.Gameplay.Weapons
     [DisallowMultipleComponent]
     public sealed partial class PlayerWeaponController : NetworkBehaviour
     {
-        private const int WeaponCount = 4;
+        private const int WeaponCount = 5;
         public const int InventorySlotCount = 5;
         private const int RaycastBufferSize = 16;
 
@@ -587,7 +587,7 @@ namespace CouchGuys.Gameplay.Weapons
                 (m_couchCarrier != null && m_couchCarrier.IsCarrying) ||
                 (aimOrigin - m_health.AimPoint).sqrMagnitude >
                 m_maximumAimOriginDistance * m_maximumAimOriginDistance ||
-                aimDirection.sqrMagnitude < 0.5f)
+                !IsFinite(aimOrigin) || !IsFinite(aimDirection) || aimDirection.sqrMagnitude < 0.5f)
             {
                 return false;
             }
@@ -597,6 +597,10 @@ namespace CouchGuys.Gameplay.Weapons
                 BeginReloadServer();
                 return false;
             }
+
+            if (weapon.Type == PlayerWeaponType.RocketLauncher &&
+                (weapon.BulletPrefab == null || weapon.BulletPrefab.GetComponent<RocketProjectile>() == null))
+                return false;
 
             m_nextServerFireTime[index] = Time.time + weapon.FireInterval;
             m_magazine[index]--;
@@ -624,8 +628,22 @@ namespace CouchGuys.Gameplay.Weapons
                 muzzleDirection = cameraDirection;
             }
 
-            Vector3[] ends = ResolveHitsServer(muzzle, muzzleDirection.normalized, weapon,
-                out Vector3[] normals, out byte[] surfaces);
+            Vector3[] ends;
+            Vector3[] normals;
+            byte[] surfaces;
+            if (weapon.Type == PlayerWeaponType.RocketLauncher)
+            {
+                RocketProjectile rocket = Instantiate(weapon.BulletPrefab, muzzle,
+                    Quaternion.LookRotation(muzzleDirection.normalized)).GetComponent<RocketProjectile>();
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(rocket.gameObject, gameObject.scene);
+                rocket.InitializeServer(this, m_health, weapon, m_hitMask);
+                ServerManager.Spawn(rocket.NetworkObject);
+                // Empty feedback arrays: rocket travel/impact is its own authoritative network object.
+                ends = System.Array.Empty<Vector3>();
+                normals = System.Array.Empty<Vector3>();
+                surfaces = System.Array.Empty<byte>();
+            }
+            else ends = ResolveHitsServer(muzzle, muzzleDirection.normalized, weapon, out normals, out surfaces);
             if (weapon.Type == PlayerWeaponType.AssaultRifle)
             {
                 m_serverRifleBurstActive = true;
@@ -948,7 +966,8 @@ namespace CouchGuys.Gameplay.Weapons
             m_localReloading = false;
             System.Array.Clear(m_pendingLocalShots, 0, m_pendingLocalShots.Length);
             SetModelVisibility(index);
-            m_animationDriver?.SetEquippedWeapon(ValidIndex(index) ? (index == (int)PlayerWeaponType.GrappleGun ? 1 : index + 1) : 0);
+            m_animationDriver?.SetEquippedWeapon(ValidIndex(index) ?
+                (index == (int)PlayerWeaponType.GrappleGun ? 1 : index == (int)PlayerWeaponType.RocketLauncher ? 3 : index + 1) : 0);
             LocalReticleChanged?.Invoke(GetWeaponReticle(index));
         }
 
@@ -973,7 +992,7 @@ namespace CouchGuys.Gameplay.Weapons
             if (m_muzzles == null || m_muzzles.Length != WeaponCount)
                 System.Array.Resize(ref m_muzzles, WeaponCount);
 
-            string[] names = { "Weapon_Pistol", "Weapon_AssaultRifle", "Weapon_Shotgun", "Weapon_GrappleGun" };
+            string[] names = { "Weapon_Pistol", "Weapon_AssaultRifle", "Weapon_Shotgun", "Weapon_GrappleGun", "Weapon_RocketLauncher" };
             EnsureGrappleModel();
             for (int i = 0; i < WeaponCount; i++)
             {

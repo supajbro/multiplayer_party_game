@@ -199,7 +199,7 @@ namespace CouchGuys.Player
             m_weaponAimUntil = Time.time + (weapon == PlayerWeaponType.Shotgun ? 0.55f :
                 weapon == PlayerWeaponType.AssaultRifle ? 0.22f : 0.34f);
             if (m_animator != null && m_hasWeaponParameters)
-                m_animator.SetInteger(EquippedWeaponHash, (int)weapon + 1);
+                m_animator.SetInteger(EquippedWeaponHash, weapon == PlayerWeaponType.RocketLauncher ? 3 : (int)weapon + 1);
 
             float impulse;
             float maximum;
@@ -211,6 +211,7 @@ namespace CouchGuys.Player
                     m_recoilRecovery = 8.5f;
                     break;
                 case PlayerWeaponType.Shotgun:
+                case PlayerWeaponType.RocketLauncher:
                     impulse = 1.7f;
                     maximum = 1.7f;
                     m_recoilRecovery = 4.8f;

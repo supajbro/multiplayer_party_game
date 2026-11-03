@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Vehicles;
+using CouchGuys.Networking;
 using CouchGuys.Player;
 using CouchGuys.ProceduralGeneration;
 using UnityEngine;
@@ -167,6 +168,92 @@ namespace CouchGuys.Gameplay.Depot
         private Bounds m_truckInterior;
         [SerializeField] private DepotDoorButton[] m_doorButtons = Array.Empty<DepotDoorButton>();
 
+        [Header("Local Depot Music")]
+        [SerializeField] private AudioSource m_musicSource;
+        [SerializeField, Range(0f, 1f)] private float m_musicMaximumVolume = 0.15f;
+        [SerializeField, Min(0f)] private float m_musicFadeInDuration = 2.5f;
+        [SerializeField, Min(0f)] private float m_musicFadeOutDuration = 2f;
+        private NetworkPlayerOwnership m_musicPlayer;
+        private float m_nextMusicPlayerSearch;
+        private bool m_musicStarted;
+        private bool m_musicPaused;
+        private float m_musicLevel;
+        private static DepotController s_musicOwner;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetMusicOwner() => s_musicOwner = null;
+
+        private void Awake()
+        {
+            if (m_musicSource == null) return;
+            m_musicSource.playOnAwake = false;
+            m_musicSource.loop = true;
+            m_musicSource.spatialBlend = 0f;
+            m_musicSource.volume = 0f;
+        }
+
+        private void UpdateLocalMusic()
+        {
+            if (m_musicSource == null || m_musicSource.clip == null) return;
+            // Resolve after client ownership/spawning is ready, and reacquire on respawn.
+            // Remote characters and server-only players never qualify.
+            if (m_musicPlayer == null || !m_musicPlayer.IsOwner ||
+                !m_musicPlayer.IsClientInitialized || !m_musicPlayer.gameObject.activeInHierarchy)
+            {
+                m_musicPlayer = null;
+                if (Time.unscaledTime >= m_nextMusicPlayerSearch)
+                {
+                    m_nextMusicPlayerSearch = Time.unscaledTime + 0.5f;
+                    foreach (var player in FindObjectsByType<NetworkPlayerOwnership>(FindObjectsSortMode.None))
+                    {
+                        if (!player.IsClientInitialized || !player.IsOwner) continue;
+                        if (player.TryGetComponent<PlayerHealth>(out var health) && health.IsAiTeammate) continue;
+                        m_musicPlayer = player;
+                        break;
+                    }
+                }
+            }
+
+            // Reuse the authored interior bounds; position testing also covers an
+            // initial spawn/teleport inside, without relying on trigger enter events.
+            bool inside = m_musicPlayer != null && m_truckInterior.Contains(
+                transform.InverseTransformPoint(m_musicPlayer.transform.position));
+            // Only one depot may play on this client, including overlapping scene loads.
+            if (inside && s_musicOwner == null) s_musicOwner = this;
+            bool audible = inside && s_musicOwner == this;
+            float maximum = Mathf.Clamp01(m_musicMaximumVolume);
+            float target = audible ? maximum : 0f;
+            if (target > 0f)
+            {
+                if (!m_musicStarted)
+                {
+                    m_musicSource.Play();
+                    m_musicStarted = true;
+                }
+                else if (m_musicPaused) m_musicSource.UnPause();
+                m_musicPaused = false;
+            }
+
+            float duration = audible ? m_musicFadeInDuration : m_musicFadeOutDuration;
+            m_musicLevel = duration <= 0f ? (audible ? 1f : 0f) : Mathf.MoveTowards(
+                m_musicLevel, audible ? 1f : 0f, Time.unscaledDeltaTime / duration);
+            m_musicSource.volume = maximum * m_musicLevel;
+            if (target == 0f && m_musicSource.volume == 0f)
+            {
+                PauseMusic();
+                if (s_musicOwner == this) s_musicOwner = null;
+            }
+        }
+
+        private void PauseMusic()
+        {
+            if (m_musicSource == null) return;
+            m_musicLevel = 0f;
+            m_musicSource.volume = 0f;
+            if (m_musicStarted && !m_musicPaused) m_musicSource.Pause();
+            m_musicPaused = m_musicStarted;
+        }
+
         private readonly Collider[] m_safetyHits = new Collider[32];
         private readonly Collider[] m_proximityHits = new Collider[64];
         private float m_garageLastOccupied = float.NegativeInfinity;
@@ -250,11 +337,17 @@ namespace CouchGuys.Gameplay.Depot
 
         private void Update()
         {
+            UpdateLocalMusic();
             m_exitDoor?.Tick(m_exitDoor.TargetOpen ? m_entranceOpeningSpeed : m_entranceClosingSpeed, Time.deltaTime);
             m_vehicleGarageDoor?.Tick(m_doorAnimationSpeed, Time.deltaTime);
         }
 
-        private void OnDisable() => ReleaseDoorAnimations();
+        private void OnDisable()
+        {
+            PauseMusic();
+            if (s_musicOwner == this) s_musicOwner = null;
+            ReleaseDoorAnimations();
+        }
 
         private void OnDestroy() => ReleaseDoorAnimations();
 

@@ -196,6 +196,20 @@ namespace CouchGuys.Gameplay.Enemies
             if (changed) m_nextPathTime = 0f;
         }
 
+        internal void ResumeAfterRagdollServer()
+        {
+            // Disabling/warping the agent invalidates its old path. Re-evaluate
+            // the current objective from the landing point on the next AI update.
+            m_hasDestination = false;
+            m_nextPathTime = 0f;
+            m_nextRepositionTime = 0f;
+            m_carryIntent = Vector3.zero;
+            SetConstrainedCarryMovement(false);
+            if (m_agent == null || !m_agent.enabled || !m_agent.isOnNavMesh) return;
+            m_agent.ResetPath();
+            m_agent.isStopped = IsAlerting || (m_health != null && m_health.IsBeingKnockedBack);
+        }
+
         private void Update()
         {
             if (!IsServerInitialized) return;

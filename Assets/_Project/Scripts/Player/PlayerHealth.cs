@@ -30,6 +30,12 @@ namespace CouchGuys.Player
         [Header("Knockdown")]
         [SerializeField, Min(0.1f)] private float m_knockdownDuration = 2.25f;
         [SerializeField, Min(0.1f)] private float m_ringRecoveryDuration = 0.45f;
+        [Header("Ring Knockback")]
+        [SerializeField, Range(0f, 1f)] private float m_ringKnockbackMultiplier = .45f;
+        [SerializeField, Min(.1f)] private float m_ringKnockbackDamping = 12f;
+        [SerializeField, Min(0f)] private float m_ringKnockbackMaxDistance = 3f;
+        [SerializeField, Min(.05f)] private float m_ringKnockbackRadius = .4f;
+        [Header("Knockdown Motion")]
         [SerializeField, Min(0f)] private float m_upwardImpulse = 2.5f;
         [SerializeField, Range(10f, 90f)] private float m_fallAngle = 78f;
         [SerializeField, Min(1f)] private float m_fallDegreesPerSecond = 360f;
@@ -49,6 +55,8 @@ namespace CouchGuys.Player
         private bool m_recoveryReported;
         private float m_ringRecoveryElapsed;
         private Vector3 m_ringRecoveryStart;
+        private Vector3 m_ringKnockbackVelocity;
+        private float m_ringKnockbackRemainingDistance;
         private readonly SyncVar<int> m_aiTeammateIndex = new(-1);
 
         private readonly SyncVar<float> m_downedRemaining = new();
@@ -159,6 +167,7 @@ namespace CouchGuys.Player
 
         private void Update()
         {
+            if (IsServerInitialized) SimulateRingKnockback(Time.deltaTime);
             UpdateReviveInput();
             if (IsServerInitialized) UpdateReviveServer();
             if (IsServerInitialized && HasPendingRespawn && Time.time >= m_respawnAtServerTime &&
@@ -173,6 +182,56 @@ namespace CouchGuys.Player
             }
 
             UpdateKnockdownVisual();
+        }
+
+        private void StartRingKnockback(Vector3 impulse)
+        {
+            m_ringKnockbackVelocity = Vector3.ClampMagnitude(m_ringKnockbackVelocity +
+                Vector3.ProjectOnPlane(impulse, Vector3.up) * m_ringKnockbackMultiplier, 8f);
+            m_ringKnockbackRemainingDistance = m_ringKnockbackMaxDistance;
+        }
+
+        private void SimulateRingKnockback(float deltaTime)
+        {
+            if (!m_knockedDown.Value || m_returningToRing.Value ||
+                m_ringKnockbackVelocity.sqrMagnitude < .001f || m_ringKnockbackRemainingDistance <= 0f)
+            {
+                m_ringKnockbackVelocity = Vector3.zero;
+                return;
+            }
+            Vector3 movement = Vector3.ClampMagnitude(m_ringKnockbackVelocity * deltaTime, m_ringKnockbackRemainingDistance);
+            if (movement.sqrMagnitude < .000001f) return;
+            Vector3 start = m_ringReturnPosition.Value;
+            float distance = movement.magnitude;
+            Vector3 direction = movement / distance;
+            foreach (RaycastHit hit in Physics.SphereCastAll(start + Vector3.up * (m_ringKnockbackRadius + .1f),
+                         m_ringKnockbackRadius, direction, distance, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.collider.transform.IsChildOf(transform) || hit.normal.y >= .65f) continue;
+                distance = Mathf.Min(distance, Mathf.Max(0f, hit.distance - .02f));
+            }
+            Vector3 candidate = start + direction * distance;
+            RaycastHit ground = default;
+            float closest = float.PositiveInfinity;
+            foreach (RaycastHit hit in Physics.RaycastAll(candidate + Vector3.up * .4f, Vector3.down,
+                         .8f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.collider.transform.IsChildOf(transform) || hit.normal.y < .65f || hit.distance >= closest) continue;
+                ground = hit; closest = hit.distance;
+            }
+            if (closest == float.PositiveInfinity || distance <= .001f)
+            {
+                m_ringKnockbackVelocity = Vector3.zero;
+                return;
+            }
+            Vector3 displacement = ground.point - start;
+            // Move the detached ring and its eventual recovery destination together.
+            // The airborne player's current transform never drives this motion.
+            m_ringAnchor.Value += displacement;
+            m_ringReturnPosition.Value += displacement;
+            m_ringKnockbackRemainingDistance -= distance;
+            m_ringKnockbackVelocity = Vector3.MoveTowards(m_ringKnockbackVelocity, Vector3.zero,
+                m_ringKnockbackDamping * deltaTime);
         }
 
         [Server]
@@ -365,6 +424,13 @@ namespace CouchGuys.Player
             ApplyDamageInternal(damage, impactDirection, knockbackForce, true);
         }
 
+        /// <summary>Full blast launch, including lighter splash hits, through the existing damage/recovery path.</summary>
+        [Server]
+        public void ApplyExplosionDamageServer(float damage, Vector3 direction, float force, float lift)
+        {
+            ApplyDamageInternal(damage, direction, force, true, lift, false, true, true);
+        }
+
         /// <summary>Applies a server-authoritative vehicle push, with optional damage.</summary>
         [Server]
         public void ApplyVehicleImpactServer(
@@ -385,7 +451,8 @@ namespace CouchGuys.Player
             bool useFullKnockback,
             float explicitUpwardForce = 0f,
             bool allowPushWithoutDamage = false,
-            bool directionalKnockback = false)
+            bool directionalKnockback = false,
+            bool explosionLaunch = false)
         {
             if ((!allowPushWithoutDamage && damage <= 0f) ||
                 (damage <= 0f && knockbackForce <= 0f && explicitUpwardForce <= 0f) ||
@@ -424,6 +491,7 @@ namespace CouchGuys.Player
                     ? float.PositiveInfinity
                     : Time.time + m_knockdownDuration;
                 m_knockedDown.Value = true;
+                StartRingKnockback(horizontalDirection * appliedForce);
                 if (died)
                 {
                     m_truck?.DetachDownedServer();
@@ -445,11 +513,12 @@ namespace CouchGuys.Player
 
             if (Owner.IsValid)
             {
-                ApplyImpactTargetRpc(Owner, impulse, directionalKnockback);
+                ApplyImpactTargetRpc(Owner, impulse, directionalKnockback, explosionLaunch);
             }
             else
             {
-                GetComponent<DebugCouchBotController>()?.ApplyExternalImpulseServer(impulse, directionalKnockback);
+                if (explosionLaunch) GetComponent<DebugCouchBotController>()?.ApplyEnemyGrappleThrowServer(impulse, 2f);
+                else GetComponent<DebugCouchBotController>()?.ApplyExternalImpulseServer(impulse, directionalKnockback);
             }
 
             if (appliedDamage > 0f) PlayHitObserversRpc();
@@ -524,11 +593,12 @@ namespace CouchGuys.Player
         }
 
         [TargetRpc]
-        private void ApplyImpactTargetRpc(NetworkConnection connection, Vector3 impulse, bool vehicleImpact)
+        private void ApplyImpactTargetRpc(NetworkConnection connection, Vector3 impulse, bool vehicleImpact, bool explosionLaunch)
         {
             if (IsOwner)
             {
-                m_playerController?.ApplyExternalImpulse(impulse, vehicleImpact);
+                if (explosionLaunch) m_playerController?.ApplyEnemyGrappleThrow(impulse, 1.25f, 2f);
+                else m_playerController?.ApplyExternalImpulse(impulse, vehicleImpact);
             }
         }
 

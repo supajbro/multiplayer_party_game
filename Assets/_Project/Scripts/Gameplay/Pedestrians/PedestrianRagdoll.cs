@@ -22,6 +22,9 @@ namespace CouchGuys.Gameplay.Pedestrians
         private Quaternion m_visualLocalRotation;
         private Vector3[] m_animationPositions, m_targetPositions;
         private Quaternion[] m_animationRotations, m_targetRotations;
+        private float[] m_tumbleDamping;
+        private bool m_tumbling;
+        private float m_tumbleStartedAt;
         public Rigidbody Body => m_bones[0];
         public bool IsFallen => m_fallen;
 
@@ -68,6 +71,40 @@ namespace CouchGuys.Gameplay.Pedestrians
         public void AddImpulse(Vector3 impulse)
         {
             foreach (Rigidbody bone in m_bones) bone.AddForce(impulse, ForceMode.VelocityChange);
+        }
+
+        public void AddTumble(Vector3 angularVelocity)
+        {
+            if (!m_fallen || angularVelocity.sqrMagnitude < .001f) return;
+            angularVelocity = Vector3.ClampMagnitude(angularVelocity, 14f);
+            m_tumbleDamping ??= new float[m_bones.Length];
+            Vector3 pivot = Body.worldCenterOfMass;
+            for (int i = 0; i < m_bones.Length; i++)
+            {
+                Rigidbody bone = m_bones[i];
+                if (!m_tumbling) m_tumbleDamping[i] = bone.angularDamping;
+                bone.angularDamping = Mathf.Min(m_tumbleDamping[i], .15f);
+                bone.maxAngularVelocity = Mathf.Max(bone.maxAngularVelocity, 14f);
+                // Rotate the whole body about its hips, rather than just twisting
+                // individual joints. Joint limits produce the floppy limb motion.
+                bone.AddForce(Vector3.Cross(angularVelocity, bone.worldCenterOfMass - pivot), ForceMode.VelocityChange);
+                bone.angularVelocity = Vector3.ClampMagnitude(bone.angularVelocity + angularVelocity, 14f);
+            }
+            m_tumbling = true;
+            m_tumbleStartedAt = Time.time;
+        }
+
+        private void RestoreTumbleDamping()
+        {
+            if (!m_tumbling) return;
+            for (int i = 0; i < m_bones.Length; i++) m_bones[i].angularDamping = m_tumbleDamping[i];
+            m_tumbling = false;
+        }
+
+        private void FixedUpdate()
+        {
+            if (m_tumbling && Time.time >= m_tumbleStartedAt + .15f && TryGround(out _))
+                RestoreTumbleDamping();
         }
 
         public void Pull(Vector3 direction, float acceleration, float speed, float dt)
@@ -131,6 +168,7 @@ namespace CouchGuys.Gameplay.Pedestrians
         public void Recover()
         {
             if (!m_fallen || m_permanent) return;
+            RestoreTumbleDamping();
             for (int i = 0; i < m_pose.Length; i++)
             {
                 m_posePositions[i] = m_pose[i].position;
@@ -179,7 +217,10 @@ namespace CouchGuys.Gameplay.Pedestrians
                 for (int i = 0; i < m_pose.Length; i++)
                     m_pose[i].SetLocalPositionAndRotation(m_animationPositions[i], m_animationRotations[i]);
             }
-            if (!m_fallen || Time.time < m_sleepAt) return;
+            // A corpse launched from height must finish falling before its
+            // local physics can sleep; a fixed timeout alone can freeze it midair.
+            if (!m_fallen || Time.time < m_sleepAt || !TryGround(out _)) return;
+            RestoreTumbleDamping();
             foreach (Rigidbody bone in m_bones) bone.isKinematic = true;
             foreach (Collider bone in m_colliders) bone.enabled = false;
             enabled = false;

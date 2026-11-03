@@ -15,6 +15,18 @@ namespace CouchGuys.Gameplay.Enemies
         [SerializeField] private NavMeshAgent m_agent;
         [SerializeField] private Collider m_collider;
         [SerializeField] private PedestrianRagdoll m_ragdoll;
+        [SerializeField, Min(0.02f), Tooltip("Maximum gap below the standing collider before entering airborne ragdoll.")]
+        private float m_groundSupportDistance = 0.15f;
+        [SerializeField, Tooltip("Random airborne flip speed in radians per second. Zero disables the extra tumble.")]
+        private Vector2 m_airborneFlipSpeed = new(7f, 11f);
+        [Header("Ragdoll Recovery")]
+        [SerializeField, Min(.2f), Tooltip("Seconds a living thief stays ragdolled after landing before getting up.")]
+        private float m_groundedRecoveryDuration = 2.5f;
+        [SerializeField, Min(.2f), Tooltip("Delay after landing before searching farther for a clear standing spot.")]
+        private float m_recoveryFallbackDelay = 1.25f;
+        [SerializeField, Min(1f)] private float m_recoverySearchRadius = 4f;
+        [SerializeField, Min(.02f), Tooltip("Shared allowed height difference between physical ground and the baked NavMesh.")]
+        private float m_navigationSurfaceTolerance = .35f;
         [SerializeField, Range(0f, 1f), Tooltip("Scales weapon knockback on ragdoll bodies; vehicle impacts retain their full impulse.")]
         private float m_damageRagdollImpulseScale = 0.2f;
         private float MaxHealth => m_settings != null ? m_settings.Health.MaxHealth : 100f;
@@ -24,9 +36,14 @@ namespace CouchGuys.Gameplay.Enemies
         // State and initial impulse replicate only on transitions. NetworkTransform carries the hips root.
         private readonly SyncVar<Vector3> m_deathImpulse = new();
         private readonly SyncVar<Vector3> m_recoveryPosition = new();
-        private readonly SyncVar<byte> m_ragdollState = new(); // standing, grapple, death
+        private readonly SyncVar<Vector3> m_airborneImpulse = new();
+        private readonly SyncVar<Vector3> m_airborneSpin = new();
+        private readonly SyncVar<byte> m_ragdollState = new(); // standing, airborne/grapple, death
         private bool m_grappleHeld, m_deathRagdollApplied;
         private float m_recoverAfter, m_groundedSince;
+        private float m_lastGroundContactAt;
+        private float m_nextRecoveryAttempt;
+        private float m_nextNavigationAttachAttempt;
         private Vector3 m_knockbackVelocity;
         private float m_resumeNavigationAt;
         private float m_despawnAt = float.PositiveInfinity;
@@ -67,6 +84,8 @@ namespace CouchGuys.Gameplay.Enemies
             m_currentHealth.Value = MaxHealth;
             m_dead.Value = false;
             m_ragdollState.Value = 0;
+            Physics.SyncTransforms();
+            if (!HasGroundSupport()) BeginAirborneRagdoll();
             ApplyRagdollState();
         }
 
@@ -84,8 +103,7 @@ namespace CouchGuys.Gameplay.Enemies
             if (!IsAlive) return;
             if (held && m_ragdollState.Value == 0)
             {
-                m_ragdollState.Value = 1;
-                m_recoverAfter = Time.time + 0.2f;
+                BeginAirborneRagdoll();
             }
         }
 
@@ -107,20 +125,169 @@ namespace CouchGuys.Gameplay.Enemies
 
         private void FixedUpdate()
         {
+            if (IsServerInitialized && IsAlive && m_ragdollState.Value == 0 && !HasGroundSupport())
+                BeginAirborneRagdoll();
             if (m_ragdollState.Value == 0 || m_ragdoll == null || !m_ragdoll.IsFallen ||
                 (!IsServerInitialized && !IsClientInitialized)) return;
             if (m_ragdoll.enabled) m_ragdoll.FollowRoot(transform, IsServerInitialized);
             if (!IsServerInitialized || !IsAlive || m_grappleHeld || Time.time < m_recoverAfter) return;
-            if (!m_ragdoll.TryGround(out Vector3 ground)) { m_groundedSince = 0f; return; }
+            if (!m_ragdoll.TryGround(out Vector3 ground))
+            {
+                // Small bounces while settling should not restart the fallback
+                // timer forever. Recovery still requires contact on this step.
+                if (Time.time > m_lastGroundContactAt + .25f) m_groundedSince = 0f;
+                return;
+            }
+            m_lastGroundContactAt = Time.time;
             if (m_groundedSince == 0f) m_groundedSince = Time.time;
-            if (Time.time < m_groundedSince + 0.2f) return;
-            Vector3 point = new Vector3(m_ragdoll.Body.position.x, ground.y, m_ragdoll.Body.position.z);
-            if (!NavMesh.SamplePosition(point, out NavMeshHit landing, 1f, m_agent.areaMask) ||
-                Mathf.Abs(landing.position.y - ground.y) > 0.35f) return;
-            m_ragdoll.RepositionRoot(transform, landing.position);
-            m_recoveryPosition.Value = landing.position;
+            if (!HasFinishedGroundedRecovery() || Time.time < m_nextRecoveryAttempt) return;
+            m_nextRecoveryAttempt = Time.time + .2f;
+            if (!TryFindRecoveryPosition(ground, out Vector3 standingPosition)) return;
+            m_ragdoll.RepositionRoot(transform, standingPosition);
+            m_recoveryPosition.Value = standingPosition;
             m_resumeNavigationAt = Time.time + 0.4f;
             m_ragdollState.Value = 0;
+        }
+
+        private bool HasFinishedGroundedRecovery() =>
+            Time.time >= m_groundedSince + Mathf.Max(.2f, m_groundedRecoveryDuration);
+
+        private bool TryGetNavigationPosition(Vector3 point, float radius, out Vector3 position)
+        {
+            position = default;
+            var filter = new NavMeshQueryFilter {
+                agentTypeID = m_agent != null ? m_agent.agentTypeID : 0,
+                areaMask = m_agent != null ? m_agent.areaMask : NavMesh.AllAreas
+            };
+            if (!NavMesh.SamplePosition(point, out NavMeshHit hit, radius, filter) ||
+                Mathf.Abs(hit.position.y - point.y) > m_navigationSurfaceTolerance ||
+                !TryStandingPosition(hit.position, out Vector3 supported) ||
+                Mathf.Abs(hit.position.y - supported.y) > m_navigationSurfaceTolerance) return false;
+            // Keep the sampled NavMesh point instead of projecting the root back
+            // off the mesh onto a physics surface with a different height.
+            position = hit.position;
+            return true;
+        }
+
+        private bool TryAttachNavigation(float radius)
+        {
+            if (m_agent == null) return false;
+            if (m_agent.enabled && m_agent.isOnNavMesh) return true;
+            if (!TryGetNavigationPosition(transform.position, radius, out Vector3 position)) return false;
+            Vector3 previousPosition = transform.position;
+            m_agent.enabled = false;
+            transform.position = position;
+            m_agent.enabled = true;
+            if (!m_agent.Warp(position) || !m_agent.isOnNavMesh)
+            {
+                m_agent.enabled = false;
+                transform.position = previousPosition;
+                return false;
+            }
+            m_navigator?.ResumeAfterRagdollServer();
+            return true;
+        }
+
+        private bool TryFindRecoveryPosition(Vector3 ground, out Vector3 position)
+        {
+            position = default;
+            bool fallback = Time.time >= m_groundedSince + m_recoveryFallbackDelay;
+            Vector3 point = new Vector3(m_ragdoll != null ? m_ragdoll.Body.position.x : ground.x,
+                ground.y, m_ragdoll != null ? m_ragdoll.Body.position.z : ground.z);
+            if (TryGetNavigationPosition(point, fallback ? m_recoverySearchRadius : 1f, out position)) return true;
+            if (!fallback) return false;
+            // Being off the baked NavMesh must not keep a living thief unconscious.
+            // Physical support and capsule clearance, rather than a timeout alone,
+            // decide whether it is safe to stand up.
+            if (TryStandingPosition(point, out position) || TryStandingPosition(ground, out position)) return true;
+            for (int ring = 1; ring <= 3; ring++)
+            for (int step = 0; step < 8; step++)
+            {
+                float angle = step * Mathf.PI / 4f;
+                Vector3 candidate = ground + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) *
+                    (m_recoverySearchRadius * ring / 3f);
+                if (TryStandingPosition(candidate, out position)) return true;
+            }
+            return false;
+        }
+
+        private bool TryStandingPosition(Vector3 candidate, out Vector3 position)
+        {
+            position = default;
+            foreach (RaycastHit hit in Physics.RaycastAll(candidate + Vector3.up * .4f, Vector3.down,
+                         .8f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.collider.transform.IsChildOf(transform) || hit.normal.y < .65f) continue;
+                float radius = .35f;
+                float height = 1.8f;
+                if (m_collider is CapsuleCollider capsule)
+                {
+                    Vector3 scale = capsule.transform.lossyScale;
+                    radius = capsule.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
+                    height = Mathf.Max(radius * 2f, capsule.height * Mathf.Abs(scale.y));
+                }
+                Vector3 bottom = hit.point + Vector3.up * (radius + .05f);
+                Vector3 top = hit.point + Vector3.up * (height - radius + .05f);
+                bool blocked = false;
+                foreach (Collider obstacle in Physics.OverlapCapsule(bottom, top, radius * .9f,
+                             ~0, QueryTriggerInteraction.Ignore))
+                    if (!obstacle.transform.IsChildOf(transform)) { blocked = true; break; }
+                if (blocked) continue;
+                position = hit.point;
+                return true;
+            }
+            return false;
+        }
+
+        private bool HasGroundSupport()
+        {
+            // Probe the feet, not the NavMesh: an agent may still report being on a
+            // NavMesh after its physical support has gone or it has been lifted.
+            Bounds bounds = m_collider != null && m_collider.enabled
+                ? m_collider.bounds : new Bounds(transform.position + Vector3.up * .9f, new Vector3(.5f, 1.8f, .5f));
+            float radius = Mathf.Clamp(Mathf.Min(bounds.extents.x, bounds.extents.z) * .65f, .04f, .2f);
+            Vector3 origin = new Vector3(bounds.center.x, bounds.min.y + radius + .08f, bounds.center.z);
+            float supportDistance = m_agent != null && m_agent.enabled && m_agent.isOnNavMesh
+                ? Mathf.Max(m_groundSupportDistance, m_navigationSurfaceTolerance) : m_groundSupportDistance;
+            foreach (RaycastHit hit in Physics.SphereCastAll(origin, radius, Vector3.down,
+                         .08f + supportDistance, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.collider.transform.IsChildOf(transform) || hit.normal.y < .65f) continue;
+                return true;
+            }
+            return false;
+        }
+
+        private void BeginAirborneRagdoll()
+        {
+            if (!IsAlive || m_ragdoll == null || m_ragdollState.Value != 0) return;
+            Vector3 velocity = m_knockbackVelocity;
+            if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh)
+                velocity += m_agent.velocity;
+            // Replicate the initial velocity before the state transition so remote
+            // clients start in the same airborne pose, then follow the server root.
+            m_airborneImpulse.Value = velocity;
+            m_airborneSpin.Value = CreateAirborneSpin(velocity);
+            m_groundedSince = 0f;
+            m_nextRecoveryAttempt = 0f;
+            m_nextNavigationAttachAttempt = 0f;
+            m_lastGroundContactAt = 0f;
+            m_recoverAfter = Time.time + .2f;
+            m_ragdollState.Value = 1;
+            ApplyRagdollState();
+        }
+
+        private Vector3 CreateAirborneSpin(Vector3 velocity)
+        {
+            Vector3 travel = Vector3.ProjectOnPlane(velocity, Vector3.up);
+            if (travel.sqrMagnitude < .01f) travel = transform.forward;
+            Vector3 flipAxis = Vector3.Cross(Vector3.up, travel).normalized;
+            if (UnityEngine.Random.value < .5f) flipAxis = -flipAxis;
+            // Mostly end-over-end flips, with a different sideways twist per launch.
+            Vector3 axis = (flipAxis + UnityEngine.Random.insideUnitSphere * .35f).normalized;
+            float minimum = Mathf.Max(0f, Mathf.Min(m_airborneFlipSpeed.x, m_airborneFlipSpeed.y));
+            float maximum = Mathf.Max(minimum, Mathf.Max(m_airborneFlipSpeed.x, m_airborneFlipSpeed.y));
+            return axis * UnityEngine.Random.Range(minimum, maximum);
         }
 
         private void ApplyRagdollState()
@@ -128,8 +295,8 @@ namespace CouchGuys.Gameplay.Enemies
             bool fallen = m_ragdollState.Value != 0 || !IsAlive;
             if (m_agent != null)
             {
-                m_agent.enabled = !fallen && IsServerInitialized;
-                if (m_agent.enabled && m_agent.isOnNavMesh) m_agent.Warp(transform.position);
+                if (fallen || !IsServerInitialized) m_agent.enabled = false;
+                else TryAttachNavigation(.5f);
             }
             if (m_collider != null) m_collider.enabled = !fallen;
             if (m_animationDriver != null) m_animationDriver.enabled = !fallen;
@@ -142,8 +309,9 @@ namespace CouchGuys.Gameplay.Enemies
             if (fallen && (!m_ragdoll.IsFallen || (m_ragdollState.Value == 2 && !m_deathRagdollApplied)))
             {
                 m_deathRagdollApplied = m_ragdollState.Value == 2;
-                m_ragdoll.Fall(m_deathRagdollApplied ? m_deathImpulse.Value : m_knockbackVelocity,
+                m_ragdoll.Fall(m_deathRagdollApplied ? m_deathImpulse.Value : m_airborneImpulse.Value,
                     m_deathRagdollApplied);
+                m_ragdoll.AddTumble(m_airborneSpin.Value);
                 m_knockbackVelocity = Vector3.zero;
             }
             else if (!fallen)
@@ -162,6 +330,12 @@ namespace CouchGuys.Gameplay.Enemies
                 return;
             }
             if (m_ragdollState.Value != 0) return;
+            if (!HasGroundSupport())
+            {
+                BeginAirborneRagdoll();
+                if (m_ragdollState.Value != 0) return;
+            }
+            RetryNavigationAfterRecovery();
             if (Time.time < m_resumeNavigationAt)
             {
                 Vector3 displacement = m_knockbackVelocity * Time.deltaTime;
@@ -172,6 +346,14 @@ namespace CouchGuys.Gameplay.Enemies
             }
             else if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh && m_agent.isStopped &&
                 (m_navigator == null || !m_navigator.IsAlerting)) m_agent.isStopped = false;
+        }
+
+        private void RetryNavigationAfterRecovery()
+        {
+            if (m_agent == null || (m_agent.enabled && m_agent.isOnNavMesh) ||
+                Time.time < m_resumeNavigationAt || Time.time < m_nextNavigationAttachAttempt) return;
+            m_nextNavigationAttachAttempt = Time.time + .5f;
+            TryAttachNavigation(m_recoverySearchRadius);
         }
 
         [Server]
@@ -208,6 +390,25 @@ namespace CouchGuys.Gameplay.Enemies
             ApplyImpactServer(damage, impactDirection, knockbackForce, upwardForce, true, directionalKnockback);
         }
 
+        /// <summary>Launches survivors using the shared airborne ragdoll and landing recovery; deaths retain full blast impulse.</summary>
+        [Server]
+        public void ApplyExplosionDamageServer(float damage, Vector3 direction, float force, float lift,
+            CouchGuys.Player.PlayerHealth attacker = null)
+        {
+            if (!IsAlive || damage <= 0f) return;
+            ApplyImpactServer(damage, direction, force, lift, false, true);
+            if (!IsAlive) return;
+            m_grappleHeld = false;
+            m_groundedSince = 0f;
+            m_recoverAfter = Time.time + 1f;
+            if (m_ragdoll != null && m_ragdollState.Value == 0)
+            {
+                BeginAirborneRagdoll();
+                m_recoverAfter = Time.time + 1f;
+            }
+            if (attacker != null) m_navigator?.ReactToAttackServer(attacker);
+        }
+
         private void ApplyImpactServer(float damage, Vector3 impactDirection, float knockbackForce,
             float upwardForce, bool allowPushWithoutDamage, bool directionalKnockback = false,
             float ragdollImpulseScale = 1f)
@@ -221,6 +422,8 @@ namespace CouchGuys.Gameplay.Enemies
             if (m_currentHealth.Value <= 0f)
             {
                 m_deathImpulse.Value = impulse * ragdollImpulseScale;
+                m_airborneSpin.Value = impulse.y > .5f || m_ragdollState.Value != 0 || !HasGroundSupport()
+                    ? CreateAirborneSpin(impulse) : Vector3.zero;
                 m_ragdollState.Value = 2;
                 m_dead.Value = true;
                 float chance = m_settings != null ? m_settings.Health.WeaponDropChance : 35f;
@@ -246,6 +449,7 @@ namespace CouchGuys.Gameplay.Enemies
                     m_agent.isStopped = true;
                     m_agent.ResetPath();
                 }
+                if (impulse.y > .5f) BeginAirborneRagdoll();
                 if (appliedDamage > 0f) PlayHitObserversRpc();
             }
         }
