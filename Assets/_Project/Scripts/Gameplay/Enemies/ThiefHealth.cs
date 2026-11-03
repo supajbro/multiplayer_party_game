@@ -409,6 +409,20 @@ namespace CouchGuys.Gameplay.Enemies
             if (attacker != null) m_navigator?.ReactToAttackServer(attacker);
         }
 
+        [Server]
+        public void ApplyBatImpactServer(float damage, Vector3 direction, float force, float lift,
+            CouchGuys.Player.PlayerHealth attacker)
+        {
+            if (!IsAlive) return;
+            ApplyImpactServer(damage, direction, force, lift, true, true);
+            if (!IsAlive) return;
+            m_grappleHeld = false;
+            m_groundedSince = 0f;
+            m_recoverAfter = Time.time + 1f;
+            if (m_ragdoll != null && m_ragdollState.Value == 0) BeginAirborneRagdoll();
+            if (attacker != null) m_navigator?.ReactToAttackServer(attacker);
+        }
+
         private void ApplyImpactServer(float damage, Vector3 impactDirection, float knockbackForce,
             float upwardForce, bool allowPushWithoutDamage, bool directionalKnockback = false,
             float ragdollImpulseScale = 1f)

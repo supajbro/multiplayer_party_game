@@ -6,6 +6,7 @@ namespace CouchGuys.Gameplay.Weapons
         AssaultRifle = 1,
         Shotgun = 2,
         GrappleGun = 3,
-        RocketLauncher = 4
+        RocketLauncher = 4,
+        BaseballBat = 5
     }
 }

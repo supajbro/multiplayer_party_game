@@ -55,6 +55,31 @@ BlendTree:
   m_UseAutomaticThresholds: 0
   m_NormalizedBlendValues: 0
   m_BlendType: 3
+--- !u!1107 &-9059495408805761516
+AnimatorStateMachine:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Baseball Bat
+  m_ChildStates:
+  - serializedVersion: 1
+    m_State: {fileID: -708843055778693003}
+    m_Position: {x: 200, y: 0, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: -7994699734452618537}
+    m_Position: {x: 235, y: 65, z: 0}
+  m_ChildStateMachines: []
+  m_AnyStateTransitions: []
+  m_EntryTransitions: []
+  m_StateMachineTransitions: {}
+  m_StateMachineBehaviours: []
+  m_AnyStatePosition: {x: 50, y: 20, z: 0}
+  m_EntryPosition: {x: 50, y: 120, z: 0}
+  m_ExitPosition: {x: 800, y: 120, z: 0}
+  m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
+  m_DefaultState: {fileID: -708843055778693003}
 --- !u!1101 &-8706635591165026035
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
@@ -331,6 +356,32 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 0
+--- !u!1102 &-7994699734452618537
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Bat_Swing
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions: []
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 0
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 7400000, guid: 069d276211341cf4eb7c2ed6248c7cb4, type: 2}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
 --- !u!1102 &-7210695466381752416
 AnimatorState:
   serializedVersion: 6
@@ -919,6 +970,32 @@ AnimatorState:
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
   m_TimeParameter: 
+--- !u!1102 &-708843055778693003
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Bat_Ready
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions: []
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 0
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 7400000, guid: 8a67c1c061dcd2a42a27901b97398ecd, type: 2}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
 --- !u!1101 &-249330518354703655
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
@@ -1298,6 +1375,619 @@ BlendTree:
   m_UseAutomaticThresholds: 0
   m_NormalizedBlendValues: 0
   m_BlendType: 0
+--- !u!319 &1898268853047015741
+AvatarMask:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Bat Upper Body
+  m_Mask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+  m_Elements:
+  - m_Path: 
+    m_Weight: 0
+  - m_Path: Arm_L
+    m_Weight: 0
+  - m_Path: Arm_L/ElbowGlow_L
+    m_Weight: 0
+  - m_Path: Arm_L/ElbowJoint_L
+    m_Weight: 0
+  - m_Path: Arm_L/Forearm_L
+    m_Weight: 0
+  - m_Path: Arm_L/ForearmLight_L
+    m_Weight: 0
+  - m_Path: Arm_L/Hand_L
+    m_Weight: 0
+  - m_Path: Arm_L/ShoulderArmour_L
+    m_Weight: 0
+  - m_Path: Arm_L/ShoulderJoint_L
+    m_Weight: 0
+  - m_Path: Arm_L/UpperArm_L
+    m_Weight: 0
+  - m_Path: Arm_L/WristJoint_L
+    m_Weight: 0
+  - m_Path: Arm_R
+    m_Weight: 0
+  - m_Path: Arm_R/ElbowGlow_R
+    m_Weight: 0
+  - m_Path: Arm_R/ElbowJoint_R
+    m_Weight: 0
+  - m_Path: Arm_R/Forearm_R
+    m_Weight: 0
+  - m_Path: Arm_R/ForearmLight_R
+    m_Weight: 0
+  - m_Path: Arm_R/Hand_R
+    m_Weight: 0
+  - m_Path: Arm_R/ShoulderArmour_R
+    m_Weight: 0
+  - m_Path: Arm_R/ShoulderJoint_R
+    m_Weight: 0
+  - m_Path: Arm_R/UpperArm_R
+    m_Weight: 0
+  - m_Path: Arm_R/WristJoint_R
+    m_Weight: 0
+  - m_Path: ChestIndicator
+    m_Weight: 0
+  - m_Path: ChestPanel
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/Head
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/Head/Eye_L
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/Head/Eye_R
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Muzzle.001
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Accent
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Barrel
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Body
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Bore
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CarryRail
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_-1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_-1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_-1_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_1_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_-1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_-1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_-1_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_1_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Fastener_-1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Fastener_-1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Fastener_1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Fastener_1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Grip
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripHeel
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_-1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_-1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_-1_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_1_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Magazine
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_MagazineFoot
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_MuzzleCollar
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_MuzzleRim
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_RailPillar_-0.4
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_RailPillar_-0.08
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_SidePlate_-1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_SidePlate_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_SideStripe_-1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_SideStripe_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Stock
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_StockBridge
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_StockPad
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Trigger
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_TriggerGuard
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_UnderRail
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Wing_-1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Wing_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Muzzle
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Accent
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Barrel
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Body
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Bore
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Fastener_-1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Fastener_-1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Fastener_1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Fastener_1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_FrontSight
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Grip
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripHeel
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_-1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_-1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_-1_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_1_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_MuzzleCollar
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_MuzzleRim
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_RearSight
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_SidePlate_-1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_SidePlate_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_SideStripe_-1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_SideStripe_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Trigger
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_TriggerGuard
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Muzzle.002
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Accent
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Barrel
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Body
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Bore
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_CarryRail
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Fastener_-1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Fastener_-1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Fastener_1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Fastener_1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Grip
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripHeel
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_-1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_-1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_-1_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_1_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_MagazineTube
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_MuzzleCollar
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_MuzzleRim
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Pump
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_PumpRib_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_PumpRib_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_PumpRib_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_PumpRib_3
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_RailPillar_-0.4
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_RailPillar_-0.08
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_-1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_-1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_-1_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_1_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_-1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_-1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_-1_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_1_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellRack_-1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellRack_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_SidePlate_-1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_SidePlate_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_SideStripe_-1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_SideStripe_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Stock
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_StockBridge
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_StockPad
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Trigger
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_TriggerGuard
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Body_LOD1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Body_LOD2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Claw_LOD1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Claw_LOD2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0/Body_LOD0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0/Claw_LOD0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0/Spool_LOD0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0/Trigger_LOD0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Spool_LOD1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Spool_LOD2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Trigger_LOD1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Trigger_LOD2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/Muzzle
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_-1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_-1.001
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_-1.002
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_1.001
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_1.002
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Barrel_BlueShell
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Barrel_TopRedLug
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Bore_ShadowBack
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_-1_-1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_-1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_-1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_1_-1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_RedPorthole_-1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_RedPorthole_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/EmblemArmour_-1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/EmblemArmour_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/FrontVentArmour_L
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/FrontVentArmour_R
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Grip_Navy
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Grip_YellowBase
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Muzzle_InnerLiner
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Muzzle_YellowRim
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Receiver_LowerBlueRail
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Receiver_NavyCore
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Receiver_TopBlueRail
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketEmblem_-1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketEmblem_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketFinA_-1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketFinA_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketFinB_-1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketFinB_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_AmberInset
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_NavyApertureFrame
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_NavyRearHousing
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_RedMount
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_ReticleHorizontal
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_ReticleVertical
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_YellowReticleRing
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Stock_BlueExtension
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Stock_RedCollar
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Stock_ShoulderPad
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Trigger_Yellow
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/TriggerGuard_Blue
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_-1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_-1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_-1_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_1_0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_1_1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_1_2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/Muzzle
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Blue_LOD0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Blue_LOD1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Blue_LOD2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Navy_LOD0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Navy_LOD1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Navy_LOD2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Red_LOD0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Red_LOD1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Red_LOD2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Rubber_LOD0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Rubber_LOD1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Rubber_LOD2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Steel_LOD0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Yellow_LOD0
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Yellow_LOD1
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Yellow_LOD2
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/Muzzle
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/BlueSwingTrail
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_R
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_R/LowerArm_R
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_R/LowerArm_R/Hand_R
+    m_Weight: 1
+  - m_Path: EarHub_L
+    m_Weight: 0
+  - m_Path: EarHub_R
+    m_Weight: 0
+  - m_Path: EarLightRing_L
+    m_Weight: 0
+  - m_Path: EarLightRing_R
+    m_Weight: 0
+  - m_Path: EarMount_L
+    m_Weight: 0
+  - m_Path: EarMount_R
+    m_Weight: 0
+  - m_Path: EarShell_L
+    m_Weight: 0
+  - m_Path: EarShell_R
+    m_Weight: 0
+  - m_Path: FaceBezel
+    m_Weight: 0
+  - m_Path: FaceDisplay
+    m_Weight: 0
+  - m_Path: FaceGraphic_L
+    m_Weight: 0
+  - m_Path: FaceGraphic_R
+    m_Weight: 0
+  - m_Path: Head
+    m_Weight: 0
+  - m_Path: Head_RearLight
+    m_Weight: 0
+  - m_Path: Head_RearPanel
+    m_Weight: 0
+  - m_Path: Head_TopLight
+    m_Weight: 0
+  - m_Path: Head_TopPanel
+    m_Weight: 0
+  - m_Path: HoverAssembly
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Inner
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Inner/HoverProjector_01
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Inner/HoverProjector_02
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Inner/HoverProjector_03
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Inner/HoverProjector_04
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Inner/HoverRing_InnerGlow
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverRing
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_01
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_02
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_03
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_04
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_05
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_06
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_07
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_08
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_09
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_10
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_11
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_12
+    m_Weight: 0
+  - m_Path: NeckJoint
+    m_Weight: 0
+  - m_Path: Torso
+    m_Weight: 0
+  - m_Path: TorsoLowerLight
+    m_Weight: 0
+  - m_Path: TorsoVent_L_1
+    m_Weight: 0
+  - m_Path: TorsoVent_L_2
+    m_Weight: 0
+  - m_Path: TorsoVent_L_3
+    m_Weight: 0
+  - m_Path: TorsoVent_R_1
+    m_Weight: 0
+  - m_Path: TorsoVent_R_2
+    m_Weight: 0
+  - m_Path: TorsoVent_R_3
+    m_Weight: 0
 --- !u!206 &1982904889771437092
 BlendTree:
   m_ObjectHideFlags: 0

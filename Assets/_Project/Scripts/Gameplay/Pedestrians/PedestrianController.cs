@@ -52,8 +52,72 @@ namespace CouchGuys.Gameplay.Pedestrians
         private static readonly int SpeedHash = Animator.StringToHash("Speed");
         private static readonly int DanceHash = Animator.StringToHash("Base Layer.Dance");
 
+        private readonly SyncVar<Vector3> m_batImpulse = new();
+        private readonly SyncVar<Vector3> m_batRecoveryPosition = new();
+        private readonly SyncVar<bool> m_batAirborne = new();
+        private float m_batRecoverAfter, m_batGroundedSince;
+        private float m_batLastGroundContact;
+        private Vector3 m_batGroundPoint;
+
+        [Server]
+        public void ApplyBatImpactServer(float damage, Vector3 impulse)
+        {
+            if (!m_initialised || !IsAlive) return;
+            ApplyBulletDamageServer(damage);
+            m_batImpulse.Value = impulse;
+            m_batRecoverAfter = Time.time + .6f;
+            m_batGroundedSince = 0f;
+            m_batLastGroundContact = float.NegativeInfinity;
+            m_batAirborne.Value = true;
+            BatLaunchObserversRpc(impulse);
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void BatLaunchObserversRpc(Vector3 impulse)
+        {
+            if (m_ragdoll == null) return;
+            m_collider.enabled = false;
+            if (!IsAlive && m_ragdoll.IsFallen) m_ragdoll.AddImpulse(impulse);
+            else m_ragdoll.Fall(impulse, !IsAlive);
+        }
+
+        private void BatAirborneChanged(bool previous, bool next, bool asServer)
+        {
+            if (next || m_ragdoll == null || !IsAlive) return;
+            m_ragdoll.RepositionRoot(transform, m_batRecoveryPosition.Value);
+            m_ragdoll.Recover();
+            m_collider.enabled = IsServerInitialized;
+        }
+
+        private bool UpdateBatFlight()
+        {
+            if (!m_batAirborne.Value || m_ragdoll == null) return false;
+            m_ragdoll.FollowRoot(transform, IsServerInitialized);
+            if (IsServerInitialized && IsAlive && Time.time >= m_batRecoverAfter)
+            {
+                if (m_ragdoll.TryGround(out Vector3 ground))
+                {
+                    m_batLastGroundContact = Time.time;
+                    m_batGroundPoint = ground;
+                    if (m_batGroundedSince == 0f) m_batGroundedSince = Time.time;
+                }
+                else if (Time.time > m_batLastGroundContact + .2f) m_batGroundedSince = 0f;
+                if (m_batGroundedSince > 0f && Time.time >= m_batGroundedSince + .4f)
+                {
+                    Vector3 position = new Vector3(m_ragdoll.Body.position.x, m_batGroundPoint.y, m_ragdoll.Body.position.z);
+                    if (NavMesh.SamplePosition(position, out NavMeshHit nav, 2f, NavMesh.AllAreas))
+                        position = nav.position;
+                    m_batRecoveryPosition.Value = position;
+                    m_batAirborne.Value = false;
+                    if (m_deliveryManager == null) FrightenServer(position - m_batImpulse.Value);
+                }
+            }
+            return m_batAirborne.Value && IsAlive;
+        }
+
         private void Awake()
         {
+            m_batAirborne.OnChange += BatAirborneChanged;
             m_body = GetComponent<Rigidbody>();
             m_collider = GetComponent<CapsuleCollider>();
             // Navigation owns this kinematic root. A solid collider would give it
@@ -70,6 +134,7 @@ namespace CouchGuys.Gameplay.Pedestrians
             base.OnStartClient();
             if (!IsServerInitialized) m_collider.enabled = false;
             ApplyState();
+            if (m_batAirborne.Value && m_ragdoll != null) { m_collider.enabled = false; m_ragdoll.Fall(m_batImpulse.Value, !IsAlive); }
             ApplyCelebration();
         }
 
@@ -128,6 +193,7 @@ namespace CouchGuys.Gameplay.Pedestrians
 
         private void OnDestroy()
         {
+            m_batAirborne.OnChange -= BatAirborneChanged;
             m_state.OnChange -= StateChanged;
             m_deliveryCompleted.OnChange -= DeliveryCompletedChanged;
         }
@@ -242,6 +308,7 @@ namespace CouchGuys.Gameplay.Pedestrians
 
         private void FixedUpdate()
         {
+            if (UpdateBatFlight()) return;
             if (!IsServerInitialized || !m_initialised) return;
             if (m_deliveryCompleted.Value)
             {

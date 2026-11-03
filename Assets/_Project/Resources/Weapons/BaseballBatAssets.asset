@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 593f6a4942bdc254baa25fa5e6f0ffe9, type: 3}
+  m_Name: BaseballBatAssets
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Weapons.BaseballBatAssets
+  m_equippedPrefab: {fileID: 8403570940597637459, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+  m_pickupPrefab: {fileID: 7994549104660689471, guid: b65f85c486ba992498162b1171f9e7dd, type: 3}
+  m_damage: 5
+  m_range: 1.8
+  m_sweepRadius: 0.18
+  m_playerKnockback: 24
+  m_npcKnockback: 28
+  m_vehicleKnockback: 17
+  m_playerLift: 9
+  m_npcLift: 11
+  m_vehicleLift: 9
+  m_vehicleSpin: 4

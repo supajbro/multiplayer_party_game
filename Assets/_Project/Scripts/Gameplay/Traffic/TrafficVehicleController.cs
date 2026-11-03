@@ -69,6 +69,15 @@ namespace CouchGuys.Gameplay.Traffic
             CheckCharacterImpacts();
         }
 
+        private readonly CouchGuys.Gameplay.Weapons.BaseballBatVehicleLaunch m_batLaunch = new();
+        public bool IsBatLaunched => m_batLaunch.Active;
+
+        [Server]
+        public void ApplyBatLaunchServer(Vector3 velocity, Vector3 spin)
+        {
+            if (!IsDestroyed) m_batLaunch.Launch(m_rigidbody, velocity, spin);
+        }
+
         public bool IsDestroyed => m_destroyed.Value;
         public float CurrentHealth => m_health.Value;
         public int VisualVariantCount => m_visualVariants != null && m_visualVariants.Length > 0
@@ -195,6 +204,7 @@ namespace CouchGuys.Gameplay.Traffic
 
         private void FixedUpdate()
         {
+            if (IsServerInitialized && m_batLaunch.Tick(m_rigidbody)) return;
             if (!IsServerInitialized || !m_serverDriving || m_destroyed.Value || m_settings == null ||
                 m_route == null || m_route.Waypoints.Length < 2) return;
             if (m_rigidbody.isKinematic)

@@ -117,6 +117,9 @@ namespace CouchGuys.Gameplay.Weapons
                 Vector3.one * weapon.ImpactScale);
         }
 
+        public void PlayMeleeImpact(Vector3 point, Vector3 normal) =>
+            SpawnTimedEffect(m_wallImpactPrefab, point, normal, Vector3.one * .7f);
+
         private GameObject GetImpactPrefab(WeaponImpactSurface surface) => surface switch
         {
             WeaponImpactSurface.Terrain => m_terrainImpactPrefab,

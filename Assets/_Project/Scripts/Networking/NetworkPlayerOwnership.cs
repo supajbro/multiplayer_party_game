@@ -77,7 +77,7 @@ namespace CouchGuys.Networking
             if (GameplaySessionController.IsServerGameOver || Time.unscaledTime < m_nextDebugActionTime) return;
             m_nextDebugActionTime = Time.unscaledTime + 0.25f;
             bool truck = spawnIndex == 3;
-            if (spawnIndex < 0 || spawnIndex > 5) return;
+            if (spawnIndex < 0 || spawnIndex > 6) return;
             Vector3 forward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
             Vector3 position = transform.position + forward * (truck ? 8f : 2f);
             // Ground the spawn rather than inheriting the player's altitude while jumping.
@@ -87,6 +87,7 @@ namespace CouchGuys.Networking
             if (!truck)
             {
                 CouchGuys.Gameplay.Weapons.WeaponPickup.SpawnServer(
+                    spawnIndex == 6 ? CouchGuys.Gameplay.Weapons.PlayerWeaponType.BaseballBat :
                     spawnIndex == 5 ? CouchGuys.Gameplay.Weapons.PlayerWeaponType.RocketLauncher :
                     spawnIndex == 4 ? CouchGuys.Gameplay.Weapons.PlayerWeaponType.GrappleGun :
                         (CouchGuys.Gameplay.Weapons.PlayerWeaponType)spawnIndex,

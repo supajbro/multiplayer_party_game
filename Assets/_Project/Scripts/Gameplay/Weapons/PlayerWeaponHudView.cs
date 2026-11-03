@@ -126,12 +126,13 @@ namespace CouchGuys.Gameplay.Weapons
         public void PresentWeapon(PlayerWeaponController weapons)
         {
             bool equipped = weapons.HasEquippedWeapon;
+            bool melee = equipped && weapons.EquippedWeapon == PlayerWeaponType.BaseballBat;
             bool charge = equipped && weapons.EquippedWeapon == PlayerWeaponType.GrappleGun;
             bool reloading = equipped && !charge && weapons.IsReloading;
             bool switched = m_presentedSlot != weapons.SelectedHotbarSlot || charge != m_wasCharge;
             m_presentedSlot = weapons.SelectedHotbarSlot;
             m_wasCharge = charge;
-            m_ammoPanel.SetActive(equipped);
+            m_ammoPanel.SetActive(equipped && !melee);
             m_ammoText.gameObject.SetActive(equipped && !charge);
             m_ammoText.color = m_weaponColour;
             string ammo = $"{weapons.CurrentMagazine} / {weapons.CurrentReserve}";

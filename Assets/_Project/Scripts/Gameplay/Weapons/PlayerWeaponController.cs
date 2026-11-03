@@ -20,7 +20,7 @@ namespace CouchGuys.Gameplay.Weapons
     [DisallowMultipleComponent]
     public sealed partial class PlayerWeaponController : NetworkBehaviour
     {
-        private const int WeaponCount = 5;
+        private const int WeaponCount = 6;
         public const int InventorySlotCount = 5;
         private const int RaycastBufferSize = 16;
 
@@ -131,6 +131,7 @@ namespace CouchGuys.Gameplay.Weapons
             m_faceExpression ??= GetComponent<RobotFaceExpressionController>();
             if (m_effects == null) m_effects = gameObject.AddComponent<PlayerWeaponEffects>();
             if (m_audio == null) m_audio = gameObject.AddComponent<WeaponAudioEmitter>();
+            m_baseballBatAssets ??= Resources.Load<BaseballBatAssets>(BaseballBatAssets.ResourcesPath);
             EnsureWeaponDefinitions();
             ResolveModelReferences();
             SetModelVisibility(-1);
@@ -164,6 +165,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void Update()
         {
+            UpdateBatSwingServer();
             if (IsServerInitialized && m_reloadingIndex >= 0 && Time.time >= m_reloadCompleteAt)
                 FinishReloadServer();
 
@@ -264,6 +266,13 @@ namespace CouchGuys.Gameplay.Weapons
                 return;
             }
 
+            if (weapon.Type == PlayerWeaponType.BaseballBat)
+            {
+                RequestBatSwingServerRpc();
+                m_nextLocalRequestTime = Time.time + BaseballBatAssets.Cooldown;
+                return;
+            }
+
             Ray ray = m_aimCamera != null
                 ? m_aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f))
                 : new Ray(transform.position + Vector3.up * 1.2f, transform.forward);
@@ -327,6 +336,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void EquipInventorySlotServer(int slot)
         {
+            m_batSwinging = false;
             StopGrappleServer();
             StoreEquippedAmmoServer();
             EndRifleBurstServer();
@@ -350,6 +360,7 @@ namespace CouchGuys.Gameplay.Weapons
         [Server]
         public void CancelActionsForDownedServer()
         {
+            m_batSwinging = false;
             StopGrappleServer();
             EndRifleBurstServer();
             m_reloadingIndex = -1;
@@ -451,7 +462,7 @@ namespace CouchGuys.Gameplay.Weapons
         {
             int index = m_equippedIndex.Value;
             WeaponDefinition weapon = GetWeapon(index);
-            if (weapon == null || weapon.Type == PlayerWeaponType.GrappleGun || m_reloadingIndex >= 0 || Time.time < m_switchCompleteAt ||
+            if (weapon == null || weapon.Type == PlayerWeaponType.GrappleGun || weapon.Type == PlayerWeaponType.BaseballBat || m_reloadingIndex >= 0 || Time.time < m_switchCompleteAt ||
                 m_magazine[index] >= weapon.MagazineCapacity || m_reserve[index] <= 0 ||
                 !m_health.IsAlive || (m_couchCarrier != null && m_couchCarrier.IsCarrying)) return;
 
@@ -582,7 +593,7 @@ namespace CouchGuys.Gameplay.Weapons
 
             int index = m_equippedIndex.Value;
             WeaponDefinition weapon = GetWeapon(index);
-            if (weapon == null || weapon.Type == PlayerWeaponType.GrappleGun || index != GetInventoryWeaponIndex(SelectedHotbarSlot) || m_reloadingIndex >= 0 || Time.time < m_switchCompleteAt ||
+            if (weapon == null || weapon.Type == PlayerWeaponType.GrappleGun || weapon.Type == PlayerWeaponType.BaseballBat || index != GetInventoryWeaponIndex(SelectedHotbarSlot) || m_reloadingIndex >= 0 || Time.time < m_switchCompleteAt ||
                 Time.time < m_nextServerFireTime[index] || !m_health.IsAlive || m_health.IsKnockedDown ||
                 (m_couchCarrier != null && m_couchCarrier.IsCarrying) ||
                 (aimOrigin - m_health.AimPoint).sqrMagnitude >
@@ -967,7 +978,8 @@ namespace CouchGuys.Gameplay.Weapons
             System.Array.Clear(m_pendingLocalShots, 0, m_pendingLocalShots.Length);
             SetModelVisibility(index);
             m_animationDriver?.SetEquippedWeapon(ValidIndex(index) ?
-                (index == (int)PlayerWeaponType.GrappleGun ? 1 : index == (int)PlayerWeaponType.RocketLauncher ? 3 : index + 1) : 0);
+                (index == (int)PlayerWeaponType.BaseballBat ? 0 : index == (int)PlayerWeaponType.GrappleGun ? 1 : index == (int)PlayerWeaponType.RocketLauncher ? 3 : index + 1) : 0);
+            m_animationDriver?.SetBaseballBatEquipped(index == (int)PlayerWeaponType.BaseballBat);
             LocalReticleChanged?.Invoke(GetWeaponReticle(index));
         }
 
@@ -992,7 +1004,7 @@ namespace CouchGuys.Gameplay.Weapons
             if (m_muzzles == null || m_muzzles.Length != WeaponCount)
                 System.Array.Resize(ref m_muzzles, WeaponCount);
 
-            string[] names = { "Weapon_Pistol", "Weapon_AssaultRifle", "Weapon_Shotgun", "Weapon_GrappleGun", "Weapon_RocketLauncher" };
+            string[] names = { "Weapon_Pistol", "Weapon_AssaultRifle", "Weapon_Shotgun", "Weapon_GrappleGun", "Weapon_RocketLauncher", "Weapon_BaseballBat" };
             EnsureGrappleModel();
             for (int i = 0; i < WeaponCount; i++)
             {

@@ -479,7 +479,7 @@ namespace CouchGuys.Gameplay.Vehicles
 
         private void FixedUpdate()
         {
-            if (!IsServerInitialized || m_roads == null || m_settings.DrivingSettings == null) return;
+            if (!IsServerInitialized || m_roads == null || m_settings.DrivingSettings == null || m_truck.IsBatLaunched) return;
             if (m_truck.IsDestroyed) { m_motor.Stop(m_settings.DrivingSettings); return; }
             bool driving = State == GetawayTruckState.Arriving || State == GetawayTruckState.Approaching ||
                 State == GetawayTruckState.Escaping || State == GetawayTruckState.Departing;

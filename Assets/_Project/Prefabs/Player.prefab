@@ -487,6 +487,7 @@ MonoBehaviour:
   _componentIndexCache: 4
   _addedNetworkObject: {fileID: 4753475039817145927}
   _networkObjectCache: {fileID: 4753475039817145927}
+  m_baseballBatAssets: {fileID: 11400000, guid: 515646e576c12f04f830d003d3805534, type: 2}
   m_grappleSettings: {fileID: 11400000, guid: f4f0e78b3561447eb81d830e43ba700f, type: 2}
   m_input: {fileID: 0}
   m_health: {fileID: 0}
@@ -499,12 +500,14 @@ MonoBehaviour:
   - {fileID: 5166290954115806933}
   - {fileID: 8385542164326236007}
   - {fileID: 1778989594772537638}
+  - {fileID: 5186110051281158742}
   m_muzzles:
   - {fileID: 3102502108373813940}
   - {fileID: 6184079491065812141}
   - {fileID: 2394974617422851193}
   - {fileID: 8385542164326236006}
   - {fileID: 3039668353106358657}
+  - {fileID: 924640990931243169}
   m_effects: {fileID: 0}
   m_audio: {fileID: 0}
   m_weapons:
@@ -677,6 +680,40 @@ MonoBehaviour:
     m_shellEjectionPrefab: {fileID: 0}
     m_recoilDistance: 0.09
     m_cameraShake: 0.11
+    m_impactScale: 1
+  - m_type: 5
+    m_displayName: Baseball Bat
+    m_automatic: 0
+    m_fireInterval: 2
+    m_range: 1.8
+    m_pellets: 1
+    m_spreadDegrees: 0
+    m_damagePerPellet: 5
+    m_minimumDamageMultiplier: 1
+    m_falloffStart: 1
+    m_recoil: 0
+    m_magazineCapacity: 1
+    m_startingReserve: 0
+    m_reloadDuration: 1
+    m_knockback: 24
+    m_reticleSettings: {fileID: 0}
+    m_pullForce: 45
+    m_pullSpeed: 12
+    m_explosionDamage: 80
+    m_explosionRadius: 5
+    m_projectileCollisionRadius: 0.09
+    m_explosionUpwardForce: 10
+    m_bulletPrefab: {fileID: 0}
+    m_bulletSpeed: 1
+    m_bulletLifetime: 1
+    m_bulletSize: {x: 1, y: 1, z: 1}
+    m_bulletColour: {r: 1, g: 0.72, b: 0.12, a: 1}
+    m_trailWidth: 0.025
+    m_trailColour: {r: 1, g: 0.55, b: 0.08, a: 0.85}
+    m_muzzleFlashPrefab: {fileID: 0}
+    m_shellEjectionPrefab: {fileID: 0}
+    m_recoilDistance: 0
+    m_cameraShake: 0
     m_impactScale: 1
   m_hitMask:
     serializedVersion: 2
@@ -11624,6 +11661,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5408518322925871603, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1778989594772537638}
+    - targetCorrespondingSourceObject: {fileID: 5408518322925871603, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5186110051281158742}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
       insertIndex: -1
@@ -11705,6 +11745,89 @@ Transform:
 Transform:
   m_CorrespondingSourceObject: {fileID: 7832136324030907501, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
   m_PrefabInstance: {fileID: 1884959408463409528}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &5180690798390771860
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 5847451712726356107}
+    m_Modifications:
+    - target: {fileID: 8234553521324738, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.020000009
+      objectReference: {fileID: 0}
+    - target: {fileID: 8234553521324738, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.019999998
+      objectReference: {fileID: 0}
+    - target: {fileID: 8234553521324738, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.019999998
+      objectReference: {fileID: 0}
+    - target: {fileID: 8234553521324738, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8234553521324738, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8234553521324738, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8234553521324738, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.63180196
+      objectReference: {fileID: 0}
+    - target: {fileID: 8234553521324738, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.7751299
+      objectReference: {fileID: 0}
+    - target: {fileID: 8234553521324738, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.000000026838174
+      objectReference: {fileID: 0}
+    - target: {fileID: 8234553521324738, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0.00000013834402
+      objectReference: {fileID: 0}
+    - target: {fileID: 8234553521324738, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8234553521324738, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8234553521324738, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8403570940597637459, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+      propertyPath: m_Name
+      value: Weapon_BaseballBat
+      objectReference: {fileID: 0}
+    - target: {fileID: 8403570940597637459, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+--- !u!4 &924640990931243169 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5418251190742765621, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+  m_PrefabInstance: {fileID: 5180690798390771860}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &5186110051281158742 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8234553521324738, guid: b506abbfbd6ccaa4dbba9a8250755091, type: 3}
+  m_PrefabInstance: {fileID: 5180690798390771860}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &7059000419163038097
 PrefabInstance:

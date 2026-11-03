@@ -59,6 +59,11 @@ namespace CouchGuys.Player
         private int m_recoilDirection = 1;
         private float m_punchUntil;
         private int m_punchLayer = -1;
+        private int m_batLayer = -1;
+        private bool m_batEquipped;
+        private float m_batSwingUntil;
+        private bool m_batWasSwinging;
+        private PlayerHealth m_batHealth;
         private bool m_vehicleSeated;
         private bool m_vehicleDriver;
 
@@ -96,6 +101,7 @@ namespace CouchGuys.Player
 
         private void Update()
         {
+            UpdateBaseballBatLayer();
             if (m_animator != null && m_punchLayer >= 0)
             {
                 bool punching = Time.time < m_punchUntil && m_equippedWeapon == 0 && !m_vehicleSeated &&
@@ -182,6 +188,41 @@ namespace CouchGuys.Player
             m_equippedWeapon = weaponIndex;
             if (m_animator != null && m_hasWeaponParameters)
                 m_animator.SetInteger(EquippedWeaponHash, weaponIndex);
+        }
+
+        public void SetBaseballBatEquipped(bool equipped)
+        {
+            m_batEquipped = equipped;
+            if (!equipped) { m_batSwingUntil = 0f; m_batWasSwinging = false; }
+            if (m_animator == null) return;
+            m_batLayer = m_animator.GetLayerIndex("Baseball Bat");
+            if (equipped && m_batLayer >= 0)
+                m_animator.CrossFadeInFixedTime("Bat_Ready", .12f, m_batLayer, 0f);
+        }
+
+        public void PlayBaseballBatSwing(float age)
+        {
+            if (!m_batEquipped || m_animator == null || m_batLayer < 0) return;
+            m_batSwingUntil = Time.time + BaseballBatAssets.SwingDuration - age;
+            m_batWasSwinging = true;
+            m_animator.CrossFadeInFixedTime("Bat_Swing", .035f, m_batLayer, age);
+        }
+
+        private void UpdateBaseballBatLayer()
+        {
+            if (m_animator == null || m_batLayer < 0) return;
+            m_batHealth ??= GetComponent<PlayerHealth>();
+            bool active = m_batEquipped && !m_vehicleSeated &&
+                (m_batHealth == null || m_batHealth.IsAlive && !m_batHealth.IsKnockedDown) &&
+                !(m_couchCarrier != null && m_couchCarrier.IsCarrying);
+            if (!active) m_batSwingUntil = 0f;
+            if (m_batWasSwinging && Time.time >= m_batSwingUntil)
+            {
+                m_batWasSwinging = false;
+                m_animator.CrossFadeInFixedTime("Bat_Ready", .1f, m_batLayer, 0f);
+            }
+            m_animator.SetLayerWeight(m_batLayer, Mathf.MoveTowards(m_animator.GetLayerWeight(m_batLayer),
+                active ? 1f : 0f, Time.deltaTime * 12f));
         }
 
         public void PlayPunch(bool right)

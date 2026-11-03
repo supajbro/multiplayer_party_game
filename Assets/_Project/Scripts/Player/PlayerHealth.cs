@@ -431,6 +431,12 @@ namespace CouchGuys.Player
             ApplyDamageInternal(damage, direction, force, true, lift, false, true, true);
         }
 
+        [Server]
+        public void ApplyBatImpactServer(float damage, Vector3 direction, float force, float lift)
+        {
+            ApplyDamageInternal(damage, direction, force, true, lift, true, true, true, true);
+        }
+
         /// <summary>Applies a server-authoritative vehicle push, with optional damage.</summary>
         [Server]
         public void ApplyVehicleImpactServer(
@@ -452,7 +458,8 @@ namespace CouchGuys.Player
             float explicitUpwardForce = 0f,
             bool allowPushWithoutDamage = false,
             bool directionalKnockback = false,
-            bool explosionLaunch = false)
+            bool explosionLaunch = false,
+            bool batLaunch = false)
         {
             if ((!allowPushWithoutDamage && damage <= 0f) ||
                 (damage <= 0f && knockbackForce <= 0f && explicitUpwardForce <= 0f) ||
@@ -513,7 +520,7 @@ namespace CouchGuys.Player
 
             if (Owner.IsValid)
             {
-                ApplyImpactTargetRpc(Owner, impulse, directionalKnockback, explosionLaunch);
+                ApplyImpactTargetRpc(Owner, impulse, directionalKnockback, explosionLaunch, batLaunch);
             }
             else
             {
@@ -593,11 +600,12 @@ namespace CouchGuys.Player
         }
 
         [TargetRpc]
-        private void ApplyImpactTargetRpc(NetworkConnection connection, Vector3 impulse, bool vehicleImpact, bool explosionLaunch)
+        private void ApplyImpactTargetRpc(NetworkConnection connection, Vector3 impulse, bool vehicleImpact, bool explosionLaunch, bool batLaunch)
         {
             if (IsOwner)
             {
-                if (explosionLaunch) m_playerController?.ApplyEnemyGrappleThrow(impulse, 1.25f, 2f);
+                if (batLaunch) m_playerController?.ApplyBatLaunch(impulse);
+                else if (explosionLaunch) m_playerController?.ApplyEnemyGrappleThrow(impulse, 1.25f, 2f);
                 else m_playerController?.ApplyExternalImpulse(impulse, vehicleImpact);
             }
         }

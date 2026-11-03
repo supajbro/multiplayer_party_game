@@ -238,8 +238,18 @@ namespace CouchGuys.Gameplay.Vehicles
         [ObserversRpc]
         private void PlaySplatObserversRpc(Vector3 position) => m_audio.PlaySplat(position);
 
+        private readonly CouchGuys.Gameplay.Weapons.BaseballBatVehicleLaunch m_batLaunch = new();
+        public bool IsBatLaunched => m_batLaunch.Active;
+
+        [Server]
+        public void ApplyBatLaunchServer(Vector3 velocity, Vector3 spin)
+        {
+            if (!IsDestroyed) m_batLaunch.Launch(m_rigidbody, velocity, spin);
+        }
+
         private void FixedUpdate()
         {
+            if (IsServerInitialized && m_batLaunch.Tick(m_rigidbody)) return;
             if (!IsServerInitialized || m_settings == null || m_rigidbody.isKinematic || IsGetawayTruck) return;
             if (Time.time - m_lastInputTime > 0.35f) m_driveInput = Vector2.zero;
             SimulateDriving(Time.fixedDeltaTime);

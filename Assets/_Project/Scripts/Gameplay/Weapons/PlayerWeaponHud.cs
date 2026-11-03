@@ -130,8 +130,8 @@ namespace CouchGuys.Gameplay.Weapons
                     Text icon = m_slotIcons[slot];
                     if (icon == null) continue;
                     int index = m_weapons.GetInventoryWeaponIndex(slot);
-                    icon.text = index switch { 0 => "P", 1 => "AR", 2 => "SG", 3 => "G", 4 => "RL", _ => "—" };
-                    icon.fontSize = index == 1 || index == 4 ? 25 : 34;
+                    icon.text = index switch { 0 => "P", 1 => "AR", 2 => "SG", 3 => "G", 4 => "RL", 5 => "BAT", _ => "—" };
+                    icon.fontSize = index == 5 ? 20 : index == 1 || index == 4 ? 25 : 34;
                     icon.color = index >= 0 ? new Color(1f, 0.55f, 0.12f) : Inactive;
                 }
             }

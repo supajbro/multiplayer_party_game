@@ -98,7 +98,8 @@ namespace CouchGuys.Gameplay.Weapons
                 Create(PlayerWeaponType.AssaultRifle, "Assault Rifle", true, 0.095f, 55f, 1, 1.8f, 12f, 0.65f, 0.55f, 3f, 30, 120, 1.8f, 1.5f, 105f, new Vector3(0.045f, 0.045f, 0.34f), 0.018f, 0.022f, 0.8f),
                 Create(PlayerWeaponType.Shotgun, "Shotgun", false, 0.9f, 28f, 9, 7.5f, 11f, 0.22f, 0.3f, 14f, 6, 36, 2.2f, 12f, 62f, new Vector3(0.055f, 0.055f, 0.18f), 0.075f, 0.1f, 1.5f),
                 Create(PlayerWeaponType.GrappleGun, "Grapple Gun", false, 0.4f, 30f, 1, 0f, 0f, 1f, 1f, 0f, 1, 0, 1f, 0f, 70f, Vector3.one, 0f, 0f, 1f),
-                Create(PlayerWeaponType.RocketLauncher, "Rocket Launcher", false, 1.5f, 150f, 1, 0f, 60f, 1f, 1f, 12f, 1, 5, 2.5f, 24f, 25f, new Vector3(.14f, .14f, .55f), .09f, .11f, 1f)
+                Create(PlayerWeaponType.RocketLauncher, "Rocket Launcher", false, 1.5f, 150f, 1, 0f, 60f, 1f, 1f, 12f, 1, 5, 2.5f, 24f, 25f, new Vector3(.14f, .14f, .55f), .09f, .11f, 1f),
+                Create(PlayerWeaponType.BaseballBat, "Baseball Bat", false, 2f, 1.8f, 1, 0f, 5f, 1f, 1f, 0f, 1, 0, 1f, 24f, 1f, Vector3.one, 0f, 0f, 1f)
             };
         }
 

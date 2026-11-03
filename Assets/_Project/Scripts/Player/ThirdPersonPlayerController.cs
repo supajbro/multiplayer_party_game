@@ -130,6 +130,13 @@ namespace CouchGuys.Player
             ApplyGrappleFlick(velocity, velocity.magnitude, duration, drag, 1f);
         }
 
+        internal void ApplyBatLaunch(Vector3 velocity)
+        {
+            ApplyEnemyGrappleThrow(velocity, 1.25f, 2f);
+            // Reuse the vehicle impact input lock while retaining gravity and collision movement.
+            m_vehicleImpactUntil = Mathf.Max(m_vehicleImpactUntil, Time.time + .5f);
+        }
+
         internal void ApplyGrappleFlick(Vector3 impulse, float maximumSpeed, float duration, float drag, float gravity)
         {
             // Put upward momentum in the motor's gravity-integrated velocity,

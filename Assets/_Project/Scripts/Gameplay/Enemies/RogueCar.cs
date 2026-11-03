@@ -65,7 +65,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         private void FixedUpdate()
         {
-            if (m_settings == null || !m_vehicle.IsServerInitialized || m_vehicle.IsDestroyed) return;
+            if (m_settings == null || !m_vehicle.IsServerInitialized || m_vehicle.IsDestroyed || m_vehicle.IsBatLaunched) return;
             if (Time.time >= m_refreshAt || !IsLiving(m_target) ||
                 (m_targetWasCarrier && !IsCarrier(m_target))) RefreshTarget();
 
