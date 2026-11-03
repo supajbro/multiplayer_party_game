@@ -11,8 +11,18 @@ namespace CouchGuys.Gameplay.Enemies
         [Min(0.1f)] public float ReverseSpeed = 5f;
         [Min(0f), Tooltip("Maximum yaw speed in degrees per second.")] public float TurnSpeed = 95f;
         [Min(0.1f)] public float MinTurningRadius = 4f;
+        [Min(0f), Tooltip("Maximum yaw control acceleration. Larger chassis need more steering authority.")]
+        public float AngularAcceleration = 8f;
+        [Tooltip("Scale steering torque by the chassis inertia tensor. Enable for large compound vehicles.")]
+        public bool CompensateSteeringInertia;
         [Min(0.05f)] public float TargetRefreshInterval = 0.5f;
         [Min(0.1f)] public float StuckDetectionTime = 2f;
+        [Tooltip("Back toward close targets behind the vehicle instead of circling them. Useful for larger vehicles.")]
+        public bool ReverseTowardsNearbyTargets;
+        [Header("Forward Navigation Turnaround")]
+        [Min(.1f)] public float TurnaroundForwardDuration = 2f;
+        [Min(.1f)] public float TurnaroundReverseDuration = 1.4f;
+        [Min(1f)] public float TurnaroundTimeout = 12f;
 
         [Header("Combat")]
         [Min(1f)] public float MaxHealth = 120f;

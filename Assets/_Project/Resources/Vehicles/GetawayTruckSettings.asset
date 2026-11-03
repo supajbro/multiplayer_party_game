@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d8a1c24fc7474479a6a3543aa8e0deca, type: 3}
+  m_Name: GetawayTruckSettings
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Vehicles.GetawayTruckSettings
+  TruckPrefab: {fileID: 5873252375396000528, guid: 5574cc3353b0440d979444892d284227, type: 3}
+  DrivingSettings: {fileID: 11400000, guid: 972221f078554502bdef012b327f6f55, type: 2}
+  CarrierNavigationSearchRadius: 32
+  CarryClearancePadding: 1
+  MaximumCarryDetourObstacles: 8
+  ParkingSettleTime: 1
+  ParkedRecoveryTimeout: 6
+  ParkingRepositionDistance: 6
+  RouteProgressDistance: 1
+  Health: 300
+  ApproachSpeed: 8
+  EscapeSpeed: 15
+  ParkingDistance: 12
+  LoadingDistance: 2.5
+  ReplacementDelay: 8
+  MinimumSpawnDistance: 100
+  DecisionInterval: 1
+  WaypointRadius: 1.5
+  LookAheadDistance: 8
+  WaypointPassDistance: 4
+  CornerSpeed: 3
+  MinimumChaseTime: 10
+  MinimumEscapeRouteLength: 80
+  StuckReverseDelay: 5
+  StuckRecoveryTimeout: 25
+  DepartureTimeout: 90
+  WreckLifetime: 3
+  GroundOffset: 0.12
+  ParkingClearance: {x: 1.8, y: 1.8, z: 4.5}

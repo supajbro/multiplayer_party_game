@@ -1,0 +1,169 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Reflection;
+using CouchGuys.Gameplay.Couch;
+using CouchGuys.Gameplay.Vehicles;
+using CouchGuys.ProceduralGeneration;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.AI;
+using Object = UnityEngine.Object;
+
+namespace CouchGuys.Tests.Editor
+{
+    public sealed class GetawayTruckRegressionTests
+    {
+        private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+        private static Type Runtime(string name) => typeof(GetawayTruckController).Assembly.GetType("CouchGuys.Gameplay.Vehicles." + name, true);
+
+        [Test]
+        public void ManagerConfigurationAndReplicatedMaximumHealthOverridePrefabDefaults()
+        {
+            var original = Resources.Load<GetawayTruckSettings>("Vehicles/GetawayTruckSettings");
+            var settings = Object.Instantiate(original);
+            var instance = Object.Instantiate(original.TruckPrefab.gameObject);
+            try
+            {
+                settings.Health = 517f;
+                settings.ApproachSpeed = 4f;
+                settings.LoadingDistance = 4.25f;
+                var controller = instance.GetComponent<GetawayTruckController>();
+                Runtime("GetawayTruckController").GetMethod("ConfigureBeforeSpawn", Hidden).Invoke(controller, new object[] { settings });
+                Assert.That(controller.MaximumHealth, Is.EqualTo(517f));
+                Assert.That(Runtime("GetawayTruckController").GetField("m_settings", Hidden).GetValue(controller), Is.SameAs(settings));
+                controller.OnStartServer();
+                // A client retains its prefab asset reference but receives the server's maximum.
+                Runtime("GetawayTruckController").GetField("m_settings", Hidden).SetValue(controller, original);
+                Assert.That(controller.MaximumHealth, Is.EqualTo(517f));
+            }
+            finally { Object.DestroyImmediate(instance); Object.DestroyImmediate(settings); }
+        }
+
+        [Test]
+        public void JockeyingAndReplanningDoNotRenewRouteProgress()
+        {
+            Type type = Runtime("GetawayRouteProgress");
+            object tracker = Activator.CreateInstance(type, true);
+            void Call(string name, params object[] args) => type.GetMethod(name, Hidden).Invoke(tracker, args);
+            bool Expired(float time) => (bool)type.GetMethod("TimedOut", Hidden).Invoke(tracker, new object[] { time, 25f });
+            Call("Reset", 0f);
+            Call("Observe", 20f, 0f, 1f);
+            Call("Observe", 16f, 1f, 1f);
+            for (int time = 2; time <= 27; time++) Call("Observe", time % 2 == 0 ? 20f : 16f, (float)time, 1f);
+            Assert.That(Expired(27f), Is.True, "Backing away and returning to the same point is not progress.");
+            Call("Replan");
+            Call("Observe", 14f, 28f, 1f);
+            Assert.That(Expired(28f), Is.True, "Merely replacing a route cannot postpone recovery.");
+            Call("Reset", 29f);
+            Call("Observe", 20f, 29f, 1f);
+            Call("Observe", 17f, 30f, 1f);
+            Assert.That(Expired(31f), Is.False);
+        }
+
+        [Test]
+        public void EscapeRouteUsesForwardLoopInsteadOfImmediateReverse()
+        {
+            Type type = Runtime("GetawayRoadRouter");
+            object router = Activator.CreateInstance(type, true);
+            var objects = new List<GameObject>();
+            void Road(int x, int z, RoadConnections connections)
+            {
+                var item = new GameObject("Escape heading road test"); objects.Add(item);
+                item.transform.position = new Vector3(x * 10, 0, z * 10);
+                var road = item.AddComponent<GeneratedRoad>(); road.Initialise(new GridCoordinate(x, z), connections);
+                ((IDictionary)type.GetField("m_roads", Hidden).GetValue(router)).Add(road.Coordinate, road);
+            }
+            try
+            {
+                Road(0, 0, RoadConnections.North | RoadConnections.South | RoadConnections.East);
+                Road(0, 1, RoadConnections.South | RoadConnections.East);
+                Road(1, 1, RoadConnections.West | RoadConnections.South);
+                Road(1, 0, RoadConnections.North | RoadConnections.West);
+                Road(0, -1, RoadConnections.North);
+                object[] args = { Vector3.zero, Vector3.forward, new GridCoordinate(0, -1), null };
+                Assert.That((bool)type.GetMethod("TryForwardRoute", Hidden).Invoke(router, args), Is.True);
+                var route = (List<Vector3>)args[3];
+                Assert.That(route.Count, Is.GreaterThan(2));
+                Assert.That(Vector3.Dot(route[1] - route[0], Vector3.forward), Is.GreaterThanOrEqualTo(0f));
+                for (int i = 2; i < route.Count; i++)
+                    Assert.That(Vector3.Dot((route[i] - route[i - 1]).normalized, (route[i - 1] - route[i - 2]).normalized), Is.GreaterThan(-.9f));
+            }
+            finally { foreach (var item in objects) Object.DestroyImmediate(item); }
+        }
+
+        [Test]
+        public void WideCouchDetoursAroundPedestrianGapAndRejectsDisconnectedRear()
+        {
+            Vector3 origin = new Vector3(31000, 0, 31000);
+            var settings = Resources.Load<GetawayTruckSettings>("Vehicles/GetawayTruckSettings");
+            var couchObject = new GameObject("Couch clearance regression");
+            couchObject.transform.position = origin;
+            var couch = couchObject.AddComponent<CouchCarryController>();
+            var objects = new List<GameObject>();
+            NavMeshData data = null;
+            NavMeshDataInstance mesh = default;
+            var sources = new List<NavMeshBuildSource>
+            {
+                new NavMeshBuildSource { shape = NavMeshBuildSourceShape.Box, area = 0,
+                    transform = Matrix4x4.TRS(origin - Vector3.up * .1f, Quaternion.identity, Vector3.one), size = new Vector3(80, .2f, 80) }
+            };
+            void Wall(float x, float width)
+            {
+                var item = new GameObject("Couch clearance wall"); objects.Add(item);
+                item.transform.position = origin + new Vector3(x, 2, 12);
+                var collider = item.AddComponent<BoxCollider>(); collider.size = new Vector3(width, 4, 4);
+                sources.Add(new NavMeshBuildSource { shape = NavMeshBuildSourceShape.Box, area = 1,
+                    transform = item.transform.localToWorldMatrix, size = collider.size });
+            }
+            try
+            {
+                Wall(-10.375f, 19.25f); Wall(10.375f, 19.25f); // 1.5 m pedestrian gap; 2.1 m couch.
+                data = NavMeshBuilder.BuildNavMeshData(NavMesh.GetSettingsByIndex(0), sources,
+                    new Bounds(origin, new Vector3(100, 20, 100)), Vector3.zero, Quaternion.identity);
+                mesh = NavMesh.AddNavMeshData(data);
+                Physics.SyncTransforms();
+                Type plannerType = Runtime("CouchClearancePath");
+                object planner = Activator.CreateInstance(plannerType, true);
+                object[] args = { couch, origin + Vector3.forward * 25, settings, 2f, false, null, false };
+                Assert.That((bool)plannerType.GetMethod("TryBuild", Hidden).Invoke(planner, args), Is.True);
+                Assert.That((bool)args[6], Is.True);
+                bool around = false;
+                foreach (Vector3 corner in (Vector3[])args[5]) around |= Mathf.Abs(corner.x - origin.x) > 20f;
+                Assert.That(around, Is.True, "The group must go around the walls, rather than accepting their narrow gap.");
+                mesh.Remove(); Object.DestroyImmediate(data); data = null;
+                foreach (var item in objects) Object.DestroyImmediate(item); objects.Clear();
+                sources.RemoveRange(1, sources.Count - 1);
+                Wall(0, 80); // No route across the wall exists.
+                data = NavMeshBuilder.BuildNavMeshData(NavMesh.GetSettingsByIndex(0), sources,
+                    new Bounds(origin, new Vector3(100, 20, 100)), Vector3.zero, Quaternion.identity);
+                mesh = NavMesh.AddNavMeshData(data); Physics.SyncTransforms();
+                args = new object[] { couch, origin + Vector3.forward * 25, settings, 2f, false, null, false };
+                Assert.That((bool)plannerType.GetMethod("TryBuild", Hidden).Invoke(planner, args), Is.False,
+                    "A partial path must never approve an unreachable loading entrance.");
+                args[4] = true;
+                Assert.That((bool)plannerType.GetMethod("TryBuild", Hidden).Invoke(planner, args), Is.True,
+                    "During approach, move to the closest point that has group clearance.");
+                Assert.That((bool)args[6], Is.False);
+                // Being close to the doorway is insufficient when a wall blocks the loading sweep.
+                foreach (var item in objects) Object.DestroyImmediate(item); objects.Clear();
+                var blockedDoor = new GameObject("Blocked cargo doorway"); objects.Add(blockedDoor);
+                blockedDoor.transform.position = origin + new Vector3(0, 2, 27.3f);
+                blockedDoor.AddComponent<BoxCollider>().size = new Vector3(10, 4, .2f);
+                Physics.SyncTransforms();
+                MethodInfo loading = plannerType.GetMethod("LoadingEntranceClear", Hidden);
+                Assert.That((bool)loading.Invoke(planner, new object[] { couch, origin + Vector3.forward * 25,
+                    origin + new Vector3(0, 1.32f, 27.8f) }), Is.False);
+                Object.DestroyImmediate(blockedDoor); objects.Clear(); Physics.SyncTransforms();
+                Assert.That((bool)loading.Invoke(planner, new object[] { couch, origin + Vector3.forward * 25,
+                    origin + new Vector3(0, 1.32f, 27.8f) }), Is.True);
+            }
+            finally
+            {
+                if (mesh.valid) mesh.Remove(); if (data != null) Object.DestroyImmediate(data);
+                foreach (var item in objects) Object.DestroyImmediate(item);
+                Object.DestroyImmediate(couchObject);
+            }
+        }
+    }
+}

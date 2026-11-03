@@ -256,6 +256,11 @@ namespace CouchGuys.Gameplay.Enemies
                 ReleaseCarriedCouchServer();
                 SetConstrainedCarryMovement(false);
                 var truck = couch.LoadedTruckObject.GetComponent<CouchGuys.Gameplay.Vehicles.TruckController>();
+                if (truck != null && truck.IsGetawayTruck)
+                {
+                    UpdateFightObjective(GetClosestLivingTarget());
+                    return;
+                }
                 if (truck != null && !truck.IsDestroyed)
                 {
                     m_weapon?.SetTruckTargetServer(truck);
@@ -484,7 +489,26 @@ namespace CouchGuys.Gameplay.Enemies
                 }
             }
 
+            if (m_deliveryManager != null)
+            {
+                var getaway = m_deliveryManager.ActiveGetawayTruck;
+                // Steer the couch as a team. Independent grip paths can point around
+                // opposite sides of the same obstacle and cancel the couch's motion.
+                m_carryIntent = getaway != null ? getaway.GetCarryMovementIntent(m_carriedCouch) : Vector3.zero;
+                ApplyConstrainedCarryMovement(m_carryIntent);
+                return;
+            }
+
             Vector3 escapeTarget = CalculateEscapeTarget();
+            if (Vector3.ProjectOnPlane(escapeTarget - transform.position, Vector3.up).sqrMagnitude <= .01f)
+            {
+                // Do not follow a stale path while there is no replacement/rendezvous yet.
+                if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh && m_agent.hasPath)
+                    m_agent.ResetPath();
+                m_carryIntent = Vector3.zero;
+                ApplyConstrainedCarryMovement(Vector3.zero);
+                return;
+            }
             MoveTo(escapeTarget, 0.25f);
             Vector3 desired = m_agent != null && m_agent.enabled && m_agent.hasPath
                 ? Vector3.ProjectOnPlane(m_agent.steeringTarget - transform.position, Vector3.up)
@@ -782,6 +806,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         void ICouchCarrierServer.SetCarriedCouchServer(CouchCarryController couch, int pointIndex)
         {
+            m_deliveryManager?.ActiveGetawayTruck?.NotifyCouchStolenServer();
             m_carriedCouch = couch;
             m_carriedPointIndex = pointIndex;
             m_carryIntent = Vector3.zero;

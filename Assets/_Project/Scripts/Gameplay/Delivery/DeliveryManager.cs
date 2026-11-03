@@ -18,7 +18,7 @@ namespace CouchGuys.Gameplay.Delivery
     [RequireComponent(typeof(NetworkObject))]
     [RequireComponent(typeof(NeighbourhoodGenerator))]
     [DisallowMultipleComponent]
-    public sealed class DeliveryManager : NetworkBehaviour
+    public sealed partial class DeliveryManager : NetworkBehaviour
     {
         [Header("References")]
         [SerializeField] private NeighbourhoodGenerator m_generator;
@@ -204,6 +204,7 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void Update()
         {
+            if (IsServerInitialized) UpdateGetawayServer();
             if (IsServerInitialized && IsDeliveryTimerActive && TimeManager.Tick >= m_deliveryDeadlineTick.Value)
                 FailAndResetActiveDeliveryServer();
             if (IsServerInitialized && m_dialoguePlayer != null &&
@@ -395,6 +396,7 @@ namespace CouchGuys.Gameplay.Delivery
             CouchCarryController couchController = couch.GetComponent<CouchCarryController>();
             couchController.SelectRandomModelVariantServer();
             m_activeCouch.Value = couch;
+            BeginGetawayServer(couchController);
             m_currency.Value -= tier.PurchasePrice;
             m_usedDestinationIndices.Add(destinationIndex);
             DeliveryRouteMetrics selectedMetrics = m_generator.DeliveryDestinations[destinationIndex].RouteMetrics;
@@ -792,6 +794,7 @@ namespace CouchGuys.Gameplay.Delivery
             }
 
             m_isCompletingDelivery = true;
+            EndGetawayServer();
             StopConveyorDispatchServer();
             StopDeliveryTimerServer();
             SetStateServer(DeliveryState.DestinationReached, DeliveryObjectiveStep.DeliverCouch);
@@ -839,7 +842,7 @@ namespace CouchGuys.Gameplay.Delivery
         [Server]
         public bool FailAndResetActiveDeliveryServer()
         {
-            if (m_isCompletingDelivery || !HasActiveDelivery ||
+            if (m_isCompletingDelivery || m_destinationIndex.Value < 0 ||
                 (m_state.Value != DeliveryState.Accepted &&
                  m_state.Value != DeliveryState.CouchSpawned &&
                  m_state.Value != DeliveryState.Transport &&
@@ -851,6 +854,7 @@ namespace CouchGuys.Gameplay.Delivery
             StopDeliveryTimerServer();
             StopConveyorDispatchServer();
             m_deliveryFailureSequence.Value++;
+            EndGetawayServer();
             SetStateServer(DeliveryState.Failed, DeliveryObjectiveStep.None);
             NetworkObject failedCouch = m_activeCouch.Value;
             m_activeCouch.Value = null;
@@ -912,6 +916,7 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void OnRegionClearing(NeighbourhoodGenerator generator)
         {
+            ClearGetawaysServer();
             StopConveyorDispatchServer();
             DestroyCollectionMarker();
             ClearRecipientsServer();
@@ -1110,6 +1115,7 @@ namespace CouchGuys.Gameplay.Delivery
 
         public override void OnStopServer()
         {
+            ClearGetawaysServer();
             ClearRecipientsServer();
             base.OnStopServer();
         }
