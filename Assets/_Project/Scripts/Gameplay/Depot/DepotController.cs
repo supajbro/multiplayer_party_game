@@ -173,6 +173,7 @@ namespace CouchGuys.Gameplay.Depot
         [SerializeField, Range(0f, 1f)] private float m_musicMaximumVolume = 0.15f;
         [SerializeField, Min(0f)] private float m_musicFadeInDuration = 2.5f;
         [SerializeField, Min(0f)] private float m_musicFadeOutDuration = 2f;
+        [SerializeField] private NeighbourhoodMusic m_neighbourhoodMusic;
         private NetworkPlayerOwnership m_musicPlayer;
         private float m_nextMusicPlayerSearch;
         private bool m_musicStarted;
@@ -194,7 +195,7 @@ namespace CouchGuys.Gameplay.Depot
 
         private void UpdateLocalMusic()
         {
-            if (m_musicSource == null || m_musicSource.clip == null) return;
+            if (m_musicSource == null && m_neighbourhoodMusic == null) return;
             // Resolve after client ownership/spawning is ready, and reacquire on respawn.
             // Remote characters and server-only players never qualify.
             if (m_musicPlayer == null || !m_musicPlayer.IsOwner ||
@@ -206,7 +207,7 @@ namespace CouchGuys.Gameplay.Depot
                     m_nextMusicPlayerSearch = Time.unscaledTime + 0.5f;
                     foreach (var player in FindObjectsByType<NetworkPlayerOwnership>(FindObjectsSortMode.None))
                     {
-                        if (!player.IsClientInitialized || !player.IsOwner) continue;
+                        if (!player.IsClientInitialized || !player.IsOwner || !player.gameObject.activeInHierarchy) continue;
                         if (player.TryGetComponent<PlayerHealth>(out var health) && health.IsAiTeammate) continue;
                         m_musicPlayer = player;
                         break;
@@ -218,8 +219,16 @@ namespace CouchGuys.Gameplay.Depot
             // initial spawn/teleport inside, without relying on trigger enter events.
             bool inside = m_musicPlayer != null && m_truckInterior.Contains(
                 transform.InverseTransformPoint(m_musicPlayer.transform.position));
-            // Only one depot may play on this client, including overlapping scene loads.
-            if (inside && s_musicOwner == null) s_musicOwner = this;
+            // Hold one owner for both tracks, including outside and during music breaks,
+            // so overlapping scene loads cannot start another neighbourhood source.
+            if (m_musicPlayer != null && s_musicOwner == null) s_musicOwner = this;
+            m_neighbourhoodMusic?.TickLocalMusic(m_musicPlayer != null &&
+                s_musicOwner == this && !inside);
+            if (m_musicSource == null || m_musicSource.clip == null)
+            {
+                if (m_musicPlayer == null && s_musicOwner == this) s_musicOwner = null;
+                return;
+            }
             bool audible = inside && s_musicOwner == this;
             float maximum = Mathf.Clamp01(m_musicMaximumVolume);
             float target = audible ? maximum : 0f;
@@ -241,7 +250,7 @@ namespace CouchGuys.Gameplay.Depot
             if (target == 0f && m_musicSource.volume == 0f)
             {
                 PauseMusic();
-                if (s_musicOwner == this) s_musicOwner = null;
+                if (m_musicPlayer == null && s_musicOwner == this) s_musicOwner = null;
             }
         }
 
@@ -345,6 +354,8 @@ namespace CouchGuys.Gameplay.Depot
         private void OnDisable()
         {
             PauseMusic();
+            m_neighbourhoodMusic?.Suspend();
+            m_musicPlayer = null;
             if (s_musicOwner == this) s_musicOwner = null;
             ReleaseDoorAnimations();
         }
