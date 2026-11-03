@@ -86,6 +86,7 @@ namespace CouchGuys.Tests.Editor
             {
                 Vector3 origin = new Vector3(26000, 0, 26000);
                 ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                ground.name = "Ground truck flat regression";
                 SceneManager.MoveGameObjectToScene(ground, scene);
                 ground.transform.position = origin - Vector3.up * .5f;
                 ground.transform.localScale = new Vector3(200, 1, 200);
@@ -110,6 +111,8 @@ namespace CouchGuys.Tests.Editor
                 foreach (Collider collider in truck.GetComponentsInChildren<Collider>()) collider.sharedMaterial = contact;
                 Type motorType = typeof(GetawayTruckController).Assembly.GetType("CouchGuys.Gameplay.Vehicles.RogueVehicleMotor", true);
                 object motor = Activator.CreateInstance(motorType, Hidden, null, new object[] { body }, null);
+                motorType.GetMethod("ConfigureRoadContact", Hidden).Invoke(motor,
+                    new object[] { configuration.GroundAlignmentStrength, configuration.GroundAlignmentDamping });
                 MethodInfo drive = motorType.GetMethod("Drive", Hidden);
                 MethodInfo stop = motorType.GetMethod("Stop", Hidden);
                 Vector3[] goals = { origin + Vector3.forward * 30, origin + new Vector3(30, 0, 30),

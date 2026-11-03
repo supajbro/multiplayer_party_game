@@ -43,3 +43,10 @@ MonoBehaviour:
   ParkingClearance: {x: 1.8, y: 1.8, z: 4.5}
   DrivingClearance: {x: 1.65, y: 1.6, z: 3.9}
   DrivingClearanceHeight: 1.9
+  GroundAlignmentStrength: 12
+  GroundAlignmentDamping: 6
+  MinimumCarImpactSpeed: 1
+  CarImpactDamage: 1
+  CarRepelSpeed: 16
+  CarLaunchSpeed: 6
+  CarTumbleSpeed: 9

@@ -365,7 +365,7 @@ namespace CouchGuys.Gameplay.Traffic
         {
             if (m_visualInstance != null && m_visualInstance.TryGetComponent(out TrafficWheelAnimator wheels))
                 wheels.SetSteering(IsDestroyed ? 0f : m_wheelSteering.Value);
-            if ((m_serverDriving || m_rogueSettings != null) && m_destroyed.Value && Time.time >= m_despawnAt)
+            if (m_destroyed.Value && Time.time >= m_despawnAt)
                 m_manager?.DespawnVehicle(this);
             if (m_serverDriving && !m_destroyed.Value && !m_warnedStationary &&
                 Time.time >= m_stationaryCheckAt &&
@@ -454,6 +454,24 @@ namespace CouchGuys.Gameplay.Traffic
             ApplyExplosionDamage();
             PlayExplosionObserversRpc();
             m_despawnAt = Time.time + 2.2f;
+        }
+
+        [Server]
+        internal void DestroyAndLaunchServer(Vector3 away, float horizontalSpeed, float upwardSpeed, float tumbleSpeed)
+        {
+            if (m_destroyed.Value) return;
+            m_health.Value = 0f;
+            DestroyVehicleServer();
+            // The existing destroyed state stops both traffic and rogue driving.
+            // Keep replication and timed wreck cleanup while allowing a comic recoil.
+            away = Vector3.ProjectOnPlane(away, Vector3.up).normalized;
+            m_rigidbody.isKinematic = false;
+            m_rigidbody.constraints = RigidbodyConstraints.None;
+            m_rigidbody.useGravity = true;
+            m_rigidbody.linearVelocity = away * Mathf.Max(0f, horizontalSpeed) + Vector3.up * Mathf.Max(0f, upwardSpeed);
+            m_rigidbody.maxAngularVelocity = Mathf.Max(m_rigidbody.maxAngularVelocity, tumbleSpeed);
+            m_rigidbody.angularVelocity = Vector3.Cross(Vector3.up, away) * Mathf.Max(0f, tumbleSpeed);
+            m_rigidbody.WakeUp();
         }
 
         private void ApplyExplosionDamage()

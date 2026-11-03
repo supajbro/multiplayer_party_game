@@ -18,6 +18,68 @@ namespace CouchGuys.Tests.Editor
         private static Type Runtime(string name) => typeof(GetawayTruckController).Assembly.GetType("CouchGuys.Gameplay.Vehicles." + name, true);
 
         [Test]
+        public void ParkedTruckKeepsValidHandoffWithoutANewWalkingPath()
+        {
+            var settings = Resources.Load<GetawayTruckSettings>("Vehicles/GetawayTruckSettings");
+            var instance = Object.Instantiate(settings.TruckPrefab.gameObject);
+            var couchObject = new GameObject("Getaway loading arrival regression");
+            var couch = couchObject.AddComponent<CouchCarryController>();
+            var collider = couchObject.AddComponent<BoxCollider>();
+            var bounds = new Bounds(Vector3.up * .45f, new Vector3(2.1f, .9f, .9f));
+            collider.center = bounds.center; collider.size = bounds.size;
+            typeof(CouchCarryController).GetField("m_cargoBounds", Hidden).SetValue(couch, bounds);
+            var controller = instance.GetComponent<GetawayTruckController>();
+            var truck = instance.GetComponent<TruckController>();
+            Type type = typeof(GetawayTruckController);
+            type.GetMethod("Awake", Hidden).Invoke(controller, null);
+            type.GetField("m_couch", Hidden).SetValue(controller, couch);
+            object state = type.GetField("m_state", Hidden).GetValue(controller);
+            state.GetType().GetProperty("Value").SetValue(state, GetawayTruckState.Parked);
+            var targetMethod = type.GetMethod("RearLoadingTarget", Hidden);
+            var atEntrance = type.GetMethod("CouchAtLoadingEntrance", Hidden);
+            var inRange = typeof(TruckController).GetMethod("IsCouchInLoadingRange", Hidden, null,
+                new[] { typeof(CouchCarryController), typeof(float) }, null);
+            try
+            {
+                instance.transform.position = new Vector3(37000, 0, 37000); // No NavMesh here.
+                foreach (float slope in new[] { -12f, 0f, 12f })
+                    foreach (float yaw in new[] { 0f, 45f, 90f, 135f })
+                        foreach (float carryHeight in new[] { 0f, .4f, .8f })
+                        {
+                            instance.transform.rotation = Quaternion.Euler(slope, 0f, 0f);
+                            couch.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+                            Vector3 target = (Vector3)targetMethod.Invoke(controller, null);
+                            Vector3 normal = instance.transform.up;
+                            float roadY = -Vector3.Dot(normal, Vector3.ProjectOnPlane(target - instance.transform.position, Vector3.up)) / normal.y;
+                            couch.transform.position = new Vector3(target.x, roadY + carryHeight, target.z);
+                            Physics.SyncTransforms();
+                            Assert.That((bool)inRange.Invoke(truck, new object[] { couch, settings.LoadingDistance }), Is.True,
+                                $"Arrival must be inside actual loading range: slope={slope}, yaw={yaw}, height={carryHeight}.");
+                            Assert.That((bool)atEntrance.Invoke(controller, new object[] { couch, couch.transform.position }), Is.True,
+                                $"The destination truck must not block its own handoff: slope={slope}, yaw={yaw}, height={carryHeight}.");
+                            type.GetMethod("RefreshCarryPath", Hidden).Invoke(controller, new object[] { couch, true });
+                            Assert.That((bool)type.GetField("m_reachesRear", Hidden).GetValue(controller), Is.True,
+                                "An arrived couch must not require another NavMesh path to keep its parked truck.");
+                        }
+                var wall = new GameObject("Blocked loading arrival");
+                try
+                {
+                    instance.transform.rotation = Quaternion.identity;
+                    couch.transform.rotation = Quaternion.identity;
+                    Vector3 target = (Vector3)targetMethod.Invoke(controller, null);
+                    couch.transform.position = new Vector3(target.x, 0f, target.z);
+                    wall.transform.position = Vector3.Lerp(couch.transform.position, truck.CargoLoadingPoint.position, .5f) + Vector3.up;
+                    wall.AddComponent<BoxCollider>().size = new Vector3(10f, 4f, .1f);
+                    Physics.SyncTransforms();
+                    Assert.That((bool)atEntrance.Invoke(controller, new object[] { couch, couch.transform.position }), Is.False,
+                        "A genuinely obstructed loading entrance still cannot accept a couch.");
+                }
+                finally { Object.DestroyImmediate(wall); }
+            }
+            finally { Object.DestroyImmediate(instance); Object.DestroyImmediate(couchObject); }
+        }
+
+        [Test]
         public void ManagerConfigurationAndReplicatedMaximumHealthOverridePrefabDefaults()
         {
             var original = Resources.Load<GetawayTruckSettings>("Vehicles/GetawayTruckSettings");

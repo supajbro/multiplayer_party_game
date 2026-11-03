@@ -126,8 +126,11 @@ namespace CouchGuys.Tests.Editor
             Assert.That(obstacle.carving && obstacle.carveOnlyStationary, Is.True,
                 "Carriers must navigate around the parked chassis to reach the rear.");
             var constraints = truck.GetComponent<Rigidbody>().constraints;
-            Assert.That(constraints.HasFlag(RigidbodyConstraints.FreezeRotationX) &&
-                constraints.HasFlag(RigidbodyConstraints.FreezeRotationZ), Is.True);
+            Assert.That(constraints.HasFlag(RigidbodyConstraints.FreezeRotationX) ||
+                constraints.HasFlag(RigidbodyConstraints.FreezeRotationZ), Is.False,
+                "The truck must pitch and roll with the road surface.");
+            Assert.That(truck.GetComponents<SphereCollider>().Length, Is.EqualTo(4),
+                "Rounded wheel contacts carry the truck across road seams.");
             Assert.That(settings.EscapeSpeed, Is.GreaterThan(settings.ApproachSpeed));
             var networkTransform = new SerializedObject(truck.GetComponent<FishNet.Component.Transforming.NetworkTransform>());
             Assert.That(networkTransform.FindProperty("_clientAuthoritative").boolValue, Is.False);
@@ -165,6 +168,7 @@ namespace CouchGuys.Tests.Editor
                 tests.MissedRoadWaypointDoesNotSendTruckBackwards();
                 tests.CarriersFollowActualTruckBeforeItParks();
                 var regressions = new GetawayTruckRegressionTests();
+                regressions.ParkedTruckKeepsValidHandoffWithoutANewWalkingPath();
                 regressions.ManagerConfigurationAndReplicatedMaximumHealthOverridePrefabDefaults();
                 regressions.JockeyingAndReplanningDoNotRenewRouteProgress();
                 regressions.EscapeRouteUsesForwardLoopInsteadOfImmediateReverse();

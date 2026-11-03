@@ -23,6 +23,7 @@ namespace CouchGuys.Gameplay.Vehicles
         private float m_height;
         private GetawayTruckSettings m_settings;
         private Vector3 m_start;
+        internal Transform LoadingTruck { get; set; }
 
         internal bool TryBuild(CouchCarryController couch, Vector3 target, GetawayTruckSettings settings,
             float targetRadius, bool allowPartial, out Vector3[] corners, out bool complete)
@@ -131,7 +132,10 @@ namespace CouchGuys.Gameplay.Vehicles
             foreach (var hit in Physics.BoxCastAll(root + couch.transform.rotation * Vector3.Scale(bounds.center, scale),
                 Vector3.Scale(bounds.extents, scale), offset / length, couch.transform.rotation,
                 length, ~0, QueryTriggerInteraction.Ignore))
-                if (!Ignore(hit.collider)) return false;
+                // Cargo loading already disables couch/truck collisions while lifting
+                // into the bay. The destination chassis is not an external obstacle.
+                if (!Ignore(hit.collider) &&
+                    (LoadingTruck == null || !hit.collider.transform.IsChildOf(LoadingTruck))) return false;
             return true;
         }
 

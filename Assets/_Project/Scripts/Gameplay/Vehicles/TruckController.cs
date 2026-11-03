@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CouchGuys.Player;
 using CouchGuys.Gameplay.Couch;
 using CouchGuys.Gameplay.Enemies;
+using CouchGuys.Gameplay.Traffic;
 using CouchGuys.ProceduralGeneration;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
@@ -91,6 +92,12 @@ namespace CouchGuys.Gameplay.Vehicles
 
         [Server]
         internal void DisableGetawayServer() => ApplyDamageServer(m_health.Value);
+
+        [Server]
+        internal void ApplyGetawayCarImpactDamageServer(float damage)
+        {
+            if (IsGetawayTruck) ApplyDamageServer(damage);
+        }
 
         public TruckSettings Settings => m_settings;
         public float HornCooldown => Mathf.Max(0.1f, m_hornCooldown);
@@ -575,6 +582,15 @@ namespace CouchGuys.Gameplay.Vehicles
             if (!IsServerInitialized || IsDestroyed || m_settings == null ||
                 collision.contactCount == 0)
                 return;
+
+            var car = collision.collider.GetComponentInParent<TrafficVehicleController>();
+            if (m_getaway != null && car != null)
+            {
+                // Consume wreck/multi-collider contacts too: they must not fall
+                // through to normal obstacle damage after the first impact.
+                m_getaway.RepelCarServer(car, collision.relativeVelocity.magnitude);
+                return;
+            }
 
             var pedestrian = collision.collider.GetComponentInParent<CouchGuys.Gameplay.Pedestrians.PedestrianController>();
             if (pedestrian != null)

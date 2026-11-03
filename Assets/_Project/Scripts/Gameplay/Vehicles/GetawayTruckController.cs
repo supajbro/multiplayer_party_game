@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Couch;
 using CouchGuys.Gameplay.Delivery;
+using CouchGuys.Gameplay.Traffic;
 using CouchGuys.Gameplay.Weapons;
 using CouchGuys.ProceduralGeneration;
 using FishNet.Object;
@@ -58,10 +59,11 @@ namespace CouchGuys.Gameplay.Vehicles
 
         private void Awake()
         {
-            m_carryPlanner = new CouchClearancePath();
+            m_carryPlanner = new CouchClearancePath { LoadingTruck = transform };
             m_truck = GetComponent<TruckController>();
             m_body = GetComponent<Rigidbody>();
             m_motor = new RogueVehicleMotor(m_body);
+            ConfigureRoadContact();
             if (m_bodyRenderer == null) return;
             var properties = new MaterialPropertyBlock();
             m_bodyRenderer.GetPropertyBlock(properties);
@@ -70,7 +72,17 @@ namespace CouchGuys.Gameplay.Vehicles
             m_bodyRenderer.SetPropertyBlock(properties);
         }
 
-        internal void ConfigureBeforeSpawn(GetawayTruckSettings settings) => m_settings = settings;
+        internal void ConfigureBeforeSpawn(GetawayTruckSettings settings)
+        {
+            m_settings = settings;
+            ConfigureRoadContact();
+        }
+
+        private void ConfigureRoadContact()
+        {
+            if (m_settings != null && m_motor != null)
+                m_motor.ConfigureRoadContact(m_settings.GroundAlignmentStrength, m_settings.GroundAlignmentDamping);
+        }
 
         public override void OnStartServer()
         {
@@ -86,7 +98,10 @@ namespace CouchGuys.Gameplay.Vehicles
             Vector3 half = Vector3.Scale(bounds.extents, scale);
             float length = Mathf.Abs(Vector3.Dot(rotation * Vector3.right, transform.forward) * half.x) +
                 Mathf.Abs(Vector3.Dot(rotation * Vector3.forward, transform.forward) * half.z);
-            return CarryDestination - transform.forward * (length + m_settings.LoadingDistance * .8f);
+            // Leave room for the grips, but stop comfortably inside the 3D loading
+            // range even when the couch is below the raised truck entrance.
+            float gap = Mathf.Max(m_settings.CarryClearancePadding + .2f, m_settings.LoadingDistance * .5f);
+            return CarryDestination - transform.forward * (length + gap);
         }
 
         internal bool TryGetCarryDestination(out Vector3 destination)
@@ -105,13 +120,20 @@ namespace CouchGuys.Gameplay.Vehicles
             m_carryCorner = 1;
             if (!TryGetCarryDestination(out Vector3 target)) return;
             bool rear = State == GetawayTruckState.Parked || State == GetawayTruckState.Parking;
+            if (rear && CouchAtLoadingEntrance(couch, couch.transform.position))
+            {
+                // A zero-length or temporarily invalid NavMesh path at arrival must
+                // not cancel a valid handoff or make the truck leave.
+                m_reachesRear = true;
+                return;
+            }
             float radius = rear ? m_settings.LoadingDistance : m_settings.CarrierNavigationSearchRadius;
             if (!rear && !NavMesh.SamplePosition(target, out _, radius, NavMesh.AllAreas) && m_roads != null)
             {
                 GeneratedRoad road = NearestInteriorRoad(target);
                 if (road != null) target = road.transform.position;
             }
-            m_carryPlanner ??= new CouchClearancePath();
+            m_carryPlanner ??= new CouchClearancePath { LoadingTruck = transform };
             if (!m_carryPlanner.TryBuild(couch, target, m_settings, radius, !rear, out m_carryCorners, out bool complete)) return;
             m_reachesRear = rear && complete && RearPoseInRange(couch, m_carryCorners);
         }
@@ -120,14 +142,21 @@ namespace CouchGuys.Gameplay.Vehicles
         {
             if (path == null || path.Length == 0) return false;
             Vector3 root = path[path.Length - 1] + Vector3.up * (couch.transform.position.y - path[0].y);
+            return CouchAtLoadingEntrance(couch, root);
+        }
+
+        private bool CouchAtLoadingEntrance(CouchCarryController couch, Vector3 root)
+        {
             Vector3 scale = couch.transform.lossyScale;
             Vector3 local = Quaternion.Inverse(couch.transform.rotation) * (CarryDestination - root);
             local = new Vector3(local.x / scale.x, local.y / scale.y, local.z / scale.z);
             Bounds bounds = couch.CargoBounds;
             if (bounds.size.sqrMagnitude < .01f) bounds = new Bounds(Vector3.up * .45f, new Vector3(2.1f, .9f, .9f));
             Vector3 nearest = root + couch.transform.rotation * Vector3.Scale(bounds.ClosestPoint(local), scale);
+            Vector3 relative = transform.InverseTransformPoint(root);
+            Vector3 entrance = transform.InverseTransformPoint(CarryDestination);
             return Vector3.Distance(nearest, CarryDestination) <= m_settings.LoadingDistance &&
-                transform.InverseTransformPoint(root).z < transform.InverseTransformPoint(CarryDestination).z &&
+                relative.z <= entrance.z + .5f && Mathf.Abs(relative.x - entrance.x) <= m_settings.LoadingDistance &&
                 m_carryPlanner.LoadingEntranceClear(couch, root, CarryDestination);
         }
 
@@ -188,6 +217,17 @@ namespace CouchGuys.Gameplay.Vehicles
         }
 
         internal void NotifyCouchStolenServer() { m_stolen = true; m_nextDecision = 0f; }
+
+        [Server]
+        internal void RepelCarServer(TrafficVehicleController car, float impactSpeed)
+        {
+            if (m_settings == null || m_truck.IsDestroyed || car == null || car.IsDestroyed ||
+                impactSpeed < m_settings.MinimumCarImpactSpeed) return;
+            Vector3 away = Vector3.ProjectOnPlane(car.transform.position - transform.position, Vector3.up);
+            if (away.sqrMagnitude < .01f) away = -car.transform.forward;
+            car.DestroyAndLaunchServer(away, m_settings.CarRepelSpeed, m_settings.CarLaunchSpeed, m_settings.CarTumbleSpeed);
+            m_truck.ApplyGetawayCarImpactDamageServer(m_settings.CarImpactDamage);
+        }
 
         public override void OnStartClient()
         {
@@ -295,17 +335,23 @@ namespace CouchGuys.Gameplay.Vehicles
             }
             if (State == GetawayTruckState.Parked)
             {
-                Vector3 local = transform.InverseTransformPoint(m_couch.transform.position);
-                Vector3 entrance = transform.InverseTransformPoint(CarryDestination);
+                bool atEntrance = CouchAtLoadingEntrance(m_couch, m_couch.transform.position);
                 if (!m_couch.HasHumanCarrierServer() && m_couch.IsPickupAvailable &&
-                    m_truck.IsCouchInLoadingRange(m_couch, m_settings.LoadingDistance) &&
-                    local.z <= entrance.z + .5f && Mathf.Abs(local.x - entrance.x) <= m_settings.LoadingDistance &&
+                    atEntrance &&
                     m_truck.RearDoorOpenProgress >= .95f && m_truck.SpeedKph < 1f &&
-                    m_carryPlanner.LoadingEntranceClear(m_couch, m_couch.transform.position, CarryDestination) &&
                     m_truck.LoadGetawayCouchServer(m_couch, m_settings.LoadingDistance))
                 { m_state.Value = GetawayTruckState.Loading; return; }
+                if (atEntrance)
+                {
+                    m_carryProgress.Reset(Time.time);
+                    return; // Wait for the doors/cargo transition, rather than re-parking.
+                }
                 RefreshCarryPath(m_couch);
-                if (!m_reachesRear) { RejectParking(); return; }
+                if (!m_reachesRear)
+                {
+                    if (m_carryProgress.TimedOut(Time.time, m_settings.ParkedRecoveryTimeout)) RejectParking();
+                    return;
+                }
                 if (thiefCarrying && !m_couch.HasHumanCarrierServer())
                 {
                     m_carryProgress.Observe(RemainingLength(m_couch.transform.position, m_carryCorners, m_carryCorner),

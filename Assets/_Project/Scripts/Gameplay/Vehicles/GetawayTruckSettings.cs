@@ -40,5 +40,16 @@ namespace CouchGuys.Gameplay.Vehicles
         [Tooltip("Half size of the chassis swept along road links to reject barriers and narrow passages.")]
         public Vector3 DrivingClearance = new Vector3(1.65f, 1.6f, 3.9f);
         public float DrivingClearanceHeight = 1.9f;
+        [Header("Road Contact")]
+        [Min(0f)] public float GroundAlignmentStrength = 12f;
+        [Min(0f)] public float GroundAlignmentDamping = 6f;
+        [Header("Car Impacts")]
+        [Min(0f)] public float MinimumCarImpactSpeed = 1f;
+        [Min(0f), Tooltip("Flat damage to this truck per car destroyed on impact.")]
+        public float CarImpactDamage = 1f;
+        [Min(0f)] public float CarRepelSpeed = 16f;
+        [Min(0f)] public float CarLaunchSpeed = 6f;
+        [Min(0f), Tooltip("Wreck tumble speed in radians per second.")]
+        public float CarTumbleSpeed = 9f;
     }
 }

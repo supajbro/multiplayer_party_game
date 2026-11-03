@@ -1,5 +1,6 @@
 using CouchGuys.Gameplay.Enemies;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CouchGuys.Gameplay.Vehicles
 {
@@ -18,6 +19,42 @@ namespace CouchGuys.Gameplay.Vehicles
         private float m_turnSign;
         private float m_turnPhaseTime;
         private float m_turnTime;
+        private bool m_followRoad;
+        private float m_groundAlignment;
+        private float m_groundDamping;
+        private readonly RaycastHit[] m_groundHits = new RaycastHit[16];
+
+        internal void ConfigureRoadContact(float alignment, float damping)
+        {
+            m_followRoad = true;
+            m_groundAlignment = alignment;
+            m_groundDamping = damping;
+        }
+
+        private bool TryRoadNormal(out Vector3 normal)
+        {
+            normal = Vector3.up;
+            if (!m_followRoad) return false;
+            // Use the body's physics scene so isolated physics tests sample the same road.
+            int count = m_body.gameObject.scene.GetPhysicsScene().Raycast(m_body.position + Vector3.up * 2.5f,
+                Vector3.down, m_groundHits, 3.6f, ~0, QueryTriggerInteraction.Ignore);
+            float nearest = float.PositiveInfinity;
+            bool found = false;
+            for (int i = 0; i < count; i++)
+            {
+                var hit = m_groundHits[i];
+                if (hit.collider.attachedRigidbody == m_body || hit.normal.y < .5f ||
+                    !TruckController.IsGroundSurface(hit.collider) || hit.distance >= nearest) continue;
+                nearest = hit.distance;
+                normal = hit.normal;
+                found = true;
+            }
+            return found;
+        }
+
+        private Vector3 GroundAlignment(Vector3 normal) =>
+            Vector3.Cross(m_body.rotation * Vector3.up, normal) * m_groundAlignment -
+            Vector3.ProjectOnPlane(m_body.angularVelocity, normal) * m_groundDamping;
 
         internal RogueVehicleMotor(Rigidbody body)
         {
@@ -30,8 +67,9 @@ namespace CouchGuys.Gameplay.Vehicles
         {
             if (m_body.isKinematic) m_body.isKinematic = false;
             m_reverseRemaining = Mathf.Max(0f, m_reverseRemaining - dt);
-            Vector3 forward = Vector3.ProjectOnPlane(m_body.rotation * Vector3.forward, Vector3.up).normalized;
-            Vector3 toTarget = Vector3.ProjectOnPlane(target - m_body.position, Vector3.up);
+            bool grounded = TryRoadNormal(out Vector3 normal);
+            Vector3 forward = Vector3.ProjectOnPlane(m_body.rotation * Vector3.forward, normal).normalized;
+            Vector3 toTarget = Vector3.ProjectOnPlane(target - m_body.position, normal);
             float speed = Vector3.Dot(m_body.linearVelocity, forward);
             if (toTarget.magnitude <= stoppingDistance)
             {
@@ -53,7 +91,7 @@ namespace CouchGuys.Gameplay.Vehicles
                     m_reverseSteering = -m_reverseSteering;
                 }
             }
-            float angle = Vector3.SignedAngle(forward, toTarget, Vector3.up);
+            float angle = Vector3.SignedAngle(forward, toTarget, normal);
             if (forwardOnly && !m_turnaround && Mathf.Abs(angle) > 110f &&
                 toTarget.magnitude < settings.MinTurningRadius * 3f)
             {
@@ -70,7 +108,7 @@ namespace CouchGuys.Gameplay.Vehicles
             {
                 m_turnPhaseTime += dt;
                 m_turnTime += dt;
-                float remainingAngle = Mathf.Abs(Vector3.SignedAngle(forward, m_turnHeading, Vector3.up));
+                float remainingAngle = Mathf.Abs(Vector3.SignedAngle(forward, m_turnHeading, normal));
                 if (remainingAngle < 35f || m_turnTime >= settings.TurnaroundTimeout || !forwardOnly)
                     m_turnaround = false;
                 else if (m_turnPhaseTime >= (m_turnReverse ? settings.TurnaroundReverseDuration : settings.TurnaroundForwardDuration))
@@ -88,7 +126,7 @@ namespace CouchGuys.Gameplay.Vehicles
             bool stuckReverse = m_reverseRemaining > 0f;
             bool reversing = m_turnaround ? m_turnReverse : stuckReverse || m_targetReverse;
             float steering = m_turnaround ? m_turnSign * Mathf.Sign(speed) : stuckReverse ? m_reverseSteering : m_targetReverse
-                ? Mathf.Clamp(-Vector3.SignedAngle(forward, -toTarget, Vector3.up) / 35f, -1f, 1f)
+                ? Mathf.Clamp(-Vector3.SignedAngle(forward, -toTarget, normal) / 35f, -1f, 1f)
                 : Mathf.Clamp(angle / 35f, -1f, 1f);
             float desiredSpeed = reversing ? -Mathf.Max(.1f, settings.ReverseSpeed) :
                 Mathf.Min(settings.MaxSpeed, maximumSpeed) * Mathf.Lerp(1f, .35f, Mathf.Abs(angle) / 180f);
@@ -99,13 +137,20 @@ namespace CouchGuys.Gameplay.Vehicles
             float acceleration = Mathf.Max(0f, settings.Acceleration);
             m_body.AddForce(forward * Mathf.Clamp((desiredSpeed - speed) / dt,
                 -acceleration, acceleration), ForceMode.Acceleration);
-            Vector3 lateral = Vector3.Cross(Vector3.up, forward);
+            Vector3 lateral = Vector3.Cross(normal, forward);
             m_body.AddForce(-lateral * Vector3.Dot(m_body.linearVelocity, lateral) * 7f, ForceMode.Acceleration);
             float yawLimit = Mathf.Min(Mathf.Max(0f, settings.TurnSpeed),
                 Mathf.Abs(speed) / Mathf.Max(.1f, settings.MinTurningRadius) * Mathf.Rad2Deg);
             float yaw = steering * Mathf.Sign(speed) * yawLimit * Mathf.Deg2Rad;
-            ApplyAngularAcceleration(Vector3.up * Mathf.Clamp((yaw - m_body.angularVelocity.y) / dt,
-                -settings.AngularAcceleration, settings.AngularAcceleration), settings);
+            Vector3 angular = normal * Mathf.Clamp((yaw - Vector3.Dot(m_body.angularVelocity, normal)) / dt,
+                -settings.AngularAcceleration, settings.AngularAcceleration);
+            if (grounded)
+            {
+                angular += GroundAlignment(normal);
+                // Same modest speed-dependent road pressure as traffic cars.
+                m_body.AddForce(-normal * Mathf.Clamp(Mathf.Abs(speed) * .35f, 0f, 5f), ForceMode.Acceleration);
+            }
+            ApplyAngularAcceleration(angular, settings);
             return steering;
         }
 
@@ -130,8 +175,10 @@ namespace CouchGuys.Gameplay.Vehicles
             m_progressPosition = m_body.position;
             if (m_body.isKinematic) return;
             float response = holdPosition ? 1f / Mathf.Max(.001f, Time.fixedDeltaTime) : Mathf.Max(0f, settings.Acceleration);
-            m_body.AddForce(-Vector3.ProjectOnPlane(m_body.linearVelocity, Vector3.up) * response, ForceMode.Acceleration);
-            ApplyAngularAcceleration(-m_body.angularVelocity * response, settings);
+            bool grounded = TryRoadNormal(out Vector3 normal);
+            m_body.AddForce(-Vector3.ProjectOnPlane(m_body.linearVelocity, normal) * response, ForceMode.Acceleration);
+            ApplyAngularAcceleration(grounded ? GroundAlignment(normal) - normal * Vector3.Dot(m_body.angularVelocity, normal) * response
+                : -m_body.angularVelocity * response, settings);
         }
     }
 }

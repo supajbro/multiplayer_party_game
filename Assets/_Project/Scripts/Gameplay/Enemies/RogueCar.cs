@@ -84,6 +84,9 @@ namespace CouchGuys.Gameplay.Enemies
                 Time.time < m_structureDamageAt || collision.collider.isTrigger ||
                 collision.collider.GetComponentInParent<PlayerHealth>() != null ||
                 collision.collider.GetComponentInParent<ThiefHealth>() != null) return;
+            // The truck owns this special collision on the server. Do not let
+            // callback order destroy/freeze the rogue car before it can be launched.
+            if (collision.collider.GetComponentInParent<GetawayTruckController>() != null) return;
             float impactSpeed = 0f;
             for (int i = 0; i < collision.contactCount; i++)
             {
