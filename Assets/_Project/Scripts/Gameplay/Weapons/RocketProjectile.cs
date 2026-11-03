@@ -14,6 +14,7 @@ namespace CouchGuys.Gameplay.Weapons
     {
         [SerializeField] private RocketExplosionVfx m_explosionPrefab;
         private PlayerHealth m_shooter;
+        private Transform m_ignoredShooterRoot;
         private PlayerWeaponController m_weaponOwner;
         private WeaponDefinition m_weapon;
         private LayerMask m_mask;
@@ -29,6 +30,7 @@ namespace CouchGuys.Gameplay.Weapons
         {
             m_weaponOwner = owner;
             m_shooter = shooter;
+            m_ignoredShooterRoot = shooter != null ? shooter.transform : null;
             m_weapon = weapon;
             m_mask = mask;
             m_velocity = transform.forward * weapon.BulletSpeed;
@@ -36,8 +38,16 @@ namespace CouchGuys.Gameplay.Weapons
             m_expiresAt = Time.time + weapon.BulletLifetime;
         }
 
+        public void InitializeEnemyServer(ThiefHealth shooter, WeaponDefinition weapon, LayerMask mask)
+        {
+            InitializeServer(null, null, weapon, mask);
+            m_ignoredShooterRoot = shooter.transform;
+            m_launchOrigin = shooter.transform.position + Vector3.up * .9f;
+        }
+
         private bool IsCollisionTarget(Collider collider) => collider != null &&
             collider.GetComponentInParent<RocketProjectile>() != this &&
+            (m_ignoredShooterRoot == null || !collider.transform.IsChildOf(m_ignoredShooterRoot)) &&
             (m_shooter == null || collider.GetComponentInParent<PlayerHealth>() != m_shooter) &&
             PedestrianController.IsBulletHit(collider);
 

@@ -95,6 +95,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         NetworkObject ICouchCarrierServer.CarrierNetworkObject => NetworkObject;
         bool ICouchCarrierServer.IsCarrierAvailable => m_grappler == null && IsSpawned &&
+            (m_weapon == null || !m_weapon.IsRocketLauncher) &&
             (m_health == null || m_health.IsAlive);
 
         private void Awake()
@@ -227,6 +228,13 @@ namespace CouchGuys.Gameplay.Enemies
             if (m_grappler != null)
             {
                 UpdateGrapplerObjective();
+                return;
+            }
+
+            if (m_weapon != null && m_weapon.IsRocketLauncher)
+            {
+                if (m_weapon.Target != null) UpdateFightObjective(m_weapon.Target);
+                else if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh) m_agent.isStopped = true;
                 return;
             }
 

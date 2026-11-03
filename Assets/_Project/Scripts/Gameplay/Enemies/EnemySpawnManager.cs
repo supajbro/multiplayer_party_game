@@ -500,6 +500,8 @@ namespace CouchGuys.Gameplay.Enemies
         {
             DeliveryTierConfig tier = m_deliveryManager != null
                 ? m_deliveryManager.GetTierConfig(m_deliveryManager.ActiveTierIndex) : null;
+            if (tier != null && tier.ShouldReplaceWithRocketThief(CountActiveRocketThieves(), Random.value))
+                return tier.RocketThiefPrefab;
             if (tier != null && tier.ShouldReplaceWithGrappler(CountActiveGrapplers(), Random.value))
                 return tier.GrapplerThiefPrefab;
 
@@ -512,13 +514,23 @@ namespace CouchGuys.Gameplay.Enemies
             for (int offset = 0; offset < m_enemyPrefabs.Length; offset++)
             {
                 NetworkObject candidate = m_enemyPrefabs[(startIndex + offset) % m_enemyPrefabs.Length];
-                if (candidate != null && candidate.GetComponent<GrapplerThief>() == null)
+                if (candidate != null && candidate.GetComponent<GrapplerThief>() == null &&
+                    !(candidate.TryGetComponent(out EnemyWeapon weapon) && weapon.IsRocketLauncher))
                 {
                     return candidate;
                 }
             }
 
             return null;
+        }
+
+        private int CountActiveRocketThieves()
+        {
+            int count = 0;
+            foreach (NetworkObject thief in m_activeThieves)
+                if (thief != null && thief.IsSpawned && thief.TryGetComponent(out EnemyWeapon weapon) &&
+                    weapon.IsRocketLauncher && thief.TryGetComponent(out ThiefHealth health) && health.IsAlive) count++;
+            return count;
         }
 
         private int CountActiveGrapplers()

@@ -31,6 +31,9 @@ MonoBehaviour:
   m_grapplerThiefPrefab: {fileID: 3333041713970159889, guid: 4fb9ce0bcb16c2c48825f5fe3a94da76, type: 3}
   m_grapplerThiefChance: 0.25
   m_maxActiveGrapplerThieves: 2
+  m_rocketThiefPrefab: {fileID: 681364413288839071, guid: c58fac7e99885784a9cd9935cdd00f8f, type: 3}
+  m_rocketThiefChance: 0.2
+  m_maxActiveRocketThieves: 2
   m_rogueCarSettings: {fileID: 11400000, guid: fdfa3cf4eb7a4772815f6c8c0625fc9a, type: 2}
   m_rogueCarPrefab: {fileID: 4087385694241014534, guid: e8f0471caf8f46e6a9947cb30711b277, type: 3}
   m_minimumRouteDistance: 160

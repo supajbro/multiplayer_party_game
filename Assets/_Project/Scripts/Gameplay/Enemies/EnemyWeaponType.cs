@@ -4,6 +4,7 @@ namespace CouchGuys.Gameplay.Enemies
     {
         Pistol,
         AssaultRifle,
-        Shotgun
+        Shotgun,
+        RocketLauncher = 4 // Matches PlayerWeaponType for audio and weapon drops.
     }
 }

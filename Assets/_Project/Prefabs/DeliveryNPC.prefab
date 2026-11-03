@@ -113,7 +113,7 @@ MonoBehaviour:
   m_npc: {fileID: 100003}
   m_screen: {fileID: 100004}
   m_anchorOffset: {x: 0, y: 2.24, z: 0}
-  m_intervalSeconds: {x: 5, y: 25}
+  m_intervalSeconds: {x: 5, y: 15}
   m_displaySeconds: 5
   m_fadeSeconds: 0.2
   m_maximumDistance: 50

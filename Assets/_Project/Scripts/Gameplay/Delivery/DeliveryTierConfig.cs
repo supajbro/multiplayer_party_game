@@ -64,6 +64,16 @@ namespace CouchGuys.Gameplay.Delivery
         public bool ShouldReplaceWithGrappler(int activeCount, float roll) =>
             m_grapplerThiefPrefab != null && activeCount < MaxActiveGrapplerThieves && roll < GrapplerThiefChance;
 
+        [Header("Rocket Thief replacements (Hard deliveries only)")]
+        [SerializeField] private NetworkObject m_rocketThiefPrefab;
+        [SerializeField, Range(0f, 1f)] private float m_rocketThiefChance = .2f;
+        [SerializeField, Min(0)] private int m_maxActiveRocketThieves = 2;
+        public NetworkObject RocketThiefPrefab => m_tier == DeliveryTier.Hard ? m_rocketThiefPrefab : null;
+        public float RocketThiefChance => m_tier == DeliveryTier.Hard ? Mathf.Clamp01(m_rocketThiefChance) : 0f;
+        public int MaxActiveRocketThieves => m_tier == DeliveryTier.Hard ? Mathf.Max(0, m_maxActiveRocketThieves) : 0;
+        public bool ShouldReplaceWithRocketThief(int activeCount, float roll) =>
+            RocketThiefPrefab != null && activeCount < MaxActiveRocketThieves && roll < RocketThiefChance;
+
         [Header("Rogue Cars (Hard deliveries only)")]
         [SerializeField] private RogueCarSettings m_rogueCarSettings;
         [SerializeField, Tooltip("Dedicated network prefab used only by Rogue Car spawns.")]

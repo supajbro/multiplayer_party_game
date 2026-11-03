@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Weapons;
+using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Player;
 using CouchGuys.Gameplay.Vehicles;
 using FishNet.Object;
@@ -13,6 +14,11 @@ namespace CouchGuys.Gameplay.Enemies
     {
         [SerializeField] private ThiefSettings m_settings;
         [SerializeField] private Transform m_muzzle;
+        [Header("Rocket Launcher")]
+        [SerializeField] private WeaponDefinition m_rocketWeapon;
+        [SerializeField, Min(.1f)] private float m_rocketTargetInterval = .25f;
+        private DeliveryManager m_delivery;
+        private float m_nextRocketTargetTime;
         private EnemyWeaponType m_weaponType => m_settings != null
             ? m_settings.Combat.WeaponType : EnemyWeaponType.Pistol;
         private float m_fireInterval => m_settings != null
@@ -81,6 +87,8 @@ namespace CouchGuys.Gameplay.Enemies
 
         public EnemyWeaponType WeaponType => m_weaponType;
         public float PreferredRange => m_preferredRange;
+        public bool IsRocketLauncher => m_weaponType == EnemyWeaponType.RocketLauncher;
+        public PlayerHealth Target => m_target;
 
         private void Awake()
         {
@@ -101,6 +109,12 @@ namespace CouchGuys.Gameplay.Enemies
         public void SetTargetServer(PlayerHealth target)
         {
             if (!IsServerInitialized && NetworkObject != null && NetworkObject.IsSpawned) return;
+            if (IsRocketLauncher && target != null) return; // Couch priority overrides retaliation/nearest-to-self policies.
+            SetCombatTarget(target);
+        }
+
+        private void SetCombatTarget(PlayerHealth target)
+        {
             if (m_target != target || m_targetTruck != null)
             {
                 EndRifleBurstServer();
@@ -113,7 +127,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         public void SetTruckTargetServer(TruckController truck)
         {
-            if (!IsServerInitialized) return;
+            if (!IsServerInitialized || IsRocketLauncher) return;
             if (m_targetTruck != truck)
             {
                 SetTargetServer(null);
@@ -126,6 +140,23 @@ namespace CouchGuys.Gameplay.Enemies
         private void Update()
         {
             if (!IsServerInitialized) return;
+            if (IsRocketLauncher)
+            {
+                var health = GetComponent<ThiefHealth>();
+                if (health == null || !health.IsAlive || health.IsBeingKnockedBack)
+                {
+                    SetCombatTarget(null);
+                    return;
+                }
+                m_delivery ??= FindFirstObjectByType<DeliveryManager>();
+                NetworkObject couch = m_delivery != null && m_delivery.HasActiveDelivery ? m_delivery.ActiveCouch : null;
+                if (couch == null) { SetCombatTarget(null); return; }
+                if (Time.time >= m_nextRocketTargetTime)
+                {
+                    m_nextRocketTargetTime = Time.time + m_rocketTargetInterval;
+                    SetCombatTarget(FindClosestCouchEnemy(couch.transform.position));
+                }
+            }
             if (m_targetTruck != null ? m_targetTruck.IsDestroyed : m_target == null || !m_target.IsAlive)
             {
                 EndRifleBurstServer();
@@ -134,6 +165,12 @@ namespace CouchGuys.Gameplay.Enemies
             Vector3 desired = (TargetAimPoint - GetMuzzlePosition()).normalized;
             m_aimDirection = Vector3.RotateTowards(m_aimDirection, desired,
                 m_aimRotationSpeed * Mathf.Deg2Rad * Time.deltaTime, 0f).normalized;
+            if (IsRocketLauncher)
+            {
+                if (Time.time >= m_reactionEndsAt && Time.time >= m_nextFireTime && CanShootTarget(desired))
+                    FireRocketServer();
+                return;
+            }
             if (Time.time < m_reactionEndsAt || Time.time < m_nextFireTime || !CanShootTarget(desired)) return;
 
             FireServer();
@@ -145,6 +182,34 @@ namespace CouchGuys.Gameplay.Enemies
                 m_nextFireTime = Time.time + m_burstCooldown;
             }
             else m_nextFireTime = Time.time + m_fireInterval;
+        }
+
+        public static PlayerHealth FindClosestCouchEnemy(Vector3 couchPosition)
+        {
+            PlayerHealth closest = null;
+            float distance = float.PositiveInfinity;
+            foreach (PlayerHealth player in PlayerHealth.Instances)
+            {
+                if (player == null || !player.isActiveAndEnabled || !player.IsAlive ||
+                    player.NetworkObject == null || !player.NetworkObject.IsSpawned) continue;
+                float squared = (player.transform.position - couchPosition).sqrMagnitude;
+                if (squared < distance) { distance = squared; closest = player; }
+            }
+            return closest;
+        }
+
+        [Server]
+        private void FireRocketServer()
+        {
+            if (m_rocketWeapon?.BulletPrefab == null || m_rocketWeapon.BulletPrefab.GetComponent<RocketProjectile>() == null) return;
+            Vector3 origin = GetMuzzlePosition();
+            RocketProjectile rocket = Instantiate(m_rocketWeapon.BulletPrefab, origin,
+                Quaternion.LookRotation(m_aimDirection)).GetComponent<RocketProjectile>();
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(rocket.gameObject, gameObject.scene);
+            rocket.InitializeEnemyServer(GetComponent<ThiefHealth>(), m_rocketWeapon, m_hitMask);
+            ServerManager.Spawn(rocket.NetworkObject);
+            m_nextFireTime = Time.time + Mathf.Max(m_fireInterval, m_burstCooldown);
+            ShowShotObserversRpc(origin, System.Array.Empty<Vector3>());
         }
 
         private bool CanShootTarget(Vector3 desired)
@@ -160,6 +225,9 @@ namespace CouchGuys.Gameplay.Enemies
                 if (m_hits[i].collider.transform.root == transform.root) continue;
                 PlayerHealth hitPlayer = m_hits[i].collider.GetComponentInParent<PlayerHealth>();
                 if (m_target != null && hitPlayer == m_target) return true;
+                // Rocket thieves accept collateral risk; the projectile still
+                // collides with this thief and its blast damages all nearby thieves.
+                if (IsRocketLauncher && m_hits[i].collider.GetComponentInParent<ThiefHealth>() != null) return true;
                 TruckController hitTruck = m_hits[i].collider.GetComponentInParent<TruckController>();
                 return hitTruck != null && (m_targetTruck != null
                     ? hitTruck == m_targetTruck : m_target != null && hitTruck.Driver == m_target.NetworkObject);
