@@ -62,6 +62,62 @@ namespace CouchGuys.Tests.Editor
         }
 
         [Test]
+        public void RoadBarrierBlocksDirectLinkAndRoutingUsesClearDetour()
+        {
+            Type type = Runtime("GetawayRoadRouter");
+            object router = Activator.CreateInstance(type, true);
+            var objects = new List<GameObject>();
+            Vector3 origin = new Vector3(35000, 0, 35000);
+            void Road(int x, int z)
+            {
+                var item = new GameObject("Barrier route test"); objects.Add(item);
+                item.transform.position = origin + new Vector3(x * 20, 0, z * 20);
+                var road = item.AddComponent<GeneratedRoad>();
+                road.Initialise(new GridCoordinate(x, z), RoadConnections.North | RoadConnections.East | RoadConnections.South | RoadConnections.West);
+                ((IDictionary)type.GetField("m_roads", Hidden).GetValue(router)).Add(road.Coordinate, road);
+            }
+            try
+            {
+                Road(0, 0); Road(1, 0); Road(0, 1); Road(1, 1);
+                var vehicle = new GameObject("Clearance vehicle"); objects.Add(vehicle);
+                vehicle.transform.position = origin;
+                object template = router;
+                router = type.GetMethod("ForVehicle", Hidden).Invoke(template,
+                    new object[] { vehicle.transform, new Vector3(1.65f, 1.6f, 3.9f), 1.9f });
+                var barrier = new GameObject("RoadClosed_test"); objects.Add(barrier);
+                barrier.transform.position = origin + new Vector3(10, 1, 0);
+                barrier.AddComponent<BoxCollider>().size = new Vector3(.8f, 2.2f, 12);
+                Physics.SyncTransforms();
+                object[] topologyOnly = { origin, new GridCoordinate(1, 0), null };
+                type.GetMethod("TryRoute", Hidden).Invoke(template, topologyOnly);
+                Assert.That(((List<Vector3>)topologyOnly[2]).Count, Is.EqualTo(2), "Vehicle filters must not mutate the shared road topology.");
+                foreach (string method in new[] { "TryRoute", "TryForwardRoute" })
+                {
+                    object[] args = method == "TryRoute"
+                        ? new object[] { origin, new GridCoordinate(1, 0), null }
+                        : new object[] { origin, Vector3.forward, new GridCoordinate(1, 0), null };
+                    Assert.That((bool)type.GetMethod(method, Hidden).Invoke(router, args), Is.True);
+                    var path = (List<Vector3>)args[args.Length - 1];
+                    Assert.That(path.Count, Is.EqualTo(4), "The barrier must remove the direct road link.");
+                    Assert.That(path[1], Is.EqualTo(origin + Vector3.forward * 20));
+                }
+                barrier.transform.position = origin + new Vector3(0, 1, 10);
+                Physics.SyncTransforms();
+                type.GetMethod("RefreshClearance", Hidden).Invoke(router, null);
+                object[] direct = { origin, new GridCoordinate(1, 0), null };
+                Assert.That((bool)type.GetMethod("TryRoute", Hidden).Invoke(router, direct), Is.True);
+                Assert.That(((List<Vector3>)direct[2]).Count, Is.EqualTo(2), "Replanning must refresh moved barriers.");
+                // A narrow opening clear to a centre ray must still reject a truck-width sweep.
+                barrier.transform.position = origin + new Vector3(10, 1, 2);
+                barrier.GetComponent<BoxCollider>().size = new Vector3(.8f, 2.2f, 1);
+                Physics.SyncTransforms();
+                Assert.That((bool)type.GetMethod("SegmentClear", Hidden).Invoke(router,
+                    new object[] { origin, origin + Vector3.right * 20 }), Is.False);
+            }
+            finally { foreach (var item in objects) Object.DestroyImmediate(item); }
+        }
+
+        [Test]
         public void EscapeRouteUsesForwardLoopInsteadOfImmediateReverse()
         {
             Type type = Runtime("GetawayRoadRouter");

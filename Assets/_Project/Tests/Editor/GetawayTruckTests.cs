@@ -168,6 +168,7 @@ namespace CouchGuys.Tests.Editor
                 regressions.ManagerConfigurationAndReplicatedMaximumHealthOverridePrefabDefaults();
                 regressions.JockeyingAndReplanningDoNotRenewRouteProgress();
                 regressions.EscapeRouteUsesForwardLoopInsteadOfImmediateReverse();
+                regressions.RoadBarrierBlocksDirectLinkAndRoutingUsesClearDetour();
                 regressions.WideCouchDetoursAroundPedestrianGapAndRejectsDisconnectedRear();
                 new GetawayTruckMovementTests().SharedCarryPathApproachesTruckAroundAnObstacle();
                 cargo.SetUp();

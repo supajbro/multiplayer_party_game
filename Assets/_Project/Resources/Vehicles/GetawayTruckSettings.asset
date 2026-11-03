@@ -41,3 +41,5 @@ MonoBehaviour:
   WreckLifetime: 3
   GroundOffset: 0.12
   ParkingClearance: {x: 1.8, y: 1.8, z: 4.5}
+  DrivingClearance: {x: 1.65, y: 1.6, z: 3.9}
+  DrivingClearanceHeight: 1.9

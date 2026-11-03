@@ -37,5 +37,8 @@ namespace CouchGuys.Gameplay.Vehicles
         [Min(.1f)] public float WreckLifetime = 3f;
         [Min(.1f)] public float GroundOffset = .12f;
         public Vector3 ParkingClearance = new Vector3(1.8f, 1.8f, 4.5f);
+        [Tooltip("Half size of the chassis swept along road links to reject barriers and narrow passages.")]
+        public Vector3 DrivingClearance = new Vector3(1.65f, 1.6f, 3.9f);
+        public float DrivingClearanceHeight = 1.9f;
     }
 }

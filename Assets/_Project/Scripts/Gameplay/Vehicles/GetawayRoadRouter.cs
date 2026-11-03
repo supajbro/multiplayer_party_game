@@ -41,6 +41,64 @@ namespace CouchGuys.Gameplay.Vehicles
     {
         private readonly Dictionary<GridCoordinate, GeneratedRoad> m_roads = new();
         private readonly List<TrafficRoadPortal> m_portals = new();
+        private readonly Dictionary<(GridCoordinate, GridCoordinate), bool> m_clearance = new();
+        private Transform m_vehicle;
+        private Vector3 m_clearanceHalfExtents;
+        private float m_clearanceHeight;
+
+        internal void ConfigureVehicleClearance(Transform vehicle, Vector3 halfExtents, float height)
+        {
+            m_vehicle = vehicle;
+            m_clearanceHalfExtents = halfExtents;
+            m_clearanceHeight = height;
+            RefreshClearance();
+        }
+
+        internal GetawayRoadRouter ForVehicle(Transform vehicle, Vector3 halfExtents, float height)
+        {
+            // Departing trucks can overlap the next theft attempt. Their collision filters
+            // and query caches must not replace the active truck's configuration.
+            var router = new GetawayRoadRouter();
+            foreach (var road in m_roads) router.m_roads.Add(road.Key, road.Value);
+            router.m_portals.AddRange(m_portals);
+            router.ConfigureVehicleClearance(vehicle, halfExtents, height);
+            return router;
+        }
+
+        internal void RefreshClearance() => m_clearance.Clear();
+
+        internal bool SegmentClear(Vector3 start, Vector3 end)
+        {
+            if (m_vehicle == null) return true;
+            Vector3 direction = end - start;
+            Vector3 horizontal = Vector3.ProjectOnPlane(direction, Vector3.up);
+            Quaternion rotation = horizontal.sqrMagnitude > .001f ? Quaternion.LookRotation(horizontal) : m_vehicle.rotation;
+            Vector3 centre = start + Vector3.up * m_clearanceHeight;
+            bool Obstruction(Collider hit) => !hit.transform.IsChildOf(m_vehicle) &&
+                !TruckController.IsGroundSurface(hit) &&
+                hit.GetComponentInParent<CouchGuys.Player.PlayerHealth>() == null &&
+                hit.GetComponentInParent<CouchGuys.Gameplay.Enemies.ThiefHealth>() == null &&
+                hit.GetComponentInParent<CouchGuys.Gameplay.Couch.CouchCarryController>() == null &&
+                (hit.attachedRigidbody == null || hit.attachedRigidbody.isKinematic);
+            foreach (Collider hit in Physics.OverlapBox(centre, m_clearanceHalfExtents, rotation, ~0, QueryTriggerInteraction.Ignore))
+                if (Obstruction(hit)) return false;
+            foreach (RaycastHit hit in Physics.BoxCastAll(centre, m_clearanceHalfExtents, direction.normalized,
+                rotation, direction.magnitude, ~0, QueryTriggerInteraction.Ignore))
+                if (Obstruction(hit.collider)) return false;
+            return true;
+        }
+
+        private bool EdgeClear(GridCoordinate start, GridCoordinate end)
+        {
+            var key = (start, end);
+            if (!m_clearance.TryGetValue(key, out bool clear))
+            {
+                clear = SegmentClear(m_roads[start].transform.position, m_roads[end].transform.position);
+                m_clearance[key] = clear;
+                m_clearance[(end, start)] = clear;
+            }
+            return clear;
+        }
         private static readonly GridCoordinate[] Offsets =
         {
             new GridCoordinate(0, 1), new GridCoordinate(1, 0),
@@ -100,7 +158,7 @@ namespace CouchGuys.Gameplay.Vehicles
                     if ((m_roads[current].Connections & (RoadConnections)(1 << i)) == 0 ||
                         !m_roads.TryGetValue(neighbour, out GeneratedRoad next) ||
                         (next.Connections & (RoadConnections)(1 << ((i + 2) % 4))) == 0 ||
-                        !visited.Add(neighbour)) continue;
+                        !EdgeClear(current, neighbour) || !visited.Add(neighbour)) continue;
                     previous[neighbour] = current;
                     queue.Enqueue(neighbour);
                 }
@@ -155,7 +213,8 @@ namespace CouchGuys.Gameplay.Vehicles
                     GridCoordinate coordinate = current.Coordinate + Offsets[i];
                     if ((m_roads[current.Coordinate].Connections & (RoadConnections)(1 << i)) == 0 ||
                         !m_roads.TryGetValue(coordinate, out var road) ||
-                        (road.Connections & (RoadConnections)(1 << ((i + 2) % 4))) == 0) continue;
+                        (road.Connections & (RoadConnections)(1 << ((i + 2) % 4))) == 0 ||
+                        !EdgeClear(current.Coordinate, coordinate)) continue;
                     var next = (Coordinate: coordinate, Heading: i);
                     if (!visited.Add(next)) continue;
                     previous[next] = current;

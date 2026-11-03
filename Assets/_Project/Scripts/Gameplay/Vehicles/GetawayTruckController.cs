@@ -42,6 +42,7 @@ namespace CouchGuys.Gameplay.Vehicles
         private int m_waypoint;
         private GridCoordinate? m_approachRoad;
         private float m_nextDecision;
+        private float m_nextRoadCheck;
         private float m_escapeStarted;
         private float m_departureStarted;
         private float m_destroyedAt;
@@ -147,13 +148,13 @@ namespace CouchGuys.Gameplay.Vehicles
         {
             m_delivery = delivery;
             m_couch = couch;
-            m_roads = roads;
+            m_roads = roads.ForVehicle(transform, m_settings.DrivingClearance, m_settings.DrivingClearanceHeight);
             m_truck.SetGetawayHealthServer(m_settings.Health);
             m_routeProgress.Reset(Time.time);
             m_carryProgress.Reset(Time.time);
             if (!replacement) return;
             GeneratedRoad entry = NearestInteriorRoad(transform.position);
-            if (entry != null && roads.TryRoute(transform.position, entry.Coordinate, out var route))
+            if (entry != null && m_roads.TryRoute(transform.position, entry.Coordinate, out var route))
             { SetRoute(route); m_state.Value = GetawayTruckState.Arriving; }
         }
 
@@ -323,6 +324,7 @@ namespace CouchGuys.Gameplay.Vehicles
             GeneratedRoad road = NearestInteriorRoad(m_couch.transform.position, true);
             if (road == null) return;
             if (State == GetawayTruckState.Approaching && m_approachRoad == road.Coordinate && m_route != null) return;
+            m_roads.RefreshClearance();
             if (!m_roads.TryRoute(transform.position, road.Coordinate, out var route)) return;
             m_approachRoad = road.Coordinate;
             if (State == GetawayTruckState.Waiting) m_routeProgress.Reset(Time.time);
@@ -368,6 +370,7 @@ namespace CouchGuys.Gameplay.Vehicles
 
         private void ChooseExit(bool escaping)
         {
+            m_roads.RefreshClearance();
             List<Vector3> best = null;
             float bestLength = float.PositiveInfinity;
             List<Vector3> longest = null;
@@ -465,6 +468,30 @@ namespace CouchGuys.Gameplay.Vehicles
             }
             float speed = State == GetawayTruckState.Escaping || State == GetawayTruckState.Departing
                 ? m_settings.EscapeSpeed : m_settings.ApproachSpeed;
+            if (Time.time >= m_nextRoadCheck)
+            {
+                m_nextRoadCheck = Time.time + m_settings.DecisionInterval;
+                // Check from the next road centre as well as the actual chassis position:
+                // a closure can be farther along this link than the steering look-ahead.
+                bool clear = m_roads.SegmentClear(m_body.position, m_route[m_waypoint]);
+                if (clear && m_waypoint + 1 < m_route.Count)
+                    clear = m_roads.SegmentClear(m_route[m_waypoint], m_route[m_waypoint + 1]);
+                if (!clear)
+                {
+                    m_motor.Stop(m_settings.DrivingSettings, true);
+                    GeneratedRoad arrival = State == GetawayTruckState.Arriving ? m_roads.Nearest(m_route[m_route.Count - 1]) : null;
+                    m_route = null;
+                    if (State == GetawayTruckState.Escaping || State == GetawayTruckState.Departing)
+                        ChooseExit(State == GetawayTruckState.Escaping);
+                    else if (State == GetawayTruckState.Approaching) RefreshApproach();
+                    else if (arrival != null)
+                    {
+                        m_roads.RefreshClearance();
+                        if (m_roads.TryRoute(m_body.position, arrival.Coordinate, out var arrivalRoute)) SetRoute(arrivalRoute);
+                    }
+                    return;
+                }
+            }
             Vector3 target = GetawayRouteFollower.SteeringTarget(m_route, m_waypoint, m_body.position, m_settings.LookAheadDistance);
             float remaining = Vector3.ProjectOnPlane(m_route[m_waypoint] - m_body.position, Vector3.up).magnitude;
             if (m_waypoint + 1 < m_route.Count)
