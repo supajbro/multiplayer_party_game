@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 5664892093772128710}
   - component: {fileID: 2253896816701610739}
   - component: {fileID: 3185735070200098747}
-  - component: {fileID: 1199536536049832417}
+  - component: {fileID: 6357365710602197945}
   m_Layer: 0
   m_Name: SteamMultiplayerBootstrap
   m_TagString: Untagged
@@ -110,7 +110,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Networking.NeighbourhoodPlayerSpawner
   m_playerPrefab: {fileID: 4753475039817145927, guid: f6f46f4c366e46d4969817a026491b76, type: 3}
   m_addToDefaultScene: 1
-  m_aiTeammateCount: 0
+  m_aiTeammateCount: 3
   m_aiSpawnRadius: 3
   m_aiNavMeshSampleRadius: 4
 --- !u!114 &5664892093772128710
@@ -153,7 +153,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Networking.SteamLobbyDebugInterface
   m_lobbyController: {fileID: 2253896816701610739}
---- !u!114 &1199536536049832417
+--- !u!114 &6357365710602197945
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -163,7 +163,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8e24c39e5cb227c46b1d02fa7766ba8a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Networking.GameplaySessionController
   m_pauseMenuPrefab: {fileID: 136, guid: 48d111ada58dc004293ba6869e5ae0f6, type: 3}
   m_gameOverMenuPrefab: {fileID: 144, guid: 4b0d19fc17e681448a6e90db7f925193, type: 3}

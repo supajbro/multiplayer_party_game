@@ -246,6 +246,8 @@ namespace CouchGuys.Gameplay.Vehicles
                 { m_state.Value = GetawayTruckState.Waiting; return; }
                 if (!m_couch.IsCargoTransitioning)
                 {
+                    m_truck.SetGetawayDoorsServer(false);
+                    if (m_truck.RearDoorOpenProgress > .05f) return;
                     m_escapeStarted = Time.time;
                     m_state.Value = GetawayTruckState.Escaping;
                     m_routeProgress.Reset(Time.time);

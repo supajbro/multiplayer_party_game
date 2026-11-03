@@ -34,6 +34,7 @@ namespace CouchGuys.Gameplay.Vehicles
         [SerializeField] private Renderer m_destroyedRenderer;
         [SerializeField] private Transform m_leftDoorPivot;
         [SerializeField] private Transform m_rightDoorPivot;
+        [SerializeField] private Vector3 m_rearDoorRotationAxis = Vector3.forward;
         [SerializeField] private Transform m_rearDoorInteractionPoint;
         [SerializeField] private Transform m_cargoLoadingPoint;
         [SerializeField] private Transform[] m_cargoPoints;
@@ -828,9 +829,9 @@ namespace CouchGuys.Gameplay.Vehicles
             float easedDoor = Mathf.SmoothStep(0f, 1f, m_doorOpenProgress);
             UpdateShutter(easedDoor);
             if (m_leftDoorPivot != null)
-                m_leftDoorPivot.localRotation = m_leftDoorClosedRotation * Quaternion.Euler(0f, 0f, m_settings.DoorOpenAngle * easedDoor);
+                m_leftDoorPivot.localRotation = m_leftDoorClosedRotation * Quaternion.AngleAxis(m_settings.DoorOpenAngle * easedDoor, m_rearDoorRotationAxis);
             if (m_rightDoorPivot != null)
-                m_rightDoorPivot.localRotation = m_rightDoorClosedRotation * Quaternion.Euler(0f, 0f, -m_settings.DoorOpenAngle * easedDoor);
+                m_rightDoorPivot.localRotation = m_rightDoorClosedRotation * Quaternion.AngleAxis(-m_settings.DoorOpenAngle * easedDoor, m_rearDoorRotationAxis);
             if (m_visualModel != null)
             {
                 float pitch = -m_driveInput.y * m_settings.BodyPitchAmount;

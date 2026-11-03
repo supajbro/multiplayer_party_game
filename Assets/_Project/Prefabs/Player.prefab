@@ -379,7 +379,7 @@ MonoBehaviour:
   m_cameraController: {fileID: 400002}
   m_playerCamera: {fileID: 410002}
   m_audioListener: {fileID: 410003}
-  m_playerRenderer: {fileID: 7778593179758194816}
+  m_playerRenderer: {fileID: 210003}
   m_colourPalette:
     m_colours:
     - {r: 0.13, g: 0.55, b: 1, a: 1}
@@ -529,6 +529,7 @@ MonoBehaviour:
     m_explosionDamage: 80
     m_explosionRadius: 5
     m_projectileCollisionRadius: 0.09
+    m_explosionUpwardForce: 10
     m_bulletPrefab: {fileID: 7053223019108582829, guid: 7d6ed1a4199de8e48803919040627113, type: 3}
     m_bulletSpeed: 75
     m_bulletLifetime: 0.75
@@ -562,6 +563,7 @@ MonoBehaviour:
     m_explosionDamage: 80
     m_explosionRadius: 5
     m_projectileCollisionRadius: 0.09
+    m_explosionUpwardForce: 10
     m_bulletPrefab: {fileID: 4510290296513175856, guid: d266e9f1b53a51a42ba14c066c659f28, type: 3}
     m_bulletSpeed: 105
     m_bulletLifetime: 0.65
@@ -595,6 +597,7 @@ MonoBehaviour:
     m_explosionDamage: 80
     m_explosionRadius: 5
     m_projectileCollisionRadius: 0.09
+    m_explosionUpwardForce: 10
     m_bulletPrefab: {fileID: 3735381363240024366, guid: f59bac2ce39e9c34d8047a11bc3a447b, type: 3}
     m_bulletSpeed: 62
     m_bulletLifetime: 0.55
@@ -628,6 +631,7 @@ MonoBehaviour:
     m_explosionDamage: 80
     m_explosionRadius: 5
     m_projectileCollisionRadius: 0.09
+    m_explosionUpwardForce: 10
     m_bulletPrefab: {fileID: 0}
     m_bulletSpeed: 70
     m_bulletLifetime: 1
@@ -660,8 +664,8 @@ MonoBehaviour:
     m_pullSpeed: 12
     m_explosionDamage: 80
     m_explosionRadius: 5
-    m_explosionUpwardForce: 10
     m_projectileCollisionRadius: 0.09
+    m_explosionUpwardForce: 10
     m_bulletPrefab: {fileID: 20715316290972814, guid: 91d590b007a24e744a98a20a0a9525fc, type: 3}
     m_bulletSpeed: 25
     m_bulletLifetime: 6
@@ -11690,11 +11694,6 @@ Transform:
 --- !u!4 &6891257441039681528 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5010838124428654208, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-  m_PrefabInstance: {fileID: 1884959408463409528}
-  m_PrefabAsset: {fileID: 0}
---- !u!137 &7778593179758194816 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: -1019038575368437256, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
   m_PrefabInstance: {fileID: 1884959408463409528}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &7838298426495760366 stripped
