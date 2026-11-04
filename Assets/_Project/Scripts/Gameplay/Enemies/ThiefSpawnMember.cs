@@ -7,6 +7,8 @@ namespace CouchGuys.Gameplay.Enemies
     [DisallowMultipleComponent]
     public sealed class ThiefSpawnMember : MonoBehaviour
     {
+        public int DeliveryId { get; private set; }
+        public void AssignDelivery(int id) => DeliveryId = id;
         private EnemySpawnManager m_manager;
         private NetworkObject m_networkObject;
 

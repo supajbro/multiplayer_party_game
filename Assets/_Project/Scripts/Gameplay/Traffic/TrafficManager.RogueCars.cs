@@ -10,56 +10,73 @@ namespace CouchGuys.Gameplay.Traffic
 {
     public sealed partial class TrafficManager
     {
-        private readonly List<NetworkObject> m_rogueCars = new();
+        private sealed class RogueDelivery
+        {
+            public readonly List<NetworkObject> Cars = new();
+            public int SpawnCount;
+            public float CheckAt;
+        }
+        private readonly Dictionary<int, RogueDelivery> m_rogueDeliveries = new();
+        private readonly List<int> m_finishedRogueDeliveries = new();
+        private RogueDelivery m_rogueContext;
         private readonly HashSet<Vector3> m_rogueSpawnPoints = new();
         private DeliveryManager m_rogueDelivery;
-        private NetworkObject m_rogueCouch;
-        private int m_rogueSpawnCount;
-        private float m_rogueCheckAt;
+        private readonly RogueDelivery m_emptyRogueContext = new();
+        private List<NetworkObject> m_rogueCars => (m_rogueContext ?? m_emptyRogueContext).Cars;
+        private int m_rogueSpawnCount { get => m_rogueContext.SpawnCount; set => m_rogueContext.SpawnCount = value; }
+        private float m_rogueCheckAt { get => m_rogueContext.CheckAt; set => m_rogueContext.CheckAt = value; }
         [SerializeField, TextArea, Tooltip("Runtime diagnostic for the independent Rogue Car spawn timer.")]
         private string m_rogueSpawnStatus = "Waiting for an active Hard delivery.";
 
         private DeliveryTierConfig GetActiveRogueTier()
         {
             if (m_rogueDelivery == null) m_rogueDelivery = GetComponent<DeliveryManager>();
-            DeliveryTierConfig tier = m_rogueDelivery != null
-                ? m_rogueDelivery.GetTierConfig(m_rogueDelivery.ActiveTierIndex) : null;
-            return tier != null && tier.Tier == DeliveryTier.Hard &&
-                m_rogueDelivery.State == DeliveryState.Transport && m_rogueDelivery.ActiveCouch != null
-                ? tier : null;
+            if (m_rogueDelivery == null) return null;
+            foreach (var job in m_rogueDelivery.Deliveries)
+            {
+                DeliveryTierConfig tier = m_rogueDelivery.GetTierConfig(job.TierIndex);
+                if (tier == null || tier.Tier != DeliveryTier.Hard || job.Status != DeliveryState.Transport || job.Couch == null) continue;
+                TrackRogueDelivery(job.Id, tier.RogueCarSettings);
+                return tier;
+            }
+            return null;
         }
 
-        private void TrackRogueDelivery(RogueCarSettings settings)
+        private void TrackRogueDelivery(int id, RogueCarSettings settings)
         {
-            if (m_rogueCouch == m_rogueDelivery.ActiveCouch) return;
-            ClearRogueCars();
-            m_rogueCouch = m_rogueDelivery.ActiveCouch;
-            m_rogueCheckAt = Time.time + Mathf.Max(0f, settings.InitialSpawnDelay);
+            if (!m_rogueDeliveries.TryGetValue(id, out m_rogueContext))
+            {
+                m_rogueContext = new RogueDelivery { CheckAt = Time.time + (settings != null ? settings.InitialSpawnDelay : 0f) };
+                m_rogueDeliveries.Add(id, m_rogueContext);
+            }
         }
 
         private void UpdateRogueSpawning()
         {
-            if (!IsServerStarted())
+            if (!IsServerStarted()) { m_rogueDeliveries.Clear(); return; }
+            m_rogueDelivery ??= GetComponent<DeliveryManager>();
+            if (m_rogueDelivery == null) return;
+            m_finishedRogueDeliveries.Clear();
+            foreach (var entry in m_rogueDeliveries)
+                if (!m_rogueDelivery.TryGetDelivery(entry.Key, out _)) m_finishedRogueDeliveries.Add(entry.Key);
+            foreach (int id in m_finishedRogueDeliveries) RemoveDeliveryRogueCarsServer(id);
+            foreach (var job in m_rogueDelivery.Deliveries)
             {
-                m_rogueCars.Clear();
-                m_rogueCouch = null;
-                m_rogueSpawnStatus = "Waiting for the server.";
-                return;
+                var tier = m_rogueDelivery.GetTierConfig(job.TierIndex);
+                if (tier == null || tier.Tier != DeliveryTier.Hard || job.Status != DeliveryState.Transport) continue;
+                TrackRogueDelivery(job.Id, tier.RogueCarSettings);
+                UpdateRogueDelivery(tier);
             }
-            DeliveryTierConfig tier = GetActiveRogueTier();
-            if (tier == null)
-            {
-                ClearRogueCars();
-                m_rogueSpawnStatus = "Waiting for an active Hard delivery in Transport state.";
-                return;
-            }
+        }
+
+        private void UpdateRogueDelivery(DeliveryTierConfig tier)
+        {
             if (!m_regionReady || tier.RogueCarSettings == null || tier.RogueCarPrefab == null)
             {
                 m_rogueSpawnStatus = "Cannot spawn: missing road routes, Rogue Car Settings, or Rogue Car Prefab on the Hard tier.";
                 return;
             }
             RogueCarSettings settings = tier.RogueCarSettings;
-            TrackRogueDelivery(settings);
             m_rogueCars.RemoveAll(car => car == null || !car.IsSpawned);
             if (m_rogueCars.Count >= settings.MaxActiveCars || m_rogueSpawnCount >= settings.MaxSpawnsPerDelivery)
             {
@@ -89,7 +106,6 @@ namespace CouchGuys.Gameplay.Traffic
                 Debug.LogWarning("Rogue Car test spawn requires a running server, an active Hard delivery, generated roads, and assigned Rogue Car settings/prefab.", this);
                 return;
             }
-            TrackRogueDelivery(tier.RogueCarSettings);
             m_rogueCars.RemoveAll(car => car == null || !car.IsSpawned);
             if (m_rogueCars.Count >= tier.RogueCarSettings.MaxActiveCars ||
                 m_rogueSpawnCount >= tier.RogueCarSettings.MaxSpawnsPerDelivery)
@@ -167,14 +183,22 @@ namespace CouchGuys.Gameplay.Traffic
             Debug.Log($"Rogue Car spawned at {position} for the active Hard delivery.", instance);
         }
 
+        public void RemoveDeliveryRogueCarsServer(int id)
+        {
+            if (!m_rogueDeliveries.Remove(id, out var runtime)) return;
+            if (IsServerStarted())
+                foreach (var car in runtime.Cars)
+                    if (car != null && car.IsSpawned) InstanceFinder.ServerManager.Despawn(car);
+        }
+
         private void ClearRogueCars()
         {
-            if (IsServerStarted())
-                foreach (NetworkObject car in m_rogueCars)
-                    if (car != null && car.IsSpawned) InstanceFinder.ServerManager.Despawn(car);
-            m_rogueCars.Clear();
-            m_rogueCouch = null;
-            m_rogueSpawnCount = 0;
+            foreach (var runtime in m_rogueDeliveries.Values)
+                if (IsServerStarted())
+                    foreach (var car in runtime.Cars)
+                        if (car != null && car.IsSpawned) InstanceFinder.ServerManager.Despawn(car);
+            m_rogueDeliveries.Clear();
+            m_rogueContext = null;
         }
     }
 }

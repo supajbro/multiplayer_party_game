@@ -3,7 +3,6 @@ using CouchGuys.Gameplay.Couch;
 using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.ProceduralGeneration;
 using FishNet.Object;
-using FishNet.Object.Synchronizing;
 using UnityEngine;
 
 namespace CouchGuys.Gameplay.Delivery
@@ -12,62 +11,32 @@ namespace CouchGuys.Gameplay.Delivery
     {
         [Header("Thief Getaway")]
         [SerializeField] private GetawayTruckSettings m_getawaySettings;
-        private readonly SyncVar<NetworkObject> m_activeGetaway = new();
         private readonly List<GetawayTruckController> m_getaways = new();
         private readonly GetawayRoadRouter m_getawayRoads = new();
-        private CouchCarryController m_getawayCouch;
-        private float m_getawaySpawnTime = float.PositiveInfinity;
-        private bool m_getawayReplacement;
-        private bool m_getawayAttemptActive;
-
-        public GetawayTruckController ActiveGetawayTruck => m_activeGetaway.Value != null
-            ? m_activeGetaway.Value.GetComponent<GetawayTruckController>() : null;
+        public GetawayTruckController GetGetawayForCouch(CouchCarryController couch) =>
+            couch != null && m_jobs.TryGetValue(couch.DeliveryId, out var runtime) ? runtime.Getaway : null;
 
         internal bool GeneratorIsTunnelApproach(GridCoordinate coordinate) => m_generator.IsTunnelApproachRoad(coordinate);
 
-        private void BeginGetawayServer(CouchCarryController couch)
+        private void UpdateGetawayServer(DeliveryInstance job, JobRuntime runtime)
         {
-            EndGetawayServer();
+            if (job.Couch == null || runtime.Getaway != null || Time.time < runtime.GetawaySpawnTime) return;
             m_getawaySettings ??= Resources.Load<GetawayTruckSettings>("Vehicles/GetawayTruckSettings");
-            if (m_getawaySettings == null || m_getawaySettings.TruckPrefab == null) return;
-            if (m_getawaySettings.DrivingSettings == null ||
-                m_getawaySettings.TruckPrefab.GetComponent<GetawayTruckController>() == null)
-            {
-                Debug.LogError("Getaway settings require a driving profile and a getaway truck prefab.", this);
-                return;
-            }
-            m_getawayRoads.Build(m_generator);
-            m_getawayCouch = couch;
-            m_getawayAttemptActive = true;
-            m_getawayReplacement = false;
-            m_getawaySpawnTime = Time.time;
-        }
-
-        private void UpdateGetawayServer()
-        {
+            if (m_getawaySettings == null || m_getawaySettings.TruckPrefab == null ||
+                m_getawaySettings.DrivingSettings == null) return;
             m_getaways.RemoveAll(truck => truck == null || !truck.IsSpawned);
-            if (m_getawayAttemptActive && (m_getawayCouch == null || !m_getawayCouch.IsSpawned))
-            {
-                // An externally removed couch must not leave an unfinishable purchased delivery.
-                FailAndResetActiveDeliveryServer();
-                EndGetawayServer();
-                return;
-            }
-            if (m_getawayCouch == null || !HasActiveDelivery || ActiveCouch != m_getawayCouch.NetworkObject)
-            {
-                if (m_getawayCouch != null || ActiveGetawayTruck != null) EndGetawayServer();
-                return;
-            }
-            if (ActiveGetawayTruck != null || Time.time < m_getawaySpawnTime) return;
-            m_getawaySpawnTime = Time.time + m_getawaySettings.DecisionInterval;
+            m_getawayRoads.Build(m_generator);
+            CouchCarryController couch = job.Couch.GetComponent<CouchCarryController>();
+            DeliveryDestination destination = GetDestination(job.DestinationIndex);
+            runtime.GetawaySpawnTime = Time.time + m_getawaySettings.DecisionInterval;
             TrafficRoadPortal? selected = null;
             float farthest = -1f;
             bool meetsMinimum = false;
             foreach (TrafficRoadPortal portal in m_getawayRoads.Portals)
             {
-                float distance = Vector3.Distance(portal.WorldPosition, m_getawayCouch.transform.position);
-                float destinationDistance = ActiveDestination != null
-                    ? Vector3.Distance(portal.WorldPosition, ActiveDestination.DropPosition.position) : distance;
+                float distance = Vector3.Distance(portal.WorldPosition, couch.transform.position);
+                float destinationDistance = destination != null
+                    ? Vector3.Distance(portal.WorldPosition, destination.DropPosition.position) : distance;
                 bool qualifies = Mathf.Min(distance, destinationDistance) >= m_getawaySettings.MinimumSpawnDistance;
                 if ((meetsMinimum && !qualifies) || (qualifies == meetsMinimum && distance <= farthest) ||
                     !GetawaySpawnClear(portal)) continue;
@@ -84,10 +53,10 @@ namespace CouchGuys.Gameplay.Delivery
             GetawayTruckController truck = instance.GetComponent<GetawayTruckController>();
             truck.ConfigureBeforeSpawn(m_getawaySettings);
             Spawn(instance);
-            truck.InitialiseServer(this, m_getawayCouch, m_getawayRoads, m_getawayReplacement);
+            truck.InitialiseServer(this, couch, m_getawayRoads, runtime.Replacement);
             m_getaways.Add(truck);
-            m_activeGetaway.Value = instance;
-            m_getawaySpawnTime = float.PositiveInfinity;
+            runtime.Getaway = truck;
+            runtime.GetawaySpawnTime = float.PositiveInfinity;
         }
 
         private bool GetawaySpawnClear(TrafficRoadPortal portal)
@@ -102,38 +71,29 @@ namespace CouchGuys.Gameplay.Delivery
 
         internal void NotifyGetawayDestroyedServer(GetawayTruckController truck)
         {
-            if (!IsServerInitialized || ActiveGetawayTruck != truck) return;
-            m_activeGetaway.Value = null;
-            if (m_getawayCouch == null || !HasActiveDelivery) return;
-            m_getawayReplacement = true;
-            m_getawaySpawnTime = Time.time + m_getawaySettings.ReplacementDelay;
+            if (!IsServerInitialized) return;
+            foreach (var runtime in m_jobs.Values)
+                if (runtime.Getaway == truck)
+                {
+                    runtime.Getaway = null;
+                    runtime.Replacement = true;
+                    runtime.GetawaySpawnTime = Time.time + m_getawaySettings.ReplacementDelay;
+                    break;
+                }
         }
 
         internal void GetawayEscapedServer(GetawayTruckController truck, CouchCarryController couch)
         {
-            if (!IsServerInitialized || ActiveGetawayTruck != truck || m_getawayCouch != couch ||
-                ActiveCouch != couch.NetworkObject || !couch.IsLoaded || couch.LoadedTruckObject != truck.NetworkObject) return;
-            // Detach before the delivery despawns the couch; no child survives under the truck.
+            if (!IsServerInitialized || couch == null || GetGetawayForCouch(couch) != truck ||
+                !IsDeliveryCouch(couch) || !couch.IsLoaded || couch.LoadedTruckObject != truck.NetworkObject) return;
             couch.transform.SetParent(null, true);
-            EndGetawayServer();
-            FailAndResetActiveDeliveryServer();
+            ResolveDeliveryServer(couch.DeliveryId, false);
             if (truck != null && truck.IsSpawned) Despawn(truck.NetworkObject);
-        }
-
-        private void EndGetawayServer()
-        {
-            m_getawayAttemptActive = false;
-            m_getawaySpawnTime = float.PositiveInfinity;
-            m_getawayCouch = null;
-            GetawayTruckController truck = ActiveGetawayTruck;
-            m_activeGetaway.Value = null;
-            if (truck != null && truck.IsSpawned) truck.DepartServer();
         }
 
         private void ClearGetawaysServer()
         {
             if (!IsServerInitialized) return;
-            EndGetawayServer();
             foreach (GetawayTruckController truck in m_getaways)
                 if (truck != null && truck.IsSpawned) Despawn(truck.NetworkObject);
             m_getaways.Clear();

@@ -416,7 +416,7 @@ namespace CouchGuys.Gameplay.Enemies
                 m_deliveryManager ??= FindFirstObjectByType<DeliveryManager>();
             }
 
-            NetworkObject couchObject = m_deliveryManager != null ? m_deliveryManager.ActiveCouch : null;
+            NetworkObject couchObject = m_deliveryManager != null && TryGetComponent(out ThiefSpawnMember member) && m_deliveryManager.TryGetDelivery(member.DeliveryId, out var job) ? job.Couch : null;
             return couchObject != null && couchObject.IsSpawned &&
                    couchObject.TryGetComponent(out CouchCarryController couch)
                 ? couch
@@ -491,7 +491,7 @@ namespace CouchGuys.Gameplay.Enemies
 
             if (m_deliveryManager != null)
             {
-                var getaway = m_deliveryManager.ActiveGetawayTruck;
+                var getaway = m_deliveryManager.GetGetawayForCouch(m_carriedCouch);
                 // Steer the couch as a team. Independent grip paths can point around
                 // opposite sides of the same obstacle and cancel the couch's motion.
                 m_carryIntent = getaway != null ? getaway.GetCarryMovementIntent(m_carriedCouch) : Vector3.zero;
@@ -520,8 +520,8 @@ namespace CouchGuys.Gameplay.Enemies
         private Vector3 CalculateEscapeTarget()
         {
             Vector3 couchPosition = m_carriedCouch.transform.position;
-            Transform objective = m_deliveryManager != null && m_deliveryManager.ActiveDestination != null
-                ? m_deliveryManager.ActiveDestination.DropPosition
+            Transform objective = m_deliveryManager != null && m_deliveryManager.GetDestinationForCouch(m_carriedCouch) != null
+                ? m_deliveryManager.GetDestinationForCouch(m_carriedCouch).DropPosition
                 : null;
             Vector3 away = objective != null
                 ? Vector3.ProjectOnPlane(couchPosition - objective.position, Vector3.up)
@@ -806,7 +806,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         void ICouchCarrierServer.SetCarriedCouchServer(CouchCarryController couch, int pointIndex)
         {
-            m_deliveryManager?.ActiveGetawayTruck?.NotifyCouchStolenServer();
+            m_deliveryManager?.GetGetawayForCouch(couch)?.NotifyCouchStolenServer();
             m_carriedCouch = couch;
             m_carriedPointIndex = pointIndex;
             m_carryIntent = Vector3.zero;

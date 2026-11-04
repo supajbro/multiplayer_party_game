@@ -15,7 +15,7 @@ MonoBehaviour:
   m_itemId: sled
   m_displayName: Sled
   m_description: A physical couch hauler that shines downhill. Hold on tight.
-  m_price: 150
+  m_price: 250
   m_category: 0
   m_icon: {fileID: 0}
   m_purchaseBehaviour: {fileID: 11400000, guid: e4e81a7f786527c4e94e774e6ada6042, type: 2}

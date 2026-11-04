@@ -14,7 +14,7 @@ using System.Collections;
 
 namespace CouchGuys.Gameplay.Delivery
 {
-    /// <summary>Server-authoritative state for the single active couch delivery.</summary>
+    /// <summary>Server-authoritative state for independent couch deliveries.</summary>
     [RequireComponent(typeof(NetworkObject))]
     [RequireComponent(typeof(NeighbourhoodGenerator))]
     [DisallowMultipleComponent]
@@ -49,26 +49,19 @@ namespace CouchGuys.Gameplay.Delivery
         [SerializeField, Min(1f)] private float m_groundProbeHeight = 40f;
         [SerializeField, Min(1f)] private float m_groundProbeDistance = 100f;
 
-        private readonly SyncVar<NetworkObject> m_activeCouch = new();
-        private readonly SyncVar<int> m_destinationIndex = new(-1);
         private readonly SyncVar<int> m_currency = new();
         private readonly SyncVar<DeliveryState> m_state = new(DeliveryState.Unavailable);
         private readonly SyncVar<DeliveryObjectiveStep> m_objectiveStep = new(DeliveryObjectiveStep.None);
         private readonly SyncVar<int> m_activeStageIndex = new(-1);
         private readonly SyncVar<int> m_attemptNumber = new();
         private readonly SyncVar<int> m_lastReward = new();
-        private readonly SyncVar<uint> m_deliveryDeadlineTick = new();
-        private readonly SyncVar<float> m_deliveryDuration = new();
         private readonly SyncVar<int> m_deliveryFailureSequence = new();
         private readonly SyncVar<int> m_activeTierIndex = new(-1);
         private readonly SyncVar<bool> m_exitDoorOpen = new();
         private readonly SyncVar<bool> m_vehicleGarageDoorOpen = new();
 
-        private PedestrianController m_collectionMarker;
-        private int m_markerDestination = -1;
         private readonly List<PedestrianController> m_recipients = new();
 
-        private bool m_isCompletingDelivery;
         private readonly HashSet<int> m_usedDestinationIndices = new HashSet<int>();
         private readonly List<int>[] m_tierCandidates =
         {
@@ -85,68 +78,44 @@ namespace CouchGuys.Gameplay.Delivery
         private bool m_candidatesReady;
         private readonly Collider[] m_vehicleClearanceHits = new Collider[64];
         private DepotController m_depot;
-        private Coroutine m_conveyorDispatch;
 
         public event Action<int> CurrencyChanged;
         public event Action<DeliveryState> StateChanged;
         public event Action<DeliveryObjectiveStep> ObjectiveStepChanged;
 
-        public NetworkObject ActiveCouch => m_activeCouch.Value;
-        public int ActiveDestinationIndex => m_destinationIndex.Value;
+        // Compatibility views for consumers that only need a general activity signal.
+        public NetworkObject ActiveCouch => m_deliveries.Count > 0 ? m_deliveries[0].Couch : null;
+        public int ActiveDestinationIndex => m_deliveries.Count > 0 ? m_deliveries[0].DestinationIndex : -1;
         public int CurrentCurrency => m_currency.Value;
         public DeliveryState State => m_state.Value;
         public DeliveryObjectiveStep ObjectiveStep => m_objectiveStep.Value;
         public int ActiveStageIndex => m_activeStageIndex.Value;
         public int AttemptNumber => m_attemptNumber.Value;
         public int LastReward => m_lastReward.Value;
-        public float DeliveryDuration => m_deliveryDuration.Value;
         public int DeliveryFailureSequence => m_deliveryFailureSequence.Value;
-        public int ActiveTierIndex => m_activeTierIndex.Value;
-        public bool IsDeliveryTimerActive =>
-            m_state.Value == DeliveryState.Transport && m_deliveryDeadlineTick.Value != 0;
-        public float RemainingDeliveryTime
-        {
-            get
-            {
-                if (!IsDeliveryTimerActive || TimeManager == null) return 0f;
-                uint now = TimeManager.Tick;
-                return now >= m_deliveryDeadlineTick.Value
-                    ? 0f
-                    : (float)TimeManager.TicksToTime(m_deliveryDeadlineTick.Value - now);
-            }
-        }
-        public bool HasActiveDelivery => m_destinationIndex.Value >= 0 && m_activeCouch.Value != null;
+        public int ActiveTierIndex => m_deliveries.Count > 0 ? m_deliveries[0].TierIndex : -1;
+        public bool HasActiveDelivery => m_deliveries.Count > 0;
         public ShopCatalogue ShopCatalogue => m_shopCatalogue;
-
-        public DeliveryDestination ActiveDestination
-        {
-            get
-            {
-                m_generator ??= GetComponent<NeighbourhoodGenerator>();
-                IReadOnlyList<DeliveryDestination> destinations = m_generator.DeliveryDestinations;
-                int index = m_destinationIndex.Value;
-                return index >= 0 && index < destinations.Count ? destinations[index] : null;
-            }
-        }
+        public DeliveryDestination ActiveDestination => GetDestination(ActiveDestinationIndex);
 
         private void Awake()
         {
             m_generator ??= GetComponent<NeighbourhoodGenerator>();
             m_chapterManager ??= GetComponent<SuburbsChapterManager>();
             m_shopCatalogue ??= Resources.Load<ShopCatalogue>("Shop/DeliveryManagerShop");
-            m_destinationIndex.OnChange += OnDestinationIndexChanged;
             m_currency.OnChange += OnCurrencyChanged;
             m_state.OnChange += OnStateChanged;
             m_objectiveStep.OnChange += OnObjectiveStepChanged;
             m_exitDoorOpen.OnChange += OnExitDoorOpenChanged;
             m_vehicleGarageDoorOpen.OnChange += OnVehicleGarageDoorOpenChanged;
+            m_deliveries.OnChange += OnDeliveriesChanged;
             m_generator.RegionGenerated += OnRegionGenerated;
             m_generator.RegionClearing += OnRegionClearing;
         }
 
         private void OnDestroy()
         {
-            m_destinationIndex.OnChange -= OnDestinationIndexChanged;
+            m_deliveries.OnChange -= OnDeliveriesChanged;
             m_currency.OnChange -= OnCurrencyChanged;
             m_state.OnChange -= OnStateChanged;
             m_objectiveStep.OnChange -= OnObjectiveStepChanged;
@@ -159,13 +128,13 @@ namespace CouchGuys.Gameplay.Delivery
             }
             if (IsServerInitialized && m_dialoguePlayer != null && m_dialoguePlayer.Owner.IsValid)
                 m_dialoguePlayer.CloseDeliveryDialogueTargetRpc(m_dialoguePlayer.Owner, "Delivery Manager unavailable.");
-            DestroyCollectionMarker();
         }
 
         public override void OnStartClient()
         {
             base.OnStartClient();
-            RefreshCollectionMarker();
+            DeliveriesChanged?.Invoke();
+
             CurrencyChanged?.Invoke(m_currency.Value);
             StateChanged?.Invoke(m_state.Value);
             ObjectiveStepChanged?.Invoke(m_objectiveStep.Value);
@@ -173,7 +142,6 @@ namespace CouchGuys.Gameplay.Delivery
 
         public override void OnStopClient()
         {
-            DestroyCollectionMarker();
             base.OnStopClient();
         }
 
@@ -181,6 +149,7 @@ namespace CouchGuys.Gameplay.Delivery
         {
             base.OnStartServer();
             m_dispatcherSpeaking.Value = false;
+            ClearDeliveriesServer();
             m_usedDestinationIndices.Clear();
             m_exitDoorOpen.Value = false;
             m_vehicleGarageDoorOpen.Value = false;
@@ -190,9 +159,8 @@ namespace CouchGuys.Gameplay.Delivery
             m_attemptNumber.Value = 0;
             m_lastReward.Value = 0;
             m_activeTierIndex.Value = -1;
-            StopDeliveryTimerServer();
+
             RebuildCandidateCache();
-            RefreshCollectionMarker();
         }
 
         /// <summary>Adds shared test currency from an already-authorised server action.</summary>
@@ -204,9 +172,7 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void Update()
         {
-            if (IsServerInitialized) UpdateGetawayServer();
-            if (IsServerInitialized && IsDeliveryTimerActive && TimeManager.Tick >= m_deliveryDeadlineTick.Value)
-                FailAndResetActiveDeliveryServer();
+            if (IsServerInitialized) UpdateDeliveriesServer();
             if (IsServerInitialized && m_dialoguePlayer != null &&
                 (m_dialogueNpc == null ||
                  m_dialogueNpc.InteractionDistanceSquared(m_dialoguePlayer.transform.position) >
@@ -228,26 +194,18 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void FixedUpdate()
         {
-            if (!IsServerInitialized || m_state.Value != DeliveryState.Transport ||
-                m_isCompletingDelivery || !HasActiveDelivery ||
-                !m_activeCouch.Value.TryGetComponent(out CouchCarryController couch) ||
-                couch.ServerCarrierCount <= 0)
+            if (!IsServerInitialized) return;
+            for (int i = m_deliveries.Count - 1; i >= 0; i--)
             {
-                return;
-            }
-
-            DeliveryDestination destination = ActiveDestination;
-            if (m_collectionMarker != null && !m_collectionMarker.IsAlive) return;
-            if (destination == null || !destination.CanReceiveDelivery)
-            {
-                return;
-            }
-
-            Vector3 offset = couch.transform.position - destination.DropPosition.position;
-            offset.y = 0f;
-            if (offset.sqrMagnitude <= m_collectionRadius * m_collectionRadius)
-            {
-                CompleteDeliveryServer(couch);
+                DeliveryInstance job = m_deliveries[i];
+                if (job.Status != DeliveryState.Transport || job.Couch == null ||
+                    !job.Couch.TryGetComponent(out CouchCarryController couch) || couch.ServerCarrierCount <= 0) continue;
+                DeliveryDestination destination = GetDestination(job.DestinationIndex);
+                if (destination == null || !destination.CanReceiveDelivery) continue;
+                if (m_jobs.TryGetValue(job.Id, out JobRuntime runtime) && runtime.Recipient != null && !runtime.Recipient.IsAlive) continue;
+                Vector3 offset = couch.transform.position - destination.DropPosition.position;
+                offset.y = 0f;
+                if (offset.sqrMagnitude <= m_collectionRadius * m_collectionRadius) ResolveDeliveryServer(job.Id, true);
             }
         }
 
@@ -329,8 +287,7 @@ namespace CouchGuys.Gameplay.Delivery
             DeliveryNPC npc = m_dialogueNpc;
             DeliveryTierConfig tier = GetTierConfig(tierIndex);
             if (!IsServerInitialized || player == null || player != m_dialoguePlayer || npc == null ||
-                tier == null || HasActiveDelivery ||
-                m_destinationIndex.Value >= 0 || m_activeCouch.Value != null)
+                tier == null)
             {
                 if (player == m_dialoguePlayer) SendDialogueState(player);
                 return false;
@@ -339,17 +296,6 @@ namespace CouchGuys.Gameplay.Delivery
                 m_dialogueMaximumDistance * m_dialogueMaximumDistance)
             {
                 ReleaseDialogueLockServer(player, true, "You moved too far from the Delivery Manager.");
-                return false;
-            }
-
-            if (m_state.Value == DeliveryState.ReturnToNPC)
-            {
-                SetStateServer(DeliveryState.Available, DeliveryObjectiveStep.AcceptDelivery);
-            }
-
-            if (m_state.Value != DeliveryState.Available || m_chapterManager == null ||
-                !m_chapterManager.CanStartCurrentStageServer())
-            {
                 return false;
             }
 
@@ -365,11 +311,10 @@ namespace CouchGuys.Gameplay.Delivery
             }
 
             EnsureCandidateCache();
-            int stageIndex = m_chapterManager.CurrentStageIndex;
             int destinationIndex = SelectDestinationIndex(tierIndex);
             if (destinationIndex < 0)
             {
-                SendDialogueState(player);
+                SendDialogueState(player, $"No available {tier.Tier} delivery houses");
                 return false;
             }
             if (m_currency.Value < tier.PurchasePrice)
@@ -378,52 +323,8 @@ namespace CouchGuys.Gameplay.Delivery
                 return false;
             }
 
-            SetStateServer(DeliveryState.Accepted, DeliveryObjectiveStep.CarryCouch);
-            m_activeStageIndex.Value = m_chapterManager.CurrentStageIndex;
-            m_attemptNumber.Value = Mathf.Max(1, m_attemptNumber.Value + 1);
-            m_lastReward.Value = 0;
-            m_activeTierIndex.Value = tierIndex;
-            m_destinationIndex.Value = destinationIndex;
-            ResolveDepot();
-            Vector3 couchSpawnPosition = m_depot != null && m_depot.HasConveyor
-                ? m_depot.CouchHiddenSpawn.position
-                : npc.CouchSpawnPosition;
-            Quaternion couchSpawnRotation = m_depot != null && m_depot.HasConveyor
-                ? m_depot.CouchHiddenSpawn.rotation
-                : npc.CouchSpawnRotation;
-            NetworkObject couch = Instantiate(m_couchPrefab, couchSpawnPosition, couchSpawnRotation);
-            Spawn(couch);
-            CouchCarryController couchController = couch.GetComponent<CouchCarryController>();
-            couchController.SelectRandomModelVariantServer();
-            m_activeCouch.Value = couch;
-            BeginGetawayServer(couchController);
+            BeginDeliveryServer(tierIndex, destinationIndex, npc);
             m_currency.Value -= tier.PurchasePrice;
-            m_usedDestinationIndices.Add(destinationIndex);
-            DeliveryRouteMetrics selectedMetrics = m_generator.DeliveryDestinations[destinationIndex].RouteMetrics;
-            if (selectedMetrics != null)
-            {
-                Debug.Log(
-                    $"Stage {stageIndex + 1} selected destination {destinationIndex}: " +
-                    $"{selectedMetrics.ProgressionZone}/{selectedMetrics.Zone}, " +
-                    $"route {selectedMetrics.RouteLength:F0}m, " +
-                    $"ascent {selectedMetrics.CumulativeElevationGain:F1}m, " +
-                    $"max grade {selectedMetrics.MaximumRoadGrade:F1}Ãƒâ€šÃ‚Â°, " +
-                    $"score {selectedMetrics.DifficultyScore:F0}.",
-                    this);
-            }
-            SetStateServer(DeliveryState.CouchSpawned, DeliveryObjectiveStep.CarryCouch);
-            if (m_depot != null && m_depot.HasConveyor)
-            {
-                couchController.SetDepotTransportActiveServer(true);
-                if (m_conveyorDispatch != null) StopCoroutine(m_conveyorDispatch);
-                m_conveyorDispatch = StartCoroutine(DispatchCouchAlongConveyorServer(
-                    couchController, m_generator.DeliveryDestinations[destinationIndex], tier));
-            }
-            else
-            {
-                StartDeliveryTimerServer(m_generator.DeliveryDestinations[destinationIndex], tier);
-                SetStateServer(DeliveryState.Transport, DeliveryObjectiveStep.DeliverCouch);
-            }
             ReleaseDialogueLockServer(player, true, $"{tier.DisplayName} started.");
             return true;
         }
@@ -649,15 +550,15 @@ namespace CouchGuys.Gameplay.Delivery
             CouchCarryController requestedCouch = requestingPlayer != null
                 ? requestingPlayer.GetCarriedCouchServer()
                 : null;
-            if (!IsServerInitialized || m_isCompletingDelivery || requestedCouch == null ||
-                !HasActiveDelivery || requestedCouch.NetworkObject != m_activeCouch.Value ||
-                !m_activeCouch.Value.TryGetComponent(out CouchCarryController couch) ||
-                couch.ServerCarrierCount <= 0)
+            if (!IsServerInitialized || requestedCouch == null ||
+                !TryGetDelivery(requestedCouch.DeliveryId, out DeliveryInstance job) ||
+                job.Couch != requestedCouch.NetworkObject || requestedCouch.ServerCarrierCount <= 0)
             {
                 return false;
             }
 
-            DeliveryDestination destination = ActiveDestination;
+            CouchCarryController couch = requestedCouch;
+            DeliveryDestination destination = GetDestination(job.DestinationIndex);
             if (destination == null || !destination.CanReceiveDelivery)
             {
                 return false;
@@ -733,26 +634,6 @@ namespace CouchGuys.Gameplay.Delivery
             return true;
         }
 
-        [Server]
-        private IEnumerator DispatchCouchAlongConveyorServer(
-            CouchCarryController couch, DeliveryDestination destination,
-            DeliveryTierConfig tier)
-        {
-            if (m_depot == null || couch == null) yield break;
-            if (m_depot.ArrivalDelay > 0f)
-                yield return new WaitForSeconds(m_depot.ArrivalDelay);
-
-            IEnumerator motion = MoveCouchAlongConveyor(couch.CouchRigidbody, m_depot.ConveyorPath, m_depot.ConveyorSpeed);
-            while (couch != null && couch.IsSpawned && motion.MoveNext())
-                yield return motion.Current;
-
-            if (couch == null || !couch.IsSpawned) yield break;
-            couch.ReleaseDepotTransportServer(m_depot != null ? m_depot.ConveyorExitVelocity : Vector3.zero);
-            StartDeliveryTimerServer(destination, tier);
-            SetStateServer(DeliveryState.Transport, DeliveryObjectiveStep.DeliverCouch);
-            m_conveyorDispatch = null;
-        }
-
         internal static IEnumerator MoveCouchAlongConveyor(Rigidbody body,
             IReadOnlyList<Transform> path, float speed)
         {
@@ -784,120 +665,6 @@ namespace CouchGuys.Gameplay.Delivery
             }
         }
 
-        private void CompleteDeliveryServer(CouchCarryController couch)
-        {
-            if (!IsServerInitialized || m_state.Value != DeliveryState.Transport ||
-                m_isCompletingDelivery || couch == null ||
-                couch.NetworkObject != m_activeCouch.Value)
-            {
-                return;
-            }
-
-            m_isCompletingDelivery = true;
-            EndGetawayServer();
-            StopConveyorDispatchServer();
-            StopDeliveryTimerServer();
-            SetStateServer(DeliveryState.DestinationReached, DeliveryObjectiveStep.DeliverCouch);
-            NetworkObject deliveredCouch = m_activeCouch.Value;
-            DeliveryDestination destination = ActiveDestination;
-            m_collectionMarker?.CompleteDeliveryServer();
-            m_collectionMarker = null;
-            m_activeCouch.Value = null;
-            m_destinationIndex.Value = -1;
-            couch.ReleaseAllOccupantsServer();
-            SetStateServer(DeliveryState.Completed, DeliveryObjectiveStep.None);
-            DeliveryTierConfig activeTier = GetTierConfig(m_activeTierIndex.Value);
-            if (m_chapterManager != null)
-                m_chapterManager.CompleteCurrentStageServer(m_activeStageIndex.Value);
-            int configuredReward = activeTier != null ? activeTier.Reward : 0;
-            int reward = destination != null
-                ? Mathf.RoundToInt(configuredReward * destination.RewardModifier)
-                : configuredReward;
-            m_lastReward.Value = reward;
-            m_activeTierIndex.Value = -1;
-            SetStateServer(DeliveryState.Reward, DeliveryObjectiveStep.None);
-            m_currency.Value += reward;
-            Debug.Log(
-                $"Delivery {m_activeStageIndex.Value + 1} complete for {reward}. " +
-                $"Team currency: {m_currency.Value}",
-                this);
-            if (deliveredCouch != null && deliveredCouch.IsSpawned)
-            {
-                Despawn(deliveredCouch);
-            }
-
-            bool chapterComplete = m_chapterManager != null && m_chapterManager.ChapterCompleted;
-            SetStateServer(
-                chapterComplete ? DeliveryState.Unavailable : DeliveryState.ReturnToNPC,
-                chapterComplete
-                    ? DeliveryObjectiveStep.ChapterComplete
-                    : DeliveryObjectiveStep.ReturnToSeller);
-            m_isCompletingDelivery = false;
-        }
-
-        /// <summary>
-        /// Cleans up an unsuccessful attempt while preserving its chapter stage and
-        /// all previously completed progression. Phase 4 will call this on party wipe.
-        /// </summary>
-        [Server]
-        public bool FailAndResetActiveDeliveryServer()
-        {
-            if (m_isCompletingDelivery || m_destinationIndex.Value < 0 ||
-                (m_state.Value != DeliveryState.Accepted &&
-                 m_state.Value != DeliveryState.CouchSpawned &&
-                 m_state.Value != DeliveryState.Transport &&
-                 m_state.Value != DeliveryState.PartyWipe))
-            {
-                return false;
-            }
-
-            StopDeliveryTimerServer();
-            StopConveyorDispatchServer();
-            m_deliveryFailureSequence.Value++;
-            EndGetawayServer();
-            SetStateServer(DeliveryState.Failed, DeliveryObjectiveStep.None);
-            NetworkObject failedCouch = m_activeCouch.Value;
-            m_activeCouch.Value = null;
-            m_destinationIndex.Value = -1;
-            if (failedCouch != null && failedCouch.IsSpawned)
-            {
-                if (failedCouch.TryGetComponent(out CouchCarryController couch))
-                {
-                    couch.ReleaseAllOccupantsServer();
-                }
-
-                Despawn(failedCouch);
-            }
-
-            SetStateServer(DeliveryState.Resetting, DeliveryObjectiveStep.None);
-            m_activeStageIndex.Value = -1;
-            m_activeTierIndex.Value = -1;
-            m_lastReward.Value = 0;
-            SetStateServer(DeliveryState.Available, DeliveryObjectiveStep.AcceptDelivery);
-            return true;
-        }
-
-        [Server]
-        private void StartDeliveryTimerServer(DeliveryDestination destination, DeliveryTierConfig tier)
-        {
-            if (tier == null)
-            {
-                StopDeliveryTimerServer();
-                return;
-            }
-            float seconds = tier.CalculateDuration(destination);
-            m_deliveryDuration.Value = seconds;
-            uint ticks = TimeManager.TimeToTicks(seconds);
-            m_deliveryDeadlineTick.Value = TimeManager.Tick + (ticks == 0 ? 1u : ticks);
-        }
-
-        [Server]
-        private void StopDeliveryTimerServer()
-        {
-            m_deliveryDeadlineTick.Value = 0;
-            m_deliveryDuration.Value = 0f;
-        }
-
         [Server]
         private void SetStateServer(DeliveryState state, DeliveryObjectiveStep objectiveStep)
         {
@@ -911,14 +678,12 @@ namespace CouchGuys.Gameplay.Delivery
             m_depot?.ApplyDoorStates(m_exitDoorOpen.Value,
                 m_vehicleGarageDoorOpen.Value, true);
             RebuildCandidateCache();
-            RefreshCollectionMarker();
         }
 
         private void OnRegionClearing(NeighbourhoodGenerator generator)
         {
+            ClearDeliveriesServer();
             ClearGetawaysServer();
-            StopConveyorDispatchServer();
-            DestroyCollectionMarker();
             ClearRecipientsServer();
             m_depot = null;
             m_candidatesReady = false;
@@ -930,14 +695,6 @@ namespace CouchGuys.Gameplay.Delivery
             m_depot = m_generator != null && m_generator.GeneratedStartingArea != null
                 ? m_generator.GeneratedStartingArea.Depot
                 : null;
-        }
-
-        [Server]
-        private void StopConveyorDispatchServer()
-        {
-            if (m_conveyorDispatch == null) return;
-            StopCoroutine(m_conveyorDispatch);
-            m_conveyorDispatch = null;
         }
 
         private void EnsureCandidateCache()
@@ -975,7 +732,8 @@ namespace CouchGuys.Gameplay.Delivery
             List<int> unused = new List<int>(candidates.Count);
             for (int i = 0; i < candidates.Count; i++)
                 if (!m_usedDestinationIndices.Contains(candidates[i])) unused.Add(candidates[i]);
-            List<int> pool = unused.Count > 0 ? unused : candidates;
+            if (unused.Count == 0) return -1;
+            List<int> pool = unused;
             unchecked
             {
                 int seed = m_generator.CurrentSeed;
@@ -999,9 +757,7 @@ namespace CouchGuys.Gameplay.Delivery
             {
                 DeliveryTierConfig tier = GetTierConfig(index);
                 if (tier == null) reasons[index] = "Not configured";
-                else if (HasActiveDelivery || (m_state.Value != DeliveryState.Available &&
-                         m_state.Value != DeliveryState.ReturnToNPC)) reasons[index] = "A delivery is already active";
-                else if (!m_candidatesReady || m_tierCandidates[index].Count == 0) reasons[index] = "No eligible houses in this neighbourhood";
+                else if (SelectDestinationIndex(index) < 0) reasons[index] = $"No available {tier.Tier} delivery houses";
                 else if (m_currency.Value < tier.PurchasePrice) reasons[index] = $"Need ${tier.PurchasePrice - m_currency.Value:N0} more";
                 else available[index] = true;
             }
@@ -1024,11 +780,6 @@ namespace CouchGuys.Gameplay.Delivery
             player.OpenDeliveryDialogueTargetRpc(player.Owner,
                 available[0], reasons[0], available[1], reasons[1], available[2], reasons[2],
                 shopAvailable, shopReasons, m_currency.Value, notice, openShop);
-        }
-
-        private void OnDestinationIndexChanged(int previous, int next, bool asServer)
-        {
-            RefreshCollectionMarker();
         }
 
         private void OnCurrencyChanged(int previous, int next, bool asServer)
@@ -1061,48 +812,16 @@ namespace CouchGuys.Gameplay.Delivery
             m_depot?.ApplyDoorStates(m_exitDoorOpen.Value, next);
         }
 
-        private void RefreshCollectionMarker()
-        {
-            if (!IsServerInitialized) return;
-            if (m_collectionMarker != null && m_collectionMarker.IsSpawned &&
-                m_markerDestination == m_destinationIndex.Value) return;
-            DestroyCollectionMarker();
-            DeliveryDestination destination = ActiveDestination;
-            if (destination == null || !destination.CanReceiveDelivery || m_destinationIndex.Value < 0)
-            {
-                return;
-            }
-
-            var settings = Resources.Load<PedestrianSettings>("Pedestrians/PedestrianSettings");
-            var prefab = Resources.Load<NetworkObject>($"Pedestrians/Pedestrian_{UnityEngine.Random.Range(1, 11):00}");
-            if (prefab == null || settings == null) return;
-            Transform door = destination.DropPosition;
-            NetworkObject recipient = Instantiate(prefab, door.position, door.rotation);
-            m_collectionMarker = recipient.GetComponent<PedestrianController>();
-            m_collectionMarker.InitialiseRecipientServer(this, settings);
-            m_markerDestination = m_destinationIndex.Value;
-            Spawn(recipient);
-            m_recipients.RemoveAll(npc => npc == null || !npc.IsSpawned);
-            m_recipients.Add(m_collectionMarker);
-        }
-
-        private void DestroyCollectionMarker()
-        {
-            if (m_collectionMarker != null)
-            {
-                if (IsServerInitialized && m_collectionMarker.IsSpawned)
-                    Despawn(m_collectionMarker.NetworkObject);
-                m_collectionMarker = null;
-            }
-            m_markerDestination = -1;
-        }
-
         internal void RecipientDiedServer(PedestrianController recipient)
         {
-            if (!IsServerInitialized || recipient != m_collectionMarker) return;
-            // Keep the replicated corpse; failing the job only removes its couch.
-            m_collectionMarker = null;
-            FailAndResetActiveDeliveryServer();
+            if (!IsServerInitialized) return;
+            foreach (var entry in m_jobs)
+                if (entry.Value.Recipient == recipient)
+                {
+                    entry.Value.Recipient = null;
+                    ResolveDeliveryServer(entry.Key, false);
+                    break;
+                }
         }
 
         private void ClearRecipientsServer()
@@ -1115,6 +834,7 @@ namespace CouchGuys.Gameplay.Delivery
 
         public override void OnStopServer()
         {
+            ClearDeliveriesServer();
             ClearGetawaysServer();
             ClearRecipientsServer();
             base.OnStopServer();

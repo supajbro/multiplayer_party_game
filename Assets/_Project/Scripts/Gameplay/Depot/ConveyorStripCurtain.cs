@@ -81,7 +81,15 @@ namespace CouchGuys.Gameplay.Depot
                 if (m_dispenser == null) m_dispenser = FindFirstObjectByType<DeliveryManager>();
             }
             if (!IsVisible()) { RestoreIdle(); return; }
-            var couch = m_dispenser != null && m_dispenser.IsClientInitialized ? m_dispenser.ActiveCouch : null;
+            FishNet.Object.NetworkObject couch = null;
+            float nearest = float.PositiveInfinity;
+            if (m_dispenser != null && m_dispenser.IsClientInitialized)
+                foreach (var job in m_dispenser.Deliveries)
+                {
+                    if (job.Couch == null) continue;
+                    float distance = (job.Couch.transform.position - transform.position).sqrMagnitude;
+                    if (distance < nearest) { nearest = distance; couch = job.Couch; }
+                }
             var couchObject = couch != null ? couch.gameObject : null;
             if (m_couch != couchObject)
             {

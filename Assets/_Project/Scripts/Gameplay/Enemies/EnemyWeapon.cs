@@ -149,7 +149,7 @@ namespace CouchGuys.Gameplay.Enemies
                     return;
                 }
                 m_delivery ??= FindFirstObjectByType<DeliveryManager>();
-                NetworkObject couch = m_delivery != null && m_delivery.HasActiveDelivery ? m_delivery.ActiveCouch : null;
+                NetworkObject couch = m_delivery != null && TryGetComponent(out ThiefSpawnMember member) && m_delivery.TryGetDelivery(member.DeliveryId, out var job) ? job.Couch : null;
                 if (couch == null) { SetCombatTarget(null); return; }
                 if (Time.time >= m_nextRocketTargetTime)
                 {

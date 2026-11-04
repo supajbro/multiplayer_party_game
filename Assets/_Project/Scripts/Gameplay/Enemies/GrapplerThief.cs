@@ -66,7 +66,7 @@ namespace CouchGuys.Gameplay.Enemies
         private void Update()
         {
             if (!IsServerInitialized || m_settings == null) return;
-            NetworkObject couch = m_delivery != null && m_delivery.HasActiveDelivery ? m_delivery.ActiveCouch : null;
+            NetworkObject couch = m_delivery != null && TryGetComponent(out ThiefSpawnMember member) && m_delivery.TryGetDelivery(member.DeliveryId, out var job) ? job.Couch : null;
             if (!m_health.IsAlive || m_health.IsBeingKnockedBack || couch == null)
             {
                 CancelAttack();

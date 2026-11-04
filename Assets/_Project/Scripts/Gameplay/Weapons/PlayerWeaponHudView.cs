@@ -31,6 +31,11 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] public Outline[] m_slotOutlines;
         [SerializeField] public GameObject m_ammoPanel;
 
+        [SerializeField] public Sprite m_deliveryCouchSprite;
+        [SerializeField] public DeliveryTimerHudView m_deliveryTimerTemplate;
+        [SerializeField, Min(0f)] public float m_deliveryTimerSpacing = 4f;
+        [SerializeField, Min(0f)] public float m_deliveryTimerBottomMargin = 204f;
+
         [Header("Delivery timer")]
         [SerializeField] private Color m_timerFillColour = new(0.05f, 0.9f, 1f, 1f);
         [SerializeField] private Color m_timerCountdownColour = new(1f, 0.7f, 0.08f, 1f);
@@ -45,6 +50,9 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField, Min(0f)] private float m_timerFillResponse = 18f;
 
         public void PresentDeliveryTimer(float ratio, bool reset)
+            => PresentDeliveryTimer(ratio, reset, m_timerFill, m_timerText);
+
+        public void PresentDeliveryTimer(float ratio, bool reset, Image fill, TMP_Text countdown)
         {
             ratio = Mathf.Clamp01(ratio);
             bool critical = ratio <= Mathf.Min(m_timerCriticalThreshold, m_timerWarningThreshold);
@@ -53,15 +61,15 @@ namespace CouchGuys.Gameplay.Weapons
             if (critical)
                 colour.a *= 1f - m_timerPulseIntensity *
                     (0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * m_timerPulseSpeed * Mathf.PI * 2f));
-            if (m_timerFill != null)
+            if (fill != null)
             {
-                m_timerFill.fillAmount = reset || ratio <= 0f || m_timerFillResponse <= 0f ? ratio :
-                    Mathf.Lerp(m_timerFill.fillAmount, ratio,
+                fill.fillAmount = reset || ratio <= 0f || m_timerFillResponse <= 0f ? ratio :
+                    Mathf.Lerp(fill.fillAmount, ratio,
                         1f - Mathf.Exp(-m_timerFillResponse * Time.unscaledDeltaTime));
-                m_timerFill.color = colour;
+                fill.color = colour;
             }
-            if (m_timerText != null)
-                m_timerText.color = critical ? m_timerCriticalColour : m_timerCountdownColour;
+            if (countdown != null)
+                countdown.color = critical ? m_timerCriticalColour : m_timerCountdownColour;
         }
 
         [Header("Item hotbar")]

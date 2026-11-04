@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Player;
@@ -35,7 +36,12 @@ namespace CouchGuys.Gameplay.Weapons
         private float m_healthDisplay = 1f;
         private float m_staminaTarget = 1f;
         private float m_nextSlowRefresh;
-        private int m_lastTimerSecond = -1;
+        private readonly Dictionary<int, DeliveryTimerHudView> m_deliveryTimers = new();
+        private readonly List<int> m_removedTimers = new();
+        private readonly List<DeliveryInstance> m_sortedDeliveries = new();
+        private PlayerCouchCarrier m_carrier;
+        private bool m_timerLayoutDirty;
+        private Vector2 m_timerCanvasSize;
         private int m_seenFailureSequence;
         private float m_failureVisibleUntil;
 
@@ -46,6 +52,7 @@ namespace CouchGuys.Gameplay.Weapons
             m_weapons = GetComponent<PlayerWeaponController>();
             m_health = GetComponent<PlayerHealth>();
             m_stamina = GetComponent<PlayerStamina>();
+            m_carrier = GetComponent<PlayerCouchCarrier>();
         }
 
         private void Update()
@@ -106,7 +113,12 @@ namespace CouchGuys.Gameplay.Weapons
             if (m_delivery == null)
             {
                 m_delivery = FindFirstObjectByType<DeliveryManager>();
-                if (m_delivery != null) m_seenFailureSequence = m_delivery.DeliveryFailureSequence;
+                if (m_delivery != null)
+                {
+                    m_seenFailureSequence = m_delivery.DeliveryFailureSequence;
+                    m_delivery.DeliveriesChanged += SyncDeliveryTimers;
+                    SyncDeliveryTimers();
+                }
             }
             if (m_chapter == null) m_chapter = FindFirstObjectByType<SuburbsChapterManager>();
         }
@@ -144,10 +156,10 @@ namespace CouchGuys.Gameplay.Weapons
         {
             m_view.m_currencyText.text = $"$ {(m_delivery != null ? m_delivery.CurrentCurrency : 0):N0}";
             int completed = m_chapter != null ? m_chapter.CompletedDeliveryCount : 0;
-            if (m_delivery != null && m_delivery.HasActiveDelivery && m_delivery.ActiveDestination != null)
+            DeliveryDestination destination = m_delivery != null ? m_delivery.GetDestinationForCouch(m_carrier != null ? m_carrier.CarriedCouch : null) : null;
+            if (destination != null)
             {
-                DeliveryDestination destination = m_delivery.ActiveDestination;
-                int number = m_delivery.ActiveStageIndex >= 0 ? m_delivery.ActiveStageIndex + 1 : completed + 1;
+                int number = m_carrier.CarriedCouch.DeliveryId;
                 m_view.m_deliveryTitle.text = $"Delivery {number}";
                 m_view.m_deliveryDetail.text = $"Take couch to {destination.DisplayName}";
                 Vector3 delta = destination.DropPosition.position - transform.position;
@@ -156,34 +168,23 @@ namespace CouchGuys.Gameplay.Weapons
             }
             else
             {
-                m_view.m_deliveryTitle.text = completed > 0 ? $"Delivery {completed}" : "Deliveries";
-                m_view.m_deliveryDetail.text = m_chapter != null && m_chapter.ChapterCompleted
-                    ? "Region complete!"
-                    : "Visit the dispatcher for a couch";
+                bool active = m_delivery != null && m_delivery.HasActiveDelivery;
+                m_view.m_deliveryTitle.text = active ? $"{m_delivery.Deliveries.Count} Active Deliveries" : "Deliveries";
+                m_view.m_deliveryDetail.text = active ? "Collect a Couch" : "Visit the dispatcher for a couch";
                 m_view.m_deliveryDistance.text = string.Empty;
             }
         }
 
         private void RefreshDeliveryTimer()
         {
-            if (m_view.m_timerPanel == null) return;
-            bool active = m_delivery != null && m_delivery.IsDeliveryTimerActive;
-            if (m_view.m_timerPanel.activeSelf != active) m_view.m_timerPanel.SetActive(active);
-            if (active)
-            {
-                bool reset = m_lastTimerSecond < 0;
-                float remaining = m_delivery.RemainingDeliveryTime;
-                int second = Mathf.Max(0, Mathf.CeilToInt(remaining));
-                if (second != m_lastTimerSecond)
-                {
-                    m_view.m_timerText.text = $"{second / 60:00}:{second % 60:00}";
-                    m_lastTimerSecond = second;
-                }
-                float ratio = m_delivery.DeliveryDuration > 0f
-                    ? remaining / m_delivery.DeliveryDuration : 0f;
-                m_view.PresentDeliveryTimer(ratio, reset);
-            }
-            else m_lastTimerSecond = -1;
+            if (m_view.m_deliveryTimerTemplate == null) return;
+            m_view.m_deliveryTimerTemplate.gameObject.SetActive(false);
+            if (m_timerLayoutDirty || m_timerCanvasSize != ((RectTransform)m_view.transform).rect.size) LayoutDeliveryTimers();
+            int carriedId = m_carrier != null && m_carrier.CarriedCouch != null ? m_carrier.CarriedCouch.DeliveryId : 0;
+            if (m_delivery != null)
+                foreach (var job in m_delivery.Deliveries)
+                    if (m_deliveryTimers.TryGetValue(job.Id, out var timer))
+                        timer.Present(m_view, m_delivery.GetRemainingTime(job), job.Duration, job.Id == carriedId);
 
             if (m_delivery != null && m_seenFailureSequence != m_delivery.DeliveryFailureSequence)
             {
@@ -193,6 +194,51 @@ namespace CouchGuys.Gameplay.Weapons
             m_view.m_failureText.gameObject.SetActive(Time.unscaledTime < m_failureVisibleUntil);
         }
 
+
+        private void SyncDeliveryTimers()
+        {
+            if (m_view == null || m_delivery == null || m_view.m_deliveryTimerTemplate == null) return;
+            var template = m_view.m_deliveryTimerTemplate;
+            template.gameObject.SetActive(false);
+            m_sortedDeliveries.Clear();
+            foreach (var job in m_delivery.Deliveries)
+            {
+                m_sortedDeliveries.Add(job);
+                if (m_deliveryTimers.ContainsKey(job.Id)) continue;
+                var timer = Instantiate(template, template.transform.parent, false);
+                timer.Bind(job.Id, $"{(DeliveryTier)job.TierIndex} {job.Id:00}".ToUpperInvariant());
+                timer.gameObject.SetActive(true);
+                m_deliveryTimers.Add(job.Id, timer);
+            }
+            m_removedTimers.Clear();
+            foreach (var entry in m_deliveryTimers)
+                if (!m_delivery.TryGetDelivery(entry.Key, out _))
+                {
+                    entry.Value.gameObject.SetActive(false);
+                    Destroy(entry.Value.gameObject);
+                    m_removedTimers.Add(entry.Key);
+                }
+            foreach (int id in m_removedTimers) m_deliveryTimers.Remove(id);
+            m_sortedDeliveries.Sort((a, b) => a.TierIndex != b.TierIndex ? a.TierIndex.CompareTo(b.TierIndex) : a.Id.CompareTo(b.Id));
+            m_timerLayoutDirty = true;
+        }
+
+        private void LayoutDeliveryTimers()
+        {
+            m_timerLayoutDirty = false;
+            var template = (RectTransform)m_view.m_deliveryTimerTemplate.transform;
+            m_timerCanvasSize = ((RectTransform)m_view.transform).rect.size;
+            float stride = template.rect.height * Mathf.Abs(template.localScale.y) + m_view.m_deliveryTimerSpacing;
+            float available = Mathf.Max(1f, m_timerCanvasSize.y + template.anchoredPosition.y - m_view.m_deliveryTimerBottomMargin);
+            float scale = Mathf.Min(1f, available / Mathf.Max(1f, m_sortedDeliveries.Count * stride));
+            for (int i = 0; i < m_sortedDeliveries.Count; i++)
+            {
+                if (!m_deliveryTimers.TryGetValue(m_sortedDeliveries[i].Id, out var timer)) continue;
+                var rect = (RectTransform)timer.transform;
+                rect.anchoredPosition = template.anchoredPosition + Vector2.down * (i * stride * scale);
+                rect.localScale = template.localScale * scale;
+            }
+        }
 
         private void LateUpdate()
         {
@@ -217,7 +263,9 @@ namespace CouchGuys.Gameplay.Weapons
             m_canvasRoot = null;
             m_view = null;
             m_hudBuilt = false;
-            m_lastTimerSecond = -1;
+            if (m_delivery != null) m_delivery.DeliveriesChanged -= SyncDeliveryTimers;
+            m_delivery = null;
+            m_deliveryTimers.Clear();
             m_nextSlowRefresh = 0f;
         }
 

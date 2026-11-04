@@ -15,7 +15,7 @@ MonoBehaviour:
   m_itemId: truck
   m_displayName: Truck
   m_description: Nimble starter truck with room for one couch.
-  m_price: 250
+  m_price: 500
   m_category: 0
   m_icon: {fileID: 0}
   m_purchaseBehaviour: {fileID: 11400000, guid: eb976704466748c48e09676bb69ac7fb, type: 2}

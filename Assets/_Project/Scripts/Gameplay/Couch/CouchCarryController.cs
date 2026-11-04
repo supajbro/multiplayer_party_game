@@ -29,6 +29,9 @@ namespace CouchGuys.Gameplay.Couch
     public sealed class CouchCarryController : NetworkBehaviour
     {
         public const int MaximumCarryPoints = 4;
+        private readonly SyncVar<int> m_deliveryId = new();
+        public int DeliveryId => m_deliveryId.Value;
+        [Server] public void AssignDeliveryServer(int id) => m_deliveryId.Value = id;
 
         [Header("References")]
         [SerializeField] private Rigidbody m_rigidbody;

@@ -36,6 +36,9 @@ namespace CouchGuys.Gameplay.Delivery
         }
 
         private readonly Dictionary<PlayerHealth, ActorMarker> m_actorMarkers = new();
+        private readonly Dictionary<int, ActorMarker> m_couchMarkers = new();
+        private readonly List<int> m_removedCouches = new();
+        private PlayerCouchCarrier m_carrier;
         private readonly List<PlayerHealth> m_removedActors = new(8);
         private PlayerWeaponHud m_hud;
         private PlayerInputReader m_input;
@@ -68,6 +71,7 @@ namespace CouchGuys.Gameplay.Delivery
         private void Awake()
         {
             m_hud = GetComponent<PlayerWeaponHud>();
+            m_carrier = GetComponent<PlayerCouchCarrier>();
             m_input = GetComponent<PlayerInputReader>();
             m_networkObject = GetComponent<NetworkObject>();
             m_localHealth = GetComponent<PlayerHealth>();
@@ -94,6 +98,7 @@ namespace CouchGuys.Gameplay.Delivery
             UpdateMapPosition();
             UpdateActorMarkers();
             UpdateWaypoint();
+            UpdateCouchMarkers();
         }
 
         private void LateUpdate()
@@ -145,11 +150,12 @@ namespace CouchGuys.Gameplay.Delivery
                 m_expandedWaypoint.sizeDelta = Vector2.one * 34f;
                 m_expandedWaypoint.localRotation = Quaternion.identity;
             }
-            DeliveryDestination destination = m_deliveryManager != null && m_deliveryManager.HasActiveDelivery
-                ? m_deliveryManager.ActiveDestination : null;
+            DeliveryDestination destination = m_deliveryManager != null
+                ? m_deliveryManager.GetDestinationForCouch(m_carrier != null ? m_carrier.CarriedCouch : null) : null;
             bool active = destination != null && destination.CanReceiveDelivery;
             m_expandedWaypoint.gameObject.SetActive(active);
             if (active) m_expandedWaypoint.anchoredPosition = ExpandedPosition(destination.transform.position, scale);
+            UpdateExpandedCouches(scale);
         }
 
         private Vector2 ExpandedPosition(Vector3 world, float scale) =>
@@ -426,8 +432,8 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void UpdateWaypoint()
         {
-            DeliveryDestination destination = m_deliveryManager != null && m_deliveryManager.HasActiveDelivery
-                ? m_deliveryManager.ActiveDestination : null;
+            DeliveryDestination destination = m_deliveryManager != null
+                ? m_deliveryManager.GetDestinationForCouch(m_carrier != null ? m_carrier.CarriedCouch : null) : null;
             bool active = destination != null && destination.CanReceiveDelivery && m_localHealth != null;
             m_waypointRect.gameObject.SetActive(active);
             m_distanceText.gameObject.SetActive(active);
@@ -471,10 +477,69 @@ namespace CouchGuys.Gameplay.Delivery
             }
         }
 
+        private void UpdateCouchMarkers()
+        {
+            if (m_deliveryManager == null || m_waypointRect == null || m_localHealth == null) return;
+            bool carrying = m_carrier != null && m_carrier.CarriedCouch != null;
+            foreach (var job in m_deliveryManager.Deliveries)
+            {
+                if (!m_couchMarkers.TryGetValue(job.Id, out var marker))
+                {
+                    var rect = Instantiate(m_waypointRect, m_markerLayer, false);
+                    rect.name = $"DeliveryCouch_{job.Id}";
+                    rect.localRotation = Quaternion.identity;
+                    rect.sizeDelta = new Vector2(28f, 22f);
+                    var image = rect.GetComponent<Image>();
+                    image.sprite = m_hud.View.m_deliveryCouchSprite;
+                    image.color = new Color(1f, 0.72f, 0.12f);
+                    image.preserveAspect = true;
+                    marker = new ActorMarker { Rect = rect };
+                    m_couchMarkers.Add(job.Id, marker);
+                }
+                bool visible = !carrying && job.Couch != null;
+                marker.Rect.gameObject.SetActive(visible);
+                if (visible)
+                {
+                    Vector2 offset = Offset(m_localHealth.transform.position, job.Couch.transform.position);
+                    marker.Rect.anchoredPosition = Vector2.ClampMagnitude(offset / m_visibleRadiusMetres, 0.92f) * m_markerRadius;
+                }
+                if (marker.ExpandedRect != null) marker.ExpandedRect.gameObject.SetActive(visible);
+            }
+            m_removedCouches.Clear();
+            foreach (var entry in m_couchMarkers)
+                if (!m_deliveryManager.TryGetDelivery(entry.Key, out _))
+                {
+                    Destroy(entry.Value.Rect.gameObject);
+                    if (entry.Value.ExpandedRect != null) Destroy(entry.Value.ExpandedRect.gameObject);
+                    m_removedCouches.Add(entry.Key);
+                }
+            foreach (int id in m_removedCouches) m_couchMarkers.Remove(id);
+        }
+
+        private void UpdateExpandedCouches(float scale)
+        {
+            if (m_deliveryManager == null) return;
+            foreach (var job in m_deliveryManager.Deliveries)
+            {
+                if (!m_couchMarkers.TryGetValue(job.Id, out var marker)) continue;
+                if (marker.ExpandedRect == null)
+                    marker.ExpandedRect = Instantiate(marker.Rect, m_expandedMarkers, false);
+                bool active = job.Couch != null && (m_carrier == null || m_carrier.CarriedCouch == null);
+                marker.ExpandedRect.gameObject.SetActive(active);
+                if (active) marker.ExpandedRect.anchoredPosition = ExpandedPosition(job.Couch.transform.position, scale);
+            }
+        }
+
         private static Vector2 Offset(Vector3 from, Vector3 to) => new(to.x - from.x, to.z - from.z);
 
         private void DestroyMinimap()
         {
+            foreach (var marker in m_couchMarkers.Values)
+            {
+                if (marker.Rect != null) Destroy(marker.Rect.gameObject);
+                if (marker.ExpandedRect != null) Destroy(marker.ExpandedRect.gameObject);
+            }
+            m_couchMarkers.Clear();
             foreach (var marker in m_actorMarkers)
             {
                 if (marker.Key != m_localHealth && marker.Value.Rect != null) Destroy(marker.Value.Rect.gameObject);

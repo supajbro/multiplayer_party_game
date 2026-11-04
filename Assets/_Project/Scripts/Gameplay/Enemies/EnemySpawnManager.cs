@@ -40,10 +40,24 @@ namespace CouchGuys.Gameplay.Enemies
         private readonly List<Vector3> m_groupPositions = new List<Vector3>(8);
         private NavMeshPath m_path;
         private DeliveryManager m_deliveryManager;
-        private NetworkObject m_scheduledCouch;
+        private readonly Dictionary<int, float> m_deliverySpawnTimes = new();
+        private int m_spawningDeliveryId;
+        private int SpawningTierIndex => m_deliveryManager.TryGetDelivery(m_spawningDeliveryId, out var job) ? job.TierIndex : -1;
+        public void RemoveDeliveryEnemiesServer(int id)
+        {
+            m_deliverySpawnTimes.Remove(id);
+            for (int i = m_activeThieves.Count - 1; i >= 0; i--)
+            {
+                var thief = m_activeThieves[i];
+                if (thief != null && thief.TryGetComponent(out ThiefSpawnMember member) && member.DeliveryId == id)
+                {
+                    m_activeThieves.RemoveAt(i);
+                    if (thief.IsSpawned) InstanceFinder.ServerManager.Despawn(thief);
+                }
+            }
+        }
         private bool m_regionReady;
         private bool m_clearingEnemies;
-        private bool m_warnedMissingPrefab;
         private float m_nextSpawnTime = float.PositiveInfinity;
         private Vector3 m_lastSpawnOrigin;
         private Vector3 m_lastSpawnTarget;
@@ -107,7 +121,6 @@ namespace CouchGuys.Gameplay.Enemies
             NetworkPlayerOwnership.ServerPlayerStarted -= RegisterPlayer;
             NetworkPlayerOwnership.ServerPlayerStopped -= UnregisterPlayer;
             m_players.Clear();
-            m_scheduledCouch = null;
             m_nextSpawnTime = float.PositiveInfinity;
         }
 
@@ -115,38 +128,25 @@ namespace CouchGuys.Gameplay.Enemies
         {
             if (!SpawningEnabled)
             {
-                m_scheduledCouch = null;
                 m_nextSpawnTime = float.PositiveInfinity;
                 return;
             }
 
-            if (m_scheduledCouch != m_deliveryManager.ActiveCouch)
+            foreach (var job in m_deliveryManager.Deliveries)
             {
-                m_scheduledCouch = m_deliveryManager.ActiveCouch;
-                ScheduleNextSpawn();
-            }
-
-            if (Time.time < m_nextSpawnTime)
-            {
-                return;
-            }
-
-            if (!HasEnemyPrefabs())
-            {
-                if (!m_warnedMissingPrefab)
+                if (job.Status != DeliveryState.Transport) continue;
+                m_spawningDeliveryId = job.Id;
+                if (!m_deliverySpawnTimes.TryGetValue(job.Id, out float next))
                 {
-                    Debug.LogWarning(
-                        "Enemy Spawn Manager has no enemy weapon prefabs. Assign at least one prefab to enable spawning.",
-                        this);
-                    m_warnedMissingPrefab = true;
+                    ScheduleNextSpawn();
+                    m_deliverySpawnTimes[job.Id] = m_nextSpawnTime;
+                    continue;
                 }
-
+                if (Time.time < next) continue;
+                if (HasEnemyPrefabs()) TrySpawnGroup();
                 ScheduleNextSpawn();
-                return;
+                m_deliverySpawnTimes[job.Id] = m_nextSpawnTime;
             }
-
-            TrySpawnGroup();
-            ScheduleNextSpawn();
         }
 
         public void SetGenerator(NeighbourhoodGenerator generator)
@@ -157,7 +157,6 @@ namespace CouchGuys.Gameplay.Enemies
         public void SetEnemyPrefabs(NetworkObject[] enemyPrefabs)
         {
             m_enemyPrefabs = enemyPrefabs;
-            m_warnedMissingPrefab = false;
         }
 
         public void SetThiefPrefab(NetworkObject thiefPrefab)
@@ -176,14 +175,13 @@ namespace CouchGuys.Gameplay.Enemies
         private void OnRegionGenerated(NeighbourhoodGenerator generator)
         {
             m_regionReady = generator != null && generator.IsGenerationReady && generator.IsNavMeshReady;
-            m_scheduledCouch = null;
             m_nextSpawnTime = float.PositiveInfinity;
         }
 
         private void OnRegionClearing(NeighbourhoodGenerator generator)
         {
+            m_deliverySpawnTimes.Clear();
             m_regionReady = false;
-            m_scheduledCouch = null;
             m_nextSpawnTime = float.PositiveInfinity;
             DespawnAllThieves();
         }
@@ -250,6 +248,7 @@ namespace CouchGuys.Gameplay.Enemies
                 }
 
                 member.Register(this, thief);
+                member.AssignDelivery(m_spawningDeliveryId);
                 if (!target.TryGetComponent(out PlayerHealth targetHealth))
                 {
                     Destroy(thief.gameObject);
@@ -292,7 +291,7 @@ namespace CouchGuys.Gameplay.Enemies
                 return false;
             }
 
-            DeliveryTierConfig tier = m_deliveryManager.GetTierConfig(m_deliveryManager.ActiveTierIndex);
+            DeliveryTierConfig tier = m_deliveryManager.GetTierConfig(SpawningTierIndex);
             if (tier == null) return false;
             minimum = tier.MinThievesPerWave;
             maximum = tier.MaxThievesPerWave;
@@ -318,7 +317,7 @@ namespace CouchGuys.Gameplay.Enemies
                 }
 
                 validCount++;
-                if (player.TryGetComponent(out PlayerCouchCarrier carrier) && carrier.IsCarrying)
+                if (player.TryGetComponent(out PlayerCouchCarrier carrier) && carrier.CarriedCouch != null && carrier.CarriedCouch.DeliveryId == m_spawningDeliveryId)
                 {
                     carryingCount++;
                 }
@@ -333,7 +332,7 @@ namespace CouchGuys.Gameplay.Enemies
                     continue;
                 }
 
-                bool carrying = player.TryGetComponent(out PlayerCouchCarrier carrier) && carrier.IsCarrying;
+                bool carrying = player.TryGetComponent(out PlayerCouchCarrier carrier) && carrier.CarriedCouch != null && carrier.CarriedCouch.DeliveryId == m_spawningDeliveryId;
                 if (carryingCount > 0 && !carrying)
                 {
                     continue;
@@ -471,7 +470,7 @@ namespace CouchGuys.Gameplay.Enemies
         private void ScheduleNextSpawn()
         {
             DeliveryTierConfig tier = SpawningEnabled
-                ? m_deliveryManager.GetTierConfig(m_deliveryManager.ActiveTierIndex)
+                ? m_deliveryManager.GetTierConfig(SpawningTierIndex)
                 : null;
             m_nextSpawnTime = tier != null
                 ? Time.time + Random.Range(tier.MinSpawnInterval, tier.MaxSpawnInterval)
@@ -499,7 +498,7 @@ namespace CouchGuys.Gameplay.Enemies
         private NetworkObject SelectEnemyPrefab()
         {
             DeliveryTierConfig tier = m_deliveryManager != null
-                ? m_deliveryManager.GetTierConfig(m_deliveryManager.ActiveTierIndex) : null;
+                ? m_deliveryManager.GetTierConfig(SpawningTierIndex) : null;
             if (tier != null && tier.ShouldReplaceWithRocketThief(CountActiveRocketThieves(), Random.value))
                 return tier.RocketThiefPrefab;
             if (tier != null && tier.ShouldReplaceWithGrappler(CountActiveGrapplers(), Random.value))
@@ -528,7 +527,8 @@ namespace CouchGuys.Gameplay.Enemies
         {
             int count = 0;
             foreach (NetworkObject thief in m_activeThieves)
-                if (thief != null && thief.IsSpawned && thief.TryGetComponent(out EnemyWeapon weapon) &&
+                if (thief != null && thief.IsSpawned && thief.TryGetComponent(out ThiefSpawnMember member) &&
+                    member.DeliveryId == m_spawningDeliveryId && thief.TryGetComponent(out EnemyWeapon weapon) &&
                     weapon.IsRocketLauncher && thief.TryGetComponent(out ThiefHealth health) && health.IsAlive) count++;
             return count;
         }
@@ -537,7 +537,8 @@ namespace CouchGuys.Gameplay.Enemies
         {
             int count = 0;
             foreach (NetworkObject thief in m_activeThieves)
-                if (thief != null && thief.IsSpawned && thief.TryGetComponent(out GrapplerThief _) &&
+                if (thief != null && thief.IsSpawned && thief.TryGetComponent(out ThiefSpawnMember member) &&
+                    member.DeliveryId == m_spawningDeliveryId && thief.TryGetComponent(out GrapplerThief _) &&
                     thief.TryGetComponent(out ThiefHealth health) && health.IsAlive) count++;
             return count;
         }

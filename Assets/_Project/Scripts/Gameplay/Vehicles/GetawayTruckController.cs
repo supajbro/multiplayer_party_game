@@ -278,7 +278,7 @@ namespace CouchGuys.Gameplay.Vehicles
                 { m_nextDecision = Time.time + m_settings.DecisionInterval; ChooseExit(false); }
                 return;
             }
-            if (m_delivery == null || m_couch == null || !m_couch.IsSpawned || m_delivery.ActiveCouch != m_couch.NetworkObject)
+            if (m_delivery == null || m_couch == null || !m_couch.IsSpawned || !m_delivery.IsDeliveryCouch(m_couch))
             { DepartServer(); return; }
             if (State == GetawayTruckState.Loading)
             {

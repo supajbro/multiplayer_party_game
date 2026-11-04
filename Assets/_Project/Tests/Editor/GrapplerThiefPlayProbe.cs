@@ -99,8 +99,10 @@ namespace CouchGuys.Editor
             var couch = Object.Instantiate(AssetDatabase.LoadAssetAtPath<NetworkObject>("Assets/_Project/Prefabs/Couch.prefab"),
                 Vector3.up * 0.5f, Quaternion.identity);
             s_network.ServerManager.Spawn(couch);
-            SetSync(delivery, "m_activeCouch", couch);
-            SetSync(delivery, "m_destinationIndex", 0);
+            couch.GetComponent<CouchGuys.Gameplay.Couch.CouchCarryController>().AssignDeliveryServer(1);
+            var deliveries = (SyncList<DeliveryInstance>)typeof(DeliveryManager).GetField("m_deliveries", Fields).GetValue(delivery);
+            deliveries.Add(new DeliveryInstance { Id = 1, CouchObjectId = couch.ObjectId,
+                DestinationIndex = 0, TierIndex = 1, Status = DeliveryState.Transport });
             var source = AssetDatabase.LoadAssetAtPath<NetworkObject>("Assets/_Project/Prefabs/Player.prefab");
             var player = Object.Instantiate(source, Vector3.forward * 2f + Vector3.up * 0.05f, Quaternion.identity);
             s_network.ServerManager.Spawn(player, owner);
@@ -109,6 +111,8 @@ namespace CouchGuys.Editor
             var enemy = Object.Instantiate(AssetDatabase.LoadAssetAtPath<NetworkObject>("Assets/_Project/Prefabs/Enemies/GrapplerThief.prefab"),
                 Vector3.forward * 11f, Quaternion.Euler(0f, 180f, 0f));
             s_network.ServerManager.Spawn(enemy);
+            var member = enemy.GetComponent<ThiefSpawnMember>() ?? enemy.gameObject.AddComponent<ThiefSpawnMember>();
+            member.AssignDelivery(1);
             var grapple = enemy.GetComponent<GrapplerThief>();
             var health = player.GetComponent<PlayerHealth>();
             var motor = player.GetComponent<ThirdPersonPlayerController>();
