@@ -79,6 +79,7 @@ namespace CouchGuys.Player
         public event Action<float, float> HealthChanged;
         public event Action<bool> KnockdownChanged;
         public event Action Died;
+        internal event Action DamageReceivedServer;
         public event Action Respawned;
 
         public static IReadOnlyList<PlayerHealth> Instances => s_instances;
@@ -90,7 +91,8 @@ namespace CouchGuys.Player
         public bool HasPendingRespawn => IsDowned && !IsAiTeammate;
         public float DownedRemaining => m_downedRemaining.Value;
         public bool CanRevive => IsSpawned && IsAlive && !IsKnockedDown &&
-            !IsAiTeammate && Owner.IsValid && Owner.IsActive &&
+            ((IsAiTeammate && IsServerInitialized && !Owner.IsValid) ||
+             (!IsAiTeammate && Owner.IsValid && Owner.IsActive)) &&
             (m_carrier == null || !m_carrier.IsCarrying) && (m_truck == null || m_truck.CurrentTruck == null);
         public bool HasReviveInteraction => FindReviveTarget() != null;
         public bool IsKnockedDown => m_knockedDown.Value;
@@ -339,6 +341,12 @@ namespace CouchGuys.Player
         [ServerRpc]
         private void HoldReviveServerRpc(NetworkObject targetObject)
         {
+            HoldReviveServer(targetObject);
+        }
+
+        [Server]
+        internal void HoldReviveServer(NetworkObject targetObject)
+        {
             if (!CanRevive || targetObject == null || !targetObject.IsSpawned ||
                 !targetObject.TryGetComponent(out PlayerHealth target) || target == this || !target.IsDowned ||
                 Time.time >= target.m_respawnAtServerTime ||
@@ -360,7 +368,7 @@ namespace CouchGuys.Player
         [ServerRpc]
         private void ReleaseReviveServerRpc() => CancelOutgoingReviveServer();
 
-        private void CancelOutgoingReviveServer()
+        internal void CancelOutgoingReviveServer()
         {
             if (m_activeReviveTarget != null && m_activeReviveTarget.m_reviver.Value == NetworkObject)
                 m_activeReviveTarget.ClearReviveServer();
@@ -470,6 +478,7 @@ namespace CouchGuys.Player
 
             float appliedDamage = Mathf.Min(Mathf.Max(0f, damage), m_currentHealth.Value);
             m_currentHealth.Value = Mathf.Max(0f, m_currentHealth.Value - appliedDamage);
+            if (appliedDamage > 0f) DamageReceivedServer?.Invoke();
             bool died = !IsAlive;
             Vector3 horizontalDirection = Vector3.ProjectOnPlane(impactDirection, Vector3.up);
             if (horizontalDirection.sqrMagnitude < 0.001f)

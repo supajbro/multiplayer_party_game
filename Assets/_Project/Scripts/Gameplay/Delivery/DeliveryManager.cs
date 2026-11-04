@@ -304,28 +304,29 @@ namespace CouchGuys.Gameplay.Delivery
                 return false;
             }
 
-            if (m_couchPrefab == null || m_couchPrefab.GetComponent<CouchCarryController>() == null)
-            {
-                Debug.LogError("Delivery Manager needs a registered Couch prefab with CouchCarryController.", this);
-                return false;
-            }
-
-            EnsureCandidateCache();
-            int destinationIndex = SelectDestinationIndex(tierIndex);
-            if (destinationIndex < 0)
-            {
-                SendDialogueState(player, $"No available {tier.Tier} delivery houses");
-                return false;
-            }
-            if (m_currency.Value < tier.PurchasePrice)
+            if (!TryStartDeliveryServer(npc, tierIndex))
             {
                 SendDialogueState(player);
                 return false;
             }
+            ReleaseDialogueLockServer(player, true, $"{tier.DisplayName} started.");
+            return true;
+        }
 
+        // Shared validated purchase path for dispatcher interaction and authoritative AI.
+        [Server]
+        public bool TryStartDeliveryServer(DeliveryNPC npc, int tierIndex)
+        {
+            m_chapterManager ??= GetComponent<SuburbsChapterManager>();
+            DeliveryTierConfig tier = GetTierConfig(tierIndex);
+            if (!IsServerInitialized || npc == null || !npc.isActiveAndEnabled || npc.Manager != this || tier == null ||
+                m_couchPrefab == null || m_couchPrefab.GetComponent<CouchCarryController>() == null ||
+                m_currency.Value < tier.PurchasePrice) return false;
+            EnsureCandidateCache();
+            int destinationIndex = SelectDestinationIndex(tierIndex);
+            if (destinationIndex < 0) return false;
             BeginDeliveryServer(tierIndex, destinationIndex, npc);
             m_currency.Value -= tier.PurchasePrice;
-            ReleaseDialogueLockServer(player, true, $"{tier.DisplayName} started.");
             return true;
         }
 

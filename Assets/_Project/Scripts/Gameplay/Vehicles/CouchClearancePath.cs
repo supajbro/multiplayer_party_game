@@ -182,7 +182,11 @@ namespace CouchGuys.Gameplay.Vehicles
                 // but never allow a segment to enter or cross an obstruction.
                 if (hit.distance < .01f && (from - m_start).sqrMagnitude < .01f)
                 {
-                    Vector3 outward = Centre(from) - hit.collider.ClosestPoint(Centre(from));
+                    bool supportsClosestPoint = hit.collider is BoxCollider || hit.collider is SphereCollider ||
+                        hit.collider is CapsuleCollider || (hit.collider is MeshCollider mesh && mesh.convex);
+                    Vector3 closest = supportsClosestPoint ? hit.collider.ClosestPoint(Centre(from)) :
+                        hit.collider.bounds.ClosestPoint(Centre(from));
+                    Vector3 outward = Centre(from) - closest;
                     float advance = Mathf.Min(length, m_settings.CarryClearancePadding * 2f + .1f);
                     if (Vector3.Dot(outward.normalized, offset.normalized) > .1f &&
                         Fits(from + offset.normalized * advance) &&

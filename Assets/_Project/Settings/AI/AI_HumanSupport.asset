@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0084e49135646aa4f8966656b1c8daf3, type: 3}
+  m_Name: AI_HumanSupport
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.AITeammateRoleSettings
+  Role: 0
+  CouchNavigationSettings: {fileID: 11400000, guid: 382bf7edefbe4c0d86c3305759d3f106, type: 2}
+  CombatDetectionRange: 12
+  MaximumCombatChaseDistance: 14
+  CarrierDamageHitThreshold: 3
+  CarrierDamageTimeWindow: 4
+  RevivalPriority: 2
+  FollowDistance: 1.75
+  CouchInteractionDistance: 1
+  StateTransitionCooldown: 1.5
+  ReviveAttemptTimeout: 20
+  ReviveRetryDelay: 10

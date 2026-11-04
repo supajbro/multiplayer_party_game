@@ -12,6 +12,8 @@ namespace CouchGuys.Networking
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void LoadBootstrap()
         {
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "AITest") return;
+
             if (Object.FindFirstObjectByType<SteamLobbyController>() != null)
             {
                 return;

@@ -313,6 +313,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 908aac98247f49648f63b30b6c29ec4a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.DebugCouchBotController
+  m_roleSettings: {fileID: 11400000, guid: 000862d785d09854ea208d0b128fadd7, type: 2}
 --- !u!114 &2770509040782231261
 MonoBehaviour:
   m_ObjectHideFlags: 0
