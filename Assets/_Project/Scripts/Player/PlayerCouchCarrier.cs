@@ -79,6 +79,11 @@ namespace CouchGuys.Player
         public SledController CarriedSled => m_carriedSled.Value != null &&
             m_carriedSled.Value.TryGetComponent(out SledController sled) ? sled : null;
         public string SledInteractionPrompt => m_sledInteractionPrompt;
+        // The root can sit below the floor because the character capsule has an offset.
+        // Measure reach from the body so raised handles remain within arm's reach.
+        internal Vector3 SledGrabOrigin => m_carrierCollider != null
+            ? transform.TransformPoint(m_carrierCollider.center)
+            : transform.position + Vector3.up * CarryHeight;
         internal bool IsAvailableForServerCarry => IsSpawned && !IsCarrying &&
             (!TryGetComponent(out PlayerHealth health) || health.IsAlive);
         internal bool IsValidServerCarrier => IsSpawned &&
@@ -439,7 +444,7 @@ namespace CouchGuys.Player
                 return false;
             SledGrabPoint point = sled.GetPoint(pointIndex);
             float allowedRange = m_interactionRange + m_serverRangeTolerance;
-            return point != null && Vector3.Distance(transform.position, point.transform.position) <= allowedRange &&
+            return point != null && Vector3.Distance(SledGrabOrigin, point.transform.position) <= allowedRange &&
                 IsFacingTarget(transform.position, transform.forward,
                     sled.SledRigidbody.worldCenterOfMass,
                     MinimumGrabFacingDot - ServerGrabFacingTolerance) &&
@@ -485,7 +490,7 @@ namespace CouchGuys.Player
                 if (point == null || !point.IsAvailable || point.Sled == null || !point.Sled.IsSpawned ||
                     !IsFacingTarget(transform.position, transform.forward,
                         point.Sled.SledRigidbody.worldCenterOfMass, MinimumGrabFacingDot)) continue;
-                float distanceSquared = (point.transform.position - transform.position).sqrMagnitude;
+                float distanceSquared = (point.transform.position - SledGrabOrigin).sqrMagnitude;
                 if (distanceSquared <= closestDistanceSquared)
                 {
                     closestDistanceSquared = distanceSquared;
@@ -585,7 +590,7 @@ namespace CouchGuys.Player
                          FindObjectsInactive.Exclude, FindObjectsSortMode.None))
             {
                 if (point != null && point.IsAvailable &&
-                    (point.transform.position - transform.position).sqrMagnitude <= rangeSquared)
+                    (point.transform.position - SledGrabOrigin).sqrMagnitude <= rangeSquared)
                 {
                     m_sledInteractionPrompt = "Press E to grab sled";
                     return;
@@ -793,7 +798,7 @@ namespace CouchGuys.Player
 
             SledGrabPoint point = sled.GetPoint(pointIndex);
             float allowedRange = m_interactionRange + m_serverRangeTolerance;
-            if (point == null || Vector3.Distance(transform.position, point.transform.position) > allowedRange ||
+            if (point == null || Vector3.Distance(SledGrabOrigin, point.transform.position) > allowedRange ||
                 !IsFacingTarget(transform.position, transform.forward,
                     sled.SledRigidbody.worldCenterOfMass,
                     MinimumGrabFacingDot - ServerGrabFacingTolerance)) return;

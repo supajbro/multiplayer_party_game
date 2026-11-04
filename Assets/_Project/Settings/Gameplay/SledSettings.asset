@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: SledSettings
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Sled.SledSettings
   m_speedOnePlayer: 2.5
-  m_speedTwoPlayers: 2.5
-  m_speedThreePlayers: 3.2
-  m_speedFourPlayers: 4
+  m_speedTwoPlayers: 3
+  m_speedThreePlayers: 3.6
+  m_speedFourPlayers: 4.6
   m_steeringStrength: 1
   m_slidingFriction: 0.18

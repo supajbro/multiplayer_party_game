@@ -3,6 +3,7 @@ using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using FishNet.Component.Transforming;
 using UnityEngine;
+using CouchGuys.Gameplay.Couch;
 
 namespace CouchGuys.Gameplay.Sled
 {
@@ -16,6 +17,37 @@ namespace CouchGuys.Gameplay.Sled
         [SerializeField] private Rigidbody m_rigidbody;
         [SerializeField] private SledGrabPoint[] m_grabPoints = new SledGrabPoint[MaximumGrabPoints];
         [SerializeField] private SledSettings m_settings;
+        [SerializeField] private Transform m_couchAnchor;
+        [SerializeField, Range(0f, 1f)] private float m_staminaDrainMultiplier = 0.35f;
+        private CouchCarryController m_mountedCouch;
+        private float m_nextMountTime;
+
+        public Transform CouchAnchor => m_couchAnchor;
+        public float StaminaDrainMultiplier => m_staminaDrainMultiplier;
+
+        private void OnCollisionStay(Collision collision)
+        {
+            if (!IsServerInitialized || m_couchAnchor == null || m_mountedCouch != null ||
+                Time.time < m_nextMountTime || collision.rigidbody == null) return;
+            CouchCarryController couch = collision.rigidbody.GetComponent<CouchCarryController>();
+            if (couch == null || !couch.IsSpawned || couch.IsLoaded || !couch.IsPickupAvailable ||
+                couch.ActiveCarrierCount > 0) return;
+            Vector3 centre = transform.InverseTransformPoint(couch.transform.TransformPoint(couch.CargoBounds.center));
+            // Only secure a couch resting on the deck, never one colliding with a side.
+            if (Mathf.Abs(centre.x) > 0.45f || Mathf.Abs(centre.z) > 0.35f ||
+                Vector3.Dot(couch.transform.up, transform.up) < 0.9f) return;
+            bool onDeck = false;
+            foreach (ContactPoint contact in collision.contacts)
+                if (transform.InverseTransformPoint(contact.point).y >= m_couchAnchor.localPosition.y - 0.06f)
+                    onDeck = true;
+            if (onDeck && couch.MountOnSledServer(this)) m_mountedCouch = couch;
+        }
+
+        internal void ForgetMountedCouch(CouchCarryController couch)
+        {
+            if (m_mountedCouch == couch) m_mountedCouch = null;
+            m_nextMountTime = Time.time + 1f;
+        }
 
         private const float SledMass = 75f;
         private const float MaximumGrabDistance = 1.35f;
@@ -70,6 +102,7 @@ namespace CouchGuys.Gameplay.Sled
 
         public override void OnStopServer()
         {
+            if (m_mountedCouch != null) m_mountedCouch.UnmountFromSledServer();
             ReleaseAllOccupantsServer();
             base.OnStopServer();
         }
@@ -93,7 +126,7 @@ namespace CouchGuys.Gameplay.Sled
                 SledGrabPoint point = GetPoint(index);
                 if (carrier == null) continue;
                 if (!carrier.IsValidServerCarrier || carrier.CarriedSled != this || point == null ||
-                    Vector3.Distance(carrier.transform.position, point.transform.position) > MaximumGrabDistance + 0.5f)
+                    Vector3.Distance(carrier.SledGrabOrigin, point.transform.position) > MaximumGrabDistance + 0.5f)
                 {
                     ReleasePointServer(index, carrier);
                     continue;

@@ -5,6 +5,7 @@ using FishNet.Component.Transforming;
 using UnityEngine;
 using System.Collections;
 using CouchGuys.Gameplay.Vehicles;
+using CouchGuys.Gameplay.Sled;
 
 namespace CouchGuys.Gameplay.Couch
 {
@@ -89,6 +90,7 @@ namespace CouchGuys.Gameplay.Couch
         private readonly SyncVar<float> m_cooperationEfficiency = new(1f);
         private readonly SyncVar<int> m_modelVariantIndex = new(-1);
         private readonly SyncVar<NetworkObject> m_loadedTruck = new();
+        private readonly SyncVar<NetworkObject> m_mountedSled = new();
         private readonly SyncVar<int> m_loadedCargoSlot = new(-1);
         private readonly SyncVar<bool> m_depotTransportActive = new();
         private readonly ICouchCarrierServer[] m_serverOccupants = new ICouchCarrierServer[MaximumCarryPoints];
@@ -150,7 +152,7 @@ namespace CouchGuys.Gameplay.Couch
             ? m_rigidbody.linearVelocity
             : m_visualWorldVelocity;
         public int ModelVariantIndex => m_modelVariantIndex.Value;
-        public bool IsLoaded => m_loadedTruck.Value != null;
+        public bool IsLoaded => m_loadedTruck.Value != null || m_mountedSled.Value != null;
         public NetworkObject LoadedTruckObject => m_loadedTruck.Value;
         public int LoadedCargoSlot => m_loadedCargoSlot.Value;
         public bool IsPickupAvailable => !m_depotTransportActive.Value && m_cargoTransition == null;
@@ -204,6 +206,7 @@ namespace CouchGuys.Gameplay.Couch
             }
             m_modelVariantIndex.OnChange += OnModelVariantChanged;
             m_loadedTruck.OnChange += OnLoadedTruckChanged;
+            m_mountedSled.OnChange += OnLoadedTruckChanged;
             ApplyWeightAndStability();
             ApplyRuntimePhysicsConfiguration();
             ConfigureColliderMaterials();
@@ -236,6 +239,7 @@ namespace CouchGuys.Gameplay.Couch
 
         public override void OnStopServer()
         {
+            UnmountFromSledServer();
             ReleaseAllOccupantsServer();
             base.OnStopServer();
         }
@@ -244,6 +248,7 @@ namespace CouchGuys.Gameplay.Couch
         {
             m_modelVariantIndex.OnChange -= OnModelVariantChanged;
             m_loadedTruck.OnChange -= OnLoadedTruckChanged;
+            m_mountedSled.OnChange -= OnLoadedTruckChanged;
             if (m_runtimePhysicsMaterial != null)
             {
                 Destroy(m_runtimePhysicsMaterial);
@@ -560,7 +565,7 @@ namespace CouchGuys.Gameplay.Couch
 
         internal bool TryGrabPointServer(ICouchCarrierServer carrier, int pointIndex)
         {
-            if (!IsServerInitialized || !IsPickupAvailable || IsLoaded || carrier == null || !carrier.IsCarrierAvailable ||
+            if (!IsServerInitialized || !IsPickupAvailable || m_loadedTruck.Value != null || carrier == null || !carrier.IsCarrierAvailable ||
                 !IsValidPointIndex(pointIndex) || GetPoint(pointIndex) == null || IsPointOccupied(pointIndex))
             {
                 return false;
@@ -574,6 +579,7 @@ namespace CouchGuys.Gameplay.Couch
                 }
             }
 
+            UnmountFromSledServer();
             m_serverOccupants[pointIndex] = carrier;
             SetOccupantObjectId(pointIndex, carrier.CarrierNetworkObject.ObjectId);
             carrier.SetCarriedCouchServer(this, pointIndex);
@@ -850,6 +856,17 @@ namespace CouchGuys.Gameplay.Couch
 
         private void ApplyLoadedStateImmediately()
         {
+            if (m_mountedSled.Value != null && m_mountedSled.Value.TryGetComponent(out SledController sled) &&
+                sled.CouchAnchor != null)
+            {
+                SetCargoPhysics(true);
+                transform.SetParent(sled.CouchAnchor, false);
+                transform.localRotation = Quaternion.identity;
+                transform.localPosition = Vector3.Scale(
+                    new Vector3(-m_cargoBounds.center.x, -m_cargoBounds.min.y, -m_cargoBounds.center.z),
+                    transform.localScale);
+                return;
+            }
             NetworkObject truckObject = m_loadedTruck.Value;
             if (truckObject != null && truckObject.TryGetComponent(out TruckController truck))
             {
@@ -863,6 +880,31 @@ namespace CouchGuys.Gameplay.Couch
             }
             transform.SetParent(null, true);
             SetCargoPhysics(false);
+        }
+
+        [Server]
+        internal bool MountOnSledServer(SledController sled)
+        {
+            if (!IsServerInitialized || IsLoaded || !IsPickupAvailable || ActiveCarrierCount > 0 ||
+                sled == null || sled.CouchAnchor == null) return false;
+            m_mountedSled.Value = sled.NetworkObject;
+            ApplyLoadedStateImmediately();
+            return true;
+        }
+
+        [Server]
+        internal void UnmountFromSledServer()
+        {
+            if (!IsServerInitialized || m_mountedSled.Value == null) return;
+            SledController sled = m_mountedSled.Value.GetComponent<SledController>();
+            m_mountedSled.Value = null;
+            ApplyLoadedStateImmediately();
+            if (sled != null)
+            {
+                sled.ForgetMountedCouch(this);
+                m_rigidbody.linearVelocity = sled.SledRigidbody.GetPointVelocity(transform.position);
+            }
+            GetComponent<NetworkTransform>()?.Teleport();
         }
 
         private void AttachToCargoPoint(Transform point, bool autoPosition)
