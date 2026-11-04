@@ -45,6 +45,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6540145678839873078}
   - component: {fileID: 182814147238076582}
+  - component: {fileID: 930010}
   m_Layer: 0
   m_Name: GrabPointFrontLeft
   m_TagString: Untagged
@@ -77,7 +78,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e40cdff86d1e173479d83090d77ab80d, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Sled.SledGrabPoint
   m_pointIndex: 0
 --- !u!1 &4461148761598611898
@@ -257,6 +258,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1605210521060919176}
   - component: {fileID: 4598633435802181138}
+  - component: {fileID: 930011}
   m_Layer: 0
   m_Name: GrabPointFrontRight
   m_TagString: Untagged
@@ -289,7 +291,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e40cdff86d1e173479d83090d77ab80d, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Sled.SledGrabPoint
   m_pointIndex: 1
 --- !u!1 &6547574998482860470
@@ -305,6 +307,7 @@ GameObject:
   - component: {fileID: 6552328278524772713}
   - component: {fileID: 1003328844417401717}
   - component: {fileID: 790940804959623239}
+  - component: {fileID: 930000}
   m_Layer: 0
   m_Name: Sled
   m_TagString: Untagged
@@ -329,6 +332,7 @@ Transform:
   - {fileID: 7828687145263201940}
   - {fileID: 8551887251411496806}
   - {fileID: 920001}
+  - {fileID: 940001}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!54 &1500701444308965926
@@ -368,7 +372,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 26b716c41e9b56b4baafaf13a523ba2e, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: FishNet.Runtime::FishNet.Object.NetworkObject
   _localLevelOfDetailCalculationType: 0
   _useLevelOfDetail: 0
@@ -406,6 +410,7 @@ MonoBehaviour:
   NetworkBehaviours:
   - {fileID: 1003328844417401717}
   - {fileID: 790940804959623239}
+  - {fileID: 930000}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -427,7 +432,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: FishNet.Runtime::FishNet.Component.Transforming.NetworkTransform
   _componentIndexCache: 0
   _addedNetworkObject: {fileID: 6552328278524772713}
@@ -473,20 +478,20 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5e4cfb6565bd5e54aadee9ddfdc2423c, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Sled.SledController
   _componentIndexCache: 1
   _addedNetworkObject: {fileID: 6552328278524772713}
   _networkObjectCache: {fileID: 6552328278524772713}
-  m_rigidbody: {fileID: 1500701444308965926}
+  m_carryController: {fileID: 930000}
   m_grabPoints:
   - {fileID: 182814147238076582}
   - {fileID: 4598633435802181138}
   - {fileID: 8606492233564784775}
   - {fileID: 7395514813881188236}
-  m_settings: {fileID: 11400000, guid: bdc1789aae016de42984d0c16b1e2bb2, type: 2}
   m_couchAnchor: {fileID: 920001}
-  m_staminaDrainMultiplier: 0.35
+  m_unloadPoint: {fileID: 940001}
+  m_unloadOffset: {x: 0, y: 0, z: 2.4}
 --- !u!1 &6642204814552667725
 GameObject:
   m_ObjectHideFlags: 0
@@ -529,6 +534,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8681775881186940345}
   - component: {fileID: 8606492233564784775}
+  - component: {fileID: 930012}
   m_Layer: 0
   m_Name: GrabPointRearLeft
   m_TagString: Untagged
@@ -561,7 +567,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e40cdff86d1e173479d83090d77ab80d, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Sled.SledGrabPoint
   m_pointIndex: 2
 --- !u!1 &8213894851063103490
@@ -574,6 +580,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6933957120709389427}
   - component: {fileID: 7395514813881188236}
+  - component: {fileID: 930013}
   m_Layer: 0
   m_Name: GrabPointRearRight
   m_TagString: Untagged
@@ -606,7 +613,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e40cdff86d1e173479d83090d77ab80d, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Sled.SledGrabPoint
   m_pointIndex: 3
 --- !u!1001 &8567080258970535745
@@ -781,6 +788,114 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.65, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3862783528081002281}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &930000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6547574998482860470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b3a20165b93403896f0d7855b3ec949, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Couch.CouchCarryController
+  _componentIndexCache: 2
+  _addedNetworkObject: {fileID: 6552328278524772713}
+  _networkObjectCache: {fileID: 6552328278524772713}
+  m_rigidbody: {fileID: 1500701444308965926}
+  m_carryPoints:
+  - {fileID: 930010}
+  - {fileID: 930011}
+  - {fileID: 930012}
+  - {fileID: 930013}
+  m_modelRoot: {fileID: 401444959884533765}
+  m_modelPrefabs: []
+  m_settings: {fileID: 11400000, guid: 4f1d13f1162045bca704bdd737c0039d, type: 2}
+  m_sledSettings: {fileID: 11400000, guid: 4e43059c7bfa43899b4b57ebeb5ecb89, type: 2}
+--- !u!114 &930010
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4343746574772991815}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4ccf01cf56542c7acdccd871aad3601, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Couch.CouchCarryPoint
+  m_pointIndex: 0
+--- !u!114 &930011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5951389033793142625}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4ccf01cf56542c7acdccd871aad3601, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Couch.CouchCarryPoint
+  m_pointIndex: 1
+--- !u!114 &930012
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7605726726951096471}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4ccf01cf56542c7acdccd871aad3601, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Couch.CouchCarryPoint
+  m_pointIndex: 2
+--- !u!114 &930013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8213894851063103490}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d4ccf01cf56542c7acdccd871aad3601, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Couch.CouchCarryPoint
+  m_pointIndex: 3
+--- !u!1 &940000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 940001}
+  m_Layer: 0
+  m_Name: UnloadPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &940001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 940000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.05, z: 1.05}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

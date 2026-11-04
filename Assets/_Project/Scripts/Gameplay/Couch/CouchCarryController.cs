@@ -40,6 +40,7 @@ namespace CouchGuys.Gameplay.Couch
         [SerializeField] private Transform m_modelRoot;
         [SerializeField] private GameObject[] m_modelPrefabs;
         [SerializeField] private CouchCarrySettings m_settings;
+        [SerializeField] private SledSettings m_sledSettings;
 
         // The designer controls live in CouchCarrySettings. The remaining
         // physical response is deliberately kept internal so each setting has one job.
@@ -90,7 +91,9 @@ namespace CouchGuys.Gameplay.Couch
         private readonly SyncVar<float> m_cooperationEfficiency = new(1f);
         private readonly SyncVar<int> m_modelVariantIndex = new(-1);
         private readonly SyncVar<NetworkObject> m_loadedTruck = new();
+        private readonly SyncVar<Vector3> m_sledMountPosition = new();
         private readonly SyncVar<NetworkObject> m_mountedSled = new();
+        private SledController m_appliedSled;
         private readonly SyncVar<int> m_loadedCargoSlot = new(-1);
         private readonly SyncVar<bool> m_depotTransportActive = new();
         private readonly ICouchCarrierServer[] m_serverOccupants = new ICouchCarrierServer[MaximumCarryPoints];
@@ -152,15 +155,20 @@ namespace CouchGuys.Gameplay.Couch
             ? m_rigidbody.linearVelocity
             : m_visualWorldVelocity;
         public int ModelVariantIndex => m_modelVariantIndex.Value;
+        public bool IsSled => m_sledSettings != null;
+        public float MovementSpeedMultiplier => m_sledSettings != null ? m_sledSettings.MovementSpeedMultiplier : 1f;
+        public float StaminaDrainMultiplier => m_sledSettings != null ? m_sledSettings.StaminaDrainMultiplier : 1f;
+        internal SledController MountedSled => m_mountedSled.Value != null ? m_mountedSled.Value.GetComponent<SledController>() : null;
         public bool IsLoaded => m_loadedTruck.Value != null || m_mountedSled.Value != null;
         public NetworkObject LoadedTruckObject => m_loadedTruck.Value;
         public int LoadedCargoSlot => m_loadedCargoSlot.Value;
-        public bool IsPickupAvailable => !m_depotTransportActive.Value && m_cargoTransition == null;
+        public bool IsPickupAvailable => !m_depotTransportActive.Value && m_cargoTransition == null && m_mountedSled.Value == null;
         internal bool IsCargoTransitioning => m_cargoTransition != null;
         internal Bounds CargoBounds => m_cargoBounds;
         // Delivery completion still requires a player carrier; thieves contribute to
         // physics but cannot accidentally complete the job for the party.
-        internal int ServerCarrierCount => IsServerInitialized ? CountPlayerCarriers() : 0;
+        internal int ServerCarrierCount => IsServerInitialized
+            ? (MountedSled != null ? MountedSled.CarryController.ServerCarrierCount : CountPlayerCarriers()) : 0;
 
         internal int ValidServerCarrierCount
         {
@@ -207,6 +215,7 @@ namespace CouchGuys.Gameplay.Couch
             m_modelVariantIndex.OnChange += OnModelVariantChanged;
             m_loadedTruck.OnChange += OnLoadedTruckChanged;
             m_mountedSled.OnChange += OnLoadedTruckChanged;
+            m_sledMountPosition.OnChange += OnSledMountPositionChanged;
             ApplyWeightAndStability();
             ApplyRuntimePhysicsConfiguration();
             ConfigureColliderMaterials();
@@ -249,6 +258,8 @@ namespace CouchGuys.Gameplay.Couch
             m_modelVariantIndex.OnChange -= OnModelVariantChanged;
             m_loadedTruck.OnChange -= OnLoadedTruckChanged;
             m_mountedSled.OnChange -= OnLoadedTruckChanged;
+            m_sledMountPosition.OnChange -= OnSledMountPositionChanged;
+            if (m_appliedSled != null) m_appliedSled.ForgetMountedCouch(this);
             if (m_runtimePhysicsMaterial != null)
             {
                 Destroy(m_runtimePhysicsMaterial);
@@ -510,7 +521,7 @@ namespace CouchGuys.Gameplay.Couch
         public float CalculateCarrierMovementSpeedMultiplier()
         {
             float carrierProgress = Mathf.InverseLerp(1f, MaximumCarryPoints, ActiveCarrierCount);
-            return Mathf.Lerp(0.65f, 0.95f, carrierProgress);
+            return Mathf.Lerp(0.65f, 0.95f, carrierProgress) * MovementSpeedMultiplier;
         }
 
         public CouchCarryPoint GetPoint(int pointIndex)
@@ -526,6 +537,7 @@ namespace CouchGuys.Gameplay.Couch
         /// </summary>
         internal void SetCarrierCollisionIgnored(Collider carrierCollider, bool ignored)
         {
+            if (IsSled && TryGetComponent(out SledController sled)) sled.SetCargoCarrierCollisionIgnored(carrierCollider, ignored);
             if (carrierCollider == null || m_colliders == null)
             {
                 return;
@@ -856,15 +868,17 @@ namespace CouchGuys.Gameplay.Couch
 
         private void ApplyLoadedStateImmediately()
         {
+            SledController nextSled = MountedSled;
+            if (m_appliedSled != null && m_appliedSled != nextSled) m_appliedSled.ForgetMountedCouch(this);
+            m_appliedSled = nextSled;
             if (m_mountedSled.Value != null && m_mountedSled.Value.TryGetComponent(out SledController sled) &&
                 sled.CouchAnchor != null)
             {
                 SetCargoPhysics(true);
                 transform.SetParent(sled.CouchAnchor, false);
                 transform.localRotation = Quaternion.identity;
-                transform.localPosition = Vector3.Scale(
-                    new Vector3(-m_cargoBounds.center.x, -m_cargoBounds.min.y, -m_cargoBounds.center.z),
-                    transform.localScale);
+                transform.localPosition = m_sledMountPosition.Value;
+                sled.RegisterMountedCouch(this);
                 return;
             }
             NetworkObject truckObject = m_loadedTruck.Value;
@@ -883,10 +897,11 @@ namespace CouchGuys.Gameplay.Couch
         }
 
         [Server]
-        internal bool MountOnSledServer(SledController sled)
+        internal bool MountOnSledServer(SledController sled, Vector3 localPosition)
         {
-            if (!IsServerInitialized || IsLoaded || !IsPickupAvailable || ActiveCarrierCount > 0 ||
+            if (!IsServerInitialized || IsSled || IsLoaded || !IsPickupAvailable || ActiveCarrierCount > 0 ||
                 sled == null || sled.CouchAnchor == null) return false;
+            m_sledMountPosition.Value = localPosition;
             m_mountedSled.Value = sled.NetworkObject;
             ApplyLoadedStateImmediately();
             return true;
@@ -901,10 +916,39 @@ namespace CouchGuys.Gameplay.Couch
             ApplyLoadedStateImmediately();
             if (sled != null)
             {
-                sled.ForgetMountedCouch(this);
                 m_rigidbody.linearVelocity = sled.SledRigidbody.GetPointVelocity(transform.position);
             }
             GetComponent<NetworkTransform>()?.Teleport();
+        }
+
+        [Server]
+        internal void UnloadFromSledServer(Vector3 position, Quaternion rotation)
+        {
+            UnmountFromSledServer();
+            TeleportServer(position, rotation);
+            ApplySledUnloadPoseObserversRpc(position, rotation);
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void ApplySledUnloadPoseObserversRpc(Vector3 position, Quaternion rotation)
+        {
+            // The final world pose must be applied after detaching, even if transform
+            // samples arrive before the attachment SyncVar on a remote peer.
+            transform.SetParent(null, true);
+            transform.SetPositionAndRotation(position, rotation);
+            SetCargoPhysics(false);
+        }
+
+        private void OnSledMountPositionChanged(Vector3 previous, Vector3 next, bool asServer)
+        {
+            if (m_mountedSled.Value != null) ApplyLoadedStateImmediately();
+        }
+
+        [Server]
+        internal void SetSledMountPositionServer(Vector3 position)
+        {
+            m_sledMountPosition.Value = position;
+            ApplyLoadedStateImmediately();
         }
 
         private void AttachToCargoPoint(Transform point, bool autoPosition)
@@ -950,7 +994,7 @@ namespace CouchGuys.Gameplay.Couch
             m_visualWorldVelocity = Vector3.zero;
             if (m_colliders == null) return;
             for (int index = 0; index < m_colliders.Length; index++)
-                if (m_colliders[index] != null) m_colliders[index].enabled = !loaded;
+                if (m_colliders[index] != null) m_colliders[index].enabled = !loaded || m_mountedSled.Value != null;
         }
 
         internal void TeleportServer(Vector3 position, Quaternion rotation)
@@ -1196,9 +1240,9 @@ namespace CouchGuys.Gameplay.Couch
         private float GetConfiguredMoveSpeed(int carrierCount)
         {
             int clampedCount = Mathf.Clamp(carrierCount, 1, MaximumCarryPoints);
-            return m_settings != null
+            return (m_settings != null
                 ? m_settings.GetMoveSpeed(clampedCount)
-                : s_defaultMoveSpeeds[clampedCount - 1];
+                : s_defaultMoveSpeeds[clampedCount - 1]) * MovementSpeedMultiplier;
         }
 
         internal float GetConfiguredCarrierMoveSpeedServer()
@@ -1408,6 +1452,7 @@ namespace CouchGuys.Gameplay.Couch
 
         private void OnCollisionStay(Collision collision)
         {
+            if (MountedSled != null) MountedSled.TryMountCollisionServer(collision);
             Vector3 bestGroundNormal = m_groundNormal;
             bool foundGround = false;
             for (int index = 0; index < collision.contactCount; index++)

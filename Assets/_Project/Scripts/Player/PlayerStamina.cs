@@ -123,10 +123,8 @@ namespace CouchGuys.Player
             {
                 CouchCarryController couch = m_carrier.GetCarriedCouchServer();
                 int carrierCount = Mathf.Max(1, couch != null ? couch.ValidServerCarrierCount : 1);
-                var sled = m_carrier.GetCarriedSledServer();
-                if (sled != null) carrierCount = Mathf.Max(1, sled.ActiveCarrierCount);
                 float multiplier = Mathf.Max(0f, m_carrierDrainMultiplier.Evaluate(carrierCount));
-                if (sled != null) multiplier *= sled.StaminaDrainMultiplier;
+                if (couch != null) multiplier *= couch.StaminaDrainMultiplier;
                 drain = (m_couchCarryDrain + (sprinting ? m_couchSprintAdditionalDrain : 0f)) * multiplier;
             }
             else if (sprinting)
@@ -142,9 +140,6 @@ namespace CouchGuys.Player
                 {
                     m_exhausted.Value = true;
                     m_serverSprintRequested = false;
-                    // Couch exhaustion weakens the grip; preserve sled exhaustion behaviour.
-                    if (carrying && m_carrier.GetCarriedCouchServer() == null)
-                        m_carrier.ReleaseForStaminaServer();
                 }
             }
             else if (!carrying && Time.time >= m_lastDrainTime + m_recoveryDelay)

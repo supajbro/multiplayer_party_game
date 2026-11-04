@@ -17,16 +17,9 @@ namespace CouchGuys.Editor
     {
         private const string ModelPath = "Assets/_Project/Models/Sled/sled_01.fbx";
         private const string PrefabPath = "Assets/_Project/Prefabs/Vehicles/Sled.prefab";
-        private const string SettingsPath = "Assets/_Project/Settings/Gameplay/SledSettings.asset";
+        private const string SettingsPath = "Assets/_Project/Settings/Gameplay/SledCarrySettings.asset";
         private const string SpawnablesPath = "Assets/_Project/Settings/NetworkSpawnablePrefabs.asset";
         private const string TestScenePath = "Assets/Scenes/CouchPhysicsTest.unity";
-
-        [InitializeOnLoadMethod]
-        private static void BuildMissingAssetsAfterImport()
-        {
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath) == null)
-                EditorApplication.delayCall += BuildSledSystem;
-        }
 
         [MenuItem("Couch Guys/Vehicles/Build Sled System")]
         public static void BuildSledSystem()
@@ -45,80 +38,15 @@ namespace CouchGuys.Editor
 
         private static SledSettings BuildSettings()
         {
-            SledSettings settings = AssetDatabase.LoadAssetAtPath<SledSettings>(SettingsPath);
-            if (settings == null)
-            {
-                settings = ScriptableObject.CreateInstance<SledSettings>();
-                AssetDatabase.CreateAsset(settings, SettingsPath);
-            }
-            SerializedObject so = new(settings);
-            so.FindProperty("m_speedOnePlayer").floatValue = 1.8f;
-            so.FindProperty("m_speedTwoPlayers").floatValue = 2.5f;
-            so.FindProperty("m_speedThreePlayers").floatValue = 3.2f;
-            so.FindProperty("m_speedFourPlayers").floatValue = 4f;
-            so.FindProperty("m_steeringStrength").floatValue = 1f;
-            so.FindProperty("m_slidingFriction").floatValue = 0.18f;
-            so.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(settings);
-            return settings;
+            return AssetDatabase.LoadAssetAtPath<SledSettings>(SettingsPath)
+                ?? throw new UnityException($"Missing authored settings at {SettingsPath}.");
         }
 
         private static NetworkObject BuildPrefab(SledSettings settings)
         {
-            GameObject modelPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
-            if (modelPrefab == null) throw new UnityException($"Missing authored sled model at {ModelPath}.");
-
-            GameObject root = new("Sled");
-            try
-            {
-                Rigidbody body = root.AddComponent<Rigidbody>();
-                NetworkObject networkObject = root.AddComponent<NetworkObject>();
-                NetworkTransform networkTransform = root.AddComponent<NetworkTransform>();
-                SledController controller = root.AddComponent<SledController>();
-
-                GameObject visualRoot = new("Visual");
-                visualRoot.transform.SetParent(root.transform, false);
-                GameObject model = PrefabUtility.InstantiatePrefab(modelPrefab, visualRoot.transform) as GameObject;
-                if (model == null) throw new UnityException("Could not instantiate sled_01.");
-                model.name = "sled_01";
-                // The authored Blender file stores metre geometry as centimetre-sized
-                // mesh data in Z-up space. Match the established truck import convention.
-                model.transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.Euler(-90f, 0f, 0f));
-                model.transform.localScale = Vector3.one * 100f;
-                foreach (Animator animator in model.GetComponentsInChildren<Animator>(true)) animator.enabled = false;
-
-                Bounds bounds = CalculateRendererBounds(model);
-                if (bounds.size.x < 1f || bounds.size.x > 6f ||
-                    bounds.size.y < 0.3f || bounds.size.y > 2f || bounds.size.z > 5f)
-                    throw new UnityException($"sled_01 imported at an unexpected scale/orientation: {bounds.size}.");
-
-                GameObject colliders = Child(root.transform, "CompoundColliders", Vector3.zero);
-                AddBox(colliders, new Vector3(0f, 0.56f, 0f), new Vector3(2.45f, 0.16f, 1.68f));
-                AddBox(colliders, new Vector3(-0.91f, 0.24f, 0f), new Vector3(0.18f, 0.28f, 2.15f));
-                AddBox(colliders, new Vector3(0.91f, 0.24f, 0f), new Vector3(0.18f, 0.28f, 2.15f));
-                AddBox(colliders, new Vector3(-1.2f, 0.72f, 0f), new Vector3(0.12f, 0.3f, 1.62f));
-                AddBox(colliders, new Vector3(1.2f, 0.72f, 0f), new Vector3(0.12f, 0.3f, 1.62f));
-                AddBox(colliders, new Vector3(0f, 0.7f, -0.78f), new Vector3(2.3f, 0.28f, 0.12f));
-
-                GameObject points = Child(root.transform, "GrabPoints", Vector3.zero);
-                SledGrabPoint[] grabPoints =
-                {
-                    AddPoint(points.transform, "GrabPointFrontLeft", new Vector3(-1.12f, 0.62f, 1.05f), 0),
-                    AddPoint(points.transform, "GrabPointFrontRight", new Vector3(1.12f, 0.62f, 1.05f), 1),
-                    AddPoint(points.transform, "GrabPointRearLeft", new Vector3(-1.12f, 0.62f, -1.05f), 2),
-                    AddPoint(points.transform, "GrabPointRearRight", new Vector3(1.12f, 0.62f, -1.05f), 3)
-                };
-
-                SetReference(controller, "m_rigidbody", body);
-                SetReference(controller, "m_settings", settings);
-                SetArray(controller, "m_grabPoints", grabPoints);
-                ConfigureNetwork(networkObject, networkTransform, controller);
-
-                GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
-                if (saved == null) throw new UnityException($"Failed to save {PrefabPath}.");
-                return saved.GetComponent<NetworkObject>();
-            }
-            finally { Object.DestroyImmediate(root); }
+            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            if (prefab == null) throw new UnityException($"Missing authored sled prefab at {PrefabPath}.");
+            return prefab.GetComponent<NetworkObject>();
         }
 
         private static void ConfigureNetwork(NetworkObject no, NetworkTransform nt, SledController controller)

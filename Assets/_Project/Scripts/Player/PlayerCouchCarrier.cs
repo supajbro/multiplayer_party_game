@@ -50,7 +50,6 @@ namespace CouchGuys.Player
         private const float ServerGrabFacingTolerance = 0.15f;
 
         private readonly SyncVar<NetworkObject> m_carriedCouch = new();
-        private readonly SyncVar<NetworkObject> m_carriedSled = new();
         private readonly SyncVar<int> m_carriedPointIndex = new(-1);
         private Vector3 m_serverMovementIntent;
         private Vector3 m_lastSentMovementIntent;
@@ -61,11 +60,9 @@ namespace CouchGuys.Player
         private float m_nextServerBounceTime;
         private CharacterController m_carrierCollider;
         private CouchCarryController m_collisionIgnoredCouch;
-        private SledController m_collisionIgnoredSled;
         private NetworkObject m_cachedMovementCouchObject;
         private CouchCarryController m_cachedMovementCouch;
         private Transform m_cachedMovementAnchor;
-        private SledController m_cachedMovementSled;
         private int m_cachedMovementPointIndex = int.MinValue;
         private uint m_shopPurchaseRequestId;
         private string m_sledInteractionPrompt = string.Empty;
@@ -73,24 +70,25 @@ namespace CouchGuys.Player
 
         internal DebugCouchBotSettings DebugBotSettings => m_debugBot;
         internal int CarriedPointIndex => m_carriedPointIndex.Value;
-        public bool IsCarrying => m_carriedCouch.Value != null || m_carriedSled.Value != null;
+        public bool IsCarrying => m_carriedCouch.Value != null;
         public CouchCarryController CarriedCouch => m_carriedCouch.Value != null &&
             m_carriedCouch.Value.TryGetComponent(out CouchCarryController couch) ? couch : null;
-        public SledController CarriedSled => m_carriedSled.Value != null &&
-            m_carriedSled.Value.TryGetComponent(out SledController sled) ? sled : null;
+        public SledController CarriedSled => CarriedCouch != null ? CarriedCouch.GetComponent<SledController>() : null;
         public string SledInteractionPrompt => m_sledInteractionPrompt;
         // The root can sit below the floor because the character capsule has an offset.
         // Measure reach from the body so raised handles remain within arm's reach.
         internal Vector3 SledGrabOrigin => m_carrierCollider != null
             ? transform.TransformPoint(m_carrierCollider.center)
             : transform.position + Vector3.up * CarryHeight;
+        internal Vector3 GetCarryInteractionOrigin(CouchCarryController couch) =>
+            couch != null && couch.IsSled ? SledGrabOrigin : transform.position;
         internal bool IsAvailableForServerCarry => IsSpawned && !IsCarrying &&
             (!TryGetComponent(out PlayerHealth health) || health.IsAlive);
         internal bool IsValidServerCarrier => IsSpawned &&
             (!TryGetComponent(out PlayerHealth health) || health.IsAlive);
 
         NetworkObject ICouchCarrierServer.CarrierNetworkObject => NetworkObject;
-        bool ICouchCarrierServer.IsCarrierAvailable => IsSpawned && m_carriedSled.Value == null &&
+        bool ICouchCarrierServer.IsCarrierAvailable => IsSpawned &&
             (!TryGetComponent(out PlayerHealth health) || health.IsAlive);
 
         private void Awake()
@@ -99,7 +97,6 @@ namespace CouchGuys.Player
             m_playerController ??= GetComponent<ThirdPersonPlayerController>();
             m_carrierCollider = GetComponent<CharacterController>();
             m_carriedCouch.OnChange += OnCarriedCouchChanged;
-            m_carriedSled.OnChange += OnCarriedSledChanged;
         }
 
         private void Update()
@@ -172,9 +169,7 @@ namespace CouchGuys.Player
         private void OnDestroy()
         {
             m_carriedCouch.OnChange -= OnCarriedCouchChanged;
-            m_carriedSled.OnChange -= OnCarriedSledChanged;
             UpdateCarriedCouchCollision(null);
-            UpdateCarriedSledCollision(null);
         }
 
         internal Vector3 CalculateDesiredCarryPosition(Vector3 couchCentre)
@@ -264,9 +259,7 @@ namespace CouchGuys.Player
             out float inwardSpeedMultiplier,
             out float speedMultiplier)
         {
-            NetworkObject carryable = m_carriedCouch.Value != null
-                ? m_carriedCouch.Value
-                : m_carriedSled.Value;
+            NetworkObject carryable = m_carriedCouch.Value;
             RefreshMovementCache(carryable, m_carriedPointIndex.Value);
 
             anchor = m_cachedMovementAnchor;
@@ -279,16 +272,6 @@ namespace CouchGuys.Player
                 outwardDirection = anchor != null
                     ? Vector3.ProjectOnPlane(
                         anchor.position - m_cachedMovementCouch.transform.position,
-                        Vector3.up)
-                    : Vector3.zero;
-            }
-            else if (m_cachedMovementSled != null)
-            {
-                maximumDistance = m_cachedMovementSled.MaxGrabDistance;
-                speedMultiplier = m_cachedMovementSled.CalculateCarrierMovementSpeedMultiplier();
-                outwardDirection = anchor != null
-                    ? Vector3.ProjectOnPlane(
-                        anchor.position - m_cachedMovementSled.transform.position,
                         Vector3.up)
                     : Vector3.zero;
             }
@@ -315,13 +298,6 @@ namespace CouchGuys.Player
                 return point != null ? point.transform : null;
             }
 
-            if (m_carriedSled.Value != null &&
-                m_carriedSled.Value.TryGetComponent(out SledController sled))
-            {
-                SledGrabPoint point = sled.GetPoint(pointIndex);
-                return point != null ? point.transform : null;
-            }
-
             return null;
         }
 
@@ -344,7 +320,7 @@ namespace CouchGuys.Player
             CouchCarryPoint point = couch.GetPoint(pointIndex);
             float allowedRange = m_interactionRange + m_serverRangeTolerance;
             float serverFacingDot = MinimumGrabFacingDot - ServerGrabFacingTolerance;
-            return point != null && Vector3.Distance(transform.position, point.transform.position) <= allowedRange &&
+            return point != null && Vector3.Distance(GetCarryInteractionOrigin(couch), point.transform.position) <= allowedRange &&
                 IsFacingTarget(
                     transform.position,
                     transform.forward,
@@ -412,50 +388,16 @@ namespace CouchGuys.Player
         void ICouchCarrierServer.ClearCarriedCouchServer(CouchCarryController couch, int pointIndex) =>
             ClearCarriedCouchServer(couch, pointIndex);
 
-        internal SledController GetCarriedSledServer()
-        {
-            NetworkObject sledObject = m_carriedSled.Value;
-            return IsServerInitialized && sledObject != null &&
-                sledObject.TryGetComponent(out SledController sled) ? sled : null;
-        }
+        internal SledController GetCarriedSledServer() => IsServerInitialized ? CarriedSled : null;
 
-        internal void SetCarriedSledServer(SledController sled, int pointIndex)
-        {
-            if (!IsServerInitialized || sled == null || m_carriedCouch.Value != null) return;
-            m_carriedSled.Value = sled.NetworkObject;
-            m_carriedPointIndex.Value = pointIndex;
-            m_serverMovementIntent = Vector3.zero;
-            m_lastServerIntentTime = float.NegativeInfinity;
-        }
-
-        internal void ClearCarriedSledServer(SledController sled, int pointIndex)
-        {
-            if (!IsServerInitialized || m_carriedSled.Value != sled?.NetworkObject ||
-                m_carriedPointIndex.Value != pointIndex) return;
-            m_carriedSled.Value = null;
-            m_carriedPointIndex.Value = -1;
-            m_serverMovementIntent = Vector3.zero;
-            m_lastServerIntentTime = float.NegativeInfinity;
-        }
-
-        internal bool TryGrabSledPointForDebugBotServer(SledController sled, int pointIndex)
-        {
-            if (!IsServerInitialized || Owner.IsValid || IsCarrying || sled == null || !sled.IsSpawned)
-                return false;
-            SledGrabPoint point = sled.GetPoint(pointIndex);
-            float allowedRange = m_interactionRange + m_serverRangeTolerance;
-            return point != null && Vector3.Distance(SledGrabOrigin, point.transform.position) <= allowedRange &&
-                IsFacingTarget(transform.position, transform.forward,
-                    sled.SledRigidbody.worldCenterOfMass,
-                    MinimumGrabFacingDot - ServerGrabFacingTolerance) &&
-                sled.TryGrabPointServer(this, pointIndex);
-        }
+        internal bool TryGrabSledPointForDebugBotServer(SledController sled, int pointIndex) =>
+            sled != null && TryGrabPointForDebugBotServer(sled.CarryController, pointIndex);
 
         private void TryRequestNearestInteraction()
         {
             CouchCarryPoint[] points = FindObjectsByType<CouchCarryPoint>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
             CouchCarryPoint closestPoint = null;
-            SledGrabPoint closestSledPoint = null;
+            SledController closestUnloadSled = null;
             float closestDistanceSquared = m_interactionRange * m_interactionRange;
 
             foreach (CouchCarryPoint point in points)
@@ -474,29 +416,23 @@ namespace CouchGuys.Player
                     continue;
                 }
 
-                float distanceSquared = (point.transform.position - transform.position).sqrMagnitude;
+                float distanceSquared = (point.transform.position - GetCarryInteractionOrigin(point.Couch)).sqrMagnitude;
                 if (distanceSquared <= closestDistanceSquared)
                 {
                     closestDistanceSquared = distanceSquared;
                     closestPoint = point;
-                    closestSledPoint = null;
+                    closestUnloadSled = null;
                 }
             }
 
-            SledGrabPoint[] sledPoints = FindObjectsByType<SledGrabPoint>(
-                FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-            foreach (SledGrabPoint point in sledPoints)
+            foreach (SledController sled in FindObjectsByType<SledController>(FindObjectsSortMode.None))
             {
-                if (point == null || !point.IsAvailable || point.Sled == null || !point.Sled.IsSpawned ||
-                    !IsFacingTarget(transform.position, transform.forward,
-                        point.Sled.SledRigidbody.worldCenterOfMass, MinimumGrabFacingDot)) continue;
-                float distanceSquared = (point.transform.position - SledGrabOrigin).sqrMagnitude;
-                if (distanceSquared <= closestDistanceSquared)
-                {
-                    closestDistanceSquared = distanceSquared;
-                    closestPoint = null;
-                    closestSledPoint = point;
-                }
+                if (!sled.IsSpawned || sled.MountedCouchCount == 0 || sled.UnloadPoint == null) continue;
+                float distanceSquared = (sled.UnloadPoint.position - SledGrabOrigin).sqrMagnitude;
+                if (distanceSquared > closestDistanceSquared) continue;
+                closestDistanceSquared = distanceSquared;
+                closestPoint = null;
+                closestUnloadSled = sled;
             }
 
             DeliveryNPC closestNpc = null;
@@ -508,7 +444,7 @@ namespace CouchGuys.Player
                 {
                     closestDistanceSquared = distanceSquared;
                     closestPoint = null;
-                    closestSledPoint = null;
+                    closestUnloadSled = null;
                     closestNpc = npc;
                 }
             }
@@ -521,7 +457,7 @@ namespace CouchGuys.Player
                 closestDistanceSquared = distance;
                 closestWeapon = pickup;
                 closestPoint = null;
-                closestSledPoint = null;
+                closestUnloadSled = null;
                 closestNpc = null;
             }
 
@@ -533,7 +469,7 @@ namespace CouchGuys.Player
                 depotDoorButton = true;
                 closestWeapon = null;
                 closestPoint = null;
-                closestSledPoint = null;
+                closestUnloadSled = null;
                 closestNpc = null;
             }
 
@@ -541,9 +477,9 @@ namespace CouchGuys.Player
             {
                 RequestGrabServerRpc(closestPoint.Couch.NetworkObject, closestPoint.PointIndex);
             }
-            else if (closestSledPoint != null)
+            else if (closestUnloadSled != null)
             {
-                RequestSledGrabServerRpc(closestSledPoint.Sled.NetworkObject, closestSledPoint.PointIndex);
+                RequestSledUnloadServerRpc(closestUnloadSled.NetworkObject);
             }
             else if (closestNpc != null)
             {
@@ -585,6 +521,17 @@ namespace CouchGuys.Player
                 m_sledInteractionPrompt = "Press E to operate roller door";
                 return;
             }
+            foreach (var sled in FindObjectsByType<SledController>(FindObjectsSortMode.None))
+                if (sled.IsSpawned && sled.MountedCouchCount > 0 && sled.UnloadPoint != null &&
+                    Vector3.Distance(SledGrabOrigin, sled.UnloadPoint.position) <= m_interactionRange &&
+                    sled.GetPoint(0) != null &&
+                    Vector3.Distance(SledGrabOrigin, sled.UnloadPoint.position) <
+                    System.Math.Min(Vector3.Distance(SledGrabOrigin, sled.GetPoint(0).transform.position),
+                        Vector3.Distance(SledGrabOrigin, sled.GetPoint(1).transform.position)))
+                {
+                    m_sledInteractionPrompt = "Press E to unload top couch";
+                    return;
+                }
             float rangeSquared = m_interactionRange * m_interactionRange;
             foreach (SledGrabPoint point in FindObjectsByType<SledGrabPoint>(
                          FindObjectsInactive.Exclude, FindObjectsSortMode.None))
@@ -775,7 +722,7 @@ namespace CouchGuys.Player
             CouchCarryPoint point = couch.GetPoint(pointIndex);
             float allowedRange = m_interactionRange + m_serverRangeTolerance;
             float serverFacingDot = MinimumGrabFacingDot - ServerGrabFacingTolerance;
-            if (point == null || Vector3.Distance(transform.position, point.transform.position) > allowedRange ||
+            if (point == null || Vector3.Distance(GetCarryInteractionOrigin(couch), point.transform.position) > allowedRange ||
                 !IsFacingTarget(
                     transform.position,
                     transform.forward,
@@ -789,21 +736,19 @@ namespace CouchGuys.Player
         }
 
         [ServerRpc]
-        private void RequestSledGrabServerRpc(NetworkObject sledObject, int pointIndex)
+        private void RequestSledUnloadServerRpc(NetworkObject sledObject)
         {
-            if ((TryGetComponent(out PlayerHealth health) && health.IsKnockedDown) ||
-                (TryGetComponent(out PlayerStamina stamina) && !stamina.CanAttachToCouch) ||
-                IsCarrying || sledObject == null || !sledObject.IsSpawned ||
-                !sledObject.TryGetComponent(out SledController sled)) return;
-
-            SledGrabPoint point = sled.GetPoint(pointIndex);
-            float allowedRange = m_interactionRange + m_serverRangeTolerance;
-            if (point == null || Vector3.Distance(SledGrabOrigin, point.transform.position) > allowedRange ||
-                !IsFacingTarget(transform.position, transform.forward,
-                    sled.SledRigidbody.worldCenterOfMass,
-                    MinimumGrabFacingDot - ServerGrabFacingTolerance)) return;
-            sled.TryGrabPointServer(this, pointIndex);
+            if (IsCarrying || sledObject == null || !sledObject.IsSpawned ||
+                !sledObject.TryGetComponent(out SledController sled) || sled.UnloadPoint == null ||
+                (TryGetComponent(out PlayerHealth health) && !health.IsAlive) ||
+                Vector3.Distance(SledGrabOrigin, sled.UnloadPoint.position) > m_interactionRange + m_serverRangeTolerance) return;
+            if (!sled.TryUnloadTopCouchServer() && Owner.IsValid)
+                ShowSledUnloadBlockedTargetRpc(Owner);
         }
+
+        [TargetRpc]
+        private void ShowSledUnloadBlockedTargetRpc(NetworkConnection connection) =>
+            DialogueShopUI.Instance.ShowNotice("Clear the space in front of the sled to unload a couch.");
 
         [ServerRpc]
         private void RequestReleaseServerRpc()
@@ -855,15 +800,9 @@ namespace CouchGuys.Player
             {
                 couch.ReleasePointServer(pointIndex, this);
             }
-            else if (m_carriedSled.Value != null &&
-                     m_carriedSled.Value.TryGetComponent(out SledController sled))
-            {
-                sled.ReleasePointServer(pointIndex, this);
-            }
             else if (IsServerInitialized)
             {
                 m_carriedCouch.Value = null;
-                m_carriedSled.Value = null;
                 m_carriedPointIndex.Value = -1;
             }
         }
@@ -1037,11 +976,6 @@ namespace CouchGuys.Player
             UpdateCarriedCouchCollision(next);
         }
 
-        private void OnCarriedSledChanged(NetworkObject previous, NetworkObject next, bool asServer)
-        {
-            UpdateCarriedSledCollision(next);
-        }
-
         private void UpdateCarriedCouchCollision(NetworkObject couchObject)
         {
             CouchCarryController nextCouch = null;
@@ -1067,18 +1001,6 @@ namespace CouchGuys.Player
             }
         }
 
-        private void UpdateCarriedSledCollision(NetworkObject sledObject)
-        {
-            SledController nextSled = null;
-            if (sledObject != null) sledObject.TryGetComponent(out nextSled);
-            if (nextSled == m_collisionIgnoredSled) return;
-            if (m_collisionIgnoredSled != null)
-                m_collisionIgnoredSled.SetCarrierCollisionIgnored(m_carrierCollider, false);
-            m_collisionIgnoredSled = nextSled;
-            if (m_collisionIgnoredSled != null)
-                m_collisionIgnoredSled.SetCarrierCollisionIgnored(m_carrierCollider, true);
-        }
-
         private void RefreshMovementCache(NetworkObject couchObject, int pointIndex)
         {
             if (couchObject == m_cachedMovementCouchObject && pointIndex == m_cachedMovementPointIndex)
@@ -1089,7 +1011,6 @@ namespace CouchGuys.Player
             m_cachedMovementCouchObject = couchObject;
             m_cachedMovementPointIndex = pointIndex;
             m_cachedMovementCouch = null;
-            m_cachedMovementSled = null;
             m_cachedMovementAnchor = null;
             if (couchObject == null)
             {
@@ -1100,11 +1021,7 @@ namespace CouchGuys.Player
                 CouchCarryPoint point = m_cachedMovementCouch.GetPoint(pointIndex);
                 m_cachedMovementAnchor = point != null ? point.transform : null;
             }
-            else if (couchObject.TryGetComponent(out m_cachedMovementSled))
-            {
-                SledGrabPoint point = m_cachedMovementSled.GetPoint(pointIndex);
-                m_cachedMovementAnchor = point != null ? point.transform : null;
-            }
+
         }
 
 

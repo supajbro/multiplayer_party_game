@@ -157,7 +157,7 @@ namespace CouchGuys.Player
         /// </summary>
         public void SetExternalSpeedMultiplier(float multiplier)
         {
-            m_externalSpeedMultiplier = Mathf.Clamp01(multiplier);
+            m_externalSpeedMultiplier = Mathf.Max(0f, multiplier);
         }
 
         /// <summary>

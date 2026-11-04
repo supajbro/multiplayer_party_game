@@ -360,7 +360,7 @@ namespace CouchGuys.Gameplay.Vehicles
 
         internal bool IsCouchInLoadingRange(CouchCarryController couch, float range)
         {
-            if (couch == null || m_settings == null) return false;
+            if (couch == null || couch.IsSled || m_settings == null) return false;
             Vector3 nearest = couch.transform.TransformPoint(couch.CargoBounds.ClosestPoint(
                 couch.transform.InverseTransformPoint(CargoLoadingPoint.position)));
             return (nearest - CargoLoadingPoint.position).sqrMagnitude <= range * range;
