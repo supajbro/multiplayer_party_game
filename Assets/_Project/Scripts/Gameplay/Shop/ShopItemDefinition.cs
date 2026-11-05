@@ -24,11 +24,12 @@ namespace CouchGuys.Gameplay.Shop
         [SerializeField] private ShopPurchaseBehaviour m_purchaseBehaviour;
 
         public string ItemId => m_itemId;
-        public string DisplayName => m_displayName;
+        public string DisplayName => HealingSettings != null ? HealingSettings.DisplayName : m_displayName;
         public string Description => m_description;
-        public int Price => m_price;
+        private CouchGuys.Gameplay.Healing.HealingItemSettings HealingSettings => m_purchaseBehaviour as CouchGuys.Gameplay.Healing.HealingItemSettings;
+        public int Price => HealingSettings != null ? HealingSettings.PurchasePrice : m_price;
         public ShopItemCategory Category => m_category;
-        public Sprite Icon => m_icon;
+        public Sprite Icon => HealingSettings != null ? HealingSettings.Icon : m_icon;
         public ShopPurchaseBehaviour PurchaseBehaviour => m_purchaseBehaviour;
 
         private void OnValidate()

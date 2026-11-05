@@ -31,6 +31,7 @@ GameObject:
   - component: {fileID: 1378019884586452510}
   - component: {fileID: 6387925064444778072}
   - component: {fileID: 8461372058193047521}
+  - component: {fileID: 2733646546476411137}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -199,6 +200,7 @@ MonoBehaviour:
   - {fileID: 2634208340619463066}
   - {fileID: 3016622510690859693}
   - {fileID: 1254133024385034755}
+  - {fileID: 2733646546476411137}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -863,6 +865,25 @@ MonoBehaviour:
   m_blinkInterval: {x: 2.2, y: 5.2}
   m_blinkDuration: 0.12
   m_eyeDrift: 0.018
+--- !u!114 &2733646546476411137
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96457e88af443624199489e2f28aac51, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Healing.HealingItem
+  _componentIndexCache: 7
+  _addedNetworkObject: {fileID: 4753475039817145927}
+  _networkObjectCache: {fileID: 4753475039817145927}
+  m_inventory: {fileID: 0}
+  m_health: {fileID: 0}
+  m_animation: {fileID: 0}
+  m_effectAnchor: {fileID: 0}
 --- !u!1 &200000
 GameObject:
   m_ObjectHideFlags: 0

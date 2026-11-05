@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CouchGuys.Gameplay.Healing;
 using CouchGuys.Gameplay.Enemies;
 using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Gameplay.Traffic;
@@ -90,7 +91,7 @@ namespace CouchGuys.Gameplay.Weapons
         public event System.Action<ReticleSettings> LocalReticleChanged;
 
         public PlayerWeaponType EquippedWeapon => (PlayerWeaponType)Mathf.Clamp(m_equippedIndex.Value, 0, WeaponCount - 1);
-        public string EquippedWeaponName => GetWeapon(m_equippedIndex.Value)?.DisplayName ?? "None";
+        public string EquippedWeaponName => EquippedHealingItem?.DisplayName ?? GetWeapon(m_equippedIndex.Value)?.DisplayName ?? "None";
         public int CurrentMagazine => ValidIndex(m_equippedIndex.Value)
             ? Mathf.Max(0, m_magazine[m_equippedIndex.Value] - m_pendingLocalShots[m_equippedIndex.Value])
             : 0;
@@ -197,7 +198,7 @@ namespace CouchGuys.Gameplay.Weapons
                 for (int step = 1; step <= InventorySlotCount; step++)
                 {
                     int slot = (currentSlot + scroll * step + InventorySlotCount) % InventorySlotCount;
-                    if (!ValidIndex(GetInventoryWeaponIndex(slot))) continue;
+                    if (GetInventoryWeaponIndex(slot) < 0) continue;
                     selection = slot;
                     break;
                 }
@@ -249,6 +250,11 @@ namespace CouchGuys.Gameplay.Weapons
                 return;
             }
 
+            if (EquippedHealingItem != null)
+            {
+                if (m_input.ShootPressedThisFrame) GetComponent<HealingItem>()?.RequestUseServerRpc();
+                return;
+            }
             if (!HasEquippedWeapon && m_input.ShootPressedThisFrame && Time.time >= m_nextLocalRequestTime &&
                 !(m_couchCarrier != null && m_couchCarrier.IsCarrying))
             {
@@ -320,7 +326,7 @@ namespace CouchGuys.Gameplay.Weapons
         private int FindPickupSlot()
         {
             for (int slot = 0; slot < m_inventory.Count; slot++)
-                if (!ValidIndex(m_inventory[slot])) return slot;
+                if (m_inventory[slot] == -1) return slot;
             return HasEquippedWeapon ? SelectedHotbarSlot : -1;
         }
 
@@ -336,6 +342,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void EquipInventorySlotServer(int slot)
         {
+            GetComponent<HealingItem>()?.CancelUseServer();
             m_batSwinging = false;
             StopGrappleServer();
             StoreEquippedAmmoServer();
@@ -354,12 +361,13 @@ namespace CouchGuys.Gameplay.Weapons
         [ServerRpc]
         private void RequestDropWeaponServerRpc()
         {
-            if (CanHandleWeaponServer && HasEquippedWeapon) DropOwnedWeaponServer();
+            if (CanHandleWeaponServer && m_equippedIndex.Value >= 0) DropOwnedWeaponServer();
         }
 
         [Server]
         public void CancelActionsForDownedServer()
         {
+            GetComponent<HealingItem>()?.CancelUseServer();
             m_batSwinging = false;
             StopGrappleServer();
             EndRifleBurstServer();
@@ -377,6 +385,14 @@ namespace CouchGuys.Gameplay.Weapons
             for (int slot = 0; slot < m_inventory.Count; slot++)
             {
                 int index = m_inventory[slot];
+                if (HealingItemCatalogue.Load()?.Find(index) is HealingItemSettings healing)
+                {
+                    if (WeaponPickup.SpawnHealingServer(healing, deathPosition + Vector3.up * (0.6f + slot * .15f),
+                        Quaternion.identity, Vector3.zero) == null) return false;
+                    m_inventory[slot] = -1;
+                    if (slot == SelectedHotbarSlot) m_equippedIndex.Value = -1;
+                    continue;
+                }
                 if (!ValidIndex(index)) continue;
                 WeaponPickup pickup = WeaponPickup.SpawnServer((PlayerWeaponType)index,
                     deathPosition + Vector3.up * (0.6f + slot * 0.15f), Quaternion.identity,
@@ -396,6 +412,15 @@ namespace CouchGuys.Gameplay.Weapons
         private bool DropOwnedWeaponServer()
         {
             int index = m_equippedIndex.Value;
+            if (EquippedHealingItem is HealingItemSettings healing)
+            {
+                if (WeaponPickup.SpawnHealingServer(healing, transform.position + Vector3.up,
+                    transform.rotation, Vector3.zero) == null) return false;
+                GetComponent<HealingItem>()?.CancelUseServer();
+                m_inventory[SelectedHotbarSlot] = -1;
+                m_equippedIndex.Value = -1;
+                return true;
+            }
             if (!ValidIndex(index)) return true;
             Vector3 origin = transform.position + Vector3.up;
             Vector3 direction = transform.forward;
@@ -418,7 +443,7 @@ namespace CouchGuys.Gameplay.Weapons
         [ServerRpc]
         private void RequestPunchServerRpc()
         {
-            if (!CanHandleWeaponServer || HasEquippedWeapon || Time.time < m_nextServerPunchTime ||
+            if (!CanHandleWeaponServer || m_equippedIndex.Value >= 0 || Time.time < m_nextServerPunchTime ||
                 Time.time < m_switchCompleteAt) return;
             m_nextServerPunchTime = Time.time + m_punchCooldown;
             PlayPunchObserversRpc(m_nextPunchRight);

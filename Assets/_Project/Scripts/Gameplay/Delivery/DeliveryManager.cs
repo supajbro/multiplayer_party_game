@@ -83,6 +83,21 @@ namespace CouchGuys.Gameplay.Delivery
         private bool m_refreshDialogues;
         public bool IsDispatcherInDialogue(DeliveryNPC npc) =>
             npc != null && m_dialogues.Values.Any(session => session.Npc == npc);
+        public bool TryGetDispatcherLookTarget(DeliveryNPC npc, out Transform target)
+        {
+            target = null;
+            if (npc == null) return false;
+            uint firstSession = uint.MaxValue;
+            // Keep attention on the first active speaker so concurrent users do not cause jitter.
+            foreach (var pair in m_dialogues)
+            {
+                if (pair.Value.Npc != npc || pair.Key == null ||
+                    (target != null && pair.Value.Id >= firstSession)) continue;
+                firstSession = pair.Value.Id;
+                target = pair.Key.transform;
+            }
+            return target != null;
+        }
         private bool m_candidatesReady;
         private readonly Collider[] m_vehicleClearanceHits = new Collider[64];
         private DepotController m_depot;

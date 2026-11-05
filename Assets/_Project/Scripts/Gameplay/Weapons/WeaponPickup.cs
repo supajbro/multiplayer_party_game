@@ -1,4 +1,5 @@
 using FishNet;
+using CouchGuys.Gameplay.Healing;
 using FishNet.Object;
 using UnityEngine;
 
@@ -9,10 +10,12 @@ namespace CouchGuys.Gameplay.Weapons
     public sealed class WeaponPickup : NetworkBehaviour
     {
         [SerializeField] private PlayerWeaponType m_weaponType;
+        [SerializeField] private HealingItemSettings m_healingItem;
+        public HealingItemSettings HealingSettings => m_healingItem;
         private int m_magazine = -1;
         private int m_reserve = -1;
         private bool m_claimed;
-        public string DisplayName => m_weaponType == PlayerWeaponType.BaseballBat ? "Baseball Bat" : m_weaponType == PlayerWeaponType.RocketLauncher ? "Rocket Launcher" :
+        public string DisplayName => m_healingItem != null ? m_healingItem.DisplayName : m_weaponType == PlayerWeaponType.BaseballBat ? "Baseball Bat" : m_weaponType == PlayerWeaponType.RocketLauncher ? "Rocket Launcher" :
             m_weaponType == PlayerWeaponType.GrappleGun ? "Grapple Gun" :
             m_weaponType == PlayerWeaponType.AssaultRifle ? "Assault Rifle" : m_weaponType.ToString();
 
@@ -40,6 +43,16 @@ namespace CouchGuys.Gameplay.Weapons
             return pickup;
         }
 
+        public static WeaponPickup SpawnHealingServer(HealingItemSettings settings, Vector3 position,
+            Quaternion rotation, Vector3 velocity)
+        {
+            if (!InstanceFinder.IsServerStarted || settings == null || settings.PickupPrefab == null) return null;
+            var pickup = Instantiate(settings.PickupPrefab, position, rotation);
+            InstanceFinder.ServerManager.Spawn(pickup.NetworkObject);
+            pickup.GetComponent<Rigidbody>().linearVelocity = velocity;
+            return pickup;
+        }
+
         [Server]
         public bool TryPickupServer(PlayerWeaponController player)
         {
@@ -52,7 +65,8 @@ namespace CouchGuys.Gameplay.Weapons
                 if (hit.transform.root != player.transform.root && hit.transform.root != transform.root) return false;
 
             m_claimed = true;
-            if (!player.AcquireWeaponServer(m_weaponType, m_magazine, m_reserve))
+            if (!(m_healingItem != null ? player.AcquireHealingItemServer(m_healingItem) :
+                player.AcquireWeaponServer(m_weaponType, m_magazine, m_reserve)))
             {
                 m_claimed = false;
                 return false;

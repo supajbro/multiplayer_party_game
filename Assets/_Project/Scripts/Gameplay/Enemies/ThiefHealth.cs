@@ -435,6 +435,7 @@ namespace CouchGuys.Gameplay.Enemies
                 Vector3.up * Mathf.Max(0f, upwardForce);
             if (m_currentHealth.Value <= 0f)
             {
+                CouchGuys.Gameplay.Healing.HealingItemCatalogue.DropFromThiefServer(transform.position);
                 m_deathImpulse.Value = impulse * ragdollImpulseScale;
                 m_airborneSpin.Value = impulse.y > .5f || m_ragdollState.Value != 0 || !HasGroundSupport()
                     ? CreateAirborneSpin(impulse) : Vector3.zero;

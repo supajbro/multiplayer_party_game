@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47a9d384fe104a878d888afc5a20adf1, type: 3}
+  m_Name: EmergencyDuctTapeShop
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Shop.ShopItemDefinition
+  m_itemId: EmergencyDuctTape
+  m_displayName: Emergency Duct Tape
+  m_description: Restores 10% of maximum health. Select slot and click to use.
+  m_price: 0
+  m_category: 2
+  m_icon: {fileID: 0}
+  m_purchaseBehaviour: {fileID: 11400000, guid: 9f8fd539ac20a0e4b8082b9ea4decb58, type: 2}

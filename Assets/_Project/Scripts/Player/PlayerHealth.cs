@@ -84,6 +84,16 @@ namespace CouchGuys.Player
 
         public static IReadOnlyList<PlayerHealth> Instances => s_instances;
 
+        public bool CanHeal => IsAlive && !IsKnockedDown && CurrentHealth < MaximumHealth;
+
+        [Server]
+        public bool TryHealPercentageServer(float percentage)
+        {
+            if (!CanHeal || float.IsNaN(percentage) || float.IsInfinity(percentage) || percentage <= 0f) return false;
+            m_currentHealth.Value = Mathf.Min(m_maxHealth, m_currentHealth.Value + m_maxHealth * Mathf.Clamp(percentage, 0f, 100f) / 100f);
+            return true;
+        }
+
         public float CurrentHealth => m_currentHealth.Value;
         public float MaximumHealth => m_maxHealth;
         public bool IsAlive => m_currentHealth.Value > 0f;

@@ -133,6 +133,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         public void PresentWeapon(PlayerWeaponController weapons)
         {
+            bool healing = weapons.EquippedHealingItem != null;
             bool equipped = weapons.HasEquippedWeapon;
             bool melee = equipped && weapons.EquippedWeapon == PlayerWeaponType.BaseballBat;
             bool charge = equipped && weapons.EquippedWeapon == PlayerWeaponType.GrappleGun;
@@ -140,12 +141,12 @@ namespace CouchGuys.Gameplay.Weapons
             bool switched = m_presentedSlot != weapons.SelectedHotbarSlot || charge != m_wasCharge;
             m_presentedSlot = weapons.SelectedHotbarSlot;
             m_wasCharge = charge;
-            m_ammoPanel.SetActive(equipped && !melee);
-            m_ammoText.gameObject.SetActive(equipped && !charge);
+            m_ammoPanel.SetActive(healing || (equipped && !melee));
+            m_ammoText.gameObject.SetActive(healing || (equipped && !charge));
             m_ammoText.color = m_weaponColour;
-            string ammo = $"{weapons.CurrentMagazine} / {weapons.CurrentReserve}";
+            string ammo = healing ? $"{weapons.EquippedWeaponName}  |  Click to use" : $"{weapons.CurrentMagazine} / {weapons.CurrentReserve}";
             if (!charge && m_ammoText.text != ammo) m_ammoText.text = ammo;
-            float target = equipped && !charge && !reloading ? 1f : 0f;
+            float target = healing || (equipped && !charge && !reloading) ? 1f : 0f;
             m_ammoVisibility = switched ? target : Mathf.MoveTowards(m_ammoVisibility, target,
                 m_ammoTransitionDuration > 0f ? Time.unscaledDeltaTime / m_ammoTransitionDuration : 1f);
             if (m_ammoGroup != null) m_ammoGroup.alpha = m_ammoVisibility;

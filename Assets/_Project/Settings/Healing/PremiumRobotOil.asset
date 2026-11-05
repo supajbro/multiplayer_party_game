@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9cf203d9f5e2c954d81b753c00662fa5, type: 3}
+  m_Name: PremiumRobotOil
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Healing.HealingItemSettings
+  m_displayName: Premium Robot Oil
+  m_healingPercentage: 100
+  m_purchasePrice: 250
+  m_dropChance: 0.0005
+  m_useDuration: 3
+  m_icon: {fileID: 21300000, guid: 669a33ff4a66d8b47bd6f906ab2af6f3, type: 3}
+  m_pickupPrefab: {fileID: 9038228133753773361, guid: bedc26f8f31c76a42a4a4872d8f5c37e, type: 3}
+  m_useEffectPrefab: {fileID: 5036190216102628874, guid: d6d59d158188e5c438141812c698b542, type: 3}
+  m_healEffectPrefab: {fileID: 5036190216102628874, guid: d6d59d158188e5c438141812c698b542, type: 3}
+  m_useAudio: {fileID: 0}
+  m_healAudio: {fileID: 8300000, guid: a44383899ca6cc34cad6b3f3d6cf1e52, type: 3}
+  m_effectLifetime: 3

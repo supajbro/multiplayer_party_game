@@ -132,6 +132,14 @@ namespace CouchGuys.Gameplay.Delivery
                 // Only an interrupted outing requires a return and a fresh cycle.
                 if (m_state != RoamingState.Idle) m_interrupted = true;
                 m_speed = 0f; m_blockedAt = -1f;
+                if (m_manager.TryGetDispatcherLookTarget(m_npc, out var speaker))
+                {
+                    Vector3 direction = speaker.position - transform.position;
+                    direction.y = 0f;
+                    if (direction.sqrMagnitude > .0001f)
+                        transform.rotation = Quaternion.RotateTowards(transform.rotation,
+                            Quaternion.LookRotation(direction), m_turnSpeed * dt);
+                }
                 return;
             }
             if (m_interrupted)
