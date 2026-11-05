@@ -226,7 +226,7 @@ namespace CouchGuys.Gameplay.Delivery
             else m_deliveryFailureSequence.Value++;
             SetStateServer(HasActiveDelivery ? DeliveryState.Transport : DeliveryState.Available,
                 HasActiveDelivery ? DeliveryObjectiveStep.DeliverCouch : DeliveryObjectiveStep.AcceptDelivery);
-            if (m_dialoguePlayer != null) SendDialogueState(m_dialoguePlayer);
+            m_refreshDialogues = true;
             return true;
         }
 

@@ -33,7 +33,7 @@ namespace CouchGuys.Networking
 
         private void Update()
         {
-            if (!m_owner.IsOwner || !m_owner.IsClientInitialized || GameplaySessionController.BlocksLocalInput)
+            if (!m_owner.IsOwner || !m_owner.IsClientInitialized || GameplaySessionController.BlocksLocalInput || CouchGuys.UI.DispatcherMenuController.IsLocalInteractionActive)
             {
                 Close();
                 return;

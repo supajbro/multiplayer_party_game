@@ -67,7 +67,7 @@ namespace CouchGuys.Editor
                     instance.transform.localScale = models[i].transform.localScale;
                     foreach (var t in instance.GetComponentsInChildren<Transform>(true)) t.gameObject.SetActive(true);
                     var renderers = instance.GetComponentsInChildren<MeshRenderer>(true);
-                    if (renderers.Length != 2) throw new InvalidOperationException("Each LOD must contain body and blank screen only.");
+                    if (renderers.Length != 4) throw new InvalidOperationException("Each LOD must contain body, screen and two physical buttons.");
                     foreach (var renderer in renderers)
                     {
                         renderer.enabled = true;
@@ -209,7 +209,7 @@ namespace CouchGuys.Editor
                 for (int i = 0; i < lods.Length; i++)
                 {
                     var renderers = lods[i].renderers;
-                    if (renderers.Length != 2 || renderers.Any(r => r == null || !r.enabled))
+                    if (renderers.Length != 4 || renderers.Any(r => r == null || !r.enabled))
                         throw new InvalidOperationException("LOD renderer references invalid.");
                     var screen = renderers.Single(r => r.name.EndsWith("_Screen", StringComparison.Ordinal));
                     var body = renderers.Single(r => r.name.EndsWith("_Body", StringComparison.Ordinal));
@@ -232,7 +232,9 @@ namespace CouchGuys.Editor
                 if (screenMaterials.Count != 1) throw new InvalidOperationException("Screen material should be shared across LODs.");
                 var collider = root.GetComponent<CapsuleCollider>();
                 if (collider == null || !collider.enabled || collider.isTrigger) throw new InvalidOperationException("Root physical collider changed.");
-                if (root.GetComponentsInChildren<Collider>(true).Length != 1) throw new InvalidOperationException("Unexpected visual colliders.");
+                if (root.GetComponentsInChildren<Collider>(true).Any(c => c != collider &&
+                    (!c.isTrigger || !c.name.StartsWith("Button_", StringComparison.Ordinal))))
+                    throw new InvalidOperationException("Unexpected visual colliders.");
                 if (root.GetComponentsInChildren<Transform>(true).Any(t => t.name.Contains("Waveform")))
                     throw new InvalidOperationException("Static waveform was reintroduced.");
                 // Exercise prefab instantiation and the existing local spawn-offset behavior.

@@ -119,6 +119,17 @@ namespace CouchGuys.Editor
             }
         }
 
+        private static void SetDialogueSession(DeliveryManager manager, DeliveryNPC npc, CouchGuys.Player.PlayerCouchCarrier player)
+        {
+            var sessions = (System.Collections.IDictionary)typeof(DeliveryManager).GetField("m_dialogues", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(manager);
+            sessions.Clear();
+            if (player == null) return;
+            var type = typeof(DeliveryManager).GetNestedType("DispatcherSession", BindingFlags.NonPublic);
+            var session = System.Activator.CreateInstance(type);
+            type.GetField("Npc").SetValue(session, npc);
+            sessions.Add(player, session);
+        }
+
         private static void Set(object instance, string field, object value) =>
             instance.GetType().GetField(field, BindingFlags.Instance | BindingFlags.NonPublic).SetValue(instance, value);
         private static T Get<T>(object instance, string field) =>
@@ -177,9 +188,9 @@ namespace CouchGuys.Editor
                     var playerAsset=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Player.prefab").GetComponent<CouchGuys.Player.PlayerCouchCarrier>();
                     float scheduled=Time.time+60f;
                     Set(roaming,"m_waitUntil",scheduled);
-                    Set(manager,"m_dialogueNpc",actor.GetComponent<DeliveryNPC>()); Set(manager,"m_dialoguePlayer",playerAsset);
+                    SetDialogueSession(manager, actor.GetComponent<DeliveryNPC>(), playerAsset);
                     Tick(roaming);
-                    Set(manager,"m_dialoguePlayer",null); Set(manager,"m_dialogueNpc",null); Tick(roaming);
+                    SetDialogueSession(manager, null, null); Tick(roaming);
                     Check(Get<float>(roaming,"m_waitUntil")==scheduled,"Parked conversation reset the roaming countdown.");
                     var temporaryBlocks=new List<GameObject>();
                     for(int i=0;i<area.WaypointCount;i++)
@@ -205,10 +216,10 @@ namespace CouchGuys.Editor
                     }
                     Check(Get<int>(roaming,"m_visits")>=6,"Dispatcher stopped after the old three-visit cap.");
                     Check(Get<int>(roaming,"m_trailCount")<=area.WaypointCount+1,"Return trail grew beyond its bounded capacity.");
-                    Set(manager,"m_dialogueNpc",actor.GetComponent<DeliveryNPC>()); Set(manager,"m_dialoguePlayer",playerAsset);
+                    SetDialogueSession(manager, actor.GetComponent<DeliveryNPC>(), playerAsset);
                     Vector3 stopped=actor.transform.position; Tick(roaming);
                     Check(actor.transform.position==stopped && Get<float>(roaming,"m_speed")==0f,"Interaction did not pause movement.");
-                    Set(manager,"m_dialoguePlayer",null); Set(manager,"m_dialogueNpc",null); Tick(roaming);
+                    SetDialogueSession(manager, null, null); Tick(roaming);
                     Check(roaming.State==DispatcherRoaming.RoamingState.Returning,"Interaction release did not force return.");
                     for(int i=0;i<1500 && roaming.State!=DispatcherRoaming.RoamingState.Idle;i++) Tick(roaming);
                     Check(roaming.State==DispatcherRoaming.RoamingState.Idle && Vector3.Distance(actor.transform.position,home.position)<.001f &&

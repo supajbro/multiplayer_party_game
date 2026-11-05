@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Player;
+using CouchGuys.UI;
 using FishNet.Object;
 using UnityEngine;
 using UnityEngine.UI;
@@ -29,6 +30,7 @@ namespace CouchGuys.Gameplay.Weapons
         private SuburbsChapterManager m_chapter;
         private GameObject m_canvasRoot;
         private bool m_hudBuilt;
+        private bool m_hiddenForDispatcher, m_activeBeforeDispatcher;
         [SerializeField] private PlayerWeaponHudView m_hudPrefab;
         public PlayerWeaponHudView View => m_view;
         private PlayerWeaponHudView m_view;
@@ -243,6 +245,17 @@ namespace CouchGuys.Gameplay.Weapons
         private void LateUpdate()
         {
             if (!m_hudBuilt) return;
+            var dispatcher = DispatcherMenuController.Active;
+            bool hideForDispatcher = dispatcher != null && dispatcher.Owner == m_carrier;
+            if (hideForDispatcher && !m_hiddenForDispatcher)
+            {
+                m_activeBeforeDispatcher = m_canvasRoot.activeSelf;
+                m_canvasRoot.SetActive(false); // Also disables all HUD interaction without destroying the view.
+            }
+            else if (!hideForDispatcher && m_hiddenForDispatcher)
+                m_canvasRoot.SetActive(m_activeBeforeDispatcher);
+            m_hiddenForDispatcher = hideForDispatcher;
+            if (m_hiddenForDispatcher) return;
             if (m_view.m_interactionPrompt != null)
             {
                 float progress = 0f, duration = 0f;
@@ -263,6 +276,7 @@ namespace CouchGuys.Gameplay.Weapons
             m_canvasRoot = null;
             m_view = null;
             m_hudBuilt = false;
+            m_hiddenForDispatcher = false;
             if (m_delivery != null) m_delivery.DeliveriesChanged -= SyncDeliveryTimers;
             m_delivery = null;
             m_deliveryTimers.Clear();

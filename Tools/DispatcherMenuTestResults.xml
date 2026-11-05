@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="13" result="Passed" total="13" passed="13" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.427474">
+  <test-suite type="TestSuite" id="1000" name="multiplayer_game" fullname="multiplayer_game" runstate="Runnable" testcasecount="191" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.427474" total="13" passed="13" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1249" name="Assembly-CSharp-Editor.dll" fullname="C:/Users/Jaden/Documents/MyUnityProjects/multiplayer_party_game/Temp/DispatcherWorldUI/Library/ScriptAssemblies/Assembly-CSharp-Editor.dll" runstate="Runnable" testcasecount="191" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.405843" total="13" passed="13" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="29064" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1250" name="CouchGuys" fullname="CouchGuys" runstate="Runnable" testcasecount="191" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.387018" total="13" passed="13" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1251" name="Tests" fullname="CouchGuys.Tests" runstate="Runnable" testcasecount="191" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.377049" total="13" passed="13" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1252" name="Editor" fullname="CouchGuys.Tests.Editor" runstate="Runnable" testcasecount="191" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.366813" total="13" passed="13" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1013" name="CameraCollisionTests" fullname="CouchGuys.Tests.Editor.CameraCollisionTests" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.065198" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1020" name="ClearBoom_PreservesConfiguredDistance" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.ClearBoom_PreservesConfiguredDistance" methodname="ClearBoom_PreservesConfiguredDistance" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1914291826" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.024084" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1017" name="Orbit_StartingInsideCouch_KeepsCameraSphereOutside" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.Orbit_StartingInsideCouch_KeepsCameraSphereOutside" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.008615" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1014" name="Orbit_StartingInsideCouch_KeepsCameraSphereOutside(-35.0f)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.Orbit_StartingInsideCouch_KeepsCameraSphereOutside(-35.0f)" methodname="Orbit_StartingInsideCouch_KeepsCameraSphereOutside" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1600325636" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.002265" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1015" name="Orbit_StartingInsideCouch_KeepsCameraSphereOutside(12.0f)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.Orbit_StartingInsideCouch_KeepsCameraSphereOutside(12.0f)" methodname="Orbit_StartingInsideCouch_KeepsCameraSphereOutside" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="870371970" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.000571" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1016" name="Orbit_StartingInsideCouch_KeepsCameraSphereOutside(65.0f)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.Orbit_StartingInsideCouch_KeepsCameraSphereOutside(65.0f)" methodname="Orbit_StartingInsideCouch_KeepsCameraSphereOutside" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1071612284" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.000396" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1019" name="Pivot_IgnoresPlayerAndTriggers_ButClearsFurniture" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.Pivot_IgnoresPlayerAndTriggers_ButClearsFurniture" methodname="Pivot_IgnoresPlayerAndTriggers_ButClearsFurniture" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1804250038" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.007064" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1018" name="SmoothedPosition_InsideFurniture_IsClampedBeforeSurface" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.SmoothedPosition_InsideFurniture_IsClampedBeforeSurface" methodname="SmoothedPosition_InsideFurniture_IsClampedBeforeSurface" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1855608620" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.001381" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1071" name="DispatcherMenuTests" fullname="CouchGuys.Tests.Editor.DispatcherMenuTests" classname="CouchGuys.Tests.Editor.DispatcherMenuTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.182790" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1074" name="FocusFollowsTranslatedRotatedDispatcherAndRepeatedReturnsPreserveOrbitAndPlayer" fullname="CouchGuys.Tests.Editor.DispatcherMenuTests.FocusFollowsTranslatedRotatedDispatcherAndRepeatedReturnsPreserveOrbitAndPlayer" methodname="FocusFollowsTranslatedRotatedDispatcherAndRepeatedReturnsPreserveOrbitAndPlayer" classname="CouchGuys.Tests.Editor.DispatcherMenuTests" runstate="Runnable" seed="1829624828" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.008811" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1072" name="SavedMenuFitsCurvedDisplayAndFocusFramesTvIncludingBeaconAndButtons" fullname="CouchGuys.Tests.Editor.DispatcherMenuTests.SavedMenuFitsCurvedDisplayAndFocusFramesTvIncludingBeaconAndButtons" methodname="SavedMenuFitsCurvedDisplayAndFocusFramesTvIncludingBeaconAndButtons" classname="CouchGuys.Tests.Editor.DispatcherMenuTests" runstate="Runnable" seed="32298158" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.019141" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1075" name="TabPropertiesAffectOnlyThisInstanceAndFaceSlotAcrossAllLods" fullname="CouchGuys.Tests.Editor.DispatcherMenuTests.TabPropertiesAffectOnlyThisInstanceAndFaceSlotAcrossAllLods" methodname="TabPropertiesAffectOnlyThisInstanceAndFaceSlotAcrossAllLods" classname="CouchGuys.Tests.Editor.DispatcherMenuTests" runstate="Runnable" seed="518955612" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.144094" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1073" name="WholeCardUsesExistingCallbacksAndUnavailableCardExplainsWithoutPurchasing" fullname="CouchGuys.Tests.Editor.DispatcherMenuTests.WholeCardUsesExistingCallbacksAndUnavailableCardExplainsWithoutPurchasing" methodname="WholeCardUsesExistingCallbacksAndUnavailableCardExplainsWithoutPurchasing" classname="CouchGuys.Tests.Editor.DispatcherMenuTests" runstate="Runnable" seed="695135771" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.007906" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1122" name="MultipleDeliveryTests" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.064264" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1123" name="ExhaustedDifficultyCannotReuseReservedHousesOrBlockOtherDifficulties" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.ExhaustedDifficultyCannotReuseReservedHousesOrBlockOtherDifficulties" methodname="ExhaustedDifficultyCannotReuseReservedHousesOrBlockOtherDifficulties" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" seed="1453558347" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.008609" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1126" name="SnapshotReconstructsFiveDistinctOrderedTimersWithoutDuplicates" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.SnapshotReconstructsFiveDistinctOrderedTimersWithoutDuplicates" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.053235" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1124" name="SnapshotReconstructsFiveDistinctOrderedTimersWithoutDuplicates(1920,1080)" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.SnapshotReconstructsFiveDistinctOrderedTimersWithoutDuplicates(1920,1080)" methodname="SnapshotReconstructsFiveDistinctOrderedTimersWithoutDuplicates" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" seed="1463091596" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.043811" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1125" name="SnapshotReconstructsFiveDistinctOrderedTimersWithoutDuplicates(1280,720)" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.SnapshotReconstructsFiveDistinctOrderedTimersWithoutDuplicates(1280,720)" methodname="SnapshotReconstructsFiveDistinctOrderedTimersWithoutDuplicates" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" seed="1104681598" result="Passed" start-time="2026-11-05 04:39:29Z" end-time="2026-11-05 04:39:29Z" duration="0.007787" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[Saving results to: C:/Users/Jaden/AppData/LocalLow/DefaultCompany/multiplayer_game\TestResults.xml
+]]></output>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

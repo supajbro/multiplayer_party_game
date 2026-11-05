@@ -65,6 +65,9 @@ namespace CouchGuys.Player
         private Transform m_cachedMovementAnchor;
         private int m_cachedMovementPointIndex = int.MinValue;
         private uint m_shopPurchaseRequestId;
+        private uint m_closedDispatcherSession;
+        private uint m_dispatcherSession;
+        private DispatcherMenuController m_dispatcherMenu;
         private string m_sledInteractionPrompt = string.Empty;
 
 
@@ -151,8 +154,7 @@ namespace CouchGuys.Player
         {
             if (IsOwner)
             {
-                DialogueShopUI.Instance.Close(false);
-                m_input?.SetGameplaySuppressed(false);
+                m_dispatcherMenu?.CloseLocal(false, true);
             }
             RestoreMovementSpeed();
             base.OnStopClient();
@@ -608,13 +610,14 @@ namespace CouchGuys.Player
         }
 
         [TargetRpc]
-        public void OpenDeliveryDialogueTargetRpc(NetworkConnection connection,
+        public void OpenDeliveryDialogueTargetRpc(NetworkConnection connection, Vector3 dispatcherPosition, uint sessionId,
             bool easyAvailable, string easyReason, bool mediumAvailable, string mediumReason,
             bool hardAvailable, string hardReason,
             bool[] shopAvailable, string[] shopReasons, int currentCurrency,
             string notice, bool openShop)
         {
             if (!IsOwner) return;
+            if (sessionId <= m_closedDispatcherSession || (m_dispatcherMenu != null && m_dispatcherMenu.IsClosing)) return;
             DeliveryManager manager = FindFirstObjectByType<DeliveryManager>();
             List<DialogueShopOption> deliveryOptions = new();
             bool[] available = { easyAvailable, mediumAvailable, hardAvailable };
@@ -680,25 +683,35 @@ namespace CouchGuys.Player
                 new DialogueShopCategory("Shop", shopOptions)
             };
 
-            m_input?.SetGameplaySuppressed(true);
-            string feedback = string.IsNullOrWhiteSpace(notice) ? string.Empty : $"  •  {notice}";
-            DialogueShopUI.Instance.Open(
-                $"Team funds: ${currentCurrency:N0}{feedback}",
-                categories,
-                () =>
+            if (m_dispatcherMenu == null || m_dispatcherSession != sessionId)
+            {
+                float nearest = float.PositiveInfinity;
+                foreach (var npc in FindObjectsByType<DeliveryNPC>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
                 {
-                    m_input?.SetGameplaySuppressed(false);
+                    float distance = (npc.transform.position - dispatcherPosition).sqrMagnitude;
+                    if (distance >= nearest || !npc.TryGetComponent(out DispatcherMenuController menu)) continue;
+                    nearest = distance;
+                    m_dispatcherMenu = menu;
+                }
+            }
+            m_dispatcherSession = sessionId;
+            if (m_dispatcherMenu == null || !m_dispatcherMenu.OpenLocal(this, categories, currentCurrency, notice, () =>
+                {
+                    m_closedDispatcherSession = sessionId;
                     RequestCloseDialogueServerRpc();
-                },
-                openShop ? 1 : 0);
+                }))
+            {
+                m_closedDispatcherSession = sessionId;
+                RequestCloseDialogueServerRpc();
+            }
         }
 
         [TargetRpc]
         public void CloseDeliveryDialogueTargetRpc(NetworkConnection connection, string message)
         {
             if (!IsOwner) return;
-            DialogueShopUI.Instance.Close(false);
-            m_input?.SetGameplaySuppressed(false);
+            m_closedDispatcherSession = m_dispatcherSession;
+            m_dispatcherMenu?.CloseLocal(false);
             if (!string.IsNullOrWhiteSpace(message)) Debug.Log(message, this);
         }
 

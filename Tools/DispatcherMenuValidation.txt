@@ -1,0 +1,6 @@
+PASS: saved editable world-space DispatcherMenuUI and reusable DispatcherDeliveryButton prefabs; three delivery cards, scrollable shop, Barlow fonts, supplied button sprites, physical mesh/collider references, focus/screen anchors, and SampleScene generator integration. Runtime/multiplayer checks are recorded separately.
+PASS: final focused EditMode suite: 13 passed, 0 failed (new dispatcher UI, existing multi-delivery rules and camera collision).
+PASS: live SampleScene loopback host validates authoritative purchase, multiple deliveries, moving focus, physical raycasts, waveform restoration and three open/close cycles.
+PASS: two separate loopback clients hold independent menu sessions, tab colours and cameras; one client closing leaves the other session and roaming pause intact. See fixture limitations in DispatcherMenuMultiplayerValidation.txt.
+PRESERVED: existing NPC gameplay components, collider settings, TV visual transform, SampleScene content, all model files and all delivery/shop configuration assets.
+Known pre-existing regression: ShopCatalogueTests.DefaultCatalogueContainsTruckAndExcludesRemovedVehicles expects a price of 250, but the unchanged catalogue price is 500. Pricing was not modified to satisfy that stale assertion.

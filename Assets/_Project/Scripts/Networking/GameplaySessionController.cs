@@ -80,7 +80,7 @@ namespace CouchGuys.Networking
                 }
             }
 
-            if (HasLocalPlayer() && !m_localState.GameOver && !m_localState.Restarting &&
+            if (!CouchGuys.UI.DispatcherMenuController.BlocksPauseThisFrame && HasLocalPlayer() && !m_localState.GameOver && !m_localState.Restarting &&
                 (Keyboard.current?.escapeKey.wasPressedThisFrame ?? false)) SetPaused(!m_paused);
             UpdateCursor();
         }

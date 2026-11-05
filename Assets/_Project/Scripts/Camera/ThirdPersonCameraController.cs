@@ -65,6 +65,85 @@ namespace CouchGuys.CameraSystem
         private Camera m_camera;
         private PlayerWeaponController m_grappleSource;
         private Vector2 m_grappleLookScale = Vector2.one;
+        private Transform m_dispatcherFocus;
+        private bool m_dispatcherFocusing, m_dispatcherReturning;
+        private Vector3 m_dispatcherBlendPosition;
+        private Quaternion m_dispatcherBlendRotation;
+        private float m_dispatcherBlendTime, m_dispatcherDuration, m_dispatcherStartFov, m_dispatcherFov, m_gameplayFov;
+        private System.Action m_dispatcherReturned;
+
+        public bool DispatcherCameraActive => m_dispatcherFocusing || m_dispatcherReturning;
+
+        public void FocusDispatcher(Transform focus, float seconds, float fieldOfView)
+        {
+            if (focus == null || m_camera == null) return;
+            if (!DispatcherCameraActive) m_gameplayFov = m_camera.fieldOfView;
+            m_dispatcherFocus = focus;
+            m_dispatcherFocusing = true;
+            m_dispatcherReturning = false;
+            m_dispatcherReturned = null;
+            m_dispatcherFov = fieldOfView;
+            BeginDispatcherBlend(seconds);
+        }
+
+        public void ReturnFromDispatcher(float seconds, System.Action completed, bool immediate = false)
+        {
+            if (!DispatcherCameraActive) { completed?.Invoke(); return; }
+            m_dispatcherFocusing = false;
+            m_dispatcherReturning = true;
+            m_dispatcherReturned = completed;
+            bool snap = immediate || !isActiveAndEnabled;
+            BeginDispatcherBlend(snap ? 0f : seconds);
+            if (snap) UpdateDispatcherCamera();
+        }
+
+        private void BeginDispatcherBlend(float seconds)
+        {
+            m_dispatcherBlendPosition = transform.position;
+            m_dispatcherBlendRotation = transform.rotation;
+            m_dispatcherStartFov = m_camera.fieldOfView;
+            m_dispatcherDuration = Mathf.Max(0f, seconds);
+            m_dispatcherBlendTime = 0f;
+        }
+
+        private void UpdateDispatcherCamera()
+        {
+            if (m_dispatcherFocusing && m_dispatcherFocus == null)
+            {
+                m_dispatcherFocusing = false;
+                m_dispatcherReturning = true;
+                BeginDispatcherBlend(.6f);
+            }
+            Vector3 position;
+            Quaternion rotation;
+            if (m_dispatcherFocusing)
+            {
+                // Focus describes the camera itself, even if PlayerCamera has an authored offset.
+                Quaternion relativeRotation = Quaternion.Inverse(transform.rotation) * m_camera.transform.rotation;
+                Vector3 relativePosition = transform.InverseTransformPoint(m_camera.transform.position);
+                rotation = m_dispatcherFocus.rotation * Quaternion.Inverse(relativeRotation);
+                position = m_dispatcherFocus.position - rotation * Vector3.Scale(relativePosition, transform.lossyScale);
+            }
+            else
+            {
+                rotation = Quaternion.Euler(m_pitch, m_yaw, 0f);
+                position = CalculateCollisionPosition(GetPivotPosition(), rotation);
+            }
+            m_dispatcherBlendTime += Time.unscaledDeltaTime;
+            float t = m_dispatcherDuration <= 0f ? 1f : Mathf.Clamp01(m_dispatcherBlendTime / m_dispatcherDuration);
+            float eased = t * t * (3f - 2f * t);
+            transform.SetPositionAndRotation(Vector3.Lerp(m_dispatcherBlendPosition, position, eased),
+                Quaternion.Slerp(m_dispatcherBlendRotation, rotation, eased));
+            m_camera.fieldOfView = Mathf.Lerp(m_dispatcherStartFov, m_dispatcherFocusing ? m_dispatcherFov : m_gameplayFov, eased);
+            if (!m_dispatcherReturning || t < 1f) return;
+            m_dispatcherReturning = false;
+            m_dispatcherFocus = null;
+            m_previousPivotPosition = GetPivotPosition();
+            m_hasPreviousPivotPosition = true;
+            var callback = m_dispatcherReturned;
+            m_dispatcherReturned = null;
+            callback?.Invoke();
+        }
 
         public float VerticalAngle
         {
@@ -140,6 +219,7 @@ namespace CouchGuys.CameraSystem
 
         private void LateUpdate()
         {
+            if (DispatcherCameraActive) { UpdateDispatcherCamera(); return; }
             if (m_vehicleTarget != null)
             {
                 UpdateVehicleCamera();

@@ -27,7 +27,7 @@ namespace CouchGuys.Editor
                     var screen = screens.GetArrayElementAtIndex(i).objectReferenceValue as Renderer;
                     if (screen == null || !screen.name.EndsWith("_Screen") || !lods[i].renderers.Contains(screen))
                         throw new Exception("Invalid screen reference at LOD " + i);
-                    if (lods[i].renderers.Length != 2) throw new Exception("Unexpected extra visual at LOD " + i);
+                    if (lods[i].renderers.Length != 4) throw new Exception("Unexpected extra visual at LOD " + i);
                     var mesh = screen.GetComponent<MeshFilter>().sharedMesh;
                     if (!mesh.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.TexCoord0))
                         throw new Exception("Screen UVs missing.");
@@ -40,7 +40,7 @@ namespace CouchGuys.Editor
                 }
                 if (serialized.FindProperty("m_npc").objectReferenceValue != root.GetComponent<DeliveryNPC>())
                     throw new Exception("Dialogue reference missing.");
-                string report = "PASS: Unity imported controller and compiled URP waveform shader. Three saved screen references, screen UVs, material assignments and LOD membership verified. Each LOD contains only body and screen. Model assets unchanged.\nLimitations: no multi-process dialogue playtest or visual review in gameplay.\n";
+                string report = "PASS: Unity imported controller and compiled URP waveform shader. Three saved screen references, screen UVs, material assignments and LOD membership verified. Each LOD contains body, screen and two physical buttons. Model assets unchanged.\nLimitations: no multi-process dialogue playtest or visual review in gameplay.\n";
                 File.WriteAllText("Tools/DispatcherScreenValidation.txt", report);
                 Debug.Log(report);
             }

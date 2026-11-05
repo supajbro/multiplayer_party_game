@@ -78,6 +78,7 @@ namespace CouchGuys.Player
         public bool IsGrounded => m_characterController != null && m_characterController.isGrounded;
         public Vector3 MovementIntent { get; private set; }
         public bool MovementLocked => m_movementLocked;
+        public bool ExternalControlPaused => m_externalControlPaused;
         public bool IsSprinting { get; private set; }
         public float WalkSpeed { get => m_walkSpeed; set => m_walkSpeed = Mathf.Clamp(value, 0f, 30f); }
         public float RunSpeed { get => m_runSpeed; set => m_runSpeed = Mathf.Clamp(value, 0f, 50f); }

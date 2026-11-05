@@ -1,0 +1,2 @@
+PASS: SampleScene loopback host; owned camera focuses while player position and gameplay inputs remain frozen; physical meshes raycast; local waveform hides; tab face illuminates; authoritative shop purchase charges existing price; multiple deliveries start.
+PASS: camera tracks translated/rotated dispatcher; three open/close cycles restore input, motor, waveform and gameplay camera.

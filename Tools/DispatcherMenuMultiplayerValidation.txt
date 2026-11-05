@@ -1,0 +1,3 @@
+PASS: real loopback remote client opens independently while host retains controls; host and remote hold simultaneous server sessions; remote shop tab and close do not affect host delivery tab, camera, motor pause or session; final close releases roaming pause.
+PASS: independent remote client camera/menu, local shop tab, and control restoration; host opening and closing do not overwrite remote cosmetic state.
+Fixture: two separate Unity processes using existing Tugboat loopback transport. The isolated test fixture widened interaction range to keep test teleports from ending sessions; the production distance, transports and bootstrap prefab were unchanged. Steam lobby transport was not used.
