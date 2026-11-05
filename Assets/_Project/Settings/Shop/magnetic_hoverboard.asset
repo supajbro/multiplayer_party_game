@@ -15,7 +15,7 @@ MonoBehaviour:
   m_itemId: magnetic_hoverboard
   m_displayName: Magnetic Hoverboard
   m_description: Fast hovering transport with a magnetic platform for one couch.
-  m_price: 350
+  m_price: 10000
   m_category: 0
   m_icon: {fileID: 0}
   m_purchaseBehaviour: {fileID: 11400000, guid: 22b938b68bc6483d8821c45468a4d79a, type: 2}

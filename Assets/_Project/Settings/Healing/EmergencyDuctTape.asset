@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Healing.HealingItemSettings
   m_displayName: Emergency Duct Tape
   m_healingPercentage: 10
-  m_purchasePrice: 25
+  m_purchasePrice: 100
   m_dropChance: 0.025
   m_useDuration: 1
   m_icon: {fileID: 21300000, guid: a55362af6dbd20d49a43b489f6070333, type: 3}

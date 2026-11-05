@@ -17,8 +17,8 @@ MonoBehaviour:
   m_description: Haul the couch to a mansion at the far end of the neighbourhood.
   m_icon: {fileID: 0}
   m_colour: {r: 0.82, g: 0.23, b: 0.27, a: 1}
-  m_purchasePrice: 250
-  m_reward: 500
+  m_purchasePrice: 2000
+  m_reward: 14000
   m_baseDeliveryTime: 75
   m_timePerRouteMetre: 0.65
   m_minimumDeliveryTime: 150

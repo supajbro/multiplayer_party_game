@@ -15,7 +15,7 @@ MonoBehaviour:
   m_itemId: weapon_grapplegun
   m_displayName: Grapple Gun
   m_description: Hold fire to pull players, thieves, and couches toward you.
-  m_price: 250
+  m_price: 2000
   m_category: 1
   m_icon: {fileID: 0}
   m_purchaseBehaviour: {fileID: 11400000, guid: 2fe01804002c48ae884ef13dd209989d, type: 2}

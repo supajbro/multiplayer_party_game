@@ -15,7 +15,7 @@ MonoBehaviour:
   m_itemId: ProbablyFineRepairSpray
   m_displayName: Probably-Fine Repair Spray
   m_description: Restores 50% of maximum health. Select slot and click to use.
-  m_price: 0
+  m_price: 400
   m_category: 2
   m_icon: {fileID: 0}
   m_purchaseBehaviour: {fileID: 11400000, guid: ca0a70b0e09bea34a8e1820f08b09d60, type: 2}

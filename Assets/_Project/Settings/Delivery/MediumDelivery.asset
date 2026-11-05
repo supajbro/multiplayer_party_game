@@ -17,8 +17,8 @@ MonoBehaviour:
   m_description: A longer route through the middle streets and rolling hills.
   m_icon: {fileID: 0}
   m_colour: {r: 0.96, g: 0.62, b: 0.16, a: 1}
-  m_purchasePrice: 100
-  m_reward: 250
+  m_purchasePrice: 500
+  m_reward: 5500
   m_baseDeliveryTime: 55
   m_timePerRouteMetre: 0.58
   m_minimumDeliveryTime: 90

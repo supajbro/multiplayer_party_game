@@ -15,7 +15,7 @@ MonoBehaviour:
   m_itemId: weapon_pistol
   m_displayName: Pistol
   m_description: Equips this weapon. Your previous weapon drops nearby.
-  m_price: 100
+  m_price: 750
   m_category: 1
   m_icon: {fileID: 0}
   m_purchaseBehaviour: {fileID: 11400000, guid: bdda0bd15bd1b4b47b69be38a56eb913, type: 2}

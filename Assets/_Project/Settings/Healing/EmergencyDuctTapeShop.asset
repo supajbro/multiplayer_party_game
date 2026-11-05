@@ -15,7 +15,7 @@ MonoBehaviour:
   m_itemId: EmergencyDuctTape
   m_displayName: Emergency Duct Tape
   m_description: Restores 10% of maximum health. Select slot and click to use.
-  m_price: 0
+  m_price: 100
   m_category: 2
   m_icon: {fileID: 0}
   m_purchaseBehaviour: {fileID: 11400000, guid: 9f8fd539ac20a0e4b8082b9ea4decb58, type: 2}

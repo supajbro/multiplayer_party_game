@@ -15,7 +15,7 @@ MonoBehaviour:
   m_itemId: weapon_rocketlauncher
   m_displayName: Rocket Launcher
   m_description: One rocket loaded, five spare. Watch the blast radius!
-  m_price: 600
+  m_price: 4000
   m_category: 1
   m_icon: {fileID: 0}
   m_purchaseBehaviour: {fileID: 11400000, guid: e2bb096a8e381ee4db0d76a5ca923a59, type: 2}

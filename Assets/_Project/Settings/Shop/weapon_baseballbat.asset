@@ -16,7 +16,7 @@ MonoBehaviour:
   m_displayName: Baseball Bat
   m_description: A little damage. A ridiculous launch. Unlimited swings, two seconds
     apart.
-  m_price: 200
+  m_price: 500
   m_category: 1
   m_icon: {fileID: 0}
   m_purchaseBehaviour: {fileID: 11400000, guid: 582f1835a3e9c2746bbe04e6f1fdbe6d, type: 2}

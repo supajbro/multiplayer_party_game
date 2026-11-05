@@ -15,7 +15,7 @@ MonoBehaviour:
   m_itemId: weapon_assaultrifle
   m_displayName: Assault Rifle
   m_description: Equips this weapon. Your previous weapon drops nearby.
-  m_price: 300
+  m_price: 2500
   m_category: 1
   m_icon: {fileID: 0}
   m_purchaseBehaviour: {fileID: 11400000, guid: 3f3ec36df64ae3c40871152c4a7badb7, type: 2}
