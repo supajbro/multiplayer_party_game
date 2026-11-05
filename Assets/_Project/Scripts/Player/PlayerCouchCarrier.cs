@@ -614,7 +614,7 @@ namespace CouchGuys.Player
             bool easyAvailable, string easyReason, bool mediumAvailable, string mediumReason,
             bool hardAvailable, string hardReason,
             bool[] shopAvailable, string[] shopReasons, int currentCurrency,
-            string notice, bool openShop)
+            string notice, bool openShop, bool purchaseSucceeded)
         {
             if (!IsOwner) return;
             if (sessionId <= m_closedDispatcherSession || (m_dispatcherMenu != null && m_dispatcherMenu.IsClosing)) return;
@@ -704,6 +704,7 @@ namespace CouchGuys.Player
                 m_closedDispatcherSession = sessionId;
                 RequestCloseDialogueServerRpc();
             }
+            else if (purchaseSucceeded) m_dispatcherMenu.ShowPurchaseConfirmation(notice);
         }
 
         [TargetRpc]

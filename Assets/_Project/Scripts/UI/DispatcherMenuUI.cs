@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -17,11 +18,77 @@ namespace CouchGuys.UI
         [SerializeField] private ScrollRect m_shopScroll;
         [SerializeField] private TMP_Text m_funds, m_feedback;
         [SerializeField] private CouchDispatchUIStyle m_artwork;
+        [Header("Purchase Confirmation")]
+        [SerializeField] private RectTransform m_menuContent;
+        [SerializeField] private CanvasGroup m_contentGroup;
+        [SerializeField] private TMP_Text m_confirmationText;
+        [SerializeField, Min(0f)] private float m_confirmationSeconds = 2f;
+        [SerializeField, Min(.01f)] private float m_confirmationTransitionSeconds = .18f;
+        [SerializeField, Range(.1f, 1f)] private float m_confirmationScale = .75f;
         private readonly List<DispatcherDeliveryButton> m_shopCards = new();
+        private Coroutine m_confirmation;
+        private bool m_interactiveRequested = true;
+        public bool IsConfirmingPurchase { get; private set; }
         public int SelectedCategory { get; private set; }
 
         public void ConfigureCamera(Camera camera) { m_canvas.worldCamera = camera; }
-        public void SetInteractive(bool interactive) { m_group.interactable = m_group.blocksRaycasts = interactive; }
+        public void SetInteractive(bool interactive)
+        {
+            m_interactiveRequested = interactive;
+            if (m_group != null) m_group.interactable = m_group.blocksRaycasts = interactive && !IsConfirmingPurchase;
+        }
+
+        public void ShowPurchaseConfirmation(string message)
+        {
+            if (m_confirmation != null) StopCoroutine(m_confirmation);
+            IsConfirmingPurchase = true;
+            SetInteractive(m_interactiveRequested);
+            m_confirmationText.text = message;
+            m_confirmationText.gameObject.SetActive(true);
+            m_confirmation = StartCoroutine(PurchaseConfirmation());
+        }
+
+        private IEnumerator PurchaseConfirmation()
+        {
+            yield return AnimateConfirmation(true);
+            yield return new WaitForSecondsRealtime(m_confirmationSeconds);
+            yield return AnimateConfirmation(false);
+            m_confirmationText.gameObject.SetActive(false);
+            IsConfirmingPurchase = false;
+            m_confirmation = null;
+            SetInteractive(m_interactiveRequested);
+        }
+
+        private IEnumerator AnimateConfirmation(bool showing)
+        {
+            Vector3 startScale = m_menuContent.localScale;
+            Vector3 targetScale = Vector3.one * (showing ? m_confirmationScale : 1f);
+            float startAlpha = m_contentGroup.alpha, startTextAlpha = m_confirmationText.alpha;
+            float elapsed = 0f;
+            while (elapsed < m_confirmationTransitionSeconds)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / m_confirmationTransitionSeconds));
+                m_menuContent.localScale = Vector3.Lerp(startScale, targetScale, t);
+                m_contentGroup.alpha = Mathf.Lerp(startAlpha, showing ? 0f : 1f, t);
+                m_confirmationText.alpha = Mathf.Lerp(startTextAlpha, showing ? 1f : 0f, t);
+                yield return null;
+            }
+            m_menuContent.localScale = targetScale;
+            m_contentGroup.alpha = showing ? 0f : 1f;
+            m_confirmationText.alpha = showing ? 1f : 0f;
+        }
+
+        private void OnDisable()
+        {
+            StopAllCoroutines();
+            m_confirmation = null;
+            IsConfirmingPurchase = false;
+            if (m_menuContent != null) m_menuContent.localScale = Vector3.one;
+            if (m_contentGroup != null) m_contentGroup.alpha = 1f;
+            if (m_confirmationText != null) { m_confirmationText.alpha = 0f; m_confirmationText.gameObject.SetActive(false); }
+            SetInteractive(m_interactiveRequested);
+        }
 
         public void Bind(IReadOnlyList<DialogueShopCategory> categories, int funds, string feedback)
         {

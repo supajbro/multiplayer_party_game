@@ -143,6 +143,11 @@ namespace CouchGuys.UI
             { CloseLocal(true); return; }
             if (Time.frameCount > m_openFrame && ((Keyboard.current?.escapeKey.wasPressedThisFrame ?? false) ||
                 (Keyboard.current?.eKey.wasPressedThisFrame ?? false))) { CloseLocal(); return; }
+            if (m_ui.IsConfirmingPurchase)
+            {
+                if (m_hovered != -1) { m_hovered = -1; UpdateButtonColors(); }
+                return;
+            }
             bool ready = Time.unscaledTime >= m_readyAt;
             // Ignore clicks until the camera has settled into the first focus blend.
             if (!ready) return;
@@ -163,9 +168,13 @@ namespace CouchGuys.UI
         }
 
         private float m_readyAt;
+        public void ShowPurchaseConfirmation(string message)
+        {
+            if (m_ui != null && !IsClosing) m_ui.ShowPurchaseConfirmation(message);
+        }
         public void SelectCategory(int category)
         {
-            if (m_ui == null || IsClosing) return;
+            if (m_ui == null || IsClosing || m_ui.IsConfirmingPurchase) return;
             m_ui.ShowCategory(category);
             UpdateButtonColors();
         }

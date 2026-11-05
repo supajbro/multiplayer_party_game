@@ -165,6 +165,14 @@ namespace CouchGuys.Editor
             Assign(view,"m_shopCardPrefab",card.GetComponent<DispatcherDeliveryButton>());Assign(view,"m_shopContent",content);
             Assign(view,"m_shopScroll",scroll);Assign(view,"m_funds",funds);Assign(view,"m_feedback",feedback);
             Assign(view,"m_artwork",AssetDatabase.LoadAssetAtPath<CouchDispatchUIStyle>("Assets/_Project/Resources/UI/CouchDispatchUIStyle.asset"));
+            var menuContent=Rect("MenuContent",root,0,0,1100,780);
+            menuContent.anchorMin=Vector2.zero;menuContent.anchorMax=Vector2.one;menuContent.pivot=new Vector2(.5f,.5f);
+            menuContent.offsetMin=menuContent.offsetMax=Vector2.zero;
+            foreach(var child in new Transform[]{deliveryPanel,shopPanel,funds.transform,feedback.transform}) child.SetParent(menuContent,false);
+            var contentGroup=menuContent.gameObject.AddComponent<CanvasGroup>();
+            var confirmation=Label("PurchaseConfirmation",root,"Purchased Pistol",52,true,50,290,1000,200);
+            confirmation.alignment=TextAlignmentOptions.Center;confirmation.alpha=0f;confirmation.gameObject.SetActive(false);
+            Assign(view,"m_menuContent",menuContent);Assign(view,"m_contentGroup",contentGroup);Assign(view,"m_confirmationText",confirmation);
             // Canvas rect uses a centred pivot; its children retain top-left authoring coordinates.
             root.anchorMin=root.anchorMax=new Vector2(.5f,.5f);root.pivot=new Vector2(.5f,.5f);root.anchoredPosition=Vector2.zero;
             PrefabUtility.SaveAsPrefabAsset(root.gameObject,MenuPath);Object.DestroyImmediate(root.gameObject);

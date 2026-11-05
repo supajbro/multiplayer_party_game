@@ -322,7 +322,7 @@ namespace CouchGuys.Gameplay.Delivery
                 SendDialogueState(player);
                 return false;
             }
-            SendDialogueState(player, $"{tier.DisplayName} started.");
+            SendDialogueState(player, $"Started {tier.DisplayName}", purchaseSucceeded: true);
             m_refreshDialogues = true;
             return true;
         }
@@ -399,7 +399,7 @@ namespace CouchGuys.Gameplay.Delivery
             // Fulfilment has succeeded on the authoritative server. Charging here
             // ensures a blocked spawn can never consume the player's money.
             m_currency.Value -= item.Price;
-            SendDialogueState(player, $"Purchased {item.DisplayName}!", true);
+            SendDialogueState(player, $"Purchased {item.DisplayName}", true, purchaseSucceeded: true);
             return true;
         }
 
@@ -763,7 +763,8 @@ namespace CouchGuys.Gameplay.Delivery
         private void SendDialogueState(
             PlayerCouchCarrier player,
             string notice = "",
-            bool openShop = false)
+            bool openShop = false,
+            bool purchaseSucceeded = false)
         {
             if (player == null || !player.Owner.IsValid || !m_dialogues.TryGetValue(player, out var session) || session.Npc == null) return;
             EnsureCandidateCache();
@@ -795,7 +796,7 @@ namespace CouchGuys.Gameplay.Delivery
 
             player.OpenDeliveryDialogueTargetRpc(player.Owner, session.Npc.transform.position, session.Id,
                 available[0], reasons[0], available[1], reasons[1], available[2], reasons[2],
-                shopAvailable, shopReasons, m_currency.Value, notice, openShop);
+                shopAvailable, shopReasons, m_currency.Value, notice, openShop, purchaseSucceeded);
         }
 
         private void OnCurrencyChanged(int previous, int next, bool asServer)
