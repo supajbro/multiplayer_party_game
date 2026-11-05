@@ -1010,6 +1010,10 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void SetModelVisibility(int equippedIndex)
         {
+            if (m_healingModels != null)
+                for (int i = 0; i < m_healingModels.Length; i++)
+                    if (m_healingModels[i] != null)
+                        m_healingModels[i].gameObject.SetActive(equippedIndex == HealingItemCatalogue.FirstInventoryId + i);
             if (m_weaponModels == null) return;
             for (int i = 0; i < m_weaponModels.Length; i++)
                 if (m_weaponModels[i] != null)

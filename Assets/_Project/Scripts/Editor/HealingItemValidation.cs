@@ -48,30 +48,49 @@ namespace CouchGuys.Editor
         private static void Finish()
         {
             EditorApplication.update -= Tick; s_routine = null;
-            if (s_remote != null) s_remote.ClientManager.StopConnection();
-            if (s_network != null) { s_network.ClientManager.StopConnection(); s_network.ServerManager.StopConnection(true); }
-            EditorApplication.ExitPlaymode();
+            try
+            {
+                if (s_remote != null) s_remote.ClientManager.StopConnection();
+                if (s_network != null)
+                {
+                    // The probe's synthetic scene objects are being torn down. Do not flush
+                    // their dirty SyncVars into disconnect packets after the client stops.
+                    s_network.ServerManager.StopConnection(false);
+                    s_network.ClientManager.StopConnection();
+                }
+            }
+            finally { EditorApplication.ExitPlaymode(); }
         }
         private static void Check(bool condition,string message)
         { if (!condition) throw new Exception(message); File.AppendAllText(Result,"PASS: "+message+"\n"); }
         private static void SetSync<T>(object target,string name,T value) => ((SyncVar<T>)target.GetType().GetField(name,Fields).GetValue(target)).Value = value;
         private static IEnumerator Probe()
         {
+            Application.runInBackground=true;
+            Vector3 testOrigin=new Vector3(20000,0,20000);
             for (int i=0;i<SceneManager.sceneCount;i++) foreach (var root in SceneManager.GetSceneAt(i).GetRootGameObjects()) root.SetActive(false);
             foreach (var old in Object.FindObjectsByType<NetworkManager>(FindObjectsInactive.Include,FindObjectsSortMode.None)) Object.DestroyImmediate(old.gameObject);
             var bootstrap = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath("64e03b333ee845f5bff4d89fa9a228c4")));
             s_network = bootstrap.GetComponentInChildren<NetworkManager>();
             var spawner = s_network.GetComponent<CouchGuys.Networking.NeighbourhoodPlayerSpawner>(); if (spawner != null) Object.DestroyImmediate(spawner);
             yield return null;
+            s_network.TransportManager.Transport.SetMaximumClients(4);
             s_network.ServerManager.StartConnection(); s_network.ClientManager.StartConnection();
             float timeout=Time.realtimeSinceStartup+15;
             while (s_network.ServerManager.Clients.Count==0 && Time.realtimeSinceStartup<timeout) yield return null;
             Check(s_network.ServerManager.Clients.Count>0,"FishNet host connected");
+            timeout=Time.realtimeSinceStartup+10;
+            while(!s_network.IsClientStarted && Time.realtimeSinceStartup<timeout) yield return null;
+            Check(s_network.IsClientStarted,"Host client authenticated before spawning test players");
             var owner=s_network.ServerManager.Clients.Values.First();
-            var floor=GameObject.CreatePrimitive(PrimitiveType.Cube); floor.transform.position=Vector3.down*.5f; floor.transform.localScale=new Vector3(100,1,100);
+            s_network.SceneManager.AddConnectionToScene(owner,SceneManager.GetActiveScene());
+            var floor=GameObject.CreatePrimitive(PrimitiveType.Cube); floor.transform.position=testOrigin+Vector3.down*.5f; floor.transform.localScale=new Vector3(100,1,100);
             var source=AssetDatabase.LoadAssetAtPath<NetworkObject>("Assets/_Project/Prefabs/Player.prefab");
-            var player=Object.Instantiate(source,Vector3.up*.05f,Quaternion.identity); s_network.ServerManager.Spawn(player,owner);
-            var rival=Object.Instantiate(source,Vector3.right,Quaternion.identity); s_network.ServerManager.Spawn(rival,owner);
+            var player=Object.Instantiate(source,testOrigin+Vector3.up*.05f,Quaternion.identity); s_network.ServerManager.Spawn(player,owner);
+            var rival=Object.Instantiate(source,testOrigin+Vector3.back+Vector3.up*.05f,Quaternion.identity); s_network.ServerManager.Spawn(rival,owner);
+            timeout=Time.realtimeSinceStartup+10;
+            while((!player.IsClientInitialized || !player.IsOwner) && Time.realtimeSinceStartup<timeout) yield return null;
+            Check(player.IsClientInitialized && player.IsOwner,"Host player replica initialized with ownership");
             var inventory=player.GetComponent<PlayerWeaponController>(); var health=player.GetComponent<PlayerHealth>(); var healing=player.GetComponent<HealingItem>();
             // Freeze movement to keep interaction-distance checks deterministic.
             player.GetComponent<ThirdPersonPlayerController>().enabled=false;
@@ -89,7 +108,7 @@ namespace CouchGuys.Editor
             managerData.ApplyModifiedPropertiesWithoutUndo(); deliveryRoot.SetActive(true);
             // This follows the existing gameplay probes' scene-object setup; spawn supplies authority.
             s_network.ServerManager.Spawn(deliveryRoot.GetComponent<NetworkObject>());
-            var npc=new GameObject("Test dispatcher").AddComponent<DeliveryNPC>(); npc.SetDeliveryManager(manager);
+            var npc=new GameObject("Test dispatcher").AddComponent<DeliveryNPC>(); npc.SetDeliveryManager(manager); npc.transform.position=testOrigin;
             var carrier=player.GetComponent<PlayerCouchCarrier>();
             SetSync(manager,"m_currency",10000);
             Check(manager.TryBeginDialogueServer(npc,carrier),"Dispatcher dialogue opened");
@@ -99,6 +118,7 @@ namespace CouchGuys.Editor
             uint request=1;
             foreach (var settings in catalogue.Items)
             {
+                Check(manager.TryBeginDialogueServer(npc,carrier),"Open dispatcher for next item purchase");
                 int id=catalogue.IdOf(settings), before=manager.CurrentCurrency;
                 Check(settings.PickupPrefab != null && settings.PickupPrefab.HealingSettings==settings && settings.Icon != null && settings.UseEffectPrefab != null,"Configured pickup/icon/effects: "+settings.DisplayName);
                 Check(((FishNet.Managing.Object.SinglePrefabObjects)s_network.SpawnablePrefabs).Prefabs.Contains(settings.PickupPrefab.NetworkObject),"Pickup registered for multiplayer: "+settings.DisplayName);
@@ -113,7 +133,7 @@ namespace CouchGuys.Editor
                 // Non-default maximum health proves the heal uses max health rather than a fixed amount.
                 typeof(PlayerHealth).GetField("m_maxHealth",Fields).SetValue(health,200f); SetSync(health,"m_currentHealth",20f);
                 healing.RequestUseServerRpc();
-                float requestDeadline = Time.time + .75f;
+                float requestDeadline = Time.time + 3f;
                 while (!healing.IsUsing && Time.time < requestDeadline) yield return null;
                 Check(healing.IsUsing,"Owner RPC starts timed healing");
                 float effectDeadline = Time.time + .5f;
@@ -125,12 +145,21 @@ namespace CouchGuys.Editor
                 Check(Mathf.Abs(health.CurrentHealth-Mathf.Min(200,20+2*settings.HealingPercentage))<.01f,"Maximum-health percentage applied: "+settings.DisplayName);
                 Check(inventory.GetInventoryWeaponIndex(slot)==-1 && !healing.IsUsing,"Exactly one item consumed after duration");
                 SetSync(health,"m_currentHealth",200f);
-                var pickup=WeaponPickup.SpawnHealingServer(settings,player.transform.position+Vector3.forward*.7f,Quaternion.identity,Vector3.zero);
+                var pickup=WeaponPickup.SpawnHealingServer(settings,player.transform.position+Vector3.up*.6f+Vector3.forward*.7f,Quaternion.identity,Vector3.zero);
                 Check(pickup!=null && pickup.IsSpawned,"Network world pickup spawned");
+                Physics.SyncTransforms();
                 Check(pickup.TryPickupServer(inventory),"Existing pickup system grants healing item");
                 Check(!pickup.TryPickupServer(rival.GetComponent<PlayerWeaponController>()),"Second player cannot claim the same pickup");
                 slot=Enumerable.Range(0,5).First(s=>inventory.GetInventoryWeaponIndex(s)==id);
                 typeof(PlayerWeaponController).GetMethod("EquipInventorySlotServer",Fields).Invoke(inventory,new object[]{slot});
+                switchAt=Time.time+.25f; while(Time.time<switchAt) yield return null;
+                var heldModels=new SerializedObject(inventory).FindProperty("m_healingModels");
+                var heldModel=(Transform)heldModels.GetArrayElementAtIndex(id-6).objectReferenceValue;
+                Check(heldModel!=null && heldModel.gameObject.activeSelf,"Equipped model visible on existing hand attachment");
+                Check((bool)typeof(PlayerWeaponController).GetMethod("DropOwnedWeaponServer",Fields).Invoke(inventory,null),"Equipped item can be dropped");
+                var dropped=Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).First(p=>p.IsSpawned && p.HealingSettings==settings);
+                dropped.transform.position=player.transform.position+Vector3.up*.6f+Vector3.forward*.7f; Physics.SyncTransforms();
+                Check(dropped.TryPickupServer(inventory),"Dropped model can be collected again");
                 switchAt=Time.time+.25f; while(Time.time<switchAt) yield return null;
                 SetSync(health,"m_currentHealth",199f); Check(healing.TryBeginUseServer(),"Partial-health use starts");
                 end=Time.time+settings.UseDuration+.3f; while(Time.time<end) yield return null;
@@ -145,13 +174,15 @@ namespace CouchGuys.Editor
             remoteRoot.SetActive(true); yield return null;
             s_remote.TransportManager.Transport.SetClientAddress("127.0.0.1");
             s_remote.TransportManager.Transport.SetPort(s_network.TransportManager.Transport.GetPort());
+            s_network.TransportManager.Transport.SetMaximumClients(4);
+            File.AppendAllText(Result,$"REMOTE TEST: transport capacity={s_network.TransportManager.Transport.GetMaximumClients()}, port={s_network.TransportManager.Transport.GetPort()}\n");
             s_remote.ClientManager.StartConnection();
             timeout=Time.realtimeSinceStartup+10;
             while ((!s_remote.IsClientStarted || s_network.ServerManager.Clients.Count<2) && Time.realtimeSinceStartup<timeout) yield return null;
             Check(s_remote.IsClientOnlyStarted && s_network.ServerManager.Clients.Count==2,"Independent client-only network connection established");
             var remoteOwner=s_network.ServerManager.Clients.Values.First(c=>c.ClientId!=owner.ClientId);
             s_network.SceneManager.AddConnectionToScene(remoteOwner,player.gameObject.scene);
-            var remotePlayer=Object.Instantiate(source,new Vector3(-4,.05f,0),Quaternion.identity);
+            var remotePlayer=Object.Instantiate(source,testOrigin+new Vector3(-4,.05f,0),Quaternion.identity);
             s_network.ServerManager.Spawn(remotePlayer,remoteOwner);
             remotePlayer.GetComponent<ThirdPersonPlayerController>().enabled=false;
             timeout=Time.realtimeSinceStartup+5;
@@ -187,6 +218,7 @@ namespace CouchGuys.Editor
             typeof(PlayerWeaponController).GetMethod("EquipInventorySlotServer",Fields).Invoke(inventory,new object[]{4});
             Check(!healing.IsUsing && health.CurrentHealth==100 && inventory.GetInventoryHealingItem(0)==tape,"Switching slots cancels without consumption or healing");
             while(inventory.CanAcquireHealingItemServer(tape)) inventory.AcquireHealingItemServer(tape);
+            Check(manager.TryBeginDialogueServer(npc,carrier),"Reopen dispatcher for capacity check");
             int money=manager.CurrentCurrency;
             Check(!manager.TryPurchaseShopItemServer(carrier,tape.name,request++) && manager.CurrentCurrency==money,"Full inventory rejects purchase without charging");
             Check(catalogue.SelectDrop(.001f)==catalogue.Items[0] && catalogue.SelectDrop(.026f)==catalogue.Items[1] && catalogue.SelectDrop(.0327f)==catalogue.Items[2] && catalogue.SelectDrop(.5f)==null,"Single-roll rare drop intervals select zero or one item");
@@ -205,7 +237,7 @@ namespace CouchGuys.Editor
                 {
                     for(int i=0;i<3;i++) chanceField.SetValue(catalogue.Items[i], i==index ? 1f : 0f);
                     var enemy = Object.Instantiate(AssetDatabase.LoadAssetAtPath<NetworkObject>("Assets/_Project/Prefabs/Enemies/Thief_Pistol.prefab"),
-                        new Vector3(12,0,12),Quaternion.identity);
+                        testOrigin+new Vector3(12,0,12),Quaternion.identity);
                     s_network.ServerManager.Spawn(enemy);
                     int Count() => Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Count(p=>p.IsSpawned && p.HealingSettings!=null);
                     int before=Count();
@@ -217,7 +249,7 @@ namespace CouchGuys.Editor
                 }
             }
             finally { for(int i=0;i<3;i++) chanceField.SetValue(catalogue.Items[i],original[i]); }
-            File.AppendAllText(Result,"COMPLETE: all three items passed shop, pickup, server-use and local host networking checks.\n");
+            File.AppendAllText(Result,"COMPLETE: all three items passed shop, equip, drop, pickup, consumption, host and independent-client networking checks.\n");
         }
     }
 }

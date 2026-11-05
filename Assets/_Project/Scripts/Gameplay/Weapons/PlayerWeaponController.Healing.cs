@@ -5,6 +5,8 @@ namespace CouchGuys.Gameplay.Weapons
 {
     public sealed partial class PlayerWeaponController
     {
+        [UnityEngine.SerializeField] private UnityEngine.Transform[] m_healingModels = new UnityEngine.Transform[3];
+
         public HealingItemSettings GetInventoryHealingItem(int slot) => HealingItemCatalogue.Load()?.Find(GetInventoryWeaponIndex(slot));
         public HealingItemSettings EquippedHealingItem => GetInventoryHealingItem(SelectedHotbarSlot);
         public bool IsItemSwitchReady => UnityEngine.Time.time >= m_switchCompleteAt;
