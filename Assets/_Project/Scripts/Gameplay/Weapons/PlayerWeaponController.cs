@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Healing;
+using CouchGuys.Gameplay.Sled;
 using CouchGuys.Gameplay.Enemies;
 using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Gameplay.Traffic;
@@ -361,7 +362,20 @@ namespace CouchGuys.Gameplay.Weapons
         [ServerRpc]
         private void RequestDropWeaponServerRpc()
         {
-            if (CanHandleWeaponServer && m_equippedIndex.Value >= 0) DropOwnedWeaponServer();
+            if (!CanHandleWeaponServer || m_equippedIndex.Value < 0) return;
+            var sled = SledController.FindLoadingSled(transform.position + Vector3.up);
+            if (sled != null)
+            {
+                if (!sled.HasCargoSpace)
+                {
+                    if (Owner.IsValid) ShowSledStorageNoticeTargetRpc(Owner, "Sled full.");
+                    return;
+                }
+                if (!DropOwnedWeaponServer(sled) && Owner.IsValid)
+                    ShowSledStorageNoticeTargetRpc(Owner, "Cannot store this item right now.");
+                return;
+            }
+            DropOwnedWeaponServer();
         }
 
         [Server]
@@ -409,13 +423,23 @@ namespace CouchGuys.Gameplay.Weapons
             return true;
         }
 
-        private bool DropOwnedWeaponServer()
+        [TargetRpc]
+        private void ShowSledStorageNoticeTargetRpc(NetworkConnection connection, string message) =>
+            CouchGuys.UI.DialogueShopUI.Instance.ShowNotice(message);
+
+        private bool DropOwnedWeaponServer(SledController sled = null)
         {
             int index = m_equippedIndex.Value;
             if (EquippedHealingItem is HealingItemSettings healing)
             {
-                if (WeaponPickup.SpawnHealingServer(healing, transform.position + Vector3.up,
-                    transform.rotation, Vector3.zero) == null) return false;
+                var healingPickup = WeaponPickup.SpawnHealingServer(healing, transform.position + Vector3.up,
+                    transform.rotation, Vector3.zero);
+                if (healingPickup == null) return false;
+                if (sled != null && !sled.TryStoreWeaponServer(healingPickup))
+                {
+                    Despawn(healingPickup.NetworkObject);
+                    return false;
+                }
                 GetComponent<HealingItem>()?.CancelUseServer();
                 m_inventory[SelectedHotbarSlot] = -1;
                 m_equippedIndex.Value = -1;
@@ -429,6 +453,11 @@ namespace CouchGuys.Gameplay.Weapons
                 origin + direction * distance, Quaternion.LookRotation(direction), direction * 1.5f,
                 m_magazine[index], m_reserve[index]);
             if (pickup == null) return false;
+            if (sled != null && !sled.TryStoreWeaponServer(pickup))
+            {
+                Despawn(pickup.NetworkObject);
+                return false;
+            }
             StopGrappleServer();
             foreach (Collider own in GetComponentsInChildren<Collider>())
                 foreach (Collider dropped in pickup.GetComponentsInChildren<Collider>())

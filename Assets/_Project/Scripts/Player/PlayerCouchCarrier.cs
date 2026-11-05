@@ -397,6 +397,12 @@ namespace CouchGuys.Player
 
         private void TryRequestNearestInteraction()
         {
+            var rackPickup = FindNearbyRackPickup();
+            if (rackPickup != null)
+            {
+                RequestWeaponPickupServerRpc(rackPickup.NetworkObject);
+                return;
+            }
             CouchCarryPoint[] points = FindObjectsByType<CouchCarryPoint>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
             CouchCarryPoint closestPoint = null;
             SledController closestUnloadSled = null;
@@ -504,6 +510,26 @@ namespace CouchGuys.Player
                 TryGetComponent(out PlayerWeaponController weapons)) pickup.TryPickupServer(weapons);
         }
 
+        private WeaponPickup FindNearbyRackPickup()
+        {
+            WeaponPickup nearest = null;
+            float distance = Mathf.Min(m_interactionRange, 1.15f);
+            foreach (var pickup in FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None))
+            {
+                if (!pickup.IsSpawned || pickup.MountedSled == null ||
+                    !IsFacingTarget(transform.position, transform.forward, pickup.transform.position, .6f)) continue;
+                float candidate = Vector3.Distance(SledGrabOrigin, pickup.transform.position);
+                if (candidate >= distance) continue;
+                nearest = pickup;
+                distance = candidate;
+            }
+            return nearest;
+        }
+
+        private string GetStoreItemHint(SledController sled) =>
+            sled != null && sled.HasCargoSpace && TryGetComponent(out PlayerWeaponController weapon) && weapon.HasEquippedWeapon
+                ? " | Q to store held item" : string.Empty;
+
         private void UpdateSledInteractionPrompt()
         {
             if (CarriedSled != null)
@@ -513,7 +539,9 @@ namespace CouchGuys.Player
             }
             if (IsCarrying)
             {
-                m_sledInteractionPrompt = string.Empty;
+                var loadingSled = SledController.FindLoadingSled(transform.position + Vector3.up);
+                m_sledInteractionPrompt = loadingSled == null ? string.Empty :
+                    loadingSled.HasCargoSpace ? $"Press E to load couch | {loadingSled.CargoStatus}" : loadingSled.LoadingStatus;
                 return;
             }
             DepotController depot = FindFirstObjectByType<DepotController>();
@@ -521,6 +549,12 @@ namespace CouchGuys.Player
                     transform.position, m_interactionRange, out _))
             {
                 m_sledInteractionPrompt = "Press E to operate roller door";
+                return;
+            }
+            var rackPickup = FindNearbyRackPickup();
+            if (rackPickup != null)
+            {
+                m_sledInteractionPrompt = $"Press E to pick up {rackPickup.DisplayName} | {rackPickup.MountedSled.CargoStatus}";
                 return;
             }
             foreach (var sled in FindObjectsByType<SledController>(FindObjectsSortMode.None))
@@ -531,7 +565,7 @@ namespace CouchGuys.Player
                     System.Math.Min(Vector3.Distance(SledGrabOrigin, sled.GetPoint(0).transform.position),
                         Vector3.Distance(SledGrabOrigin, sled.GetPoint(1).transform.position)))
                 {
-                    m_sledInteractionPrompt = "Press E to unload top couch";
+                    m_sledInteractionPrompt = $"Press E to unload top couch | {sled.LoadingStatus}" + GetStoreItemHint(sled);
                     return;
                 }
             float rangeSquared = m_interactionRange * m_interactionRange;
@@ -541,11 +575,14 @@ namespace CouchGuys.Player
                 if (point != null && point.IsAvailable &&
                     (point.transform.position - SledGrabOrigin).sqrMagnitude <= rangeSquared)
                 {
-                    m_sledInteractionPrompt = "Press E to grab sled";
+                    m_sledInteractionPrompt = $"Press E to grab sled | {point.Sled.LoadingStatus}" + GetStoreItemHint(point.Sled);
                     return;
                 }
             }
-            m_sledInteractionPrompt = string.Empty;
+            var nearbySled = SledController.FindLoadingSled(transform.position + Vector3.up);
+            m_sledInteractionPrompt = nearbySled != null ? nearbySled.LoadingStatus : string.Empty;
+            if (nearbySled != null && TryGetComponent(out PlayerWeaponController weapons) && weapons.HasEquippedWeapon)
+                m_sledInteractionPrompt += nearbySled.HasCargoSpace ? " | Q to store held item" : string.Empty;
             foreach (WeaponPickup pickup in FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None))
             {
                 if (pickup.IsSpawned && (pickup.transform.position - transform.position).sqrMagnitude <= rangeSquared)
@@ -767,8 +804,22 @@ namespace CouchGuys.Player
         [ServerRpc]
         private void RequestReleaseServerRpc()
         {
+            var couch = GetCarriedCouchServer();
+            var sled = couch != null && !couch.IsSled
+                ? SledController.FindLoadingSled(transform.position + Vector3.up) : null;
             ReleaseCurrentCarryableServer();
+            // Only the final carrier's explicit release loads the couch. No forced releases.
+            if (sled != null && couch != null && couch.ActiveCarrierCount == 0)
+            {
+                if (!sled.HasCargoSpace && Owner.IsValid)
+                    DialogueShopNoticeTargetRpc(Owner, "Sled full. Couch released.");
+                else sled.TryLoadCouchServer(couch);
+            }
         }
+
+        [TargetRpc]
+        private void DialogueShopNoticeTargetRpc(NetworkConnection connection, string message) =>
+            DialogueShopUI.Instance.ShowNotice(message);
 
         /// <summary>Temporary test-only shortcut; the DeliveryManager performs all validation.</summary>
         [ServerRpc]
@@ -850,7 +901,7 @@ namespace CouchGuys.Player
             float landingSpeed,
             Vector3 playerVelocity)
         {
-            if (!IsOwner || couch == null || couch.IsLoaded)
+            if (!IsOwner || couch == null || couch.IsSled || couch.IsLoaded)
             {
                 return;
             }
@@ -869,7 +920,7 @@ namespace CouchGuys.Player
         {
             if (Time.unscaledTime < m_nextServerBounceTime || couchObject == null ||
                 !couchObject.IsSpawned ||
-                !couchObject.TryGetComponent(out CouchCarryController couch) || couch.IsLoaded ||
+                !couchObject.TryGetComponent(out CouchCarryController couch) || couch.IsSled || couch.IsLoaded ||
                 landingSpeed < 1.5f)
             {
                 return;

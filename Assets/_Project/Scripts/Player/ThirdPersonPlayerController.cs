@@ -432,7 +432,7 @@ namespace CouchGuys.Player
             }
 
             CouchCarryController couch = hit.collider.GetComponentInParent<CouchCarryController>();
-            if (couch == null || couch.IsLoaded)
+            if (couch == null || couch.IsSled || couch.IsLoaded)
             {
                 return;
             }

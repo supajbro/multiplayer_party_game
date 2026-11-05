@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Couch;
 using CouchGuys.Player;
+using CouchGuys.Gameplay.Weapons;
 using FishNet.Object;
 using UnityEngine;
 
@@ -17,6 +18,15 @@ namespace CouchGuys.Gameplay.Sled
         [SerializeField] private Transform m_couchAnchor;
         [SerializeField] private Transform m_unloadPoint;
         [SerializeField] private Vector3 m_unloadOffset = new(0f, 0f, 2.4f);
+        [SerializeField] private SledSettings m_settings;
+        [SerializeField] private Transform[] m_weaponAnchors;
+        [SerializeField, Tooltip("Half-width/depth of the couch loading area around the couch anchor.")]
+        private Vector2 m_loadingHalfExtents = new(1.3f, .9f);
+        [SerializeField, Min(.05f)] private float m_loadingHeightTolerance = .55f;
+        [SerializeField, Min(.1f)] private float m_loadingInteractionDistance = 2.3f;
+        private readonly Collider[] m_loadingHits = new Collider[64];
+        private readonly List<WeaponPickup> m_weapons = new();
+        private float m_nextLoadingScan;
         private readonly List<CouchCarryController> m_cargo = new();
         private readonly HashSet<Collider> m_carriers = new();
         private float m_nextMountTime;
@@ -28,6 +38,28 @@ namespace CouchGuys.Gameplay.Sled
         public float MaxGrabDistance => CarryController.MaxCarryDistance;
         public int ActiveCarrierCount => CarryController.ActiveCarrierCount;
         public int MountedCouchCount => m_cargo.Count;
+        public int CargoCount => m_cargo.Count + m_weapons.Count;
+        public int MaximumCargoItems => m_settings != null ? m_settings.MaximumCargoItems : 3;
+        public bool HasCargoSpace => CargoCount < MaximumCargoItems;
+        public string CargoStatus => $"Cargo: {CargoCount}/{MaximumCargoItems}";
+        public string LoadingStatus => HasCargoSpace ? CargoStatus : $"Sled full ({CargoCount}/{MaximumCargoItems})";
+        public bool CanLoadFrom(Vector3 position) => m_couchAnchor != null &&
+            Vector3.Distance(position, m_couchAnchor.position) <= m_loadingInteractionDistance;
+
+        public static SledController FindLoadingSled(Vector3 position)
+        {
+            SledController nearest = null;
+            float distance = float.PositiveInfinity;
+            foreach (var sled in FindObjectsByType<SledController>(FindObjectsSortMode.None))
+            {
+                if (!sled.IsSpawned || !sled.CanLoadFrom(position)) continue;
+                float candidate = (sled.CouchAnchor.position - position).sqrMagnitude;
+                if (candidate >= distance) continue;
+                nearest = sled;
+                distance = candidate;
+            }
+            return nearest;
+        }
         public float StaminaDrainMultiplier => CarryController.StaminaDrainMultiplier;
         public SledGrabPoint GetPoint(int index) => index >= 0 && index < m_grabPoints.Length ? m_grabPoints[index] : null;
         public bool IsPointOccupied(int index) => CarryController.IsPointOccupied(index);
@@ -37,22 +69,81 @@ namespace CouchGuys.Gameplay.Sled
         public float CalculateCarrierMovementSpeedMultiplier() => CarryController.CalculateCarrierMovementSpeedMultiplier();
         public void TeleportServer(Vector3 position, Quaternion rotation) => CarryController.TeleportServer(position, rotation);
 
-        private void OnCollisionStay(Collision collision) => TryMountCollisionServer(collision);
+        private void FixedUpdate()
+        {
+            if (!IsServerInitialized || !HasCargoSpace || Time.time < m_nextLoadingScan ||
+                Time.time < m_nextMountTime || m_couchAnchor == null) return;
+            m_nextLoadingScan = Time.time + .15f;
+            // Contact callbacks stop being reliable once lower cargo becomes kinematic.
+            Vector3 centre = m_couchAnchor.position + transform.up * StackHeight;
+            int count = Physics.OverlapBoxNonAlloc(centre,
+                new Vector3(m_loadingHalfExtents.x, m_loadingHeightTolerance + .5f, m_loadingHalfExtents.y),
+                m_loadingHits, transform.rotation, ~0, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < count && HasCargoSpace; i++)
+            {
+                var body = m_loadingHits[i].attachedRigidbody;
+                if (body == null) continue;
+                if (body.TryGetComponent(out CouchCarryController couch)) TryLoadPlacedCouchServer(couch);
+                else if (body.TryGetComponent(out WeaponPickup weapon) && weapon.MountedSled == null &&
+                    m_couchAnchor.InverseTransformPoint(weapon.transform.position).y >= -.15f)
+                    TryStoreWeaponServer(weapon);
+            }
+        }
 
         internal void TryMountCollisionServer(Collision collision)
         {
-            if (!IsServerInitialized || m_couchAnchor == null || Time.time < m_nextMountTime || collision.rigidbody == null) return;
-            CouchCarryController couch = collision.rigidbody.GetComponent<CouchCarryController>();
-            if (couch == null || couch.IsSled || !couch.IsSpawned || couch.IsLoaded || !couch.IsPickupAvailable || couch.ActiveCarrierCount > 0) return;
-            Vector3 centre = transform.InverseTransformPoint(couch.transform.TransformPoint(couch.CargoBounds.center));
-            if (Mathf.Abs(centre.x) > .45f || Mathf.Abs(centre.z) > .35f || Vector3.Dot(couch.transform.up, transform.up) < .9f) return;
-            float top = m_couchAnchor.localPosition.y + StackHeight;
-            foreach (ContactPoint contact in collision.contacts)
+            if (collision.rigidbody != null && collision.rigidbody.TryGetComponent(out CouchCarryController couch))
+                TryLoadPlacedCouchServer(couch);
+        }
+
+        internal bool IsWithinLoadingSurface(CouchCarryController couch)
+        {
+            if (couch == null || m_couchAnchor == null) return false;
+            Vector3 centre = m_couchAnchor.InverseTransformPoint(couch.transform.TransformPoint(couch.CargoBounds.center));
+            float halfHeight = couch.CargoBounds.extents.y * couch.transform.lossyScale.y / m_couchAnchor.lossyScale.y;
+            return Mathf.Abs(centre.x) <= m_loadingHalfExtents.x && Mathf.Abs(centre.z) <= m_loadingHalfExtents.y &&
+                Mathf.Abs(centre.y - halfHeight - StackHeight) <= m_loadingHeightTolerance &&
+                Vector3.Dot(couch.transform.up, transform.up) > .5f;
+        }
+
+        private bool TryLoadPlacedCouchServer(CouchCarryController couch) =>
+            IsWithinLoadingSurface(couch) && TryLoadCouchServer(couch);
+
+        [Server]
+        internal bool TryLoadCouchServer(CouchCarryController couch)
+        {
+            if (!IsServerInitialized || !HasCargoSpace || Time.time < m_nextMountTime || couch == null) return false;
+            return couch.MountOnSledServer(this, GetMountPosition(couch));
+        }
+
+        internal Transform GetWeaponAnchor(int slot) => m_weaponAnchors != null && slot >= 0 &&
+            slot < m_weaponAnchors.Length ? m_weaponAnchors[slot] : null;
+
+        [Server]
+        internal bool TryStoreWeaponServer(WeaponPickup weapon)
+        {
+            if (!IsServerInitialized || !HasCargoSpace || Time.time < m_nextMountTime || weapon == null ||
+                !CanLoadFrom(weapon.transform.position)) return false;
+            for (int slot = 0; m_weaponAnchors != null && slot < m_weaponAnchors.Length; slot++)
             {
-                if (Mathf.Abs(transform.InverseTransformPoint(contact.point).y - top) > .12f) continue;
-                couch.MountOnSledServer(this, GetMountPosition(couch));
-                break;
+                if (GetWeaponAnchor(slot) == null || m_weapons.Exists(item => item != null && item.SledSlot == slot)) continue;
+                return weapon.MountOnSledServer(this, slot);
             }
+            return false;
+        }
+
+        internal void RegisterWeapon(WeaponPickup weapon)
+        {
+            if (m_weapons.Contains(weapon)) return;
+            m_weapons.Add(weapon);
+            IgnoreCargoCollisions(weapon.gameObject, true);
+        }
+
+        internal void ForgetWeapon(WeaponPickup weapon)
+        {
+            IgnoreCargoCollisions(weapon.gameObject, false);
+            m_weapons.Remove(weapon);
+            m_nextMountTime = Time.time + 1f;
         }
 
         private float StackHeight
@@ -74,13 +165,13 @@ namespace CouchGuys.Gameplay.Sled
         internal void RegisterMountedCouch(CouchCarryController couch)
         {
             if (m_cargo.Contains(couch)) return;
-            IgnoreCargoCollisions(couch, true);
+            IgnoreCargoCollisions(couch.gameObject, true);
             m_cargo.Add(couch);
         }
 
         internal void ForgetMountedCouch(CouchCarryController couch)
         {
-            IgnoreCargoCollisions(couch, false);
+            IgnoreCargoCollisions(couch.gameObject, false);
             m_cargo.Remove(couch);
             m_nextMountTime = Time.time + 1f;
             if (!IsServerInitialized) return;
@@ -94,7 +185,7 @@ namespace CouchGuys.Gameplay.Sled
             }
         }
 
-        private void IgnoreCargoCollisions(CouchCarryController couch, bool ignored)
+        private void IgnoreCargoCollisions(GameObject couch, bool ignored)
         {
             Collider[] cargoColliders = couch.GetComponentsInChildren<Collider>(true);
             Collider[] assemblyColliders = GetComponentsInChildren<Collider>(true);
@@ -112,6 +203,9 @@ namespace CouchGuys.Gameplay.Sled
             if (ignored) m_carriers.Add(carrier); else m_carriers.Remove(carrier);
             foreach (var couch in m_cargo)
                 if (couch != null) couch.SetCarrierCollisionIgnored(carrier, ignored);
+            foreach (var weapon in m_weapons)
+                if (weapon != null)
+                    foreach (var hit in weapon.GetComponentsInChildren<Collider>(true)) Physics.IgnoreCollision(hit, carrier, ignored);
         }
 
         [Server]
@@ -149,6 +243,12 @@ namespace CouchGuys.Gameplay.Sled
                 if (couch != null) couch.UnmountFromSledServer();
                 else m_cargo.RemoveAt(m_cargo.Count - 1);
             }
+            while (m_weapons.Count > 0)
+            {
+                var weapon = m_weapons[m_weapons.Count - 1];
+                if (weapon != null) weapon.UnmountFromSledServer();
+                else m_weapons.RemoveAt(m_weapons.Count - 1);
+            }
             base.OnStopServer();
         }
 
@@ -156,6 +256,8 @@ namespace CouchGuys.Gameplay.Sled
         {
             foreach (var couch in m_cargo)
                 if (couch != null) couch.transform.SetParent(null, true);
+            foreach (var weapon in m_weapons)
+                if (weapon != null) weapon.transform.SetParent(null, true);
             base.OnStopClient();
         }
     }

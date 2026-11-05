@@ -900,7 +900,7 @@ namespace CouchGuys.Gameplay.Couch
         internal bool MountOnSledServer(SledController sled, Vector3 localPosition)
         {
             if (!IsServerInitialized || IsSled || IsLoaded || !IsPickupAvailable || ActiveCarrierCount > 0 ||
-                sled == null || sled.CouchAnchor == null) return false;
+                sled == null || sled.CouchAnchor == null || !sled.HasCargoSpace) return false;
             m_sledMountPosition.Value = localPosition;
             m_mountedSled.Value = sled.NetworkObject;
             ApplyLoadedStateImmediately();
@@ -1500,7 +1500,7 @@ namespace CouchGuys.Gameplay.Couch
         [Server]
         internal void ApplyPlayerBounceServer(float landingSpeed, Vector3 playerVelocity)
         {
-            if (!IsServerInitialized || IsLoaded || m_rigidbody == null || m_rigidbody.isKinematic)
+            if (!IsServerInitialized || IsSled || IsLoaded || m_rigidbody == null || m_rigidbody.isKinematic)
             {
                 return;
             }
