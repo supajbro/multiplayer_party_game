@@ -53,6 +53,11 @@ namespace CouchGuys.Gameplay.Vehicles
         {
             progress = m_interactor.HoldProgress;
             duration = 0f;
+            if (TryGetComponent(out PlayerHoverboardInteractor hoverboard))
+            {
+                string hoverboardPrompt = hoverboard.InteractionPrompt;
+                if (!string.IsNullOrEmpty(hoverboardPrompt)) { progress = 0f; return hoverboardPrompt; }
+            }
             TruckController truck = m_interactor.CurrentTruck;
             if (truck != null)
             {

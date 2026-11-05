@@ -85,6 +85,8 @@ namespace CouchGuys.Player
         private void Update()
         {
             if (!IsOwner || m_input == null) return;
+            if (TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.HasPriorityWorldInteraction())
+            { m_nearbyTruck = null; m_holdProgress = 0f; m_worldInteractionPrompt = string.Empty; return; }
             if (TryGetComponent(out PlayerHealth health) && (health.IsKnockedDown || health.HasReviveInteraction))
             {
                 m_holdProgress = 0f;
@@ -208,6 +210,7 @@ namespace CouchGuys.Player
         [ServerRpc]
         private void RequestEnterServerRpc(NetworkObject truckObject)
         {
+            if (TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.IsMounted) return;
             if (CurrentTruck != null || truckObject == null || !truckObject.TryGetComponent(out TruckController truck)) return;
             if (TryGetComponent(out PlayerHealth health) && (!health.IsAlive || health.IsKnockedDown)) return;
             if (TryGetComponent(out PlayerCouchCarrier carrier) && carrier.IsCarrying) return;

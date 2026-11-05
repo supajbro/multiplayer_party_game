@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 73288e0222416cf478a65cf57466951e, type: 3}
+  m_Name: MagneticHoverboardSettings
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Vehicles.MagneticHoverboardSettings
+  MaximumForwardSpeed: 50
+  ReverseSpeed: 8
+  LoadedSpeed: 50
+  Acceleration: 12
+  Deceleration: 5
+  BrakingStrength: 16
+  TurningSpeed: 100
+  TurningResponsiveness: 7
+  LateralGrip: 7
+  InputTimeout: 0.35
+  HoverHeight: 0.42
+  HoverSpringStrength: 65
+  HoverDamping: 13
+  GroundDetectionDistance: 2.8
+  MaximumSlopeAngle: 38
+  GroundAlignment: 7
+  BobbingAmplitude: 0.025
+  BobbingFrequency: 1.6
+  BankingAngle: 9
+  BankingSmoothing: 8
+  GroundMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  AttachmentRange: 1.7
+  LoadingPointRange: 1.5
+  AttachmentPositionOffset: {x: 0, y: 0.84, z: -0.85}
+  AttachmentRotationOffset: {x: 0, y: 90, z: 0}
+  AttachmentTransitionSpeed: 2
+  DetachmentDistance: 3.7
+  ArmAnimationSpeed: 3
+  ArmOpenAngle: 18
+  MagnetMaximumSpeed: 0.65
+  Mass: 160
+  CollisionFriction: 0.04
+  CollisionRestitution: 0.03
+  CollisionBraking: 0.3
+  MountRange: 1.8
+  InteractionCooldown: 0.4
+  DriverPositionOffset: {x: 0, y: -0.06, z: 1.02}
+  DriverRotationOffset: {x: 0, y: 0, z: 0}
+  DismountDistance: 1.8
+  CameraDistance: 6
+  CameraHeight: 1.6
+  CameraSmoothing: 8
+  CameraSensitivity: 0.12

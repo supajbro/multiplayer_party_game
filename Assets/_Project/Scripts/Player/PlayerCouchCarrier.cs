@@ -86,12 +86,14 @@ namespace CouchGuys.Player
         internal Vector3 GetCarryInteractionOrigin(CouchCarryController couch) =>
             couch != null && couch.IsSled ? SledGrabOrigin : transform.position;
         internal bool IsAvailableForServerCarry => IsSpawned && !IsCarrying &&
+            !(TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.IsMounted) &&
             (!TryGetComponent(out PlayerHealth health) || health.IsAlive);
         internal bool IsValidServerCarrier => IsSpawned &&
             (!TryGetComponent(out PlayerHealth health) || health.IsAlive);
 
         NetworkObject ICouchCarrierServer.CarrierNetworkObject => NetworkObject;
         bool ICouchCarrierServer.IsCarrierAvailable => IsSpawned &&
+            !(TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.IsMounted) &&
             (!TryGetComponent(out PlayerHealth health) || health.IsAlive);
 
         private void Awake()
@@ -124,6 +126,7 @@ namespace CouchGuys.Player
 
             PlayerTruckInteractor truckInteractor = GetComponent<PlayerTruckInteractor>();
             if (m_input != null && m_input.InteractPressedThisFrame &&
+                !(TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.HasPriorityWorldInteraction()) &&
                 (health == null || !health.HasReviveInteraction) &&
                 (truckInteractor == null || !truckInteractor.HasPriorityWorldInteraction()))
             {
@@ -706,7 +709,7 @@ namespace CouchGuys.Player
                     item.Icon,
                     item.Category switch
                     {
-                        ShopItemCategory.Vehicle => "Trucks",
+                        ShopItemCategory.Vehicle => "Vehicles",
                         ShopItemCategory.Weapon => "Weapons",
                         ShopItemCategory.Equipment => "Upgrades",
                         ShopItemCategory.PlayerUpgrade => "Upgrades",

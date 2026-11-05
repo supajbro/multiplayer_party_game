@@ -22,7 +22,7 @@ namespace CouchGuys.Networking
         private Vector2 m_scroll;
         private static readonly string[] Tabs = { "Player", "Spawnables" };
         private static readonly string[] SpawnNames =
-            { "Pistol", "Assault Rifle", "Shotgun", "Truck", "Grapple Gun", "Rocket Launcher", "Baseball Bat" };
+            { "Pistol", "Assault Rifle", "Shotgun", "Truck", "Grapple Gun", "Rocket Launcher", "Baseball Bat", "Magnetic Hoverboard" };
 
         private void Awake()
         {

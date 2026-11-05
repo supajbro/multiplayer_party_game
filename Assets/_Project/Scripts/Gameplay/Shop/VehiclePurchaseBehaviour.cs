@@ -19,7 +19,8 @@ namespace CouchGuys.Gameplay.Shop
             PlayerCouchCarrier player,
             out string unavailableReason)
         {
-            if (m_vehiclePrefab == null || m_vehiclePrefab.GetComponent<TruckController>() == null)
+            if (m_vehiclePrefab == null || (m_vehiclePrefab.GetComponent<TruckController>() == null &&
+                m_vehiclePrefab.GetComponent<MagneticHoverboardController>() == null))
             {
                 unavailableReason = "Vehicle is not configured";
                 return false;

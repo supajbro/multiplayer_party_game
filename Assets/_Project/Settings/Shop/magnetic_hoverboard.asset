@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 47a9d384fe104a878d888afc5a20adf1, type: 3}
+  m_Name: magnetic_hoverboard
+  m_EditorClassIdentifier: 
+  m_itemId: magnetic_hoverboard
+  m_displayName: Magnetic Hoverboard
+  m_description: Fast hovering transport with a magnetic platform for one couch.
+  m_price: 350
+  m_category: 0
+  m_icon: {fileID: 0}
+  m_purchaseBehaviour: {fileID: 11400000, guid: 22b938b68bc6483d8821c45468a4d79a, type: 2}

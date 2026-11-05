@@ -76,15 +76,16 @@ namespace CouchGuys.Networking
         {
             if (GameplaySessionController.IsServerGameOver || Time.unscaledTime < m_nextDebugActionTime) return;
             m_nextDebugActionTime = Time.unscaledTime + 0.25f;
-            bool truck = spawnIndex == 3;
-            if (spawnIndex < 0 || spawnIndex > 6) return;
+            bool hoverboard = spawnIndex == 7;
+            bool vehicle = spawnIndex == 3 || hoverboard;
+            if (spawnIndex < 0 || spawnIndex > 7) return;
             Vector3 forward = Vector3.ProjectOnPlane(transform.forward, Vector3.up).normalized;
-            Vector3 position = transform.position + forward * (truck ? 8f : 2f);
+            Vector3 position = transform.position + forward * (vehicle ? 8f : 2f);
             // Ground the spawn rather than inheriting the player's altitude while jumping.
             if (Physics.Raycast(position + Vector3.up * 10f, Vector3.down, out RaycastHit hit,
                     50f, ~0, QueryTriggerInteraction.Ignore)) position = hit.point;
             Quaternion rotation = Quaternion.LookRotation(forward);
-            if (!truck)
+            if (!vehicle)
             {
                 CouchGuys.Gameplay.Weapons.WeaponPickup.SpawnServer(
                     spawnIndex == 6 ? CouchGuys.Gameplay.Weapons.PlayerWeaponType.BaseballBat :
@@ -95,15 +96,18 @@ namespace CouchGuys.Networking
                 return;
             }
 
-            const string prefabName = "Truck";
+            string prefabName = hoverboard ? "MagneticHoverboard" : "Truck";
             var prefabs = NetworkManager.SpawnablePrefabs;
             if (prefabs == null) return;
             for (int index = 0; index < prefabs.GetObjectCount(); index++)
             {
                 NetworkObject prefab = prefabs.GetObject(true, index);
-                if (prefab == null || prefab.name != prefabName ||
+                if (prefab == null || prefab.name != prefabName) continue;
+                var board = prefab.GetComponent<CouchGuys.Gameplay.Vehicles.MagneticHoverboardController>();
+                if (hoverboard ? board == null || board.Settings == null :
                     prefab.GetComponent<CouchGuys.Gameplay.Vehicles.TruckController>() == null) continue;
-                NetworkObject spawned = Instantiate(prefab, position + Vector3.up * 0.3f, rotation);
+                float groundOffset = hoverboard ? board.Settings.HoverHeight : .3f;
+                NetworkObject spawned = Instantiate(prefab, position + Vector3.up * groundOffset, rotation);
                 UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(spawned.gameObject, gameObject.scene);
                 ServerManager.Spawn(spawned);
                 return;

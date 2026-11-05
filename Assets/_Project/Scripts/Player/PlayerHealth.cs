@@ -101,6 +101,7 @@ namespace CouchGuys.Player
         public bool HasPendingRespawn => IsDowned && !IsAiTeammate;
         public float DownedRemaining => m_downedRemaining.Value;
         public bool CanRevive => IsSpawned && IsAlive && !IsKnockedDown &&
+            !(TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.IsMounted) &&
             ((IsAiTeammate && IsServerInitialized && !Owner.IsValid) ||
              (!IsAiTeammate && Owner.IsValid && Owner.IsActive)) &&
             (m_carrier == null || !m_carrier.IsCarrying) && (m_truck == null || m_truck.CurrentTruck == null);
@@ -521,6 +522,7 @@ namespace CouchGuys.Player
                 if (died)
                 {
                     m_truck?.DetachDownedServer();
+                    GetComponent<PlayerHoverboardInteractor>()?.ReleaseServer(true);
                     m_deathPosition = transform.position;
                     m_nextRespawnAttempt = 0f;
                     m_downedRemaining.Value = m_respawnDelay;

@@ -91,6 +91,11 @@ namespace CouchGuys.Gameplay.Couch
         private readonly SyncVar<float> m_cooperationEfficiency = new(1f);
         private readonly SyncVar<int> m_modelVariantIndex = new(-1);
         private readonly SyncVar<NetworkObject> m_loadedTruck = new();
+        private readonly SyncVar<NetworkObject> m_mountedHoverboard = new();
+        private float m_hoverboardTransition = 1f;
+        private Vector3 m_hoverboardStartPosition;
+        private Quaternion m_hoverboardStartRotation;
+        private bool m_hoverboardReleasePending;
         private readonly SyncVar<Vector3> m_sledMountPosition = new();
         private readonly SyncVar<NetworkObject> m_mountedSled = new();
         private SledController m_appliedSled;
@@ -159,11 +164,11 @@ namespace CouchGuys.Gameplay.Couch
         public float MovementSpeedMultiplier => m_sledSettings != null ? m_sledSettings.MovementSpeedMultiplier : 1f;
         public float StaminaDrainMultiplier => m_sledSettings != null ? m_sledSettings.StaminaDrainMultiplier : 1f;
         internal SledController MountedSled => m_mountedSled.Value != null ? m_mountedSled.Value.GetComponent<SledController>() : null;
-        public bool IsLoaded => m_loadedTruck.Value != null || m_mountedSled.Value != null;
+        public bool IsLoaded => m_loadedTruck.Value != null || m_mountedSled.Value != null || m_mountedHoverboard.Value != null;
         public NetworkObject LoadedTruckObject => m_loadedTruck.Value;
         public int LoadedCargoSlot => m_loadedCargoSlot.Value;
-        public bool IsPickupAvailable => !m_depotTransportActive.Value && m_cargoTransition == null && m_mountedSled.Value == null;
-        internal bool IsCargoTransitioning => m_cargoTransition != null;
+        public bool IsPickupAvailable => !m_depotTransportActive.Value && m_cargoTransition == null && m_mountedSled.Value == null && m_mountedHoverboard.Value == null;
+        internal bool IsCargoTransitioning => m_cargoTransition != null || m_mountedHoverboard.Value != null && m_hoverboardTransition < 1f;
         internal Bounds CargoBounds => m_cargoBounds;
         // Delivery completion still requires a player carrier; thieves contribute to
         // physics but cannot accidentally complete the job for the party.
@@ -214,6 +219,7 @@ namespace CouchGuys.Gameplay.Couch
             }
             m_modelVariantIndex.OnChange += OnModelVariantChanged;
             m_loadedTruck.OnChange += OnLoadedTruckChanged;
+            m_mountedHoverboard.OnChange += OnHoverboardChanged;
             m_mountedSled.OnChange += OnLoadedTruckChanged;
             m_sledMountPosition.OnChange += OnSledMountPositionChanged;
             ApplyWeightAndStability();
@@ -240,6 +246,8 @@ namespace CouchGuys.Gameplay.Couch
             base.OnStartClient();
             ApplyModelVariant(m_modelVariantIndex.Value);
             ApplyLoadedStateImmediately();
+            // Initial state for a late observer is already fully attached.
+            if (m_mountedHoverboard.Value != null) m_hoverboardTransition = 1f;
             if (!IsServerInitialized)
             {
                 m_rigidbody.isKinematic = true;
@@ -248,6 +256,8 @@ namespace CouchGuys.Gameplay.Couch
 
         public override void OnStopServer()
         {
+            if (m_mountedHoverboard.Value != null && m_mountedHoverboard.Value.TryGetComponent(out MagneticHoverboardController board))
+                board.ForgetCouchServer(this);
             UnmountFromSledServer();
             ReleaseAllOccupantsServer();
             base.OnStopServer();
@@ -257,6 +267,7 @@ namespace CouchGuys.Gameplay.Couch
         {
             m_modelVariantIndex.OnChange -= OnModelVariantChanged;
             m_loadedTruck.OnChange -= OnLoadedTruckChanged;
+            m_mountedHoverboard.OnChange -= OnHoverboardChanged;
             m_mountedSled.OnChange -= OnLoadedTruckChanged;
             m_sledMountPosition.OnChange -= OnSledMountPositionChanged;
             if (m_appliedSled != null) m_appliedSled.ForgetMountedCouch(this);
@@ -473,6 +484,16 @@ namespace CouchGuys.Gameplay.Couch
 
         private void LateUpdate()
         {
+            if (!m_hoverboardReleasePending && m_mountedHoverboard.Value != null &&
+                m_mountedHoverboard.Value.TryGetComponent(out MagneticHoverboardController board) && board.CouchAnchor != null)
+            {
+                if (transform.parent != board.CouchAnchor) ApplyLoadedStateImmediately();
+                m_hoverboardTransition = Mathf.MoveTowards(m_hoverboardTransition, 1f, board.Settings.AttachmentTransitionSpeed * Time.deltaTime);
+                float t = Mathf.SmoothStep(0f, 1f, m_hoverboardTransition);
+                transform.localPosition = Vector3.Lerp(m_hoverboardStartPosition, Vector3.zero, t);
+                transform.localRotation = Quaternion.Slerp(m_hoverboardStartRotation, Quaternion.identity, t);
+                return;
+            }
             if (m_modelRoot == null || IsLoaded || m_cargoTransition != null)
             {
                 return;
@@ -868,6 +889,19 @@ namespace CouchGuys.Gameplay.Couch
 
         private void ApplyLoadedStateImmediately()
         {
+            if (!m_hoverboardReleasePending && m_mountedHoverboard.Value != null &&
+                m_mountedHoverboard.Value.TryGetComponent(out MagneticHoverboardController board) && board.CouchAnchor != null)
+            {
+                SetCargoPhysics(true);
+                if (transform.parent != board.CouchAnchor)
+                {
+                    transform.SetParent(board.CouchAnchor, true);
+                    m_hoverboardStartPosition = transform.localPosition;
+                    m_hoverboardStartRotation = transform.localRotation;
+                }
+                if (m_hoverboardTransition >= 1f) transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
+                return;
+            }
             SledController nextSled = MountedSled;
             if (m_appliedSled != null && m_appliedSled != nextSled) m_appliedSled.ForgetMountedCouch(this);
             m_appliedSled = nextSled;
@@ -905,6 +939,56 @@ namespace CouchGuys.Gameplay.Couch
             m_mountedSled.Value = sled.NetworkObject;
             ApplyLoadedStateImmediately();
             return true;
+        }
+
+        [Server]
+        internal bool MountOnHoverboardServer(MagneticHoverboardController board, PlayerCouchCarrier loader = null)
+        {
+            if (!IsServerInitialized || !IsSpawned || IsSled || IsLoaded || !IsPickupAvailable ||
+                board == null || board.Couch != null || board.CouchAnchor == null) return false;
+            if(ActiveCarrierCount > 0)
+            {
+                if(loader == null || ActiveCarrierCount != 1 || loader.CarriedCouch != this) return false;
+                bool ownsGrip=false;
+                for(int i=0;i<MaximumCarryPoints;i++) if(m_serverOccupants[i] == loader)ownsGrip=true;
+                if(!ownsGrip)return false;
+                // The server validates the destination first; failed loading keeps the grip.
+                ReleaseAllOccupantsServer();
+            }
+            m_hoverboardReleasePending = false;
+            m_hoverboardTransition = 0f;
+            m_mountedHoverboard.Value = board.NetworkObject;
+            ApplyLoadedStateImmediately();
+            return true;
+        }
+
+        private void OnHoverboardChanged(NetworkObject previous, NetworkObject next, bool asServer)
+        {
+            m_hoverboardReleasePending = false;
+            if (next != null) m_hoverboardTransition = 0f;
+            ApplyLoadedStateImmediately();
+        }
+
+        [Server]
+        internal void ReleaseHoverboardServer(Vector3 position, Quaternion rotation)
+        {
+            if (!IsServerInitialized || m_mountedHoverboard.Value == null) return;
+            MagneticHoverboardController board = m_mountedHoverboard.Value.GetComponent<MagneticHoverboardController>();
+            m_mountedHoverboard.Value = null;
+            m_hoverboardTransition = 1f;
+            ApplyLoadedStateImmediately();
+            TeleportServer(position, rotation);
+            ReleaseHoverboardObserversRpc(position, rotation);
+            if (board != null) board.ForgetCouchServer(this);
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void ReleaseHoverboardObserversRpc(Vector3 position, Quaternion rotation)
+        {
+            m_hoverboardReleasePending = true;
+            transform.SetParent(null, true);
+            transform.SetPositionAndRotation(position, rotation);
+            SetCargoPhysics(false);
         }
 
         [Server]

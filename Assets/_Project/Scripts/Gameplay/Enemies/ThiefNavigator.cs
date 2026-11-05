@@ -255,7 +255,15 @@ namespace CouchGuys.Gameplay.Enemies
             {
                 ReleaseCarriedCouchServer();
                 SetConstrainedCarryMovement(false);
-                var truck = couch.LoadedTruckObject.GetComponent<CouchGuys.Gameplay.Vehicles.TruckController>();
+                var truck = couch.LoadedTruckObject != null
+                    ? couch.LoadedTruckObject.GetComponent<CouchGuys.Gameplay.Vehicles.TruckController>() : null;
+                if (truck == null)
+                {
+                    // Sleds and hoverboards also count as loaded cargo. Continue
+                    // ordinary combat without assuming a truck or stealing its cargo.
+                    UpdateFightObjective(GetClosestLivingTarget());
+                    return;
+                }
                 if (truck != null && truck.IsGetawayTruck)
                 {
                     UpdateFightObjective(GetClosestLivingTarget());

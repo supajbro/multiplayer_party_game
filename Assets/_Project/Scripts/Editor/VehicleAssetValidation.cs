@@ -59,7 +59,8 @@ namespace CouchGuys.Editor
             Material glass = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Resources/Traffic/Hatchback_Glass.mat");
             Check(glass != null && glass.GetFloat("_Surface") == 1f && glass.GetColor("_BaseColor").a < .5f, "Glass is opaque");
             ShopCatalogue shop = AssetDatabase.LoadAssetAtPath<ShopCatalogue>(ShopAssetBuilder.CataloguePath);
-            Check(shop.Items.Count(i => i != null && i.PurchaseBehaviour is VehiclePurchaseBehaviour) == 1, "Extra trucks remain purchasable");
+            Check(shop.Items.Count(i => i != null && i.PurchaseBehaviour is VehiclePurchaseBehaviour purchase &&
+                purchase.VehiclePrefab != null && purchase.VehiclePrefab.GetComponent<TruckController>() != null) == 1, "Extra trucks remain purchasable");
             Check(shop.Find("van_light") == shop.Find("truck") && shop.Find("truck_light") == shop.Find("truck") &&
                 shop.Find("truck").Price == 250, "Legacy purchase ID/price compatibility");
             AssetDatabase.SaveAssets();

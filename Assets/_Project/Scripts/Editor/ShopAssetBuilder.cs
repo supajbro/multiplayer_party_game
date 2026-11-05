@@ -33,7 +33,9 @@ namespace CouchGuys.Editor
         private static readonly InitialVehicle[] InitialVehicles =
         {
             new("truck", "Truck", "Nimble starter truck with room for one couch.", 250,
-                "Assets/_Project/Prefabs/Vehicles/Truck.prefab")
+                "Assets/_Project/Prefabs/Vehicles/Truck.prefab"),
+            new("magnetic_hoverboard", "Magnetic Hoverboard", "Fast hovering transport with a magnetic platform for one couch.", 350,
+                "Assets/_Project/Prefabs/Vehicles/MagneticHoverboard.prefab")
         };
 
         public static ShopCatalogue EnsureDefaultCatalogue()

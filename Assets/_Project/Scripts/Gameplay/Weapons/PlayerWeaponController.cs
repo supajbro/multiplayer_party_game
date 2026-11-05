@@ -113,6 +113,7 @@ namespace CouchGuys.Gameplay.Weapons
         }
         public bool HasEquippedWeapon => ValidIndex(m_equippedIndex.Value);
         public bool CanHandleWeaponServer => IsServerInitialized && m_health != null && m_health.IsAlive &&
+            !(TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.IsMounted) &&
             !m_health.IsKnockedDown && !(m_couchCarrier != null && m_couchCarrier.IsCarrying) &&
             !(TryGetComponent(out PlayerTruckInteractor truck) && truck.CurrentTruck != null);
         public int SelectedHotbarSlot => Mathf.Clamp(m_selectedHotbarSlot.Value, 0, InventorySlotCount - 1);
@@ -514,6 +515,7 @@ namespace CouchGuys.Gameplay.Weapons
         [Server]
         private void BeginReloadServer()
         {
+            if (TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.IsMounted) return;
             int index = m_equippedIndex.Value;
             WeaponDefinition weapon = GetWeapon(index);
             if (weapon == null || weapon.Type == PlayerWeaponType.GrappleGun || weapon.Type == PlayerWeaponType.BaseballBat || m_reloadingIndex >= 0 || Time.time < m_switchCompleteAt ||
@@ -640,6 +642,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         private bool TryFireServer(Vector3 aimOrigin, Vector3 aimDirection)
         {
+            if (TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.IsMounted) return false;
             if (!IsServerInitialized)
             {
                 return false;

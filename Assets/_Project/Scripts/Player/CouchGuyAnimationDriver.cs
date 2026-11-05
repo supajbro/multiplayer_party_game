@@ -66,6 +66,11 @@ namespace CouchGuys.Player
         private PlayerHealth m_batHealth;
         private bool m_vehicleSeated;
         private bool m_vehicleDriver;
+        private Transform m_hoverLeftGrip, m_hoverRightGrip;
+        private Transform m_handLeft, m_handRight;
+
+        public void SetHoverboardGrips(Transform left, Transform right)
+        { m_hoverLeftGrip=left; m_hoverRightGrip=right; }
 
         public Animator Animator => m_animator;
         public float NormalizedMovementSpeed { get; private set; }
@@ -132,7 +137,13 @@ namespace CouchGuys.Player
 
             UpdateMovementParameters();
             UpdateCarryingParameters();
-            if (m_vehicleSeated) ApplyVehicleSeatPose();
+            if (m_vehicleSeated && m_hoverLeftGrip != null && m_hoverRightGrip != null)
+            {
+                // Imported L bones are physically on the character's right side.
+                ReachGrip(m_upperArmLeft,m_lowerArmLeft,m_handLeft,m_hoverRightGrip);
+                ReachGrip(m_upperArmRight,m_lowerArmRight,m_handRight,m_hoverLeftGrip);
+            }
+            else if (m_vehicleSeated) ApplyVehicleSeatPose();
             else ApplyProceduralRecoil();
         }
 
@@ -355,6 +366,8 @@ namespace CouchGuys.Player
                 m_lowerArmLeft = FindDescendant(skeleton, "LowerArm_L");
                 m_upperArmRight = FindDescendant(skeleton, "UpperArm_R");
                 m_lowerArmRight = FindDescendant(skeleton, "LowerArm_R");
+                m_handLeft = FindDescendant(skeleton, "Hand_L");
+                m_handRight = FindDescendant(skeleton, "Hand_R");
                 // Imported FBX Hand_L is on the player's physical right side.
                 m_weaponHand = FindDescendant(skeleton, "Hand_L");
             }
@@ -407,6 +420,22 @@ namespace CouchGuys.Player
                 ApplyAdditiveRotation(m_upperArmRight, new Vector3(8f, 4f, 7f));
                 ApplyAdditiveRotation(m_lowerArmRight, new Vector3(-18f, 0f, 0f));
             }
+        }
+
+        private void ReachGrip(Transform upper, Transform lower, Transform hand, Transform grip)
+        {
+            if (upper==null || lower==null || hand==null || grip==null) return;
+            Vector3 direction=grip.position-upper.position;
+            float a=Vector3.Distance(upper.position,lower.position), b=Vector3.Distance(lower.position,hand.position);
+            if(a<.001f || b<.001f || direction.sqrMagnitude<.001f)return;
+            float d=Mathf.Clamp(direction.magnitude,Mathf.Abs(a-b)+.001f,a+b-.001f);
+            Vector3 forward=direction.normalized;
+            Vector3 bend=Vector3.ProjectOnPlane(-transform.up,forward).normalized;
+            float along=(a*a+d*d-b*b)/(2*d);
+            Vector3 elbow=upper.position+forward*along+bend*Mathf.Sqrt(Mathf.Max(0,a*a-along*along));
+            upper.rotation=Quaternion.FromToRotation(lower.position-upper.position,elbow-upper.position)*upper.rotation;
+            lower.rotation=Quaternion.FromToRotation(hand.position-lower.position,grip.position-lower.position)*lower.rotation;
+            hand.rotation=grip.rotation;
         }
 
         private static void ApplyAdditiveRotation(Transform bone, Vector3 euler)

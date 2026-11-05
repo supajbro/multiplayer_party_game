@@ -51,7 +51,7 @@ MonoBehaviour:
   m_doorOpenAngle: 100
   m_doorAnimationDuration: 0.7
   m_allowDrivingWithDoorsOpen: 0
-  m_cargoCapacity: 1
+  m_cargoCapacity: 4
   m_couchLoadingRange: 2.5
   m_couchLoadingDuration: 1
   m_couchUnloadingDuration: 0.85

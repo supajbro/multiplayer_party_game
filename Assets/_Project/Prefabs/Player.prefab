@@ -32,6 +32,7 @@ GameObject:
   - component: {fileID: 6387925064444778072}
   - component: {fileID: 8461372058193047521}
   - component: {fileID: 2733646546476411137}
+  - component: {fileID: 8122471884558885471}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -55,6 +56,7 @@ Transform:
   - {fileID: 200001}
   - {fileID: 300001}
   - {fileID: 400001}
+  - {fileID: 8654608412985091385}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!143 &100002
@@ -201,6 +203,7 @@ MonoBehaviour:
   - {fileID: 3016622510690859693}
   - {fileID: 1254133024385034755}
   - {fileID: 2733646546476411137}
+  - {fileID: 8122471884558885471}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -888,6 +891,27 @@ MonoBehaviour:
   m_health: {fileID: 0}
   m_animation: {fileID: 0}
   m_effectAnchor: {fileID: 0}
+--- !u!114 &8122471884558885471
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca693c4139fe8024ea0f22e3461b705b, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.PlayerHoverboardInteractor
+  _componentIndexCache: 8
+  _addedNetworkObject: {fileID: 4753475039817145927}
+  _networkObjectCache: {fileID: 4753475039817145927}
+  m_input: {fileID: 100003}
+  m_controller: {fileID: 100004}
+  m_capsule: {fileID: 100002}
+  m_camera: {fileID: 400002}
+  m_networkTransform: {fileID: 2770509040782231261}
+  m_driverHitbox: {fileID: 2671097954716942178}
 --- !u!1 &200000
 GameObject:
   m_ObjectHideFlags: 0
@@ -11040,6 +11064,61 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
+--- !u!1 &3286164000141513065
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8654608412985091385}
+  - component: {fileID: 2671097954716942178}
+  m_Layer: 0
+  m_Name: HoverboardDriverHitbox
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8654608412985091385
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3286164000141513065}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 100001}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!136 &2671097954716942178
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3286164000141513065}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 0
+  serializedVersion: 2
+  m_Radius: 0.6
+  m_Height: 1.33
+  m_Direction: 1
+  m_Center: {x: 0, y: 1.4, z: 0}
 --- !u!1 &4031721170822012235
 GameObject:
   m_ObjectHideFlags: 0
