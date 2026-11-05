@@ -24,13 +24,16 @@ MonoBehaviour:
   m_minimumDeliveryTime: 120
   m_maximumDeliveryTime: 300
   m_uphillDistanceMultiplier: 2
-  m_minSpawnInterval: 5
-  m_maxSpawnInterval: 20
+  m_minSpawnInterval: 2
+  m_maxSpawnInterval: 7.5
   m_minThievesPerWave: 1
   m_maxThievesPerWave: 1
   m_grapplerThiefPrefab: {fileID: 3333041713970159889, guid: 4fb9ce0bcb16c2c48825f5fe3a94da76, type: 3}
   m_grapplerThiefChance: 0
   m_maxActiveGrapplerThieves: 0
+  m_rocketThiefPrefab: {fileID: 0}
+  m_rocketThiefChance: 0
+  m_maxActiveRocketThieves: 0
   m_rogueCarSettings: {fileID: 0}
   m_rogueCarPrefab: {fileID: 0}
   m_minimumRouteDistance: 0

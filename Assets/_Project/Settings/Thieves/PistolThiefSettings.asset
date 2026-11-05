@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 908be3f8fe404f8ab4a7d41e53dc8625, type: 3}
   m_Name: PistolThiefSettings
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   Movement:
     Speed: 4.5
     Acceleration: 16
@@ -43,6 +43,9 @@ MonoBehaviour:
     DeathDespawnDelay: 2.5
     WeaponDropChance: 35
   Combat:
+    RetaliationChance: 50
+    RetaliationChanceVariation: 25
+    RetaliationDuration: 5
     WeaponType: 0
     FireInterval: 0.8
     Range: 28
@@ -54,11 +57,11 @@ MonoBehaviour:
     HitMask:
       serializedVersion: 2
       m_Bits: 4294967295
-    MissChance: 40
-    BaseAccuracy: 0.72
+    MissChance: 85
+    BaseAccuracy: 0.35
     MovingAccuracyPenalty: 0.2
     DistanceAccuracyPenalty: 0.35
-    ReactionTime: 0.65
+    ReactionTime: 0.85
     AimRotationSpeed: 150
     MinBurstShots: 1
     MaxBurstShots: 3

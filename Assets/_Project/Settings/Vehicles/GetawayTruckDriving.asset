@@ -25,7 +25,7 @@ MonoBehaviour:
   TurnaroundForwardDuration: 2
   TurnaroundReverseDuration: 1.4
   TurnaroundTimeout: 12
-  MaxHealth: 1000
+  MaxHealth: 10000
   PlayerCollisionDamage: 28
   PlayerKnockbackForce: 13
   StructureCollisionDamageMultiplier: 5

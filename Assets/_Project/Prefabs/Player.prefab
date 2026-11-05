@@ -133,8 +133,8 @@ MonoBehaviour:
   m_input: {fileID: 100003}
   m_cameraTransform: {fileID: 410001}
   m_stamina: {fileID: 3016622510690859693}
-  m_walkSpeed: 3.5
-  m_runSpeed: 6
+  m_walkSpeed: 4.5
+  m_runSpeed: 7
   m_speedChangeRate: 12
   m_rotationSpeed: 720
   m_rotationSmoothTime: 0.1

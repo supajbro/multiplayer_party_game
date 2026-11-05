@@ -31,7 +31,7 @@ MonoBehaviour:
   m_fuelConsumptionDriving: 0.35
   m_accelerationFuelMultiplier: 0.3
   m_lowFuelWarningThreshold: 0.2
-  m_maxHealth: 100
+  m_maxHealth: 5000
   m_minimumCollisionDamageSpeed: 4
   m_collisionDamageMultiplier: 5
   m_maximumCollisionDamage: 55
