@@ -79,11 +79,18 @@ namespace CouchGuys.Gameplay.Vehicles
         [Server]
         internal bool LoadGetawayCouchServer(CouchCarryController couch, float loadingDistance)
         {
+            CouchCarryController carryTarget = couch != null && couch.MountedSled != null
+                ? couch.MountedSled.CarryController : couch;
             if (!IsGetawayTruck || IsDestroyed || !RearDoorsOpen || LoadedCouchCount > 0 ||
-                m_loadedCouches.Count == 0 || couch == null || couch.HasHumanCarrierServer() ||
-                couch.ThiefCarrierCountServer() == 0 || !IsCouchInLoadingRange(couch, loadingDistance) ||
-                !couch.LoadIntoTruckServer(this, 0, m_settings.CouchLoadingDuration)) return false;
+                m_loadedCouches.Count == 0 || couch == null || carryTarget.HasHumanCarrierServer() ||
+                carryTarget.ThiefCarrierCountServer() == 0 || carryTarget.IsLoaded || !carryTarget.IsPickupAvailable ||
+                couch.IsCargoTransitioning || !IsCouchInLoadingRange(couch, loadingDistance) ||
+                GetCargoPoint(0) == null) return false;
+            bool fromSled = couch.MountedSled != null;
+            if (fromSled) couch.UnmountFromSledServer();
+            if (!couch.LoadIntoTruckServer(this, 0, m_settings.CouchLoadingDuration)) return false;
             m_loadedCouches[0] = couch.NetworkObject;
+            if (fromSled) carryTarget.ReleaseAllOccupantsServer();
             return true;
         }
 

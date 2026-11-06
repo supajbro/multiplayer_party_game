@@ -19,9 +19,9 @@ MonoBehaviour:
   m_colour: {r: 0.24, g: 0.76, b: 0.34, a: 1}
   m_purchasePrice: 0
   m_reward: 1500
-  m_baseDeliveryTime: 45
+  m_baseDeliveryTime: 120
   m_timePerRouteMetre: 0.55
-  m_minimumDeliveryTime: 120
+  m_minimumDeliveryTime: 300
   m_maximumDeliveryTime: 300
   m_uphillDistanceMultiplier: 2
   m_minSpawnInterval: 2

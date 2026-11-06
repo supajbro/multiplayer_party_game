@@ -21,7 +21,7 @@ MonoBehaviour:
   m_reward: 14000
   m_baseDeliveryTime: 75
   m_timePerRouteMetre: 0.65
-  m_minimumDeliveryTime: 150
+  m_minimumDeliveryTime: 575
   m_maximumDeliveryTime: 600
   m_uphillDistanceMultiplier: 2
   m_minSpawnInterval: 2

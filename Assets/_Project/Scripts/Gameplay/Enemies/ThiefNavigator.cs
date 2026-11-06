@@ -247,7 +247,7 @@ namespace CouchGuys.Gameplay.Enemies
 
             if (UpdateProximityAlert(GetClosestLivingTarget())) return;
 
-            CouchCarryController couch = GetActiveCouch();
+            CouchCarryController couch = GetTheftCarryTarget(GetActiveCouch());
             if (m_carriedCouch != null && m_carriedCouch != couch)
                 ReleaseCarriedCouchServer();
 
@@ -259,8 +259,8 @@ namespace CouchGuys.Gameplay.Enemies
                     ? couch.LoadedTruckObject.GetComponent<CouchGuys.Gameplay.Vehicles.TruckController>() : null;
                 if (truck == null)
                 {
-                    // Sleds and hoverboards also count as loaded cargo. Continue
-                    // ordinary combat without assuming a truck or stealing its cargo.
+                    // Hoverboards also count as loaded cargo. Continue ordinary
+                    // combat without assuming a truck or stealing its cargo.
                     UpdateFightObjective(GetClosestLivingTarget());
                     return;
                 }
@@ -431,6 +431,10 @@ namespace CouchGuys.Gameplay.Enemies
                 : null;
         }
 
+        // Keep the job attached to its couch, but use the sled's grips and speed.
+        private static CouchCarryController GetTheftCarryTarget(CouchCarryController couch) =>
+            couch != null && couch.MountedSled != null ? couch.MountedSled.CarryController : couch;
+
         private void UpdateStealObjective(CouchCarryController couch)
         {
             if (couch.IsLoaded) return;
@@ -499,10 +503,11 @@ namespace CouchGuys.Gameplay.Enemies
 
             if (m_deliveryManager != null)
             {
-                var getaway = m_deliveryManager.GetGetawayForCouch(m_carriedCouch);
+                CouchCarryController deliveryCouch = GetActiveCouch();
+                var getaway = m_deliveryManager.GetGetawayForCouch(deliveryCouch);
                 // Steer the couch as a team. Independent grip paths can point around
                 // opposite sides of the same obstacle and cancel the couch's motion.
-                m_carryIntent = getaway != null ? getaway.GetCarryMovementIntent(m_carriedCouch) : Vector3.zero;
+                m_carryIntent = getaway != null ? getaway.GetCarryMovementIntent(deliveryCouch) : Vector3.zero;
                 ApplyConstrainedCarryMovement(m_carryIntent);
                 return;
             }
@@ -528,8 +533,9 @@ namespace CouchGuys.Gameplay.Enemies
         private Vector3 CalculateEscapeTarget()
         {
             Vector3 couchPosition = m_carriedCouch.transform.position;
-            Transform objective = m_deliveryManager != null && m_deliveryManager.GetDestinationForCouch(m_carriedCouch) != null
-                ? m_deliveryManager.GetDestinationForCouch(m_carriedCouch).DropPosition
+            CouchCarryController deliveryCouch = GetActiveCouch();
+            Transform objective = m_deliveryManager != null && m_deliveryManager.GetDestinationForCouch(deliveryCouch) != null
+                ? m_deliveryManager.GetDestinationForCouch(deliveryCouch).DropPosition
                 : null;
             Vector3 away = objective != null
                 ? Vector3.ProjectOnPlane(couchPosition - objective.position, Vector3.up)
@@ -814,7 +820,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         void ICouchCarrierServer.SetCarriedCouchServer(CouchCarryController couch, int pointIndex)
         {
-            m_deliveryManager?.GetGetawayForCouch(couch)?.NotifyCouchStolenServer();
+            m_deliveryManager?.GetGetawayForCouch(GetActiveCouch())?.NotifyCouchStolenServer();
             m_carriedCouch = couch;
             m_carriedPointIndex = pointIndex;
             m_carryIntent = Vector3.zero;

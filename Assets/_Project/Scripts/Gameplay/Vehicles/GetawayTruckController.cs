@@ -309,9 +309,11 @@ namespace CouchGuys.Gameplay.Vehicles
                 else RejectParking();
                 return;
             }
-            bool thiefCarrying = m_couch.ThiefCarrierCountServer() > 0;
+            CouchCarryController carryTarget = m_couch.MountedSled != null
+                ? m_couch.MountedSled.CarryController : m_couch;
+            bool thiefCarrying = carryTarget.ThiefCarrierCountServer() > 0;
             if (thiefCarrying) m_stolen = true;
-            if (!thiefCarrying && m_couch.HasHumanCarrierServer()) m_stolen = false;
+            if (!thiefCarrying && carryTarget.HasHumanCarrierServer()) m_stolen = false;
             if (!m_stolen)
             {
                 m_route = null;
@@ -324,7 +326,7 @@ namespace CouchGuys.Gameplay.Vehicles
             if (State == GetawayTruckState.Parked)
             {
                 bool atEntrance = CouchAtLoadingEntrance(m_couch, m_couch.transform.position);
-                if (!m_couch.HasHumanCarrierServer() && m_couch.IsPickupAvailable &&
+                if (!carryTarget.HasHumanCarrierServer() && carryTarget.IsPickupAvailable &&
                     atEntrance &&
                     m_truck.RearDoorOpenProgress >= .95f && m_truck.SpeedKph < 1f &&
                     m_truck.LoadGetawayCouchServer(m_couch, m_settings.LoadingDistance))
@@ -340,7 +342,7 @@ namespace CouchGuys.Gameplay.Vehicles
                     if (m_carryProgress.TimedOut(Time.time, m_settings.ParkedRecoveryTimeout)) RejectParking();
                     return;
                 }
-                if (thiefCarrying && !m_couch.HasHumanCarrierServer())
+                if (thiefCarrying && !carryTarget.HasHumanCarrierServer())
                 {
                     m_carryProgress.Observe(RemainingLength(m_couch.transform.position, m_carryCorners, m_carryCorner),
                         Time.time, m_settings.RouteProgressDistance);

@@ -5,6 +5,7 @@ using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Gameplay.Couch;
 using CouchGuys.Gameplay.Sled;
 using CouchGuys.Gameplay.Vehicles;
+using CouchGuys.Gameplay.Enemies;
 using FishNet.Object;
 using CouchGuys.Gameplay.Weapons;
 using CouchGuys.ProceduralGeneration;
@@ -138,6 +139,70 @@ namespace CouchGuys.Tests.Editor
         {
             object[] args = { job, couch, destination, false };
             return (bool)m_manager.GetType().GetMethod("CanReceiveCouch", Fields).Invoke(m_manager, args);
+        }
+
+        [Test]
+        public void ThievesUseLoadedSledGripsAndConfiguredSpeedWithoutChangingDeliveryIdentity()
+        {
+            var sledObject = new GameObject("Thief sled");
+            sledObject.SetActive(false);
+            var cargoObject = new GameObject("Assigned delivery couch");
+            cargoObject.SetActive(false);
+            var settings = ScriptableObject.CreateInstance<SledSettings>();
+            try
+            {
+                var sled = sledObject.AddComponent<SledController>();
+                var couch = cargoObject.AddComponent<CouchCarryController>();
+                var sledCarry = sled.CarryController;
+                Set(sledCarry, "m_sledSettings", settings);
+                Get<SyncVar<int>>(couch, "m_deliveryId").Value = 42;
+                Get<SyncVar<NetworkObject>>(couch, "m_mountedSled").Value = sledObject.GetComponent<NetworkObject>();
+                var target = typeof(ThiefNavigator).GetMethod("GetTheftCarryTarget", BindingFlags.Static | BindingFlags.NonPublic);
+                Assert.That(target.Invoke(null, new object[] { couch }), Is.SameAs(sledCarry));
+                Assert.That(couch.DeliveryId, Is.EqualTo(42));
+                float couchSpeed = (float)Call(couch, "GetConfiguredMoveSpeed", 1);
+                Assert.That((float)Call(sledCarry, "GetConfiguredMoveSpeed", 1),
+                    Is.EqualTo(couchSpeed * settings.MovementSpeedMultiplier).Within(.001f));
+                Get<SyncVar<NetworkObject>>(couch, "m_mountedSled").Value = null;
+                Assert.That(target.Invoke(null, new object[] { couch }), Is.SameAs(couch));
+                Assert.That(target.Invoke(null, new object[] { null }), Is.Null);
+            }
+            finally
+            {
+                Object.DestroyImmediate(cargoObject);
+                Object.DestroyImmediate(sledObject);
+                Object.DestroyImmediate(settings);
+            }
+        }
+
+        [Test]
+        public void GetawayClearanceIgnoresSourceSledButKeepsOtherVehiclesAsObstacles()
+        {
+            var sledObject = new GameObject("Source sled");
+            sledObject.SetActive(false);
+            var cargoObject = new GameObject("Mounted couch");
+            cargoObject.SetActive(false);
+            var obstacle = new GameObject("Other vehicle");
+            obstacle.SetActive(false);
+            try
+            {
+                var sled = sledObject.AddComponent<SledController>();
+                var sledCollider = sledObject.AddComponent<BoxCollider>();
+                var otherCollider = obstacle.AddComponent<BoxCollider>();
+                var couch = cargoObject.AddComponent<CouchCarryController>();
+                Get<SyncVar<NetworkObject>>(couch, "m_mountedSled").Value = sledObject.GetComponent<NetworkObject>();
+                var plannerType = typeof(GetawayTruckController).Assembly.GetType("CouchGuys.Gameplay.Vehicles.CouchClearancePath", true);
+                object planner = System.Activator.CreateInstance(plannerType, true);
+                Set(planner, "m_couch", couch);
+                Assert.That((bool)Call(planner, "Ignore", sledCollider), Is.True);
+                Assert.That((bool)Call(planner, "Ignore", otherCollider), Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(cargoObject);
+                Object.DestroyImmediate(sledObject);
+                Object.DestroyImmediate(obstacle);
+            }
         }
 
         [TestCase(1920, 1080)]

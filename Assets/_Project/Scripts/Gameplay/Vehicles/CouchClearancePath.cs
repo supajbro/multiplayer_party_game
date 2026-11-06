@@ -145,7 +145,9 @@ namespace CouchGuys.Gameplay.Vehicles
         {
             if (hit == null) return true;
             if (m_ignore.TryGetValue(hit, out bool ignored)) return ignored;
-            ignored = hit.transform.IsChildOf(m_couch.transform) || TruckController.IsGroundSurface(hit) ||
+            ignored = hit.transform.IsChildOf(m_couch.transform) ||
+                (m_couch.MountedSled != null && hit.transform.IsChildOf(m_couch.MountedSled.transform)) ||
+                TruckController.IsGroundSurface(hit) ||
                 hit.GetComponentInParent<ThiefHealth>() != null || hit.GetComponentInParent<PlayerHealth>() != null;
             m_ignore[hit] = ignored;
             return ignored;
