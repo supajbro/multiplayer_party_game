@@ -165,6 +165,7 @@ namespace CouchGuys.Gameplay.Couch
         public float StaminaDrainMultiplier => m_sledSettings != null ? m_sledSettings.StaminaDrainMultiplier : 1f;
         internal SledController MountedSled => m_mountedSled.Value != null ? m_mountedSled.Value.GetComponent<SledController>() : null;
         public bool IsLoaded => m_loadedTruck.Value != null || m_mountedSled.Value != null || m_mountedHoverboard.Value != null;
+        internal NetworkObject MountedHoverboardObject => m_mountedHoverboard.Value;
         public NetworkObject LoadedTruckObject => m_loadedTruck.Value;
         public int LoadedCargoSlot => m_loadedCargoSlot.Value;
         public bool IsPickupAvailable => !m_depotTransportActive.Value && m_cargoTransition == null && m_mountedSled.Value == null && m_mountedHoverboard.Value == null;

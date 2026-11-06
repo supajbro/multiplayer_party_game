@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using CouchGuys.Player;
+using CouchGuys.Gameplay.Couch;
+using UnityEngine.InputSystem;
 using CouchGuys.Input;
 using CouchGuys.Gameplay.Weapons;
 using CouchGuys.ProceduralGeneration;
@@ -21,6 +23,17 @@ namespace CouchGuys.Gameplay.Delivery
         [SerializeField, Range(128, 1024)] private int m_textureResolution = 512;
         [SerializeField, Min(0.05f)] private float m_actorRefreshInterval = 0.5f;
 
+        [Header("Navigation")]
+        [SerializeField] private RectTransform m_deliveryMarkerPrefab;
+        [SerializeField] private InputAction m_cycleDestination = new("Cycle Delivery Destination",
+            InputActionType.Button, "<Keyboard>/n");
+        [SerializeField, Range(0.3f, 0.9f)] private float m_secondaryDestinationScale = 0.65f;
+        private readonly List<int> m_navigationIds = new();
+        private readonly List<Vector2> m_destinationMarkerPositions = new();
+        private int m_primaryDeliveryId = -1;
+        private PlayerTruckInteractor m_truckInteractor;
+        private PlayerHoverboardInteractor m_hoverboardInteractor;
+
         private static readonly Color32 Grass = new(74, 160, 82, 255);
         private static readonly Color32 Park = new(91, 190, 96, 255);
         private static readonly Color32 Road = new(91, 102, 113, 255);
@@ -33,6 +46,8 @@ namespace CouchGuys.Gameplay.Delivery
         {
             public RectTransform Rect;
             public RectTransform ExpandedRect;
+            public Text Label;
+            public Text ExpandedLabel;
         }
 
         private readonly Dictionary<PlayerHealth, ActorMarker> m_actorMarkers = new();
@@ -72,6 +87,8 @@ namespace CouchGuys.Gameplay.Delivery
         {
             m_hud = GetComponent<PlayerWeaponHud>();
             m_carrier = GetComponent<PlayerCouchCarrier>();
+            m_truckInteractor = GetComponent<PlayerTruckInteractor>();
+            m_hoverboardInteractor = GetComponent<PlayerHoverboardInteractor>();
             m_input = GetComponent<PlayerInputReader>();
             m_networkObject = GetComponent<NetworkObject>();
             m_localHealth = GetComponent<PlayerHealth>();
@@ -85,7 +102,7 @@ namespace CouchGuys.Gameplay.Delivery
                 if (m_mapTexture != null) DestroyMinimap();
                 return;
             }
-            if (m_generator == null) ResolveWorldReferences();
+            if (m_generator == null || m_deliveryManager == null) ResolveWorldReferences();
             if (m_canvasRoot == null && m_generator != null && m_generator.HasGeneratedNeighbourhood)
                 BuildMinimap();
             if (m_canvasRoot == null) return;
@@ -97,6 +114,7 @@ namespace CouchGuys.Gameplay.Delivery
             }
             UpdateMapPosition();
             UpdateActorMarkers();
+            RefreshNavigation();
             UpdateWaypoint();
             UpdateCouchMarkers();
         }
@@ -150,8 +168,7 @@ namespace CouchGuys.Gameplay.Delivery
                 m_expandedWaypoint.sizeDelta = Vector2.one * 34f;
                 m_expandedWaypoint.localRotation = Quaternion.identity;
             }
-            DeliveryDestination destination = m_deliveryManager != null
-                ? m_deliveryManager.GetDestinationForCouch(m_carrier != null ? m_carrier.CarriedCouch : null) : null;
+            DeliveryDestination destination = PrimaryDestination;
             bool active = destination != null && destination.CanReceiveDelivery;
             m_expandedWaypoint.gameObject.SetActive(active);
             if (active) m_expandedWaypoint.anchoredPosition = ExpandedPosition(destination.transform.position, scale);
@@ -432,8 +449,7 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void UpdateWaypoint()
         {
-            DeliveryDestination destination = m_deliveryManager != null
-                ? m_deliveryManager.GetDestinationForCouch(m_carrier != null ? m_carrier.CarriedCouch : null) : null;
+            DeliveryDestination destination = PrimaryDestination;
             bool active = destination != null && destination.CanReceiveDelivery && m_localHealth != null;
             m_waypointRect.gameObject.SetActive(active);
             m_distanceText.gameObject.SetActive(active);
@@ -477,34 +493,98 @@ namespace CouchGuys.Gameplay.Delivery
             }
         }
 
+        // Consume replicated attachment/occupancy, never hierarchy guesses or server-only cargo lists.
+        private bool IsTransportedByLocalPlayer(CouchCarryController couch)
+        {
+            if (couch == null || !couch.IsSpawned) return false;
+            if (m_carrier != null && m_carrier.CarriedCouch == couch) return true;
+            if (couch.LoadedTruckObject != null && m_truckInteractor != null &&
+                m_truckInteractor.CurrentTruck != null &&
+                couch.LoadedTruckObject == m_truckInteractor.CurrentTruck.NetworkObject) return true;
+            if (couch.MountedSled != null && m_carrier != null &&
+                couch.MountedSled == m_carrier.CarriedSled) return true;
+            return couch.MountedHoverboardObject != null && m_hoverboardInteractor != null &&
+                m_hoverboardInteractor.CurrentBoard != null &&
+                couch.MountedHoverboardObject == m_hoverboardInteractor.CurrentBoard.NetworkObject;
+        }
+
+        private DeliveryDestination PrimaryDestination => m_deliveryManager != null &&
+            m_deliveryManager.TryGetDelivery(m_primaryDeliveryId, out var job)
+                ? m_deliveryManager.GetDestination(job.DestinationIndex) : null;
+
+        private bool TryGetNavigationDestination(DeliveryInstance job, out DeliveryDestination destination)
+        {
+            destination = null;
+            if (job.Status != DeliveryState.Transport || job.Couch == null ||
+                !job.Couch.TryGetComponent(out CouchCarryController couch) ||
+                !IsTransportedByLocalPlayer(couch)) return false;
+            destination = m_deliveryManager.GetDestinationForCouch(couch);
+            return destination != null && destination.CanReceiveDelivery;
+        }
+
+        private void RefreshNavigation()
+        {
+            m_navigationIds.Clear();
+            int earliestId = -1;
+            float earliestTime = float.PositiveInfinity;
+            if (m_deliveryManager != null)
+                foreach (var job in m_deliveryManager.Deliveries)
+                {
+                    if (!TryGetNavigationDestination(job, out _)) continue;
+                    m_navigationIds.Add(job.Id);
+                    float remaining = m_deliveryManager.GetRemainingTime(job);
+                    if (remaining < earliestTime || (remaining == earliestTime && job.Id < earliestId))
+                    {
+                        earliestId = job.Id;
+                        earliestTime = remaining;
+                    }
+                }
+            // Stable numbering; retain the local choice until it leaves the valid set.
+            m_navigationIds.Sort();
+            SelectPrimaryDestination(earliestId, m_input != null && m_input.CanNavigateDeliveries &&
+                m_cycleDestination != null && m_cycleDestination.WasPressedThisFrame());
+        }
+
+        private void SelectPrimaryDestination(int earliestId, bool cycle)
+        {
+            if (!m_navigationIds.Contains(m_primaryDeliveryId)) m_primaryDeliveryId = earliestId;
+            if (m_navigationIds.Count > 1 && cycle)
+                m_primaryDeliveryId = m_navigationIds[(m_navigationIds.IndexOf(m_primaryDeliveryId) + 1) % m_navigationIds.Count];
+        }
+
         private void UpdateCouchMarkers()
         {
-            if (m_deliveryManager == null || m_waypointRect == null || m_localHealth == null) return;
-            bool carrying = m_carrier != null && m_carrier.CarriedCouch != null;
+            if (m_deliveryManager == null || m_waypointRect == null || m_localHealth == null ||
+                m_deliveryMarkerPrefab == null) return;
+            m_destinationMarkerPositions.Clear();
+            if (m_primaryDeliveryId >= 0) m_destinationMarkerPositions.Add(m_waypointRect.anchoredPosition);
             foreach (var job in m_deliveryManager.Deliveries)
             {
                 if (!m_couchMarkers.TryGetValue(job.Id, out var marker))
                 {
-                    var rect = Instantiate(m_waypointRect, m_markerLayer, false);
+                    var rect = Instantiate(m_deliveryMarkerPrefab, m_markerLayer, false);
                     rect.name = $"DeliveryCouch_{job.Id}";
-                    rect.localRotation = Quaternion.identity;
-                    rect.sizeDelta = new Vector2(28f, 22f);
-                    var image = rect.GetComponent<Image>();
-                    image.sprite = m_hud.View.m_deliveryCouchSprite;
-                    image.color = new Color(1f, 0.72f, 0.12f);
-                    image.preserveAspect = true;
-                    marker = new ActorMarker { Rect = rect };
+                    marker = new ActorMarker { Rect = rect, Label = rect.GetComponentInChildren<Text>(true) };
                     m_couchMarkers.Add(job.Id, marker);
                 }
-                bool visible = !carrying && job.Couch != null;
+                bool destinationMarker = TryGetNavigationDestination(job, out var destination);
+                bool visible = job.Status == DeliveryState.Transport && job.Couch != null && job.Couch.IsSpawned;
                 marker.Rect.gameObject.SetActive(visible);
-                if (visible)
-                {
-                    Vector2 offset = Offset(m_localHealth.transform.position, job.Couch.transform.position);
-                    marker.Rect.anchoredPosition = Vector2.ClampMagnitude(offset / m_visibleRadiusMetres, 0.92f) * m_markerRadius;
-                }
-                if (marker.ExpandedRect != null) marker.ExpandedRect.gameObject.SetActive(visible);
+                if (!visible) continue;
+                bool primary = destinationMarker && job.Id == m_primaryDeliveryId;
+                StyleDeliveryMarker(marker.Rect, marker.Label, job.Id, destinationMarker, primary);
+                Vector3 position = destinationMarker ? destination.transform.position : job.Couch.transform.position;
+                Vector2 offset = Offset(m_localHealth.transform.position, position);
+                marker.Rect.anchoredPosition = primary ? m_waypointRect.anchoredPosition :
+                    Vector2.ClampMagnitude(offset / m_visibleRadiusMetres, 0.92f) * m_markerRadius;
+                if (destinationMarker && !primary)
+                    marker.Rect.anchoredPosition = SeparateDestinationMarker(marker.Rect.anchoredPosition,
+                        m_markerRadius * 0.92f);
+                marker.Rect.SetAsLastSibling();
             }
+            m_waypointRect.SetAsLastSibling();
+            if (m_couchMarkers.TryGetValue(m_primaryDeliveryId, out var primaryMarker))
+                primaryMarker.Rect.SetAsLastSibling();
             m_removedCouches.Clear();
             foreach (var entry in m_couchMarkers)
                 if (!m_deliveryManager.TryGetDelivery(entry.Key, out _))
@@ -516,18 +596,75 @@ namespace CouchGuys.Gameplay.Delivery
             foreach (int id in m_removedCouches) m_couchMarkers.Remove(id);
         }
 
+        private Vector2 SeparateDestinationMarker(Vector2 desired, float radius)
+        {
+            float spacing = 34f * m_secondaryDestinationScale + 2f;
+            Vector2 candidate = desired;
+            // Nearby houses can project to the same edge point. Keep their numbers readable.
+            for (int attempt = 0; attempt < 64; attempt++)
+            {
+                bool overlaps = false;
+                foreach (Vector2 placed in m_destinationMarkerPositions)
+                    if ((candidate - placed).sqrMagnitude < spacing * spacing) { overlaps = true; break; }
+                if (!overlaps) break;
+                float angle = attempt * 2.4f;
+                candidate = Vector2.ClampMagnitude(desired + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) *
+                    spacing * Mathf.Sqrt(attempt + 1), radius);
+            }
+            m_destinationMarkerPositions.Add(candidate);
+            return candidate;
+        }
+
+        private void StyleDeliveryMarker(RectTransform rect, Text label, int id, bool destination, bool primary)
+        {
+            var image = rect.GetComponent<Image>();
+            // Existing waypoint supplies the primary highlight/edge arrow; this marker adds its number.
+            image.enabled = !primary;
+            image.sprite = destination ? m_waypointSprite : m_hud.View.m_deliveryCouchSprite;
+            image.color = destination ? new Color(1f, 0.85f, 0.25f, 0.75f) : new Color(1f, 0.72f, 0.12f);
+            image.preserveAspect = true;
+            rect.localRotation = Quaternion.identity;
+            rect.sizeDelta = destination ? Vector2.one * (primary ? 34f : 34f * m_secondaryDestinationScale) :
+                new Vector2(28f, 22f);
+            if (label == null) return;
+            label.gameObject.SetActive(destination);
+            if (destination)
+            {
+                label.text = (m_navigationIds.IndexOf(id) + 1).ToString();
+                label.color = primary ? Color.white : new Color(1f, 1f, 1f, 0.85f);
+                label.fontSize = primary ? 18 : 14;
+            }
+        }
+
         private void UpdateExpandedCouches(float scale)
         {
             if (m_deliveryManager == null) return;
+            m_destinationMarkerPositions.Clear();
+            if (m_primaryDeliveryId >= 0) m_destinationMarkerPositions.Add(m_expandedWaypoint.anchoredPosition);
             foreach (var job in m_deliveryManager.Deliveries)
             {
                 if (!m_couchMarkers.TryGetValue(job.Id, out var marker)) continue;
                 if (marker.ExpandedRect == null)
-                    marker.ExpandedRect = Instantiate(marker.Rect, m_expandedMarkers, false);
-                bool active = job.Couch != null && (m_carrier == null || m_carrier.CarriedCouch == null);
+                {
+                    marker.ExpandedRect = Instantiate(m_deliveryMarkerPrefab, m_expandedMarkers, false);
+                    marker.ExpandedLabel = marker.ExpandedRect.GetComponentInChildren<Text>(true);
+                }
+                bool active = job.Status == DeliveryState.Transport && job.Couch != null && job.Couch.IsSpawned;
                 marker.ExpandedRect.gameObject.SetActive(active);
-                if (active) marker.ExpandedRect.anchoredPosition = ExpandedPosition(job.Couch.transform.position, scale);
+                if (!active) continue;
+                bool destinationMarker = TryGetNavigationDestination(job, out var destination);
+                StyleDeliveryMarker(marker.ExpandedRect, marker.ExpandedLabel, job.Id,
+                    destinationMarker, destinationMarker && job.Id == m_primaryDeliveryId);
+                marker.ExpandedRect.anchoredPosition = ExpandedPosition(destinationMarker ?
+                    destination.transform.position : job.Couch.transform.position, scale);
+                if (destinationMarker && job.Id != m_primaryDeliveryId)
+                    marker.ExpandedRect.anchoredPosition = SeparateDestinationMarker(
+                        marker.ExpandedRect.anchoredPosition, float.PositiveInfinity);
+                marker.ExpandedRect.SetAsLastSibling();
             }
+            m_expandedWaypoint.SetAsLastSibling();
+            if (m_couchMarkers.TryGetValue(m_primaryDeliveryId, out var primaryMarker) && primaryMarker.ExpandedRect != null)
+                primaryMarker.ExpandedRect.SetAsLastSibling();
         }
 
         private static Vector2 Offset(Vector3 from, Vector3 to) => new(to.x - from.x, to.z - from.z);
@@ -540,6 +677,8 @@ namespace CouchGuys.Gameplay.Delivery
                 if (marker.ExpandedRect != null) Destroy(marker.ExpandedRect.gameObject);
             }
             m_couchMarkers.Clear();
+            m_navigationIds.Clear();
+            m_primaryDeliveryId = -1;
             foreach (var marker in m_actorMarkers)
             {
                 if (marker.Key != m_localHealth && marker.Value.Rect != null) Destroy(marker.Value.Rect.gameObject);
@@ -571,7 +710,13 @@ namespace CouchGuys.Gameplay.Delivery
             DestroySprite(ref m_waypointSprite);
         }
 
-        private void OnDisable() => DestroyMinimap();
+        private void OnEnable() => m_cycleDestination?.Enable();
+
+        private void OnDisable()
+        {
+            m_cycleDestination?.Disable();
+            DestroyMinimap();
+        }
 
         private void OnDestroy()
         {
@@ -581,6 +726,7 @@ namespace CouchGuys.Gameplay.Delivery
                 m_generator.RegionClearing -= OnRegionClearing;
             }
             DestroyMinimap();
+            m_cycleDestination?.Dispose();
         }
 
         private static void DestroySprite(ref Sprite sprite)

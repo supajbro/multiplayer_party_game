@@ -795,6 +795,8 @@ MonoBehaviour:
   m_visibleRadiusMetres: 65
   m_textureResolution: 512
   m_actorRefreshInterval: 0.5
+  m_deliveryMarkerPrefab: {fileID: 101, guid: 8cd2766a89a242a49a0253b04bd2281c, type: 3}
+  m_secondaryDestinationScale: 0.65
 --- !u!114 &7168290924105605430
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -89,6 +89,7 @@ namespace CouchGuys.Input
             !GameplaySuppressed && (m_teleportToDeliveryAction?.WasPressedThisFrame() ?? false);
         public bool TestResourcesPressedThisFrame =>
             !GameplaySuppressed && (Keyboard.current?.lKey.wasPressedThisFrame ?? false);
+        public bool CanNavigateDeliveries => isActiveAndEnabled && !MenuBlocked;
         public bool CanShowMap => isActiveAndEnabled && !GameplaySuppressed;
         public bool MapPressedThisFrame => CanShowMap && (Keyboard.current?.mKey.wasPressedThisFrame ?? false);
 
