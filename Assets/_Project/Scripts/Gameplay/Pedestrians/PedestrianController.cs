@@ -58,6 +58,23 @@ namespace CouchGuys.Gameplay.Pedestrians
         private float m_batRecoverAfter, m_batGroundedSince;
         private float m_batLastGroundContact;
         private Vector3 m_batGroundPoint;
+        private bool m_grappleHeld;
+
+        [Server]
+        internal void SetGrappledServer(bool held)
+        {
+            if (held && !m_batAirborne.Value) ApplyBatImpactServer(0f, Vector3.zero);
+            m_grappleHeld = held;
+            m_batGroundedSince = 0f;
+            m_batRecoverAfter = Time.time + .6f;
+        }
+
+        [Server]
+        internal void ApplyGrapplePullServer(Vector3 direction, float acceleration, float speed, float deltaTime)
+        {
+            if (IsAlive && m_grappleHeld && m_ragdoll != null && m_ragdoll.IsFallen)
+                m_ragdoll.Pull(direction, acceleration, speed, deltaTime);
+        }
 
         [Server]
         public void ApplyBatImpactServer(float damage, Vector3 impulse)
@@ -93,7 +110,7 @@ namespace CouchGuys.Gameplay.Pedestrians
         {
             if (!m_batAirborne.Value || m_ragdoll == null) return false;
             m_ragdoll.FollowRoot(transform, IsServerInitialized);
-            if (IsServerInitialized && IsAlive && Time.time >= m_batRecoverAfter)
+            if (IsServerInitialized && IsAlive && !m_grappleHeld && Time.time >= m_batRecoverAfter)
             {
                 if (m_ragdoll.TryGround(out Vector3 ground))
                 {
@@ -146,6 +163,7 @@ namespace CouchGuys.Gameplay.Pedestrians
 
         public override void OnStopNetwork()
         {
+            m_grappleHeld = false;
             m_initialised = false;
             base.OnStopNetwork();
         }

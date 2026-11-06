@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Couch;
 using CouchGuys.Gameplay.Enemies;
+using CouchGuys.Gameplay.Pedestrians;
+using CouchGuys.Gameplay.Traffic;
+using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Player;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
@@ -37,37 +40,38 @@ namespace CouchGuys.Gameplay.Weapons
             }
             return m_magazine[index] > 0;
         }
-        private float m_previousGrappleSampleTime;
-        private float m_previousGrappleReceiptTime;
-        private Vector2 m_grappleSweep;
-        private Vector2 m_pendingGrappleLook;
-        private float m_nextServerFlickTime;
-        private float m_resumeGrapplePullAt;
         // One server simulation per target, including when several shooters hit it.
         private static readonly Dictionary<NetworkObject, PlayerWeaponController> GrappleClaims = new();
         private readonly SyncVar<Vector3> m_grappleLocalPoint = new();
         private readonly SyncVar<NetworkObject> m_grappleTarget = new();
+        private readonly SyncVar<bool> m_grappleAttached = new();
+        private readonly SyncVar<bool> m_grappleWorld = new();
+        private readonly SyncVar<Vector3> m_grappleWorldPoint = new();
+        private readonly SyncVar<int> m_grappleBodyIndex = new(-1);
+        private Transform m_worldAttachment;
+        private Vector3 m_worldAttachmentLocalPoint;
+        private NetworkObject m_attachmentCacheTarget;
+        private Rigidbody[] m_attachmentBodies;
+        private ThirdPersonPlayerController m_grappleMotor;
         private NetworkObject m_claimedGrappleTarget;
-        private float m_grappleLeaseUntil;
-        private float m_nextGrappleHeartbeat;
-        private bool m_localGrappleHeld;
+        private float m_grappleEndsAt;
+        private readonly SyncVar<uint> m_grappleShotId = new();
+        private uint m_observedGrappleShotId;
+        private bool m_worldGrappleLocallyEnded;
         private LineRenderer m_grappleLine;
         private Transform m_cameraBoundsTarget;
         private Renderer[] m_cameraBoundsRenderers;
 
-        public void RecordLocalGrappleLook(Vector2 orbitDelta)
-        {
-            if (isActiveAndEnabled && IsClientInitialized && IsOwner && m_localGrappleHeld)
-                m_pendingGrappleLook += orbitDelta;
-        }
+        // Retain the camera integration API; looking around never interrupts a one-shot pull.
+        public void RecordLocalGrappleLook(Vector2 orbitDelta) { }
 
         // Read-only local presentation state; no additional replication or predicted attachment.
         public bool TryGetLocalGrappleBounds(out Bounds bounds)
         {
             bounds = default;
             NetworkObject target = m_grappleTarget.Value;
-            if (!isActiveAndEnabled || !IsOwner || !IsClientInitialized || !m_localGrappleHeld ||
-                m_input == null || !m_input.isActiveAndEnabled || !m_input.ShootHeld ||
+            if (!isActiveAndEnabled || !IsOwner || !IsClientInitialized || !m_grappleAttached.Value || m_worldGrappleLocallyEnded ||
+                m_input == null || !m_input.isActiveAndEnabled ||
                 m_equippedIndex.Value != (int)PlayerWeaponType.GrappleGun ||
                 m_health == null || !m_health.IsAlive || m_health.IsKnockedDown ||
                 (m_couchCarrier != null && m_couchCarrier.IsCarrying) ||
@@ -118,150 +122,143 @@ namespace CouchGuys.Gameplay.Weapons
         private void UpdateGrappleInput()
         {
             if (!IsOwner) return;
-            bool held = m_equippedIndex.Value == (int)PlayerWeaponType.GrappleGun &&
+            bool usable = m_equippedIndex.Value == (int)PlayerWeaponType.GrappleGun &&
                 m_magazine[(int)PlayerWeaponType.GrappleGun] > 0 &&
-                m_input != null && m_input.isActiveAndEnabled && m_input.ShootHeld &&
+                m_input != null && m_input.isActiveAndEnabled &&
                 m_health != null && m_health.IsAlive && !m_health.IsKnockedDown &&
                 !(m_couchCarrier != null && m_couchCarrier.IsCarrying);
-            if (!held)
+            m_grappleMotor ??= GetComponent<ThirdPersonPlayerController>();
+            if (m_observedGrappleShotId != m_grappleShotId.Value)
             {
-                if (m_localGrappleHeld && IsClientInitialized)
-                    ReleaseGrappleServerRpc(CurrentGrappleAimDirection(), m_pendingGrappleLook, Time.unscaledTime);
-                m_localGrappleHeld = false;
-                m_pendingGrappleLook = Vector2.zero;
+                m_observedGrappleShotId = m_grappleShotId.Value;
+                m_worldGrappleLocallyEnded = false;
+                m_grappleMotor?.SetWorldGrapple(false, default, m_grappleSettings);
+            }
+            // Cancellation is immediate, including while the next-shot cooldown is running.
+            if (usable && m_input.ShootPressedThisFrame && m_grappleAttached.Value && !m_worldGrappleLocallyEnded)
+            {
+                m_worldGrappleLocallyEnded = true;
+                m_grappleMotor?.SetWorldGrapple(false, default, m_grappleSettings);
+                FinishGrappleServerRpc(m_observedGrappleShotId);
                 return;
             }
-            if (!m_localGrappleHeld && Time.time >= m_nextLocalRequestTime)
+            Vector3 worldPoint = m_grappleWorldPoint.Value;
+            float worldDistance = Vector3.Distance(transform.position, worldPoint);
+            bool active = usable && m_grappleAttached.Value && !m_worldGrappleLocallyEnded;
+            bool worldActive = active && m_grappleWorld.Value && m_grappleSettings != null;
+            if ((!usable && m_grappleAttached.Value && !m_worldGrappleLocallyEnded) ||
+                (worldActive && (worldDistance <= m_grappleSettings.ArrivalDistance ||
+                 worldDistance > m_grappleSettings.BreakDistance)))
             {
-                m_localGrappleHeld = true;
-                m_pendingGrappleLook = Vector2.zero;
-                Ray ray = m_aimCamera != null
-                    ? m_aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f))
-                    : new Ray(m_health.AimPoint, transform.forward);
-                StartGrappleServerRpc(ray.origin, ray.direction, Time.unscaledTime);
-                m_nextLocalRequestTime = Time.time + GetWeapon((int)PlayerWeaponType.GrappleGun).FireInterval;
-                m_nextGrappleHeartbeat = Time.unscaledTime + 0.04f;
+                m_worldGrappleLocallyEnded = true;
+                worldActive = false;
+                FinishGrappleServerRpc(m_observedGrappleShotId);
             }
-            else if (m_localGrappleHeld && Time.unscaledTime >= m_nextGrappleHeartbeat)
-            {
-                HoldGrappleServerRpc(CurrentGrappleAimDirection(), m_pendingGrappleLook, Time.unscaledTime);
-                m_pendingGrappleLook = Vector2.zero;
-                m_nextGrappleHeartbeat = Time.unscaledTime + 0.04f;
-            }
+            m_grappleMotor?.SetWorldGrapple(worldActive, worldPoint, m_grappleSettings);
+            // Trigger edges only: releasing fire does not cancel, holding does not repeat.
+            if (!usable || !m_input.ShootPressedThisFrame || Time.time < m_nextLocalRequestTime) return;
+            Ray ray = m_aimCamera != null
+                ? m_aimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f))
+                : new Ray(m_health.AimPoint, transform.forward);
+            StartGrappleServerRpc(ray.origin, ray.direction);
+            m_nextLocalRequestTime = Time.time + (m_grappleSettings != null ? m_grappleSettings.Cooldown :
+                GetWeapon((int)PlayerWeaponType.GrappleGun).FireInterval);
         }
-
-        private Vector3 CurrentGrappleAimDirection() => m_aimCamera != null
-            ? m_aimCamera.transform.forward : transform.forward;
 
         private static bool IsFinite(Vector3 value) =>
             float.IsFinite(value.x) && float.IsFinite(value.y) && float.IsFinite(value.z);
 
         [ServerRpc]
-        private void StartGrappleServerRpc(Vector3 aimOrigin, Vector3 aimDirection, float sampleTime)
+        private void StartGrappleServerRpc(Vector3 aimOrigin, Vector3 aimDirection)
         {
             int index = (int)PlayerWeaponType.GrappleGun;
             WeaponDefinition weapon = GetWeapon(index);
             if (!CanHandleWeaponServer || m_equippedIndex.Value != index ||
                 m_magazine[index] <= 0 ||
                 GetInventoryWeaponIndex(SelectedHotbarSlot) != index ||
-                Time.time < m_switchCompleteAt || Time.time < m_nextServerFireTime[index] ||
-                !float.IsFinite(sampleTime) || !IsFinite(aimOrigin) || !IsFinite(aimDirection) || aimDirection.sqrMagnitude < 0.5f ||
+                Time.time < m_switchCompleteAt ||
+                !IsFinite(aimOrigin) || !IsFinite(aimDirection) || aimDirection.sqrMagnitude < 0.5f ||
                 (aimOrigin - m_health.AimPoint).sqrMagnitude > m_maximumAimOriginDistance * m_maximumAimOriginDistance)
                 return;
 
+            // Also handle presses made before the client has received attachment replication.
+            if (m_grappleAttached.Value)
+            {
+                StopGrappleServer();
+                return;
+            }
+            if (Time.time < m_nextServerFireTime[index]) return;
             StopGrappleServer();
-            m_nextServerFireTime[index] = Time.time + weapon.FireInterval;
+            m_nextServerFireTime[index] = Time.time + (m_grappleSettings != null ? m_grappleSettings.Cooldown : weapon.FireInterval);
             Vector3 muzzle = GetMuzzlePosition(index, m_health.AimPoint);
             Vector3 forward = aimDirection.normalized;
-            float distance = CalculateAimTraceDistance(aimOrigin, forward, muzzle, weapon.Range);
+            float range = m_grappleSettings != null ? m_grappleSettings.MaximumRange : weapon.Range;
+            float distance = CalculateAimTraceDistance(aimOrigin, forward, muzzle, range);
             Vector3 point = aimOrigin + forward * distance;
             if (TryGetNearestNonSelfHit(aimOrigin, forward, distance, out RaycastHit aimHit)) point = aimHit.point;
             Vector3 direction = point - muzzle;
             if (direction.sqrMagnitude < 0.001f ||
-                !TryGetNearestNonSelfHit(muzzle, direction.normalized, weapon.Range, out RaycastHit hit)) return;
+                !TryGetNearestNonSelfHit(muzzle, direction.normalized, range, out RaycastHit hit)) return;
 
             NetworkObject target = null;
             PlayerHealth player = hit.collider.GetComponentInParent<PlayerHealth>();
             ThiefHealth thief = hit.collider.GetComponentInParent<ThiefHealth>();
             CouchCarryController couch = hit.collider.GetComponentInParent<CouchCarryController>();
+            PedestrianController pedestrian = hit.collider.GetComponentInParent<PedestrianController>();
+            Rigidbody body = hit.collider.attachedRigidbody;
+            NetworkObject hitNetwork = hit.collider.GetComponentInParent<NetworkObject>();
             if (player != null && player != m_health) target = player.NetworkObject;
             else if (thief != null) target = thief.NetworkObject;
             else if (couch != null) target = couch.NetworkObject;
-            if (!IsValidGrappleTarget(target) ||
-                (GrappleClaims.TryGetValue(target, out PlayerWeaponController claimant) && claimant != null && claimant != this)) return;
+            else if (pedestrian != null) target = pedestrian.NetworkObject;
+            else if (IsGrappleVehicle(hitNetwork)) target = hitNetwork;
+            bool world = target == null;
+            // Unsupported dynamic/character targets must not become immovable world anchors.
+            if (world && (player != null || thief != null || couch != null || pedestrian != null ||
+                (body != null && !body.isKinematic))) return;
+            if (!world && (!IsValidGrappleTarget(target) ||
+                (GrappleClaims.TryGetValue(target, out PlayerWeaponController claimant) && claimant != null && claimant != this))) return;
 
             if (thief != null) thief.SetGrappledServer(true);
-            GrappleClaims[target] = this;
-            m_claimedGrappleTarget = target;
-            m_grappleLocalPoint.Value = target.transform.InverseTransformPoint(hit.point);
-            m_grappleTarget.Value = target;
-            m_grappleLeaseUntil = Time.unscaledTime + 0.6f;
-            m_previousGrappleSampleTime = sampleTime;
-            m_previousGrappleReceiptTime = Time.unscaledTime;
-            m_grappleSweep = Vector2.zero;
-            m_resumeGrapplePullAt = 0f;
-        }
-
-        [ServerRpc]
-        private void HoldGrappleServerRpc(Vector3 aimDirection, Vector2 lookDelta, float sampleTime)
-        {
-            if (m_grappleTarget.Value == null) return;
-            UpdateGrappleFlickServer(aimDirection, lookDelta, sampleTime);
-            m_grappleLeaseUntil = Time.unscaledTime + 0.6f;
-        }
-
-        [ServerRpc]
-        private void ReleaseGrappleServerRpc(Vector3 aimDirection, Vector2 lookDelta, float sampleTime)
-        {
-            // Include the final gesture: a flick and release may happen between heartbeats.
-            UpdateGrappleFlickServer(aimDirection, lookDelta, sampleTime);
-            StopGrappleServer();
-        }
-
-        private void UpdateGrappleFlickServer(Vector3 aimDirection, Vector2 lookDelta, float sampleTime)
-        {
-            NetworkObject target = m_grappleTarget.Value;
-            if (m_grappleSettings == null || !CanHandleWeaponServer ||
-                m_equippedIndex.Value != (int)PlayerWeaponType.GrappleGun ||
-                !IsValidGrappleTarget(target) || Time.unscaledTime > m_grappleLeaseUntil ||
-                !float.IsFinite(sampleTime) || !IsFinite(aimDirection) || aimDirection.sqrMagnitude < 0.5f) return;
-            float sampleDelta = sampleTime - m_previousGrappleSampleTime;
-            if (sampleDelta <= 0f) return;
-            // Use sample spacing to tolerate packets arriving in a batch, but never
-            // let a client compress a long server interval into a high-power flick.
-            float delta = Mathf.Max(sampleDelta, Time.unscaledTime - m_previousGrappleReceiptTime - 0.1f, 0.016f);
-            m_previousGrappleSampleTime = sampleTime;
-            m_previousGrappleReceiptTime = Time.unscaledTime;
-            if (Time.unscaledTime < m_nextServerFlickTime)
+            if (pedestrian != null) pedestrian.SetGrappledServer(true);
+            if ((thief != null || pedestrian != null) && (body == null || body.transform == target.transform))
             {
-                m_grappleSweep = Vector2.zero;
-                return;
+                PedestrianRagdoll ragdoll = target.GetComponentInChildren<PedestrianRagdoll>(true);
+                if (ragdoll != null) body = ragdoll.Body;
             }
-            if (!m_grappleSettings.TryCalculateFlick(lookDelta, aimDirection, delta,
-                ref m_grappleSweep, out Vector3 impulse)) return;
-            Vector3 muzzle = GetMuzzlePosition((int)PlayerWeaponType.GrappleGun, m_health.AimPoint);
-            if ((target.transform.TransformPoint(m_grappleLocalPoint.Value) - muzzle).sqrMagnitude >
-                GetWeapon((int)PlayerWeaponType.GrappleGun).Range * GetWeapon((int)PlayerWeaponType.GrappleGun).Range) return;
+            if (!world)
+            {
+                GrappleClaims[target] = this;
+                m_claimedGrappleTarget = target;
+            }
+            m_worldAttachment = world ? hit.collider.transform : null;
+            m_worldAttachmentLocalPoint = world ? m_worldAttachment.InverseTransformPoint(hit.point) : default;
+            m_grappleTarget.Value = target;
+            m_attachmentCacheTarget = null;
+            CacheGrappleBodies();
+            int bodyIndex = -1;
+            if (!world && body != null && m_attachmentBodies != null)
+                bodyIndex = System.Array.IndexOf(m_attachmentBodies, body);
+            m_grappleBodyIndex.Value = bodyIndex;
+            Transform attachment = bodyIndex >= 0 ? body.transform : !world ? target.transform : null;
+            m_grappleLocalPoint.Value = attachment != null ? attachment.InverseTransformPoint(hit.point) : default;
+            m_grappleWorldPoint.Value = hit.point;
+            m_grappleWorld.Value = world;
+            m_grappleAttached.Value = true;
+            m_grappleEndsAt = Time.unscaledTime + (m_grappleSettings != null ? m_grappleSettings.MaximumPullDuration : 8f);
+            m_grappleShotId.Value++;
+            ShowGrappleShotObserversRpc();
+        }
 
-            if (target.TryGetComponent(out CouchCarryController couch))
-                couch.ApplyGrappleFlickServer(impulse,
-                    Vector3.Cross(Vector3.up, impulse).normalized * m_grappleSettings.CouchSpin,
-                    m_grappleSettings.MaximumTargetSpeed, m_grappleSettings.MomentumDuration);
-            else if (target.TryGetComponent(out PlayerHealth player))
-                player.ApplyGrappleFlickServer(impulse, m_grappleSettings.MaximumTargetSpeed,
-                    m_grappleSettings.MomentumDuration, m_grappleSettings.AirDrag, m_grappleSettings.GravityMultiplier);
-            else if (target.TryGetComponent(out ThiefHealth thief))
-                thief.ApplyGrappleFlickServer(impulse, m_grappleSettings.MaximumTargetSpeed,
-                    m_grappleSettings.AirDrag, m_grappleSettings.GravityMultiplier);
-
-            m_nextServerFlickTime = Time.unscaledTime + m_grappleSettings.Cooldown;
-            m_resumeGrapplePullAt = Time.unscaledTime + m_grappleSettings.PullPause;
-            ShowGrappleFlickObserversRpc();
-            if (m_grappleSettings.ReleaseOnFlick) StopGrappleServer();
+        [ServerRpc]
+        private void FinishGrappleServerRpc(uint shotId)
+        {
+            // A delayed arrival notification must not cancel a newer shot.
+            if (shotId == m_grappleShotId.Value) StopGrappleServer();
         }
 
         [ObserversRpc(RunLocally = true)]
-        private void ShowGrappleFlickObserversRpc()
+        private void ShowGrappleShotObserversRpc()
         {
             m_visualRecoil = 7f;
             m_visualRecoilDistance = 0.04f;
@@ -276,25 +273,58 @@ namespace CouchGuys.Gameplay.Weapons
             if (target.TryGetComponent(out ThiefHealth thief)) return thief.IsAlive;
             if (target.TryGetComponent(out CouchCarryController couch))
                 return couch.IsPickupAvailable && !couch.IsLoaded && couch.CouchRigidbody != null && !couch.CouchRigidbody.isKinematic;
+            if (target.TryGetComponent(out PedestrianController pedestrian)) return pedestrian.IsAlive;
+            if (IsGrappleVehicle(target))
+                return target.TryGetComponent(out Rigidbody body) && !body.isKinematic;
             return false;
+        }
+
+        private static bool IsGrappleVehicle(NetworkObject target) => target != null &&
+            (target.TryGetComponent<TruckController>(out _) || target.TryGetComponent<TrafficVehicleController>(out _) ||
+             target.TryGetComponent<GetawayTruckController>(out _) || target.TryGetComponent<MagneticHoverboardController>(out _));
+
+        private void CacheGrappleBodies()
+        {
+            NetworkObject target = m_grappleTarget.Value;
+            if (m_attachmentCacheTarget == target) return;
+            m_attachmentCacheTarget = target;
+            m_attachmentBodies = target != null ? target.GetComponentsInChildren<Rigidbody>(true) : null;
+        }
+
+        private Vector3 GrappleAttachmentPoint()
+        {
+            if (m_grappleWorld.Value) return m_grappleWorldPoint.Value;
+            CacheGrappleBodies();
+            NetworkObject target = m_grappleTarget.Value;
+            int index = m_grappleBodyIndex.Value;
+            Transform attachment = m_attachmentBodies != null && index >= 0 && index < m_attachmentBodies.Length &&
+                m_attachmentBodies[index] != null ? m_attachmentBodies[index].transform : target != null ? target.transform : null;
+            return attachment != null ? attachment.TransformPoint(m_grappleLocalPoint.Value) : m_grappleWorldPoint.Value;
         }
 
         private void FixedUpdate()
         {
-            if (!IsServerInitialized || ReferenceEquals(m_claimedGrappleTarget, null)) return;
+            if (!IsServerInitialized || !m_grappleAttached.Value) return;
             NetworkObject target = m_grappleTarget.Value;
             WeaponDefinition weapon = GetWeapon((int)PlayerWeaponType.GrappleGun);
             if (!CanHandleWeaponServer || !Owner.IsValid || !Owner.IsActive ||
                 m_equippedIndex.Value != (int)PlayerWeaponType.GrappleGun ||
-                Time.unscaledTime > m_grappleLeaseUntil || !IsValidGrappleTarget(target))
+                Time.unscaledTime >= m_grappleEndsAt ||
+                (m_grappleWorld.Value ? m_worldAttachment == null || !m_worldAttachment.gameObject.activeInHierarchy : !IsValidGrappleTarget(target)))
             {
                 StopGrappleServer();
                 return;
             }
             Vector3 muzzle = GetMuzzlePosition((int)PlayerWeaponType.GrappleGun, m_health.AimPoint);
-            Vector3 point = target.transform.TransformPoint(m_grappleLocalPoint.Value);
+            if (m_grappleWorld.Value)
+                m_grappleWorldPoint.Value = m_worldAttachment.TransformPoint(m_worldAttachmentLocalPoint);
+            Vector3 point = GrappleAttachmentPoint();
             Vector3 offset = muzzle - point;
-            if (offset.sqrMagnitude > weapon.Range * weapon.Range)
+            float breakDistance = m_grappleSettings != null ? m_grappleSettings.BreakDistance : weapon.Range;
+            float targetArrivalDistance = m_grappleSettings != null ? m_grappleSettings.TargetArrivalDistance : 2f;
+            if (offset.sqrMagnitude > breakDistance * breakDistance || (!m_grappleWorld.Value &&
+                offset.sqrMagnitude <= targetArrivalDistance * targetArrivalDistance) || (m_grappleWorld.Value &&
+                Vector3.Distance(transform.position, point) <= (m_grappleSettings != null ? m_grappleSettings.ArrivalDistance : 1.5f)))
             {
                 StopGrappleServer();
                 return;
@@ -304,27 +334,40 @@ namespace CouchGuys.Gameplay.Weapons
                 StopGrappleServer();
                 return;
             }
-            if (Time.unscaledTime < m_resumeGrapplePullAt) return;
-            // Ease off near the muzzle without cancelling existing momentum on release.
-            float speed = Mathf.Min(weapon.PullSpeed, Mathf.Max(0f, offset.magnitude - 1.1f) * 4f);
+            if (m_grappleWorld.Value) return; // Only the owning client's existing motor moves the shooter.
+
+            // Keep a small closing speed so the pull crosses the arrival threshold and completes.
+            float speed = Mathf.Min(m_grappleSettings != null ? m_grappleSettings.ObjectMaximumSpeed : weapon.PullSpeed,
+                Mathf.Max(0f, offset.magnitude - targetArrivalDistance) * 4f + 1f);
+            float force = m_grappleSettings != null ? m_grappleSettings.ObjectPullForce : weapon.PullForce;
+            float characterForce = m_grappleSettings != null ? m_grappleSettings.CharacterPullForce : weapon.PullForce;
             Vector3 direction = offset.normalized;
             if (target.TryGetComponent(out CouchCarryController couch))
             {
                 Rigidbody body = couch.CouchRigidbody;
-                float acceleration = Mathf.Min(weapon.PullForce,
+                float acceleration = Mathf.Min(force,
                     Mathf.Max(0f, speed - Vector3.Dot(body.GetPointVelocity(point), direction)) / Time.fixedDeltaTime);
                 body.AddForceAtPosition(direction * acceleration * body.mass, point, ForceMode.Force);
             }
             else if (target.TryGetComponent(out PlayerHealth player))
-                player.ApplyGrapplePullServer(direction, weapon.PullForce, speed, Time.fixedDeltaTime);
+                player.ApplyGrapplePullServer(direction, characterForce, speed, Time.fixedDeltaTime);
             else if (target.TryGetComponent(out ThiefHealth thief))
-                thief.ApplyGrapplePullServer(direction, weapon.PullForce, speed, Time.fixedDeltaTime);
+                thief.ApplyGrapplePullServer(direction, characterForce, speed, Time.fixedDeltaTime);
+            else if (target.TryGetComponent(out PedestrianController pedestrian))
+                pedestrian.ApplyGrapplePullServer(direction, characterForce, speed, Time.fixedDeltaTime);
+            else if (IsGrappleVehicle(target) && target.TryGetComponent(out Rigidbody vehicleBody))
+            {
+                float acceleration = Mathf.Min(m_grappleSettings != null ? m_grappleSettings.VehiclePullForce : force,
+                    Mathf.Max(0f, speed - Vector3.Dot(vehicleBody.linearVelocity, direction)) / Time.fixedDeltaTime);
+                // Centre-of-mass force leaves steering, suspension and ownership intact.
+                vehicleBody.AddForce(direction * acceleration, ForceMode.Acceleration);
+            }
         }
 
         private void StopGrappleServer()
         {
             if (!IsServerInitialized) return;
-            if (m_grappleTarget.Value != null && Owner.IsValid)
+            if (m_grappleAttached.Value && Owner.IsValid)
             {
                 int index = (int)PlayerWeaponType.GrappleGun;
                 SendWeaponStateTargetRpc(Owner, index, m_magazine[index], m_reserve[index], false);
@@ -334,10 +377,15 @@ namespace CouchGuys.Gameplay.Weapons
             {
                 if (m_claimedGrappleTarget != null && m_claimedGrappleTarget.TryGetComponent(out ThiefHealth thief))
                     thief.SetGrappledServer(false);
+                if (m_claimedGrappleTarget != null && m_claimedGrappleTarget.TryGetComponent(out PedestrianController pedestrian))
+                    pedestrian.SetGrappledServer(false);
                 GrappleClaims.Remove(m_claimedGrappleTarget);
             }
             m_claimedGrappleTarget = null;
             m_grappleTarget.Value = null;
+            m_grappleAttached.Value = false;
+            m_grappleWorld.Value = false;
+            m_worldAttachment = null;
         }
 
         public override void OnStopServer()
@@ -349,9 +397,10 @@ namespace CouchGuys.Gameplay.Weapons
         private void UpdateGrappleVisual()
         {
             NetworkObject target = m_grappleTarget.Value;
-            bool visible = IsClientInitialized && target != null && target.IsSpawned &&
+            bool visible = IsClientInitialized && m_grappleAttached.Value &&
+                (m_grappleWorld.Value || (target != null && target.IsSpawned)) &&
                 m_equippedIndex.Value == (int)PlayerWeaponType.GrappleGun &&
-                m_health.IsAlive && (!IsOwner || m_localGrappleHeld);
+                m_health.IsAlive && (!IsOwner || !m_worldGrappleLocallyEnded);
             if (!visible)
             {
                 if (m_grappleLine != null) m_grappleLine.enabled = false;
@@ -359,21 +408,14 @@ namespace CouchGuys.Gameplay.Weapons
             }
             if (m_grappleLine == null)
             {
-                var rope = new GameObject("Grapple Rope");
-                rope.transform.SetParent(transform, false);
-                m_grappleLine = rope.AddComponent<LineRenderer>();
-                m_grappleLine.useWorldSpace = true;
-                m_grappleLine.positionCount = 2;
-                m_grappleLine.startWidth = 0.035f;
-                m_grappleLine.endWidth = 0.025f;
-                m_grappleLine.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                m_grappleLine.receiveShadows = false;
-                m_grappleLine.sharedMaterial = Resources.Load<Material>("Weapons/GrappleRope");
+                Transform model = m_weaponModels[(int)PlayerWeaponType.GrappleGun];
+                m_grappleLine = model != null ? model.GetComponentInChildren<LineRenderer>(true) : null;
+                if (m_grappleLine == null) return;
             }
             Transform muzzle = m_muzzles[(int)PlayerWeaponType.GrappleGun];
             m_grappleLine.enabled = true;
             m_grappleLine.SetPosition(0, muzzle != null ? muzzle.position : m_health.AimPoint);
-            m_grappleLine.SetPosition(1, target.transform.TransformPoint(m_grappleLocalPoint.Value));
+            m_grappleLine.SetPosition(1, GrappleAttachmentPoint());
         }
     }
 }

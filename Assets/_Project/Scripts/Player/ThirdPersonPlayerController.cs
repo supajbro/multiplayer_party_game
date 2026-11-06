@@ -123,6 +123,75 @@ namespace CouchGuys.Player
         private float m_grappleFlightDrag;
         private float m_grappleFlightGravity = 1f;
 
+        private bool m_worldGrappleActive;
+        private Vector3 m_worldGrapplePoint;
+        private float m_worldRopeLength;
+        private float m_worldGrappleRefreshedAt;
+        private Gameplay.Weapons.GrappleGunSettings m_worldGrappleSettings;
+
+        internal void SetWorldGrapple(bool active, Vector3 point, Gameplay.Weapons.GrappleGunSettings settings)
+        {
+            active &= settings != null && !m_movementLocked && !m_externalControlPaused;
+            if (active && !m_worldGrappleActive)
+            {
+                m_worldRopeLength = Vector3.Distance(transform.position, point);
+                m_externalVelocity += MovementIntent.normalized * m_currentSpeed;
+                Vector3 launchDirection = (point - transform.position).normalized;
+                Vector3 velocity = m_externalVelocity + Vector3.up * m_verticalVelocity;
+                float launchSpeed = Mathf.Min(settings.PlayerLaunchSpeed, settings.PlayerMaximumSpeed);
+                velocity += launchDirection * Mathf.Max(0f, launchSpeed - Vector3.Dot(velocity, launchDirection));
+                m_externalVelocity = Vector3.ProjectOnPlane(velocity, Vector3.up);
+                m_verticalVelocity = velocity.y;
+                m_currentSpeed = 0f;
+            }
+            else if (!active && m_worldGrappleActive)
+            {
+                m_externalVelocity *= m_worldGrappleSettings.ReleaseMomentum;
+                m_verticalVelocity *= m_worldGrappleSettings.ReleaseMomentum;
+                m_grappleFlightUntil = Time.time + m_worldGrappleSettings.MomentumDuration;
+                m_grappleFlightDrag = m_worldGrappleSettings.AirDrag;
+                m_grappleFlightGravity = m_worldGrappleSettings.GravityMultiplier;
+            }
+            m_worldGrappleActive = active;
+            if (active) m_worldGrappleRefreshedAt = Time.time;
+            m_worldGrapplePoint = point;
+            if (settings != null) m_worldGrappleSettings = settings;
+        }
+
+        private void UpdateWorldGrapple()
+        {
+            Vector3 offset = m_worldGrapplePoint - transform.position;
+            float distance = offset.magnitude;
+            if (m_movementLocked || m_externalControlPaused || Time.time > m_worldGrappleRefreshedAt + .15f ||
+                distance <= m_worldGrappleSettings.ArrivalDistance ||
+                distance > m_worldGrappleSettings.BreakDistance)
+            {
+                SetWorldGrapple(false, default, null);
+                return;
+            }
+            Vector3 direction = offset / distance;
+            Vector3 velocity = m_externalVelocity + Vector3.up * m_verticalVelocity;
+            Vector3 steering = CalculateCameraRelativeDirection(Vector2.ClampMagnitude(m_input.Move, 1f));
+            velocity = CalculateWorldGrappleVelocity(velocity, direction, steering,
+                distance >= m_worldRopeLength - 0.1f, m_worldGrappleSettings, Time.deltaTime);
+            m_worldRopeLength = Mathf.Min(m_worldRopeLength, distance);
+            m_externalVelocity = Vector3.ProjectOnPlane(velocity, Vector3.up);
+            m_verticalVelocity = velocity.y;
+        }
+
+        internal static Vector3 CalculateWorldGrappleVelocity(Vector3 velocity, Vector3 direction,
+            Vector3 steering, bool taut, Gameplay.Weapons.GrappleGunSettings settings, float deltaTime)
+        {
+            float speedLimit = Mathf.Max(velocity.magnitude, settings.PlayerMaximumSpeed);
+            // Tension removes outward radial velocity, leaving the tangential swing intact.
+            if (taut) velocity -= direction * Mathf.Min(0f, Vector3.Dot(velocity, direction));
+            Vector3 tangent = Vector3.ProjectOnPlane(velocity, direction);
+            velocity -= tangent * (1f - Mathf.Exp(-settings.TrajectoryCorrection * deltaTime));
+            velocity += (direction * settings.PlayerPullAcceleration +
+                Vector3.ProjectOnPlane(steering, direction) * settings.SwingStrength) * deltaTime;
+            return Vector3.ClampMagnitude(velocity, speedLimit);
+        }
+
         internal void ApplyEnemyGrappleThrow(Vector3 velocity, float duration, float drag)
         {
             m_externalVelocity = Vector3.zero;
@@ -223,6 +292,7 @@ namespace CouchGuys.Player
 
         public void Teleport(Vector3 position, Quaternion rotation)
         {
+            if (m_worldGrappleActive) SetWorldGrapple(false, default, null);
             bool wasEnabled = m_characterController != null && m_characterController.enabled;
             if (wasEnabled)
             {
@@ -258,9 +328,11 @@ namespace CouchGuys.Player
         {
             if (m_externalControlPaused)
             {
+                if (m_worldGrappleActive) SetWorldGrapple(false, default, null);
                 return;
             }
             UpdateVerticalMovement();
+            if (m_worldGrappleActive) UpdateWorldGrapple();
             if (m_movementLocked || Time.time < m_vehicleImpactUntil)
             {
                 UpdateLockedMovement();
@@ -273,7 +345,7 @@ namespace CouchGuys.Player
             m_externalVelocity = Vector3.MoveTowards(
                 m_externalVelocity,
                 Vector3.zero,
-                (Time.time < m_grappleFlightUntil ? m_grappleFlightDrag : m_knockbackDamping) * Time.deltaTime);
+                (m_worldGrappleActive ? 0f : Time.time < m_grappleFlightUntil ? m_grappleFlightDrag : m_knockbackDamping) * Time.deltaTime);
         }
 
         private void UpdateVerticalMovement()
@@ -305,6 +377,7 @@ namespace CouchGuys.Player
             Vector3 intendedMoveDirection = CalculateCameraRelativeDirection(moveInput);
             float uphillMultiplier = CalculateUphillSpeedMultiplier(intendedMoveDirection);
             float targetSpeed = topSpeed * inputMagnitude * m_externalSpeedMultiplier * uphillMultiplier;
+            if (m_worldGrappleActive) targetSpeed = 0f;
             m_currentSpeed = Mathf.MoveTowards(m_currentSpeed, targetSpeed, m_speedChangeRate * Time.deltaTime);
 
             Vector3 moveDirection = intendedMoveDirection;

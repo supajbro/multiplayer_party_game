@@ -120,7 +120,8 @@ namespace CouchGuys.Gameplay.Weapons
         public int SelectedHotbarSlot => Mathf.Clamp(m_selectedHotbarSlot.Value, 0, InventorySlotCount - 1);
         public int GetInventoryWeaponIndex(int slot) => slot >= 0 && slot < m_inventory.Count ? m_inventory[slot] : -1;
         public ReticleSettings CurrentReticleSettings => GetWeaponReticle(m_equippedIndex.Value);
-        public float CurrentWeaponRange => GetWeapon(m_equippedIndex.Value)?.Range ?? 60f;
+        public float CurrentWeaponRange => m_equippedIndex.Value == (int)PlayerWeaponType.GrappleGun && m_grappleSettings != null
+            ? m_grappleSettings.MaximumRange : GetWeapon(m_equippedIndex.Value)?.Range ?? 60f;
 
         private void Awake()
         {

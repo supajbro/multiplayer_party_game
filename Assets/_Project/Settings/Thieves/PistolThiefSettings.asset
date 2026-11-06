@@ -71,7 +71,7 @@ MonoBehaviour:
     TracerWidth: 0.035
     TracerColour: {r: 1, g: 0.72, b: 0.12, a: 1}
   Audio:
-    FootstepLoop: {fileID: 8300000, guid: a7605e3995f04aaf9dd93d8bf7381427, type: 3}
+    FootstepLoop: {fileID: 8300000, guid: a9308951b0649fd4185d701af3183388, type: 3}
     AlertClip: {fileID: 8300000, guid: 491328b55d78481e83e65c896c24e922, type: 3}
     FootstepVolume: 0.55
     AlertVolume: 1

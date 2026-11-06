@@ -17,11 +17,101 @@ namespace CouchGuys.Tests.Editor
         private const BindingFlags PrivateInstance = BindingFlags.NonPublic | BindingFlags.Instance;
 
         [Test]
-        public void FlickSettingsAreAssignedToNetworkPlayer()
+        public void WorldPullAcceleratesAndTensionPreservesTangentialSwing()
+        {
+            var settings = ScriptableObject.CreateInstance<GrappleGunSettings>();
+            try
+            {
+                var serialized = new SerializedObject(settings);
+                serialized.FindProperty("m_trajectoryCorrection").floatValue = 0f;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                var calculate = typeof(ThirdPersonPlayerController).GetMethod("CalculateWorldGrappleVelocity",
+                    BindingFlags.Static | BindingFlags.NonPublic);
+                Vector3 velocity = (Vector3)calculate.Invoke(null, new object[] {
+                    new Vector3(-5f, 0f, 8f), Vector3.right, Vector3.zero, true, settings, .02f });
+                Assert.That(velocity.x, Is.EqualTo(settings.PlayerPullAcceleration * .02f).Within(.001f));
+                Assert.That(velocity.z, Is.EqualTo(8f).Within(.001f));
+                for (int i = 0; i < 200; i++)
+                    velocity = (Vector3)calculate.Invoke(null, new object[] {
+                        velocity, Vector3.right, Vector3.forward, true, settings, .02f });
+                Assert.That(velocity.magnitude, Is.EqualTo(settings.PlayerMaximumSpeed).Within(.001f));
+                Assert.That(velocity.z, Is.GreaterThan(8f), "Air steering builds tangential momentum.");
+            }
+            finally { Object.DestroyImmediate(settings); }
+        }
+
+        [Test]
+        public void OneShotTrajectoryCorrectsDriftTowardAttachment()
+        {
+            var settings = ScriptableObject.CreateInstance<GrappleGunSettings>();
+            try
+            {
+                var calculate = typeof(ThirdPersonPlayerController).GetMethod("CalculateWorldGrappleVelocity",
+                    BindingFlags.Static | BindingFlags.NonPublic);
+                Vector3 velocity = (Vector3)calculate.Invoke(null, new object[] {
+                    Vector3.forward * 8f, Vector3.right, Vector3.zero, true, settings, .02f });
+                Assert.That(velocity.x, Is.GreaterThan(0f));
+                Assert.That(velocity.z, Is.InRange(0f, 7.99f), "Automatic pulling corrects sideways drift toward the shot.");
+                Assert.That(settings.MaximumPullDuration, Is.GreaterThan(settings.Cooldown));
+                Assert.That(settings.TargetArrivalDistance, Is.GreaterThan(0f));
+            }
+            finally { Object.DestroyImmediate(settings); }
+        }
+
+        [TestCase(1f)]
+        [TestCase(.5f)]
+        [TestCase(0f)]
+        public void WorldReleaseRetainsConfiguredMomentum(float preservation)
+        {
+            var player = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Player.prefab"));
+            var settings = ScriptableObject.CreateInstance<GrappleGunSettings>();
+            try
+            {
+                var serialized = new SerializedObject(settings);
+                serialized.FindProperty("m_releaseMomentum").floatValue = preservation;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                var motor = player.GetComponent<ThirdPersonPlayerController>();
+                var set = typeof(ThirdPersonPlayerController).GetMethod("SetWorldGrapple", PrivateInstance);
+                set.Invoke(motor, new object[] { true, player.transform.position + Vector3.up * 20f, settings });
+                var horizontal = typeof(ThirdPersonPlayerController).GetField("m_externalVelocity", PrivateInstance);
+                var vertical = typeof(ThirdPersonPlayerController).GetField("m_verticalVelocity", PrivateInstance);
+                Assert.That((float)vertical.GetValue(motor), Is.EqualTo(settings.PlayerLaunchSpeed).Within(.001f),
+                    "Attaching starts the configured launch without waiting for another input sample.");
+                horizontal.SetValue(motor, Vector3.forward * 20f);
+                vertical.SetValue(motor, 12f);
+                set.Invoke(motor, new object[] { false, Vector3.zero, settings });
+                Assert.That((Vector3)horizontal.GetValue(motor), Is.EqualTo(Vector3.forward * 20f * preservation));
+                Assert.That((float)vertical.GetValue(motor), Is.EqualTo(12f * preservation));
+                Assert.That((float)typeof(ThirdPersonPlayerController).GetField("m_grappleFlightUntil", PrivateInstance)
+                    .GetValue(motor), Is.GreaterThan(Time.time));
+                // Repeated release notifications must never damp momentum a second time.
+                set.Invoke(motor, new object[] { false, Vector3.zero, settings });
+                Assert.That((float)vertical.GetValue(motor), Is.EqualTo(12f * preservation));
+            }
+            finally { Object.DestroyImmediate(player); Object.DestroyImmediate(settings); }
+        }
+
+        [Test]
+        public void SavedGunHasEditableRopeAndWorldSettings()
+        {
+            var gun = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Weapons/GrappleGun.prefab");
+            var rope = gun.GetComponentInChildren<LineRenderer>(true);
+            Assert.That(rope, Is.Not.Null);
+            Assert.That(rope.useWorldSpace, Is.True);
+            Assert.That(rope.positionCount, Is.EqualTo(2));
+            Assert.That(rope.enabled, Is.False);
+            Assert.That(rope.sharedMaterial, Is.EqualTo(Resources.Load<Material>("Weapons/GrappleRope")));
+            var settings = AssetDatabase.LoadAssetAtPath<GrappleGunSettings>("Assets/_Project/Settings/Weapons/GrappleGun.asset");
+            Assert.That(settings.MaximumRange, Is.GreaterThan(0f));
+            Assert.That(settings.BreakDistance, Is.GreaterThanOrEqualTo(settings.MaximumRange));
+            Assert.That(settings.ArrivalDistance, Is.LessThan(settings.MaximumRange));
+        }
+
+        [Test]
+        public void GrappleSettingsAreAssignedToNetworkPlayer()
         {
             var settings = AssetDatabase.LoadAssetAtPath<GrappleGunSettings>("Assets/_Project/Settings/Weapons/GrappleGun.asset");
             Assert.That(settings, Is.Not.Null);
-            Assert.That(settings.ReleaseOnFlick, Is.False, "Directional flicks should keep the rope attached while fire is held.");
             var player = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Player.prefab");
             Assert.That(new SerializedObject(player.GetComponent<PlayerWeaponController>())
                 .FindProperty("m_grappleSettings").objectReferenceValue, Is.EqualTo(settings));
