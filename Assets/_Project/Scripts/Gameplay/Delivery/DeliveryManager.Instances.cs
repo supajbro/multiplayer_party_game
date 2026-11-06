@@ -188,13 +188,12 @@ namespace CouchGuys.Gameplay.Delivery
         public bool ResolveDeliveryServer(int id, bool success)
         {
             if (!IsServerInitialized || !TryGetDelivery(id, out var job)) return false;
+            bool vehicleDelivery = false;
             // Success is only committed by the server's proximity/identity validation.
             if (success && (job.Status != DeliveryState.Transport || job.Couch == null ||
+                !job.Couch.IsSpawned || GetRemainingTime(job) <= 0f ||
                 !job.Couch.TryGetComponent(out CouchCarryController candidate) || candidate.DeliveryId != id ||
-                candidate.ServerCarrierCount <= 0 || GetDestination(job.DestinationIndex) == null ||
-                !GetDestination(job.DestinationIndex).CanReceiveDelivery ||
-                Vector3.ProjectOnPlane(candidate.transform.position - GetDestination(job.DestinationIndex).DropPosition.position,
-                    Vector3.up).sqrMagnitude > m_collectionRadius * m_collectionRadius)) return false;
+                !CanReceiveCouch(job, candidate, GetDestination(job.DestinationIndex), out vehicleDelivery))) return false;
             for (int i = 0; i < m_deliveries.Count; i++)
                 if (m_deliveries[i].Id == id) { m_deliveries.RemoveAt(i); break; }
             m_usedDestinationIndices.Remove(job.DestinationIndex);
@@ -213,6 +212,9 @@ namespace CouchGuys.Gameplay.Delivery
             GetComponent<CouchGuys.Gameplay.Traffic.TrafficManager>()?.RemoveDeliveryRogueCarsServer(id);
             if (job.Couch != null && job.Couch.IsSpawned)
             {
+                if (vehicleDelivery)
+                    FloatDeliveredCouchObserversRpc(job.Couch, runtime?.Recipient != null
+                        ? runtime.Recipient.transform.position : GetDestination(job.DestinationIndex).DropPosition.position);
                 job.Couch.GetComponent<CouchCarryController>().ReleaseAllOccupantsServer();
                 Despawn(job.Couch);
             }
@@ -228,6 +230,54 @@ namespace CouchGuys.Gameplay.Delivery
                 HasActiveDelivery ? DeliveryObjectiveStep.DeliverCouch : DeliveryObjectiveStep.AcceptDelivery);
             m_refreshDialogues = true;
             return true;
+        }
+
+        private bool CanReceiveCouch(DeliveryInstance job, CouchCarryController couch,
+            DeliveryDestination destination, out bool vehicleDelivery)
+        {
+            vehicleDelivery = false;
+            if (couch == null || couch.DeliveryId != job.Id || job.Status != DeliveryState.Transport ||
+                destination == null || !destination.CanReceiveDelivery) return false;
+            if (m_jobs.TryGetValue(job.Id, out var runtime) && runtime.Recipient != null && !runtime.Recipient.IsAlive)
+                return false;
+            if (couch.IsLoaded)
+            {
+                // Never fall back to carried delivery for enemy cargo or an invalid attachment.
+                if (!couch.TryGetDeliveryVehicle(out Transform vehicle)) return false;
+                Vector3 target = runtime?.Recipient != null
+                    ? runtime.Recipient.transform.position : destination.DropPosition.position;
+                vehicleDelivery = (vehicle.position - target).sqrMagnitude <=
+                    m_vehicleDeliveryRadius * m_vehicleDeliveryRadius;
+                return vehicleDelivery;
+            }
+            return couch.ServerCarrierCount > 0 && Vector3.ProjectOnPlane(
+                couch.transform.position - destination.DropPosition.position, Vector3.up).sqrMagnitude <=
+                m_collectionRadius * m_collectionRadius;
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void FloatDeliveredCouchObserversRpc(NetworkObject couchObject, Vector3 target)
+        {
+            if (!IsClientInitialized || couchObject == null || !couchObject.TryGetComponent(out CouchCarryController couch)) return;
+            Transform visual = couch.CreateDeliveryVisual();
+            if (visual != null) StartCoroutine(FloatDeliveredCouch(visual, target));
+        }
+
+        private IEnumerator FloatDeliveredCouch(Transform visual, Vector3 target)
+        {
+            const float duration = 0.65f;
+            Vector3 start = visual.position;
+            Vector3 scale = visual.localScale;
+            // Also clean up if the manager is disabled during the cosmetic animation.
+            Destroy(visual.gameObject, duration + 0.1f);
+            for (float elapsed = 0f; elapsed < duration && visual != null; elapsed += Time.deltaTime)
+            {
+                float t = elapsed / duration;
+                visual.position = Vector3.Lerp(start, target, t) + Vector3.up * Mathf.Sin(t * Mathf.PI);
+                visual.localScale = scale * (1f - t * t);
+                yield return null;
+            }
+            if (visual != null) Destroy(visual.gameObject);
         }
 
         private void ClearDeliveriesServer()

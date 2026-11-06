@@ -2,6 +2,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using CouchGuys.Gameplay.Delivery;
+using CouchGuys.Gameplay.Couch;
+using CouchGuys.Gameplay.Sled;
+using CouchGuys.Gameplay.Vehicles;
+using FishNet.Object;
 using CouchGuys.Gameplay.Weapons;
 using CouchGuys.ProceduralGeneration;
 using FishNet.Object.Synchronizing;
@@ -51,6 +55,89 @@ namespace CouchGuys.Tests.Editor
             Assert.That(Call(m_manager, "SelectDestinationIndex", 2), Is.EqualTo(3));
             reservations.Remove(0);
             Assert.That(Call(m_manager, "SelectDestinationIndex", 0), Is.EqualTo(0));
+        }
+
+        [TestCase("truck", "m_loadedTruck")]
+        [TestCase("sled", "m_mountedSled")]
+        [TestCase("hoverboard", "m_mountedHoverboard")]
+        public void UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity(string kind, string attachment)
+        {
+            var vehicle = new GameObject(kind);
+            vehicle.SetActive(false);
+            var couchObject = new GameObject("Matching cargo");
+            couchObject.SetActive(false);
+            var otherObject = new GameObject("Other cargo");
+            otherObject.SetActive(false);
+            var destinationObject = new GameObject("Recipient destination");
+            try
+            {
+                if (kind == "truck") vehicle.AddComponent<TruckController>();
+                else if (kind == "sled") vehicle.AddComponent<SledController>();
+                else vehicle.AddComponent<MagneticHoverboardController>();
+                var networkVehicle = vehicle.GetComponent<NetworkObject>();
+                var couch = couchObject.AddComponent<CouchCarryController>();
+                var other = otherObject.AddComponent<CouchCarryController>();
+                Get<SyncVar<int>>(couch, "m_deliveryId").Value = 11;
+                Get<SyncVar<int>>(other, "m_deliveryId").Value = 12;
+                Get<SyncVar<NetworkObject>>(couch, attachment).Value = networkVehicle;
+                Get<SyncVar<NetworkObject>>(other, attachment).Value = networkVehicle;
+                var destination = destinationObject.AddComponent<DeliveryDestination>();
+                destination.Initialise(destinationObject.transform, DeliveryDestinationType.Standard, "Test", 1f, 1f, true);
+                var job = new DeliveryInstance { Id = 11, TierIndex = 0, Status = DeliveryState.Transport };
+                vehicle.transform.position = Vector3.right * 5f;
+                couch.transform.position = Vector3.right * 20f; // Cargo offsets do not change vehicle range.
+                Assert.That(Receive(job, couch, destination), Is.True);
+                Assert.That(Receive(job, other, destination), Is.False);
+                job.Id = 12;
+                Assert.That(Receive(job, other, destination), Is.True); // Same tier, independent delivery.
+                Assert.That(Get<SyncVar<NetworkObject>>(other, attachment).Value, Is.SameAs(networkVehicle));
+                vehicle.transform.position = Vector3.right * 5.01f;
+                Assert.That(Receive(job, other, destination), Is.False);
+                Set(m_manager, "m_vehicleDeliveryRadius", 6f);
+                Assert.That(Receive(job, other, destination), Is.True);
+                job.Status = DeliveryState.Accepted;
+                Assert.That(Receive(job, other, destination), Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(couchObject);
+                Object.DestroyImmediate(otherObject);
+                Object.DestroyImmediate(vehicle);
+                Object.DestroyImmediate(destinationObject);
+            }
+        }
+
+        [Test]
+        public void EnemyTruckCargoCannotAutoDeliver()
+        {
+            var vehicle = new GameObject("Enemy truck");
+            vehicle.SetActive(false);
+            var cargo = new GameObject("Stolen couch");
+            cargo.SetActive(false);
+            var recipient = new GameObject("Destination");
+            try
+            {
+                var truck = vehicle.AddComponent<TruckController>();
+                Set(truck, "m_getaway", vehicle.AddComponent<GetawayTruckController>());
+                var couch = cargo.AddComponent<CouchCarryController>();
+                Get<SyncVar<int>>(couch, "m_deliveryId").Value = 1;
+                Get<SyncVar<NetworkObject>>(couch, "m_loadedTruck").Value = vehicle.GetComponent<NetworkObject>();
+                var destination = recipient.AddComponent<DeliveryDestination>();
+                destination.Initialise(recipient.transform, DeliveryDestinationType.Standard, "Test", 1f, 1f, true);
+                Assert.That(Receive(new DeliveryInstance { Id = 1, Status = DeliveryState.Transport }, couch, destination), Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(cargo);
+                Object.DestroyImmediate(vehicle);
+                Object.DestroyImmediate(recipient);
+            }
+        }
+
+        private bool Receive(DeliveryInstance job, CouchCarryController couch, DeliveryDestination destination)
+        {
+            object[] args = { job, couch, destination, false };
+            return (bool)m_manager.GetType().GetMethod("CanReceiveCouch", Fields).Invoke(m_manager, args);
         }
 
         [TestCase(1920, 1080)]

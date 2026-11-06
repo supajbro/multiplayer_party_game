@@ -13,27 +13,23 @@ namespace CouchGuys.Editor
 
         private static readonly string[] PistolClips =
         {
-            "Assets/_Project/Audio/Pistol/couch_guys_pistol_shot.wav",
-            "Assets/_Project/Audio/Pistol/couch_guys_pistol_shot_02.wav",
-            "Assets/_Project/Audio/Pistol/couch_guys_pistol_shot_03.wav"
+            "Assets/ThirdParty/FreeWeaponSFX_v1.1/Handgun/Gunshots/sfx_wpn_hgn_gunshot_01.wav",
+            "Assets/ThirdParty/FreeWeaponSFX_v1.1/Handgun/Gunshots/sfx_wpn_hgn_gunshot_02.wav",
+            "Assets/ThirdParty/FreeWeaponSFX_v1.1/Handgun/Gunshots/sfx_wpn_hgn_gunshot_03.wav"
         };
 
         private static readonly string[] RifleClips =
         {
-            "Assets/_Project/Audio/AssaultRifle/CouchGuys_AR_Fire_01_Punchy.wav",
-            "Assets/_Project/Audio/AssaultRifle/CouchGuys_AR_Fire_02_Crisp.wav",
-            "Assets/_Project/Audio/AssaultRifle/CouchGuys_AR_Fire_03_Thumpy.wav",
-            "Assets/_Project/Audio/AssaultRifle/CouchGuys_AR_Fire_04_Bright.wav",
-            "Assets/_Project/Audio/AssaultRifle/CouchGuys_AR_Fire_05_Tight.wav",
-            "Assets/_Project/Audio/AssaultRifle/CouchGuys_AR_Fire_06_Arcade.wav"
+            "Assets/ThirdParty/FreeWeaponSFX_v1.1/AssaultRifle/Gunshots/sfx_wpn_ar_gunshot_01.wav",
+            "Assets/ThirdParty/FreeWeaponSFX_v1.1/AssaultRifle/Gunshots/sfx_wpn_ar_gunshot_02.wav",
+            "Assets/ThirdParty/FreeWeaponSFX_v1.1/AssaultRifle/Gunshots/sfx_wpn_ar_gunshot_03.wav"
         };
 
         private static readonly string[] ShotgunClips =
         {
-            "Assets/_Project/Audio/Shotgun/CouchGuys_Shotgun_Fire_01_Chunky.wav",
-            "Assets/_Project/Audio/Shotgun/CouchGuys_Shotgun_Fire_02_Snappy.wav",
-            "Assets/_Project/Audio/Shotgun/CouchGuys_Shotgun_Fire_03_Thunderous.wav",
-            "Assets/_Project/Audio/Shotgun/CouchGuys_Shotgun_Fire_04_Arcade.wav"
+            "Assets/ThirdParty/FreeWeaponSFX_v1.1/Shotgun/Gunshots/sfx_wpn_sgn_gunshot_01.wav",
+            "Assets/ThirdParty/FreeWeaponSFX_v1.1/Shotgun/Gunshots/sfx_wpn_sgn_gunshot_02.wav",
+            "Assets/ThirdParty/FreeWeaponSFX_v1.1/Shotgun/Gunshots/sfx_wpn_sgn_gunshot_03.wav"
         };
 
         [MenuItem("Couch Guys/Weapons/Build Audio Settings")]
@@ -49,16 +45,30 @@ namespace CouchGuys.Editor
 
             SerializedObject serialised = new(settings);
             SerializedProperty profiles = serialised.FindProperty("m_profiles");
-            profiles.arraySize = 3;
+            profiles.arraySize = 5;
+            serialised.FindProperty("m_voicePrefab").objectReferenceValue =
+                AssetDatabase.LoadAssetAtPath<AudioSource>("Assets/_Project/Prefabs/Weapons/WeaponAudioVoice.prefab");
             ConfigureProfile(profiles.GetArrayElementAtIndex(0), PlayerWeaponType.Pistol,
-                PistolClips, 1f, 3f, 55f, 1f, 0.97f, 1.03f, 5, null, 0f, null, 0f, 0f);
+                PistolClips, 1f, 3f, 35f, 1f, 0.97f, 1.03f, 5, null, 0f, null, 0f, 0f);
             ConfigureProfile(profiles.GetArrayElementAtIndex(1), PlayerWeaponType.AssaultRifle,
-                RifleClips, 0.9f, 4f, 85f, 1f, 0.97f, 1.03f, 8,
+                RifleClips, 0.9f, 4f, 35f, 1f, 0.97f, 1.03f, 8,
                 "Assets/_Project/Audio/AssaultRifle/CouchGuys_AR_FiringStop_MechanicalClack.wav",
                 0.8f, null, 0f, 0f);
             ConfigureProfile(profiles.GetArrayElementAtIndex(2), PlayerWeaponType.Shotgun,
-                ShotgunClips, 1f, 5f, 75f, 1f, 0.97f, 1.03f, 4, null, 0f,
+                ShotgunClips, 1f, 5f, 35f, 1f, 0.97f, 1.03f, 4, null, 0f,
                 "Assets/_Project/Audio/Shotgun/CouchGuys_Shotgun_Pump_Separate.wav", 0.85f, 0.42f);
+            string[] grappleClips = Array.ConvertAll(
+                AssetDatabase.FindAssets("t:AudioClip", new[] { "Assets/_Project/Audio/GrappleGun" }),
+                AssetDatabase.GUIDToAssetPath);
+            Array.Sort(grappleClips, StringComparer.Ordinal);
+            ConfigureProfile(profiles.GetArrayElementAtIndex(3), PlayerWeaponType.GrappleGun,
+                grappleClips, 1f, 3f, 35f, 1f, 0.97f, 1.03f, 6, null, 0f, null, 0f, 0f);
+            ConfigureProfile(profiles.GetArrayElementAtIndex(4), PlayerWeaponType.RocketLauncher,
+                new[] { "Assets/ThirdParty/FreeWeaponSFX_v1.1/GrenadeLauncher/sfx_wpn_gl_fire.wav" },
+                1f, 3f, 35f, 1f, 0.97f, 1.03f, 6, null, 0f, null, 0f, 0f);
+            profiles.GetArrayElementAtIndex(4).FindPropertyRelative("m_explosionClip").objectReferenceValue =
+                LoadRequired("Assets/ThirdParty/FreeWeaponSFX_v1.1/GrenadeLauncher/sfx_wpn_gl_explosion.wav");
+            profiles.GetArrayElementAtIndex(4).FindPropertyRelative("m_explosionVolume").floatValue = 1f;
             serialised.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(settings);
             AssetDatabase.SaveAssets();

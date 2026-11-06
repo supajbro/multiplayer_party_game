@@ -19,7 +19,6 @@ namespace CouchGuys.Gameplay.Weapons
             new Keyframe(1f, 0f, 0f, 0f));
 
         private readonly Dictionary<PlayerWeaponType, List<Voice>> m_gunshotVoices = new();
-        private readonly int[] m_lastVariation = { -1, -1, -1 };
         private WeaponAudioSettings m_settings;
         private AudioSource m_rifleStopSource;
         private Coroutine m_pendingPump;
@@ -59,11 +58,32 @@ namespace CouchGuys.Gameplay.Weapons
             }
         }
 
+        private void OnDestroy()
+        {
+            foreach (List<Voice> voices in m_gunshotVoices.Values)
+                foreach (Voice voice in voices)
+                    if (voice.Source != null) Destroy(voice.Source.gameObject);
+            if (m_rifleStopSource != null) Destroy(m_rifleStopSource.gameObject);
+        }
+
+        // Uses the existing explosion RPC, but a separate saved voice survives projectile despawn.
+        public static void PlayRocketExplosion(Vector3 worldPosition)
+        {
+            var settings = Resources.Load<WeaponAudioSettings>(WeaponAudioSettings.ResourcesPath);
+            var profile = settings != null ? settings.GetProfile(PlayerWeaponType.RocketLauncher) : null;
+            if (settings == null || settings.VoicePrefab == null || profile?.ExplosionClip == null) return;
+            AudioSource source = Instantiate(settings.VoicePrefab, worldPosition, Quaternion.identity);
+            Configure(source, profile, worldPosition);
+            source.pitch = 1f;
+            source.PlayOneShot(profile.ExplosionClip, profile.ExplosionVolume);
+            Destroy(source.gameObject, profile.ExplosionClip.length + .1f);
+        }
+
         public void PlayShot(PlayerWeaponType weaponType, Vector3 worldPosition, Transform spatialOrigin = null)
         {
             WeaponAudioSettings.Profile profile = GetProfile(weaponType);
             AudioClip[] clips = profile?.Gunshots;
-            if (clips == null || clips.Length == 0)
+            if (clips == null || clips.Length == 0 || m_settings.VoicePrefab == null)
             {
                 return;
             }
@@ -73,7 +93,7 @@ namespace CouchGuys.Gameplay.Weapons
                 m_rifleStopSource.Stop();
             }
 
-            int variation = SelectVariation(weaponType, clips);
+            int variation = Random.Range(0, clips.Length);
             AudioClip clip = clips[variation];
             if (clip == null)
             {
@@ -99,7 +119,7 @@ namespace CouchGuys.Gameplay.Weapons
         public void PlayRifleStop(Vector3 worldPosition)
         {
             WeaponAudioSettings.Profile profile = GetProfile(PlayerWeaponType.AssaultRifle);
-            if (profile?.FiringStopClip == null)
+            if (profile?.FiringStopClip == null || m_settings.VoicePrefab == null)
             {
                 return;
             }
@@ -127,19 +147,6 @@ namespace CouchGuys.Gameplay.Weapons
         private WeaponAudioSettings.Profile GetProfile(PlayerWeaponType weaponType) =>
             m_settings != null ? m_settings.GetProfile(weaponType) : null;
 
-        private int SelectVariation(PlayerWeaponType weaponType, AudioClip[] clips)
-        {
-            int weaponIndex = (int)weaponType;
-            int selected = Random.Range(0, clips.Length);
-            if (clips.Length > 1 && selected == m_lastVariation[weaponIndex])
-            {
-                selected = (selected + Random.Range(1, clips.Length)) % clips.Length;
-            }
-
-            m_lastVariation[weaponIndex] = selected;
-            return selected;
-        }
-
         private Voice GetVoice(PlayerWeaponType weaponType, WeaponAudioSettings.Profile profile)
         {
             if (!m_gunshotVoices.TryGetValue(weaponType, out List<Voice> voices))
@@ -148,17 +155,11 @@ namespace CouchGuys.Gameplay.Weapons
                 m_gunshotVoices.Add(weaponType, voices);
             }
 
-            Voice oldest = null;
             foreach (Voice voice in voices)
             {
                 if (AudioSettings.dspTime >= voice.AvailableAt)
                 {
                     return voice;
-                }
-
-                if (oldest == null || voice.AvailableAt < oldest.AvailableAt)
-                {
-                    oldest = voice;
                 }
             }
 
@@ -169,15 +170,21 @@ namespace CouchGuys.Gameplay.Weapons
                 return voice;
             }
 
-            oldest.Source.Stop();
-            return oldest;
+            // Keep the retained pool bounded without truncating a still-playing shot.
+            // Overflow voices remain at their shot position and expire after the longest clip.
+            AudioSource overflow = CreateSource($"{weaponType}Overflow");
+            float lifetime = profile.PumpClip != null ? profile.PumpClip.length : 0f;
+            foreach (AudioClip clip in profile.Gunshots)
+                if (clip != null) lifetime = Mathf.Max(lifetime, clip.length / profile.MinimumPitch);
+            Destroy(overflow.gameObject, lifetime + .1f);
+            return new Voice { Source = overflow };
         }
 
         private AudioSource CreateSource(string sourceName)
         {
-            GameObject sourceObject = new(sourceName);
-            sourceObject.transform.SetParent(transform, false);
-            AudioSource source = sourceObject.AddComponent<AudioSource>();
+            // Unparented voices stay at the world position where the shot occurred.
+            AudioSource source = Instantiate(m_settings.VoicePrefab);
+            source.name = sourceName;
             source.playOnAwake = false;
             source.loop = false;
             source.dopplerLevel = 0f;
@@ -188,6 +195,8 @@ namespace CouchGuys.Gameplay.Weapons
             Vector3 worldPosition)
         {
             source.transform.position = worldPosition;
+            source.playOnAwake = false;
+            source.loop = false;
             source.spatialBlend = profile.SpatialBlend;
             source.minDistance = profile.MinimumDistance;
             source.maxDistance = profile.MaximumDistance;

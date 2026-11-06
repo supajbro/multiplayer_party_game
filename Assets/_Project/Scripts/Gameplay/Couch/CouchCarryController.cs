@@ -257,11 +257,37 @@ namespace CouchGuys.Gameplay.Couch
 
         public override void OnStopServer()
         {
+            if (m_loadedTruck.Value != null && m_loadedTruck.Value.TryGetComponent(out TruckController truck))
+                truck.ForgetCouchServer(this);
             if (m_mountedHoverboard.Value != null && m_mountedHoverboard.Value.TryGetComponent(out MagneticHoverboardController board))
                 board.ForgetCouchServer(this);
             UnmountFromSledServer();
             ReleaseAllOccupantsServer();
             base.OnStopServer();
+        }
+
+        internal bool TryGetDeliveryVehicle(out Transform vehicle)
+        {
+            vehicle = null;
+            if (m_loadedTruck.Value != null)
+            {
+                if (!m_loadedTruck.Value.TryGetComponent(out TruckController truck) || truck.IsGetawayTruck) return false;
+                vehicle = truck.transform;
+            }
+            else if (MountedSled != null) vehicle = MountedSled.transform;
+            else if (m_mountedHoverboard.Value != null &&
+                m_mountedHoverboard.Value.TryGetComponent(out MagneticHoverboardController board)) vehicle = board.transform;
+            return vehicle != null;
+        }
+
+        internal Transform CreateDeliveryVisual()
+        {
+            if (m_modelInstance == null) return null;
+            var visual = Instantiate(m_modelInstance, m_modelInstance.transform.position, m_modelInstance.transform.rotation);
+            visual.transform.localScale = m_modelInstance.transform.lossyScale;
+            foreach (var collider in visual.GetComponentsInChildren<Collider>()) collider.enabled = false;
+            foreach (var body in visual.GetComponentsInChildren<Rigidbody>()) body.isKinematic = true;
+            return visual.transform;
         }
 
         private void OnDestroy()

@@ -44,6 +44,7 @@ namespace CouchGuys.Gameplay.Delivery
 
         [Header("Delivery Completion")]
         [SerializeField, Min(0.25f)] private float m_collectionRadius = 2.5f;
+        [SerializeField, Min(0.25f)] private float m_vehicleDeliveryRadius = 5f;
 
         [Header("Debug/Test Teleport")]
         [SerializeField, Min(0.25f)] private float m_testTeleportOutsideRadius = 1.5f;
@@ -234,14 +235,7 @@ namespace CouchGuys.Gameplay.Delivery
             for (int i = m_deliveries.Count - 1; i >= 0; i--)
             {
                 DeliveryInstance job = m_deliveries[i];
-                if (job.Status != DeliveryState.Transport || job.Couch == null ||
-                    !job.Couch.TryGetComponent(out CouchCarryController couch) || couch.ServerCarrierCount <= 0) continue;
-                DeliveryDestination destination = GetDestination(job.DestinationIndex);
-                if (destination == null || !destination.CanReceiveDelivery) continue;
-                if (m_jobs.TryGetValue(job.Id, out JobRuntime runtime) && runtime.Recipient != null && !runtime.Recipient.IsAlive) continue;
-                Vector3 offset = couch.transform.position - destination.DropPosition.position;
-                offset.y = 0f;
-                if (offset.sqrMagnitude <= m_collectionRadius * m_collectionRadius) ResolveDeliveryServer(job.Id, true);
+                if (job.Status == DeliveryState.Transport) ResolveDeliveryServer(job.Id, true);
             }
         }
 
@@ -929,6 +923,7 @@ namespace CouchGuys.Gameplay.Delivery
         {
             base.OnValidate();
             m_collectionRadius = Mathf.Max(0.25f, m_collectionRadius);
+            m_vehicleDeliveryRadius = Mathf.Max(0.25f, m_vehicleDeliveryRadius);
             m_testTeleportOutsideRadius = Mathf.Max(0.25f, m_testTeleportOutsideRadius);
         }
 #endif

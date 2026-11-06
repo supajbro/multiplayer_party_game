@@ -428,6 +428,13 @@ namespace CouchGuys.Gameplay.Vehicles
             return true;
         }
 
+        internal void ForgetCouchServer(CouchCarryController couch)
+        {
+            if (!IsServerInitialized) return;
+            for (int slot = 0; slot < m_loadedCouches.Count; slot++)
+                if (m_loadedCouches[slot] == couch.NetworkObject) m_loadedCouches[slot] = null;
+        }
+
         [Server]
         private bool TryUnloadFirstCouchServer(PlayerTruckInteractor player)
         {

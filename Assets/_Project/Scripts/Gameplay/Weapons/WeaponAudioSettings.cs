@@ -15,15 +15,18 @@ namespace CouchGuys.Gameplay.Weapons
             [SerializeField] private AudioClip[] m_gunshots;
             [SerializeField, Range(0f, 1f)] private float m_gunshotVolume = 1f;
             [SerializeField, Min(0f)] private float m_minimumDistance = 3f;
-            [SerializeField, Min(0.1f)] private float m_maximumDistance = 55f;
+            [SerializeField, Min(0.1f)] private float m_maximumDistance = 35f;
             [SerializeField, Range(0f, 1f)] private float m_spatialBlend = 1f;
             [SerializeField] private Vector2 m_pitchRange = new(0.97f, 1.03f);
+            [Tooltip("Maximum retained voices. Busy pools use temporary voices so rapid shots can finish.")]
             [SerializeField, Range(1, 16)] private int m_maximumGunshotVoices = 6;
             [SerializeField] private AudioClip m_firingStopClip;
             [SerializeField, Range(0f, 1f)] private float m_firingStopVolume = 0.8f;
             [SerializeField] private AudioClip m_pumpClip;
             [SerializeField, Range(0f, 1f)] private float m_pumpVolume = 0.85f;
             [SerializeField, Min(0f)] private float m_pumpDelay = 0.42f;
+            [SerializeField] private AudioClip m_explosionClip;
+            [SerializeField, Range(0f, 1f)] private float m_explosionVolume = 1f;
 
             public PlayerWeaponType WeaponType => m_weaponType;
             public AudioClip[] Gunshots => m_gunshots;
@@ -39,6 +42,8 @@ namespace CouchGuys.Gameplay.Weapons
             public AudioClip PumpClip => m_pumpClip;
             public float PumpVolume => m_pumpVolume;
             public float PumpDelay => m_pumpDelay;
+            public AudioClip ExplosionClip => m_explosionClip;
+            public float ExplosionVolume => m_explosionVolume;
 
             public void Validate()
             {
@@ -52,10 +57,14 @@ namespace CouchGuys.Gameplay.Weapons
                 m_firingStopVolume = Mathf.Clamp01(m_firingStopVolume);
                 m_pumpVolume = Mathf.Clamp01(m_pumpVolume);
                 m_pumpDelay = Mathf.Max(0f, m_pumpDelay);
+                m_explosionVolume = Mathf.Clamp01(m_explosionVolume);
             }
         }
 
-        [SerializeField] private Profile[] m_profiles = new Profile[3];
+        [SerializeField] private AudioSource m_voicePrefab;
+        [SerializeField] private Profile[] m_profiles = new Profile[5];
+
+        public AudioSource VoicePrefab => m_voicePrefab;
 
         public Profile GetProfile(PlayerWeaponType weaponType)
         {

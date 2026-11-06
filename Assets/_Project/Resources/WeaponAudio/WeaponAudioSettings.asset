@@ -12,15 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5b7d31aa2c9840c09f0a7e64d4fe8c21, type: 3}
   m_Name: WeaponAudioSettings
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Weapons.WeaponAudioSettings
+  m_voicePrefab: {fileID: 8200000, guid: 8d6f218ffe3af513b0e594741f024229, type: 3}
   m_profiles:
   - m_weaponType: 0
     m_gunshots:
-    - {fileID: 8300000, guid: 679c030fbfcae764080453bb44c1b11b, type: 3}
-    - {fileID: 8300000, guid: 6deff26f069c3dd4092b30813b74772e, type: 3}
-    - {fileID: 8300000, guid: 567e3363372a8464c82e5d99be5732b3, type: 3}
+    - {fileID: 8300000, guid: 99348524f0ef5b3469b6d1976f17370c, type: 3}
+    - {fileID: 8300000, guid: 0910b552636052c42a5d5fb6d168dc27, type: 3}
+    - {fileID: 8300000, guid: 8115c336b0fa59f41b1cb0af599a2271, type: 3}
     m_gunshotVolume: 1
     m_minimumDistance: 3
-    m_maximumDistance: 55
+    m_maximumDistance: 35
     m_spatialBlend: 1
     m_pitchRange: {x: 0.97, y: 1.03}
     m_maximumGunshotVoices: 5
@@ -31,15 +32,12 @@ MonoBehaviour:
     m_pumpDelay: 0
   - m_weaponType: 1
     m_gunshots:
-    - {fileID: 8300000, guid: 1146c4be485a4134858bf58758277ad1, type: 3}
-    - {fileID: 8300000, guid: 28019721357a451cbb5df9274a6363c1, type: 3}
-    - {fileID: 8300000, guid: 35d47614e6c84bd6b542148b233a419d, type: 3}
-    - {fileID: 8300000, guid: 42b96584c5ca413681ce50d511674071, type: 3}
-    - {fileID: 8300000, guid: 57a8a9f45c2a49a583007818b538d9ef, type: 3}
-    - {fileID: 8300000, guid: 634751fbc7524eb3b63a7a2a91297751, type: 3}
+    - {fileID: 8300000, guid: 7a1788b10a259394b9019d21bef463ae, type: 3}
+    - {fileID: 8300000, guid: 4ae73664f9fa52f41b51a2e050901696, type: 3}
+    - {fileID: 8300000, guid: ada2ae050ed4f114eba3fab31db4313e, type: 3}
     m_gunshotVolume: 0.9
     m_minimumDistance: 4
-    m_maximumDistance: 85
+    m_maximumDistance: 35
     m_spatialBlend: 1
     m_pitchRange: {x: 0.97, y: 1.03}
     m_maximumGunshotVoices: 8
@@ -50,13 +48,12 @@ MonoBehaviour:
     m_pumpDelay: 0
   - m_weaponType: 2
     m_gunshots:
-    - {fileID: 8300000, guid: 661cc786807815f4ea761fc6ceb1ba42, type: 3}
-    - {fileID: 8300000, guid: c14b253cb351e1345bc47bf79ed9e63c, type: 3}
-    - {fileID: 8300000, guid: 3433f2c86925aed4082f4659184e2c31, type: 3}
-    - {fileID: 8300000, guid: 20c3aa0522cde4740883e259f5e62e25, type: 3}
+    - {fileID: 8300000, guid: a42a25bfe713e63498febabb408fceea, type: 3}
+    - {fileID: 8300000, guid: b322a4e6a9f59b04a82a3336dde02871, type: 3}
+    - {fileID: 8300000, guid: ae2d2db46850b7c47ab85240cdc448f9, type: 3}
     m_gunshotVolume: 1
     m_minimumDistance: 5
-    m_maximumDistance: 75
+    m_maximumDistance: 35
     m_spatialBlend: 1
     m_pitchRange: {x: 0.97, y: 1.03}
     m_maximumGunshotVoices: 4
@@ -65,3 +62,37 @@ MonoBehaviour:
     m_pumpClip: {fileID: 8300000, guid: d16222d4243585e45856a256bfb893bf, type: 3}
     m_pumpVolume: 0.85
     m_pumpDelay: 0.42
+  - m_weaponType: 3
+    m_gunshots:
+    - {fileID: 8300000, guid: 694c0ee2d149f144f8e72e5e09015950, type: 3}
+    - {fileID: 8300000, guid: 98b6de5e3a09a2444920d0e25f4aa338, type: 3}
+    - {fileID: 8300000, guid: 5bc9e4e425651ae458fda342b1cb109d, type: 3}
+    - {fileID: 8300000, guid: 6f89e457f0d85b84d8a729f8f1513006, type: 3}
+    - {fileID: 8300000, guid: 5ca26391c7507fa449bf25d5fe7265fb, type: 3}
+    m_gunshotVolume: 1
+    m_minimumDistance: 3
+    m_maximumDistance: 35
+    m_spatialBlend: 1
+    m_pitchRange: {x: 0.97, y: 1.03}
+    m_maximumGunshotVoices: 6
+    m_firingStopClip: {fileID: 0}
+    m_firingStopVolume: 0
+    m_pumpClip: {fileID: 0}
+    m_pumpVolume: 0
+    m_pumpDelay: 0
+  - m_weaponType: 4
+    m_gunshots:
+    - {fileID: 8300000, guid: a98537918d51770428f1314034a17112, type: 3}
+    m_gunshotVolume: 1
+    m_minimumDistance: 3
+    m_maximumDistance: 35
+    m_spatialBlend: 1
+    m_pitchRange: {x: 0.97, y: 1.03}
+    m_maximumGunshotVoices: 6
+    m_firingStopClip: {fileID: 0}
+    m_firingStopVolume: 0
+    m_pumpClip: {fileID: 0}
+    m_pumpVolume: 0
+    m_pumpDelay: 0
+    m_explosionClip: {fileID: 8300000, guid: c9330f7fdb6947b408350d570dc862ea, type: 3}
+    m_explosionVolume: 1

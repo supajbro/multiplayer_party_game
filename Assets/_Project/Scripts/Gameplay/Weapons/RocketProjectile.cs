@@ -172,6 +172,8 @@ namespace CouchGuys.Gameplay.Weapons
         [ObserversRpc(RunLocally = true)]
         private void PlayExplosionObserversRpc(Vector3 position, Vector3 ground, float radius)
         {
+            if (NetworkManager.IsClientStarted)
+                WeaponAudioEmitter.PlayRocketExplosion(position);
             if (NetworkManager.IsClientStarted && m_explosionPrefab != null)
                 RocketExplosionVfx.Play(m_explosionPrefab, position, ground, radius);
         }

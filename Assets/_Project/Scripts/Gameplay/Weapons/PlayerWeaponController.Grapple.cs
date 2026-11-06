@@ -198,7 +198,8 @@ namespace CouchGuys.Gameplay.Weapons
             if (TryGetNearestNonSelfHit(aimOrigin, forward, distance, out RaycastHit aimHit)) point = aimHit.point;
             Vector3 direction = point - muzzle;
             if (direction.sqrMagnitude < 0.001f ||
-                !TryGetNearestNonSelfHit(muzzle, direction.normalized, range, out RaycastHit hit)) return;
+                !TryGetNearestNonSelfHit(muzzle, direction.normalized, range, out RaycastHit hit))
+            { ShowGrappleShotObserversRpc(muzzle, false); return; }
 
             NetworkObject target = null;
             PlayerHealth player = hit.collider.GetComponentInParent<PlayerHealth>();
@@ -215,9 +216,11 @@ namespace CouchGuys.Gameplay.Weapons
             bool world = target == null;
             // Unsupported dynamic/character targets must not become immovable world anchors.
             if (world && (player != null || thief != null || couch != null || pedestrian != null ||
-                (body != null && !body.isKinematic))) return;
+                (body != null && !body.isKinematic)))
+            { ShowGrappleShotObserversRpc(muzzle, false); return; }
             if (!world && (!IsValidGrappleTarget(target) ||
-                (GrappleClaims.TryGetValue(target, out PlayerWeaponController claimant) && claimant != null && claimant != this))) return;
+                (GrappleClaims.TryGetValue(target, out PlayerWeaponController claimant) && claimant != null && claimant != this)))
+            { ShowGrappleShotObserversRpc(muzzle, false); return; }
 
             if (thief != null) thief.SetGrappledServer(true);
             if (pedestrian != null) pedestrian.SetGrappledServer(true);
@@ -247,7 +250,7 @@ namespace CouchGuys.Gameplay.Weapons
             m_grappleAttached.Value = true;
             m_grappleEndsAt = Time.unscaledTime + (m_grappleSettings != null ? m_grappleSettings.MaximumPullDuration : 8f);
             m_grappleShotId.Value++;
-            ShowGrappleShotObserversRpc();
+            ShowGrappleShotObserversRpc(muzzle, true);
         }
 
         [ServerRpc]
@@ -258,8 +261,12 @@ namespace CouchGuys.Gameplay.Weapons
         }
 
         [ObserversRpc(RunLocally = true)]
-        private void ShowGrappleShotObserversRpc()
+        private void ShowGrappleShotObserversRpc(Vector3 muzzle, bool attached)
         {
+            // No predicted grapple audio: this event plays once for owner and observers,
+            // including misses, and is never sent by the ongoing pull/update path.
+            if (NetworkManager.IsClientStarted) m_audio?.PlayShot(PlayerWeaponType.GrappleGun, muzzle);
+            if (!attached) return;
             m_visualRecoil = 7f;
             m_visualRecoilDistance = 0.04f;
             m_animationDriver?.PlayWeaponShot(PlayerWeaponType.Pistol);

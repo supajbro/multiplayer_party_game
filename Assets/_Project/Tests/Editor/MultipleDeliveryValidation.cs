@@ -29,7 +29,7 @@ namespace CouchGuys.Editor
             s_runner.Execute(new ExecutionSettings(new Filter
             {
                 testMode = TestMode.EditMode,
-                testNames = new[] { "CouchGuys.Tests.Editor.MultipleDeliveryTests" }
+                testNames = new[] { "CouchGuys.Tests.Editor.MultipleDeliveryTests", "CouchGuys.Tests.Editor.TruckCargoTests" }
             }));
         }
 
