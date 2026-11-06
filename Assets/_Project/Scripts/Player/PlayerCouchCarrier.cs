@@ -69,6 +69,8 @@ namespace CouchGuys.Player
         private uint m_dispatcherSession;
         private DispatcherMenuController m_dispatcherMenu;
         private string m_sledInteractionPrompt = string.Empty;
+        private string m_sledFeedback;
+        private float m_sledFeedbackUntil;
 
 
         internal DebugCouchBotSettings DebugBotSettings => m_debugBot;
@@ -77,7 +79,7 @@ namespace CouchGuys.Player
         public CouchCarryController CarriedCouch => m_carriedCouch.Value != null &&
             m_carriedCouch.Value.TryGetComponent(out CouchCarryController couch) ? couch : null;
         public SledController CarriedSled => CarriedCouch != null ? CarriedCouch.GetComponent<SledController>() : null;
-        public string SledInteractionPrompt => m_sledInteractionPrompt;
+        public string SledInteractionPrompt => Time.unscaledTime < m_sledFeedbackUntil ? m_sledFeedback : m_sledInteractionPrompt;
         // The root can sit below the floor because the character capsule has an offset.
         // Measure reach from the body so raised handles remain within arm's reach.
         internal Vector3 SledGrabOrigin => m_carrierCollider != null
@@ -128,7 +130,8 @@ namespace CouchGuys.Player
             if (m_input != null && m_input.InteractPressedThisFrame &&
                 !(TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.HasPriorityWorldInteraction()) &&
                 (health == null || !health.HasReviveInteraction) &&
-                (truckInteractor == null || !truckInteractor.HasPriorityWorldInteraction()))
+                (truckInteractor == null || !truckInteractor.HasPriorityWorldInteraction()) &&
+                m_input.TryConsumeInteractPress())
             {
                 if (IsCarrying)
                 {
@@ -796,13 +799,18 @@ namespace CouchGuys.Player
                 !sledObject.TryGetComponent(out SledController sled) || sled.UnloadPoint == null ||
                 (TryGetComponent(out PlayerHealth health) && !health.IsAlive) ||
                 Vector3.Distance(SledGrabOrigin, sled.UnloadPoint.position) > m_interactionRange + m_serverRangeTolerance) return;
-            if (!sled.TryUnloadTopCouchServer() && Owner.IsValid)
-                ShowSledUnloadBlockedTargetRpc(Owner);
+            if (sled.MountedCouchCount == 0) return;
+            if (!sled.TryUnloadTopCouchServer(out string reason) && Owner.IsValid)
+                ShowSledFeedbackTargetRpc(Owner, reason);
         }
 
         [TargetRpc]
-        private void ShowSledUnloadBlockedTargetRpc(NetworkConnection connection) =>
-            DialogueShopUI.Instance.ShowNotice("Clear the space in front of the sled to unload a couch.");
+        private void ShowSledFeedbackTargetRpc(NetworkConnection connection, string message)
+        {
+            if (!IsOwner) return;
+            m_sledFeedback = message;
+            m_sledFeedbackUntil = Time.unscaledTime + 2.5f;
+        }
 
         [ServerRpc]
         private void RequestReleaseServerRpc()
@@ -815,7 +823,7 @@ namespace CouchGuys.Player
             if (sled != null && couch != null && couch.ActiveCarrierCount == 0)
             {
                 if (!sled.HasCargoSpace && Owner.IsValid)
-                    DialogueShopNoticeTargetRpc(Owner, "Sled full. Couch released.");
+                    ShowSledFeedbackTargetRpc(Owner, "Sled full. Couch released.");
                 else sled.TryLoadCouchServer(couch);
             }
         }

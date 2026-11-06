@@ -221,7 +221,7 @@ namespace CouchGuys.Gameplay.Couch
             m_modelVariantIndex.OnChange += OnModelVariantChanged;
             m_loadedTruck.OnChange += OnLoadedTruckChanged;
             m_mountedHoverboard.OnChange += OnHoverboardChanged;
-            m_mountedSled.OnChange += OnLoadedTruckChanged;
+            m_mountedSled.OnChange += OnMountedSledChanged;
             m_sledMountPosition.OnChange += OnSledMountPositionChanged;
             ApplyWeightAndStability();
             ApplyRuntimePhysicsConfiguration();
@@ -269,7 +269,7 @@ namespace CouchGuys.Gameplay.Couch
             m_modelVariantIndex.OnChange -= OnModelVariantChanged;
             m_loadedTruck.OnChange -= OnLoadedTruckChanged;
             m_mountedHoverboard.OnChange -= OnHoverboardChanged;
-            m_mountedSled.OnChange -= OnLoadedTruckChanged;
+            m_mountedSled.OnChange -= OnMountedSledChanged;
             m_sledMountPosition.OnChange -= OnSledMountPositionChanged;
             if (m_appliedSled != null) m_appliedSled.ForgetMountedCouch(this);
             if (m_runtimePhysicsMaterial != null)
@@ -888,6 +888,14 @@ namespace CouchGuys.Gameplay.Couch
             if (m_cargoTransition == null) ApplyLoadedStateImmediately();
         }
 
+        private bool m_sledReleasePending;
+
+        private void OnMountedSledChanged(NetworkObject previous, NetworkObject next, bool asServer)
+        {
+            m_sledReleasePending = false;
+            OnLoadedTruckChanged(previous, next, asServer);
+        }
+
         private void ApplyLoadedStateImmediately()
         {
             if (!m_hoverboardReleasePending && m_mountedHoverboard.Value != null &&
@@ -903,10 +911,10 @@ namespace CouchGuys.Gameplay.Couch
                 if (m_hoverboardTransition >= 1f) transform.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
                 return;
             }
-            SledController nextSled = MountedSled;
+            SledController nextSled = m_sledReleasePending ? null : MountedSled;
             if (m_appliedSled != null && m_appliedSled != nextSled) m_appliedSled.ForgetMountedCouch(this);
             m_appliedSled = nextSled;
-            if (m_mountedSled.Value != null && m_mountedSled.Value.TryGetComponent(out SledController sled) &&
+            if (!m_sledReleasePending && m_mountedSled.Value != null && m_mountedSled.Value.TryGetComponent(out SledController sled) &&
                 sled.CouchAnchor != null)
             {
                 SetCargoPhysics(true);
@@ -1009,6 +1017,7 @@ namespace CouchGuys.Gameplay.Couch
         [Server]
         internal void UnloadFromSledServer(Vector3 position, Quaternion rotation)
         {
+            if (!IsServerInitialized || MountedSled == null) return;
             UnmountFromSledServer();
             TeleportServer(position, rotation);
             ApplySledUnloadPoseObserversRpc(position, rotation);
@@ -1019,6 +1028,9 @@ namespace CouchGuys.Gameplay.Couch
         {
             // The final world pose must be applied after detaching, even if transform
             // samples arrive before the attachment SyncVar on a remote peer.
+            m_sledReleasePending = m_mountedSled.Value != null;
+            if (m_appliedSled != null) m_appliedSled.ForgetMountedCouch(this);
+            m_appliedSled = null;
             transform.SetParent(null, true);
             transform.SetPositionAndRotation(position, rotation);
             SetCargoPhysics(false);

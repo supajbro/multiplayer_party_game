@@ -209,28 +209,46 @@ namespace CouchGuys.Gameplay.Sled
         }
 
         [Server]
-        internal bool TryUnloadTopCouchServer()
+        internal bool TryUnloadTopCouchServer(out string reason)
         {
+            reason = "No couch to unload.";
             if (!IsServerInitialized || m_cargo.Count == 0) return false;
             CouchCarryController couch = m_cargo[m_cargo.Count - 1];
-            if (couch == null) return false;
-            Vector3 position = transform.TransformPoint(m_unloadOffset);
+            if (couch == null || couch.MountedSled != this) return false;
+            if (!TryGetUnloadPose(couch, out Vector3 position, out Quaternion rotation, out reason)) return false;
+            // Validation is complete before any inventory or attachment state changes.
+            couch.UnloadFromSledServer(position, rotation);
+            return true;
+        }
+
+        private bool IsIgnoredUnloadCollider(Collider hit) => hit.transform.IsChildOf(transform) ||
+            hit.GetComponentInParent<PlayerCouchCarrier>() != null;
+
+        private bool TryGetUnloadPose(CouchCarryController couch, out Vector3 position,
+            out Quaternion rotation, out string reason)
+        {
+            // Unload upright even when the sled is tilted, so the bounds do not
+            // intersect the supporting floor on an otherwise clear placement.
+            rotation = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+            position = transform.TransformPoint(m_unloadOffset);
+            reason = "Move the sled near clear, level ground to unload a couch.";
             float ground = position.y;
             float nearest = float.PositiveInfinity;
             foreach (var hit in Physics.RaycastAll(position + Vector3.up * 4f, Vector3.down, 8f, ~0, QueryTriggerInteraction.Ignore))
             {
-                if (hit.collider.transform.IsChildOf(transform) || hit.collider.GetComponentInParent<PlayerCouchCarrier>() != null ||
+                if (IsIgnoredUnloadCollider(hit.collider) ||
                     hit.normal.y < .65f || hit.distance >= nearest) continue;
                 nearest = hit.distance;
                 ground = hit.point.y;
             }
             if (float.IsPositiveInfinity(nearest)) return false;
             position.y = ground - couch.CargoBounds.min.y * couch.transform.lossyScale.y + .04f;
-            Vector3 centre = position + transform.rotation * Vector3.Scale(couch.CargoBounds.center, couch.transform.lossyScale);
+            Vector3 centre = position + rotation * Vector3.Scale(couch.CargoBounds.center, couch.transform.lossyScale);
+            reason = "Clear the space in front of the sled to unload a couch.";
             foreach (var hit in Physics.OverlapBox(centre, Vector3.Scale(couch.CargoBounds.extents, couch.transform.lossyScale) * .98f,
-                         transform.rotation, ~0, QueryTriggerInteraction.Ignore))
-                if (!hit.transform.IsChildOf(transform)) return false;
-            couch.UnloadFromSledServer(position, transform.rotation);
+                         rotation, ~0, QueryTriggerInteraction.Ignore))
+                if (!IsIgnoredUnloadCollider(hit)) return false;
+            reason = string.Empty;
             return true;
         }
 

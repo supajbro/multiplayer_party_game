@@ -32,6 +32,16 @@ namespace CouchGuys.Input
         private InputAction m_teleportToDeliveryAction;
         private InputActionAsset m_runtimeInputActions;
         private bool m_gameplaySuppressed;
+        private int m_consumedInteractFrame = -1;
+
+        // Consumers claim a press only after selecting their interaction. Reading intent
+        // for prompts/priority checks must not consume it.
+        public bool TryConsumeInteractPress(bool vehicle = false)
+        {
+            if (!(vehicle ? VehicleInteractPressedThisFrame : InteractPressedThisFrame)) return false;
+            m_consumedInteractFrame = Time.frameCount;
+            return true;
+        }
         public bool GameplaySuppressionRequested => m_gameplaySuppressed;
         private bool GameplaySuppressed => m_gameplaySuppressed || MenuBlocked;
         private bool MenuBlocked => CouchGuys.UI.LoadingScreenController.BlocksGameplayInput ||
@@ -45,12 +55,12 @@ namespace CouchGuys.Input
         public Vector2 VehicleLook => MenuBlocked ? Vector2.zero : m_lookAction?.ReadValue<Vector2>() ?? Vector2.zero;
         /// <summary>Unfiltered interact state used to support hold-to-enter/exit while player gameplay is suppressed.</summary>
         public bool VehicleInteractHeld => !MenuBlocked && (m_interactAction?.IsPressed() ?? false);
-        public bool VehicleInteractPressedThisFrame => !MenuBlocked && (m_interactAction?.WasPressedThisFrame() ?? false);
+        public bool VehicleInteractPressedThisFrame => m_consumedInteractFrame != Time.frameCount && !MenuBlocked && (m_interactAction?.WasPressedThisFrame() ?? false);
         public bool VehicleHornPressedThisFrame => !MenuBlocked && (Mouse.current?.leftButton.wasPressedThisFrame ?? false);
         public Vector2 Look => !GameplaySuppressed ? m_lookAction?.ReadValue<Vector2>() ?? Vector2.zero : Vector2.zero;
         public bool JumpPressedThisFrame => !GameplaySuppressed && (m_jumpAction?.WasPressedThisFrame() ?? false);
         public bool SprintHeld => !GameplaySuppressed && (m_sprintAction?.IsPressed() ?? false);
-        public bool InteractPressedThisFrame => !GameplaySuppressed && (m_interactAction?.WasPressedThisFrame() ?? false);
+        public bool InteractPressedThisFrame => m_consumedInteractFrame != Time.frameCount && !GameplaySuppressed && (m_interactAction?.WasPressedThisFrame() ?? false);
         public bool ShootHeld => !GameplaySuppressed && (m_shootAction?.IsPressed() ?? false);
         public bool ShootPressedThisFrame => !GameplaySuppressed && (m_shootAction?.WasPressedThisFrame() ?? false);
         public bool DropWeaponPressedThisFrame => !GameplaySuppressed && (Keyboard.current?.qKey.wasPressedThisFrame ?? false);

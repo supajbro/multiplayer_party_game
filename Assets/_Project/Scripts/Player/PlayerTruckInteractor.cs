@@ -116,7 +116,7 @@ namespace CouchGuys.Player
                     m_nearbyTruck = null;
                     m_holdProgress = 0f;
                     m_worldInteractionPrompt = GetRearPrompt(m_rearInteractionTruck);
-                    if (Time.time >= m_nextInteractionTime && m_input.VehicleInteractPressedThisFrame)
+                    if (Time.time >= m_nextInteractionTime && m_input.TryConsumeInteractPress(true))
                     {
                         m_nextInteractionTime = Time.time + m_rearInteractionTruck.Settings.InteractionCooldown;
                         RequestRearInteractionServerRpc(m_rearInteractionTruck.NetworkObject);

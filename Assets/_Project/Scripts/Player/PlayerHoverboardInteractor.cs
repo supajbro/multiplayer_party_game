@@ -93,10 +93,12 @@ namespace CouchGuys.Player
             if (Time.time < m_nextInteraction || !m_input.VehicleInteractPressedThisFrame) return;
             if (current != null)
             {
+                if (!m_input.TryConsumeInteractPress(true)) return;
                 m_nextInteraction = Time.time + current.Settings.InteractionCooldown; RequestExitServerRpc();
             }
             else if (HasPriorityWorldInteraction())
             {
+                if (!m_input.TryConsumeInteractPress(true)) return;
                 m_nextInteraction = Time.time + m_nearby.Settings.InteractionCooldown;
                 RequestInteractionServerRpc(m_nearby.NetworkObject, m_magnet);
             }

@@ -169,6 +169,58 @@ namespace CouchGuys.Tests.Editor
             }
         }
 
+        [TestCase(0f)]
+        [TestCase(12f)]
+        public void UnloadPlacementIgnoresPlayerAndStackButRejectsRealObstacles(float tilt)
+        {
+            var sledObject = Object.Instantiate(Prefab("Vehicles/Sled"));
+            var firstObject = Object.Instantiate(Prefab("Couch"));
+            var topObject = Object.Instantiate(Prefab("Couch"));
+            var player = Object.Instantiate(Prefab("Player"));
+            var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var obstacle = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                var sled = sledObject.GetComponent<SledController>();
+                var first = firstObject.GetComponent<CouchCarryController>();
+                var top = topObject.GetComponent<CouchCarryController>();
+                Call(first, "Awake"); Call(top, "Awake");
+                Value(first, "m_deliveryId", 41); Value(top, "m_deliveryId", 42);
+                MountReplica(first, sled, (Vector3)Call(sled, "GetMountPosition", first));
+                MountReplica(top, sled, (Vector3)Call(sled, "GetMountPosition", top));
+                sled.transform.rotation = Quaternion.Euler(tilt, 35f, 0f);
+                floor.transform.position = Vector3.down * .5f;
+                floor.transform.localScale = new Vector3(30f, 1f, 30f);
+                Vector3 destination = sled.transform.TransformPoint(new Vector3(0f, 0f, 2.4f));
+                player.transform.position = destination;
+                obstacle.SetActive(false);
+                Physics.SyncTransforms();
+                object[] args = { top, Vector3.zero, Quaternion.identity, null };
+                var method = typeof(SledController).GetMethod("TryGetUnloadPose", Private);
+                Assert.That((bool)method.Invoke(sled, args), Is.True, "The player must not block unloading.");
+                Assert.That(Vector3.Dot((Quaternion)args[2] * Vector3.up, Vector3.up), Is.EqualTo(1f).Within(.001f));
+                var bounds = (Bounds)typeof(CouchCarryController).GetField("m_cargoBounds", Private).GetValue(top);
+                obstacle.transform.position = (Vector3)args[1] + (Quaternion)args[2] *
+                    Vector3.Scale(bounds.center, top.transform.lossyScale);
+                obstacle.transform.localScale = new Vector3(1f, 12f, 1f);
+                obstacle.SetActive(true);
+                Physics.SyncTransforms();
+                Assert.That((bool)method.Invoke(sled, args), Is.False, "A solid obstacle must block unloading.");
+                Assert.That(sled.MountedCouchCount, Is.EqualTo(2));
+                Assert.That(top.transform.parent, Is.SameAs(sled.CouchAnchor));
+                Assert.That(top.DeliveryId, Is.EqualTo(42));
+                obstacle.SetActive(false);
+                floor.SetActive(false);
+                Physics.SyncTransforms();
+                Assert.That((bool)method.Invoke(sled, args), Is.False, "Missing supporting ground must block unloading.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(player); Object.DestroyImmediate(obstacle); Object.DestroyImmediate(floor);
+                Object.DestroyImmediate(topObject); Object.DestroyImmediate(firstObject); Object.DestroyImmediate(sledObject);
+            }
+        }
+
         [Test]
         public void CouchLoadingAcceptsOffCentrePlacementButRejectsGroundAndDistantItems()
         {
@@ -239,7 +291,9 @@ namespace CouchGuys.Tests.Editor
             tests.MixedCargoSharesCapacityAndWeaponReplicaDetachesCleanly();
             tests.CouchLoadingAcceptsOffCentrePlacementButRejectsGroundAndDistantItems();
             tests.ThreeWeaponRacksRemainDistinctAndPreservePickupAmmo();
-            Debug.Log("PASS: six sled cargo validation checks.");
+            tests.UnloadPlacementIgnoresPlayerAndStackButRejectsRealObstacles(0f);
+            tests.UnloadPlacementIgnoresPlayerAndStackButRejectsRealObstacles(12f);
+            Debug.Log("PASS: eight sled cargo validation checks.");
         }
 
         private static void MountReplica(CouchCarryController couch, SledController sled, Vector3 pose)
