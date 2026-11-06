@@ -812,7 +812,9 @@ namespace CouchGuys.Gameplay.Couch
             // Only the server chooses the final pose and restores simulation.
             if (IsServerInitialized)
             {
-                if (sourceTruck != null) sourceTruck.GetCouchUnloadPose(this, 0, out position, out rotation);
+                // Destruction already chose a safe pose before launching the wreck.
+                if (sourceTruck != null && !sourceTruck.IsDestroyed)
+                    sourceTruck.GetCouchUnloadPose(this, 0, out position, out rotation);
                 FinishCargoUnloadObserversRpc(position, rotation);
             }
             m_cargoTransition = null;

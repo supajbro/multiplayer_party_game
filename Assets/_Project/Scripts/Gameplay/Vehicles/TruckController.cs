@@ -12,7 +12,7 @@ namespace CouchGuys.Gameplay.Vehicles
 {
     [RequireComponent(typeof(NetworkObject), typeof(Rigidbody))]
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(VehicleAudioEmitter))]
+    [RequireComponent(typeof(VehicleAudioEmitter), typeof(VehicleDestruction))]
     [UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "CouchGuys.Gameplay.Vehicles", sourceAssembly: "Assembly-CSharp", sourceClassName: "VanController")]
     public sealed class TruckController : NetworkBehaviour
     {
@@ -249,6 +249,7 @@ namespace CouchGuys.Gameplay.Vehicles
 
         private void FixedUpdate()
         {
+            if (IsDestroyed) return;
             if (IsServerInitialized && m_batLaunch.Tick(m_rigidbody)) return;
             if (!IsServerInitialized || m_settings == null || m_rigidbody.isKinematic || IsGetawayTruck) return;
             if (Time.time - m_lastInputTime > 0.35f) m_driveInput = Vector2.zero;
@@ -557,6 +558,7 @@ namespace CouchGuys.Gameplay.Vehicles
             ReleaseAllOccupantsServer();
             SetDestroyedObserversRpc();
             m_getaway?.NotifyDestroyedServer();
+            GetComponent<VehicleDestruction>().DestroyServer(IsGetawayTruck ? m_getaway.DestructionSettings : m_settings.Destruction);
         }
 
         [Server]

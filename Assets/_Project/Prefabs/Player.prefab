@@ -1117,6 +1117,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.CameraSystem.ThirdPersonCameraController
   m_cameraTarget: {fileID: 300001}
   m_input: {fileID: 100003}
+  m_playerVisualRoot: {fileID: 2135271257120216723}
   m_cameraDistance: 4.5
   m_pivotHeight: 0.15
   m_shoulderOffset: 0.65

@@ -263,16 +263,33 @@ namespace CouchGuys.Player
         }
 
         [Server]
-        internal void ForceExitServer(TruckController truck) => ExitServer(truck);
+        internal void ForceExitServer(TruckController truck) => ExitServer(truck, true);
 
         [Server]
-        private void ExitServer(TruckController truck)
+        private void ExitServer(TruckController truck, bool forced = false)
         {
             if (truck == null || CurrentTruck != truck) return;
             if (!truck.TryGetExitPosition(NetworkObject, out Vector3 exitPosition, out Quaternion exitRotation))
             {
-                ShowVehicleFeedbackServer("Door exit is blocked");
-                return;
+                if (!forced)
+                {
+                    ShowVehicleFeedbackServer("Door exit is blocked");
+                    return;
+                }
+                // A destroyed/despawning truck must always release its occupants.
+                // Clear the entire chassis before restoring the player's capsule.
+                Vector3 direction = Vector3.ProjectOnPlane(transform.position - truck.transform.position, Vector3.up).normalized;
+                if (direction.sqrMagnitude < .01f) direction = truck.transform.right;
+                Bounds bounds = new Bounds(truck.transform.position, Vector3.zero);
+                foreach (Collider collider in truck.GetComponentsInChildren<Collider>())
+                    if (!collider.isTrigger) bounds.Encapsulate(collider.bounds);
+                float radius = new Vector2(bounds.extents.x, bounds.extents.z).magnitude + 1f;
+                exitPosition = bounds.center + direction * radius;
+                exitRotation = Quaternion.LookRotation(direction, Vector3.up);
+                if (Physics.Raycast(exitPosition + Vector3.up * (bounds.extents.y + 2f), Vector3.down,
+                    out RaycastHit ground, bounds.size.y + 8f, ~0, QueryTriggerInteraction.Ignore))
+                    exitPosition.y = ground.point.y + .1f;
+                else exitPosition.y = bounds.max.y + 1f;
             }
             truck.LeaveServer(this);
             m_currentTruckObject.Value = null;

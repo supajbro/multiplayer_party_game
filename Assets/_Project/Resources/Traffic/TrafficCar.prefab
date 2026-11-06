@@ -51,6 +51,7 @@ GameObject:
   - component: {fileID: 3361720526368209299}
   - component: {fileID: 859010020030040050}
   - component: {fileID: 208991203557030093}
+  - component: {fileID: 90155999123456789}
   m_Layer: 0
   m_Name: TrafficCar
   m_TagString: Untagged
@@ -254,6 +255,7 @@ MonoBehaviour:
   NetworkBehaviours:
   - {fileID: 3361720526368209299}
   - {fileID: 208991203557030093}
+  - {fileID: 90155999123456789}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -827,3 +829,20 @@ MeshRenderer:
   m_CorrespondingSourceObject: {fileID: 7263597454815622385, guid: 778f47703bae31546b0c5416707084d9, type: 3}
   m_PrefabInstance: {fileID: 1979305012609593613}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &90155999123456789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4713296498847513284}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6bf479f07b44ef4ab4a160e1146a66c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Vehicles.VehicleDestruction
+  _componentIndexCache: 2
+  _addedNetworkObject: {fileID: 4087385694241014534}
+  _networkObjectCache: {fileID: 4087385694241014534}
+  m_explosion: {fileID: 9053460245295789429, guid: acba88a1e79a35045bbe01fadaa860ea, type: 3}
+  m_explosionRadius: 5

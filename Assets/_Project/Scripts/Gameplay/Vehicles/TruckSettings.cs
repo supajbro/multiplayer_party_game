@@ -7,6 +7,9 @@ namespace CouchGuys.Gameplay.Vehicles
     [UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "CouchGuys.Gameplay.Vehicles", sourceAssembly: "Assembly-CSharp", sourceClassName: "VanSettings")]
     public sealed class TruckSettings : ScriptableObject
     {
+        [Header("Destruction")]
+        public CouchGuys.Gameplay.Vehicles.VehicleDestructionSettings Destruction = new(16f, 8f, 8f);
+
         [Header("General")]
         [SerializeField] private string m_displayName = "Truck";
 

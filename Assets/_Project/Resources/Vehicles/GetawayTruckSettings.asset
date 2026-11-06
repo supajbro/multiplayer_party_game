@@ -38,7 +38,6 @@ MonoBehaviour:
   StuckReverseDelay: 5
   StuckRecoveryTimeout: 25
   DepartureTimeout: 90
-  WreckLifetime: 3
   GroundOffset: 0.12
   ParkingClearance: {x: 1.8, y: 1.8, z: 4.5}
   DrivingClearance: {x: 1.65, y: 1.6, z: 3.9}
@@ -50,3 +49,8 @@ MonoBehaviour:
   CarRepelSpeed: 16
   CarLaunchSpeed: 6
   CarTumbleSpeed: 9
+  Destruction:
+    ExplosionLaunchForce: 16
+    RandomHorizontalForce: 8
+    RotationalTorque: 8
+    DestroyedVehicleLifetime: 10

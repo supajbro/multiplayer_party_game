@@ -11,6 +11,7 @@ namespace CouchGuys.Gameplay.Vehicles
 {
     /// <summary>Single server Rigidbody motor. Input is independent of player input devices.</summary>
     [RequireComponent(typeof(NetworkObject), typeof(Rigidbody))]
+    [RequireComponent(typeof(VehicleDestruction))]
     public sealed class MagneticHoverboardController : NetworkBehaviour
     {
         public static readonly HashSet<MagneticHoverboardController> ActiveBoards = new();
@@ -113,7 +114,7 @@ namespace CouchGuys.Gameplay.Vehicles
         {
             var generator = FindFirstObjectByType<CouchGuys.ProceduralGeneration.NeighbourhoodGenerator>();
             while (generator != null && !generator.HasGeneratedNeighbourhood) yield return null;
-            if (!IsServerInitialized) yield break;
+            if (!IsServerInitialized || IsDestroyed) yield break;
             Transform marker = generator != null ? generator.GeneratedStartingArea.RoadConnection : transform;
             bool placed = false;
             for (int ring=0; ring<5 && !placed; ring++) foreach (float side in new[] {1f,-1f})
@@ -166,7 +167,7 @@ namespace CouchGuys.Gameplay.Vehicles
 
         private void FixedUpdate()
         {
-            if (IsServerInitialized && !m_ready) { m_body.isKinematic = true; return; }
+            if (IsServerInitialized && !IsDestroyed && !m_ready) { m_body.isKinematic = true; return; }
             if (!IsServerInitialized || IsDestroyed || m_settings == null || m_body.isKinematic) return;
             if (m_batLaunch.Tick(m_body)) return;
             if (Driver != null && (!Driver.IsSpawned || !Driver.Owner.IsActive ||
@@ -460,6 +461,7 @@ namespace CouchGuys.Gameplay.Vehicles
                 couch.ReleaseHoverboardServer(position, rotation);
             }
             m_couch.Value = null;
+            GetComponent<VehicleDestruction>().DestroyServer(m_settings.Destruction);
         }
     }
 }

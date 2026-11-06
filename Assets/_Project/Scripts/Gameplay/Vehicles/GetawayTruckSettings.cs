@@ -7,6 +7,9 @@ namespace CouchGuys.Gameplay.Vehicles
     [CreateAssetMenu(menuName = "Couch Guys/Vehicles/Getaway Truck Settings")]
     public sealed class GetawayTruckSettings : ScriptableObject
     {
+        [Header("Destruction")]
+        public CouchGuys.Gameplay.Vehicles.VehicleDestructionSettings Destruction = new(16f, 8f, 8f);
+
         public NetworkObject TruckPrefab;
         [Tooltip("Truck-tuned version of the same driving profile used by rogue cars.")]
         public RogueCarSettings DrivingSettings;
@@ -34,7 +37,7 @@ namespace CouchGuys.Gameplay.Vehicles
         [Min(1f)] public float StuckReverseDelay = 5f;
         [Min(1f)] public float StuckRecoveryTimeout = 25f;
         [Min(1f)] public float DepartureTimeout = 90f;
-        [Min(.1f)] public float WreckLifetime = 3f;
+
         [Min(.1f)] public float GroundOffset = .12f;
         public Vector3 ParkingClearance = new Vector3(1.8f, 1.8f, 4.5f);
         [Tooltip("Half size of the chassis swept along road links to reject barriers and narrow passages.")]

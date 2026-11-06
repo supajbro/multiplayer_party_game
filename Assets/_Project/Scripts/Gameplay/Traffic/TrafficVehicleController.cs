@@ -11,7 +11,7 @@ namespace CouchGuys.Gameplay.Traffic
 {
     [RequireComponent(typeof(NetworkObject), typeof(Rigidbody))]
     [DisallowMultipleComponent]
-    [RequireComponent(typeof(VehicleAudioEmitter))]
+    [RequireComponent(typeof(VehicleAudioEmitter), typeof(VehicleDestruction))]
     public sealed class TrafficVehicleController : NetworkBehaviour
     {
         private readonly SyncVar<float> m_health = new SyncVar<float>();
@@ -38,7 +38,6 @@ namespace CouchGuys.Gameplay.Traffic
         private int m_waypointIndex;
         private float m_nextObstacleCheck;
         private bool m_pathObstructed;
-        private float m_despawnAt = float.PositiveInfinity;
         private MaterialPropertyBlock m_propertyBlock;
         private bool m_serverDriving;
         private bool m_warnedStationary;
@@ -204,6 +203,7 @@ namespace CouchGuys.Gameplay.Traffic
 
         private void FixedUpdate()
         {
+            if (IsDestroyed) return;
             if (IsServerInitialized && m_batLaunch.Tick(m_rigidbody)) return;
             if (!IsServerInitialized || !m_serverDriving || m_destroyed.Value || m_settings == null ||
                 m_route == null || m_route.Waypoints.Length < 2) return;
@@ -375,8 +375,6 @@ namespace CouchGuys.Gameplay.Traffic
         {
             if (m_visualInstance != null && m_visualInstance.TryGetComponent(out TrafficWheelAnimator wheels))
                 wheels.SetSteering(IsDestroyed ? 0f : m_wheelSteering.Value);
-            if (m_destroyed.Value && Time.time >= m_despawnAt)
-                m_manager?.DespawnVehicle(this);
             if (m_serverDriving && !m_destroyed.Value && !m_warnedStationary &&
                 Time.time >= m_stationaryCheckAt &&
                 (m_rigidbody.position - m_drivingStartPosition).sqrMagnitude < 0.0625f)
@@ -458,12 +456,10 @@ namespace CouchGuys.Gameplay.Traffic
         {
             if (m_destroyed.Value) return;
             m_destroyed.Value = true;
-            m_rigidbody.linearVelocity = Vector3.zero;
-            m_rigidbody.angularVelocity = Vector3.zero;
-            m_rigidbody.isKinematic = true;
+            m_serverDriving = false;
+            m_wheelSteering.Value = 0f;
             ApplyExplosionDamage();
-            PlayExplosionObserversRpc();
-            m_despawnAt = Time.time + 2.2f;
+            GetComponent<VehicleDestruction>().DestroyServer(m_rogueSettings != null ? m_rogueSettings.Destruction : m_settings.Destruction);
         }
 
         [Server]
@@ -472,15 +468,14 @@ namespace CouchGuys.Gameplay.Traffic
             if (m_destroyed.Value) return;
             m_health.Value = 0f;
             DestroyVehicleServer();
-            // The existing destroyed state stops both traffic and rogue driving.
-            // Keep replication and timed wreck cleanup while allowing a comic recoil.
+            // Add directional recoil to the shared explosion launch.
             away = Vector3.ProjectOnPlane(away, Vector3.up).normalized;
             m_rigidbody.isKinematic = false;
             m_rigidbody.constraints = RigidbodyConstraints.None;
             m_rigidbody.useGravity = true;
-            m_rigidbody.linearVelocity = away * Mathf.Max(0f, horizontalSpeed) + Vector3.up * Mathf.Max(0f, upwardSpeed);
+            m_rigidbody.AddForce(away * Mathf.Max(0f, horizontalSpeed) + Vector3.up * Mathf.Max(0f, upwardSpeed), ForceMode.VelocityChange);
             m_rigidbody.maxAngularVelocity = Mathf.Max(m_rigidbody.maxAngularVelocity, tumbleSpeed);
-            m_rigidbody.angularVelocity = Vector3.Cross(Vector3.up, away) * Mathf.Max(0f, tumbleSpeed);
+            m_rigidbody.AddTorque(Vector3.Cross(Vector3.up, away) * Mathf.Max(0f, tumbleSpeed), ForceMode.VelocityChange);
             m_rigidbody.WakeUp();
         }
 
@@ -572,23 +567,6 @@ namespace CouchGuys.Gameplay.Traffic
         // Client-only execution: the host hears the observer event exactly once.
         [ObserversRpc]
         private void PlaySplatObserversRpc(Vector3 position) => m_audio.PlaySplat(position);
-
-        [ObserversRpc(RunLocally = true)]
-        private void PlayExplosionObserversRpc()
-        {
-            ApplyDestroyedVisual(true);
-            GameObject flash = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            flash.name = "TrafficCarExplosion";
-            flash.transform.position = transform.position + Vector3.up * 0.6f;
-            flash.transform.localScale = Vector3.one * 2.4f;
-            Collider collider = flash.GetComponent<Collider>();
-            if (collider != null) Destroy(collider);
-            Renderer renderer = flash.GetComponent<Renderer>();
-            Material material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            material.color = new Color(1f, 0.24f, 0.02f);
-            renderer.material = material;
-            Destroy(flash, 0.22f);
-        }
 
         private void OnHealthChanged(float previous, float next, bool asServer)
         {

@@ -5,6 +5,9 @@ namespace CouchGuys.Gameplay.Traffic
     [CreateAssetMenu(fileName = "CarSettings", menuName = "Couch Guys/Traffic/Car Settings")]
     public sealed class CarSettings : ScriptableObject
     {
+        [Header("Destruction")]
+        public CouchGuys.Gameplay.Vehicles.VehicleDestructionSettings Destruction = new(19f, 10f, 11f);
+
         [Header("Driving")]
         [SerializeField, Min(1f)] private float m_maximumHealth = 120f;
         [SerializeField, Min(1f), Tooltip("Metres per second.")] private float m_maximumDrivingSpeed = 13f;

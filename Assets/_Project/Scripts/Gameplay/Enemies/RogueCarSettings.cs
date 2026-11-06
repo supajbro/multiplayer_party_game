@@ -5,6 +5,9 @@ namespace CouchGuys.Gameplay.Enemies
     [CreateAssetMenu(fileName = "RogueCarSettings", menuName = "Couch Guys/Enemies/Rogue Car Settings")]
     public sealed class RogueCarSettings : ScriptableObject
     {
+        [Header("Destruction")]
+        public CouchGuys.Gameplay.Vehicles.VehicleDestructionSettings Destruction = new(19f, 10f, 11f);
+
         [Header("Movement")]
         [Min(0.1f)] public float MaxSpeed = 15f;
         [Min(0f)] public float Acceleration = 10f;

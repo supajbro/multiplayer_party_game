@@ -26,3 +26,8 @@ MonoBehaviour:
   m_explosionDamage: 38
   m_explosionKnockback: 18
   m_explosionRadius: 6
+  Destruction:
+    ExplosionLaunchForce: 19
+    RandomHorizontalForce: 10
+    RotationalTorque: 11
+    DestroyedVehicleLifetime: 10

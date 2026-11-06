@@ -5,6 +5,9 @@ namespace CouchGuys.Gameplay.Vehicles
     [CreateAssetMenu(menuName = "Couch Guys/Vehicles/Magnetic Hoverboard Settings")]
     public sealed class MagneticHoverboardSettings : ScriptableObject
     {
+        [Header("Destruction")]
+        public CouchGuys.Gameplay.Vehicles.VehicleDestructionSettings Destruction = new(24f, 14f, 15f);
+
         [Header("Movement (metres / seconds)")]
         [Min(.1f)] public float MaximumForwardSpeed = 13f;
         [Min(.1f)] public float ReverseSpeed = 4f;

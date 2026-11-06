@@ -12,6 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 73288e0222416cf478a65cf57466951e, type: 3}
   m_Name: MagneticHoverboardSettings
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Vehicles.MagneticHoverboardSettings
+  Destruction:
+    ExplosionLaunchForce: 24
+    RandomHorizontalForce: 14
+    RotationalTorque: 15
+    DestroyedVehicleLifetime: 10
   MaximumForwardSpeed: 25
   ReverseSpeed: 8
   LoadedSpeed: 25
@@ -48,7 +53,7 @@ MonoBehaviour:
   CollisionFriction: 0.04
   CollisionRestitution: 0.03
   CollisionBraking: 0.3
-  MaximumHealth: 2500
+  MaximumHealth: 100
   DamageSettings: {fileID: 11400000, guid: 411522100326939408e30a60a4d7b0ca, type: 2}
   DamageTakenMultiplier: 0.5
   MountRange: 1.8

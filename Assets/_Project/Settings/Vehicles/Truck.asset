@@ -12,6 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d69b43e482dc7742ae7443bfe012dbc, type: 3}
   m_Name: LightTruckSettings
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Vehicles.TruckSettings
+  Destruction:
+    ExplosionLaunchForce: 16
+    RandomHorizontalForce: 8
+    RotationalTorque: 8
+    DestroyedVehicleLifetime: 10
   m_displayName: Light Truck
   m_maxForwardSpeed: 45
   m_maxReverseSpeed: 22

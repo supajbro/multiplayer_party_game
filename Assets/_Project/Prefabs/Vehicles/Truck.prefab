@@ -2721,6 +2721,7 @@ GameObject:
   - component: {fileID: 1210505046444709441}
   - component: {fileID: 4766884851468984819}
   - component: {fileID: 859010020030040050}
+  - component: {fileID: 90155999123456789}
   m_Layer: 0
   m_Name: Truck
   m_TagString: Untagged
@@ -2828,6 +2829,7 @@ MonoBehaviour:
   NetworkBehaviours:
   - {fileID: 1210505046444709441}
   - {fileID: 4766884851468984819}
+  - {fileID: 90155999123456789}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -4170,3 +4172,20 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -4807682793018310294, guid: 3c64cf0e4879457418ff734ae13c915b, type: 3}
   m_PrefabInstance: {fileID: 4733226626174170564}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &90155999123456789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6179796800887206169}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6bf479f07b44ef4ab4a160e1146a66c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Vehicles.VehicleDestruction
+  _componentIndexCache: 2
+  _addedNetworkObject: {fileID: 5873252375396000528}
+  _networkObjectCache: {fileID: 5873252375396000528}
+  m_explosion: {fileID: 9053460245295789429, guid: acba88a1e79a35045bbe01fadaa860ea, type: 3}
+  m_explosionRadius: 5

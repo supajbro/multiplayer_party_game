@@ -5700,6 +5700,7 @@ GameObject:
   - component: {fileID: 3899130335450072563}
   - component: {fileID: 6879562682700214187}
   - component: {fileID: 3304438917182979557}
+  - component: {fileID: 90155999123456789}
   m_Layer: 0
   m_Name: ThiefGetawayTruck
   m_TagString: Untagged
@@ -5808,6 +5809,7 @@ MonoBehaviour:
   - {fileID: 1210505046444709441}
   - {fileID: 4766884851468984819}
   - {fileID: 912000000000000001}
+  - {fileID: 90155999123456789}
   InitializedParentNetworkBehaviour: {fileID: 0}
   InitializedNestedNetworkObjects: []
   RuntimeParentNetworkBehaviour: {fileID: 0}
@@ -5945,7 +5947,6 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 5873252375396000528}
   _networkObjectCache: {fileID: 5873252375396000528}
   m_settings: {fileID: 11400000, guid: 382bf7edefbe4c0d86c3305759d3f106, type: 2}
-  m_explosion: {fileID: 9053460245295789429, guid: acba88a1e79a35045bbe01fadaa860ea, type: 3}
   m_bodyRenderer: {fileID: 0}
   m_bodyColour: {r: 0.35, g: 0.08, b: 0.12, a: 1}
 --- !u!208 &912000000000000002
@@ -8057,3 +8058,20 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &90155999123456789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6179796800887206169}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6bf479f07b44ef4ab4a160e1146a66c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Vehicles.VehicleDestruction
+  _componentIndexCache: 3
+  _addedNetworkObject: {fileID: 5873252375396000528}
+  _networkObjectCache: {fileID: 5873252375396000528}
+  m_explosion: {fileID: 9053460245295789429, guid: acba88a1e79a35045bbe01fadaa860ea, type: 3}
+  m_explosionRadius: 5

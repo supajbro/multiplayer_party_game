@@ -29,3 +29,8 @@ MonoBehaviour:
   SpawnChance: 0.6
   MaxActiveCars: 2
   MaxSpawnsPerDelivery: 30
+  Destruction:
+    ExplosionLaunchForce: 19
+    RandomHorizontalForce: 10
+    RotationalTorque: 11
+    DestroyedVehicleLifetime: 10

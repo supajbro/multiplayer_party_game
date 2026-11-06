@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using CouchGuys.Gameplay.Couch;
 using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Gameplay.Traffic;
-using CouchGuys.Gameplay.Weapons;
 using CouchGuys.ProceduralGeneration;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
@@ -18,7 +17,6 @@ namespace CouchGuys.Gameplay.Vehicles
     public sealed class GetawayTruckController : NetworkBehaviour
     {
         [SerializeField] private GetawayTruckSettings m_settings;
-        [SerializeField] private RocketExplosionVfx m_explosion;
         [SerializeField] private Renderer m_bodyRenderer;
         [SerializeField] private Color m_bodyColour = new Color(.35f, .08f, .12f);
         private readonly SyncVar<GetawayTruckState> m_state = new(GetawayTruckState.Waiting);
@@ -46,11 +44,11 @@ namespace CouchGuys.Gameplay.Vehicles
         private float m_nextRoadCheck;
         private float m_escapeStarted;
         private float m_departureStarted;
-        private float m_destroyedAt;
         private bool m_departure;
         private bool m_stolen;
 
         public GetawayTruckState State => m_state.Value;
+        public VehicleDestructionSettings DestructionSettings => m_settings.Destruction;
         public float MaximumHealth => m_maximumHealth.Value > 0f ? m_maximumHealth.Value :
             m_settings != null ? m_settings.Health : m_truck.Settings.MaxHealth;
         public bool IsAvailable => !m_departure && m_truck != null && !m_truck.IsDestroyed &&
@@ -246,31 +244,21 @@ namespace CouchGuys.Gameplay.Vehicles
         {
             if (State == GetawayTruckState.Destroyed) return;
             m_state.Value = GetawayTruckState.Destroyed;
-            m_destroyedAt = Time.time;
             m_route = null;
-            m_body.isKinematic = false;
-            m_body.linearVelocity = Vector3.zero;
-            m_body.angularVelocity = Vector3.zero;
-            ExplodeObserversRpc();
+            ClearDestroyedVisualObserversRpc();
             m_delivery?.NotifyGetawayDestroyedServer(this);
         }
 
         [ObserversRpc(RunLocally = true)]
-        private void ExplodeObserversRpc()
+        private void ClearDestroyedVisualObserversRpc()
         {
             if (m_bodyRenderer != null) m_bodyRenderer.SetPropertyBlock(null);
-            if (NetworkManager.IsClientStarted && m_explosion != null)
-                RocketExplosionVfx.Play(m_explosion, transform.position + Vector3.up, transform.position, 5f);
         }
 
         private void Update()
         {
             if (!IsServerInitialized || m_roads == null) return;
-            if (m_truck.IsDestroyed)
-            {
-                if (Time.time >= m_destroyedAt + m_settings.WreckLifetime) Despawn(NetworkObject);
-                return;
-            }
+            if (m_truck.IsDestroyed) return;
             if (m_departure)
             {
                 if (Time.time >= m_departureStarted + m_settings.DepartureTimeout) { Despawn(NetworkObject); return; }
@@ -480,7 +468,7 @@ namespace CouchGuys.Gameplay.Vehicles
         private void FixedUpdate()
         {
             if (!IsServerInitialized || m_roads == null || m_settings.DrivingSettings == null || m_truck.IsBatLaunched) return;
-            if (m_truck.IsDestroyed) { m_motor.Stop(m_settings.DrivingSettings); return; }
+            if (m_truck.IsDestroyed) return;
             bool driving = State == GetawayTruckState.Arriving || State == GetawayTruckState.Approaching ||
                 State == GetawayTruckState.Escaping || State == GetawayTruckState.Departing;
             if (!driving)

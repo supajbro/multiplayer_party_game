@@ -136,9 +136,10 @@ namespace CouchGuys.Tests.Editor
             Assert.That(networkTransform.FindProperty("_clientAuthoritative").boolValue, Is.False);
             var controller = new SerializedObject(truck.GetComponent<GetawayTruckController>());
             Assert.That(controller.FindProperty("m_settings").objectReferenceValue, Is.EqualTo(settings));
-            Assert.That(controller.FindProperty("m_explosion").objectReferenceValue, Is.Not.Null);
+            var destruction = new SerializedObject(truck.GetComponent<VehicleDestruction>());
+            Assert.That(destruction.FindProperty("m_explosion").objectReferenceValue, Is.Not.Null);
             var network = new SerializedObject(settings.TruckPrefab);
-            Assert.That(network.FindProperty("NetworkBehaviours").arraySize, Is.EqualTo(3));
+            Assert.That(network.FindProperty("NetworkBehaviours").arraySize, Is.EqualTo(4));
             string guid = AssetDatabase.AssetPathToGUID(path);
             Assert.That(File.ReadAllText("Assets/_Project/Settings/NetworkSpawnablePrefabs.asset"), Does.Contain(guid));
         }

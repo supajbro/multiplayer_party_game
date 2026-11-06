@@ -188,6 +188,7 @@ namespace CouchGuys.Gameplay.Traffic
                     m_activeVehicles.RemoveAt(index);
                     continue;
                 }
+                if (vehicle.GetComponent<TrafficVehicleController>()?.IsDestroyed == true) continue;
                 if ((vehicle.transform.position - centre).sqrMagnitude > maximumDistanceSquared)
                 {
                     InstanceFinder.ServerManager.Despawn(vehicle);

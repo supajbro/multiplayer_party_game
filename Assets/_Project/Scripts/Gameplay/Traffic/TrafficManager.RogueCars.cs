@@ -188,7 +188,8 @@ namespace CouchGuys.Gameplay.Traffic
             if (!m_rogueDeliveries.Remove(id, out var runtime)) return;
             if (IsServerStarted())
                 foreach (var car in runtime.Cars)
-                    if (car != null && car.IsSpawned) InstanceFinder.ServerManager.Despawn(car);
+                    if (car != null && car.IsSpawned && !car.GetComponent<TrafficVehicleController>().IsDestroyed)
+                        InstanceFinder.ServerManager.Despawn(car);
         }
 
         private void ClearRogueCars()
