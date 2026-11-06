@@ -43,6 +43,19 @@ namespace CouchGuys.Gameplay.Vehicles
         [Min(0)] public float CollisionFriction = .04f;
         [Range(0,1)] public float CollisionRestitution = .03f;
         [Min(0)] public float CollisionBraking = .3f;
+        [Header("Health and impact rules")]
+        [Min(1)] public float MaximumHealth = 5000f;
+        [Tooltip("Reuse the truck's collision thresholds, weapon scaling and character impact rules.")]
+        public TruckSettings DamageSettings;
+        [Min(0), Tooltip("Damage received relative to the truck. 0.5 takes half as much damage.")]
+        public float DamageTakenMultiplier = .5f;
+
+        public float BulletDamage(float rawDamage) => Mathf.Max(0f, rawDamage) *
+            (DamageSettings != null ? DamageSettings.BulletDamageMultiplier : 1f) * DamageTakenMultiplier;
+
+        public float CollisionDamage(float speed) => DamageSettings == null ? 0f :
+            Mathf.Min(Mathf.Max(0f, speed - DamageSettings.MinimumCollisionDamageSpeed) *
+                DamageSettings.CollisionDamageMultiplier, DamageSettings.MaximumCollisionDamage) * DamageTakenMultiplier;
         [Min(.1f)] public float MountRange = 1.8f;
         [Min(.1f)] public float InteractionCooldown = .4f;
         // Player root is below the soles in the existing robot rig.

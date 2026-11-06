@@ -68,6 +68,7 @@ namespace CouchGuys.Gameplay.Weapons
         private readonly Dictionary<ThiefHealth, float> m_thiefDamage = new(8);
         private readonly Dictionary<CouchGuys.Gameplay.Pedestrians.PedestrianController, float> m_pedestrianDamage = new(8);
         private readonly Dictionary<TruckController, float> m_truckDamage = new(4);
+        private readonly Dictionary<MagneticHoverboardController, float> m_hoverboardDamage = new(4);
         private readonly Dictionary<TrafficVehicleController, float> m_trafficVehicleDamage = new(4);
         private float m_switchCompleteAt;
         private float m_reloadCompleteAt;
@@ -742,6 +743,7 @@ namespace CouchGuys.Gameplay.Weapons
             m_thiefDamage.Clear();
             m_pedestrianDamage.Clear();
             m_truckDamage.Clear();
+            m_hoverboardDamage.Clear();
             m_trafficVehicleDamage.Clear();
             Vector3[] ends = new Vector3[weapon.Pellets];
             normals = new Vector3[weapon.Pellets];
@@ -784,6 +786,13 @@ namespace CouchGuys.Gameplay.Weapons
                     m_thiefDamage[thief] = total + damage;
                     continue;
                 }
+                var hoverboard = nearest.collider.GetComponentInParent<MagneticHoverboardController>();
+                if (hoverboard != null)
+                {
+                    m_hoverboardDamage.TryGetValue(hoverboard, out float total);
+                    m_hoverboardDamage[hoverboard] = total + damage;
+                    continue;
+                }
                 TruckController truck = nearest.collider.GetComponentInParent<TruckController>();
                 if (truck != null)
                 {
@@ -823,6 +832,8 @@ namespace CouchGuys.Gameplay.Weapons
             }
             foreach (KeyValuePair<TruckController, float> entry in m_truckDamage)
                 entry.Key.ApplyBulletDamageServer(entry.Value);
+            foreach (var entry in m_hoverboardDamage)
+                entry.Key.ApplyBulletDamageServer(entry.Value);
             foreach (var entry in m_pedestrianDamage)
             {
                 RaycastHit bloodHit = m_bloodHits[entry.Key];
@@ -841,6 +852,8 @@ namespace CouchGuys.Gameplay.Weapons
                 collider.GetComponentInParent<CouchGuys.Gameplay.Pedestrians.PedestrianController>() != null)
                 return WeaponImpactSurface.Enemy;
             if (collider.GetComponentInParent<TruckController>() != null)
+                return WeaponImpactSurface.Metal;
+            if (collider.GetComponentInParent<MagneticHoverboardController>() != null)
                 return WeaponImpactSurface.Metal;
             if (collider.GetComponentInParent<TrafficVehicleController>() != null)
                 return WeaponImpactSurface.Metal;

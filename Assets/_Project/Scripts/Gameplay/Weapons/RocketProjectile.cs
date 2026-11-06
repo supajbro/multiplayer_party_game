@@ -114,6 +114,7 @@ namespace CouchGuys.Gameplay.Weapons
             if (target == null) target = collider.GetComponentInParent<PlayerHealth>();
             if (target == null) target = collider.GetComponentInParent<ThiefHealth>();
             if (target == null) target = collider.GetComponentInParent<TruckController>();
+            if (target == null) target = collider.GetComponentInParent<MagneticHoverboardController>();
             if (target == null) target = collider.GetComponentInParent<TrafficVehicleController>();
             return target;
         }
@@ -157,6 +158,7 @@ namespace CouchGuys.Gameplay.Weapons
                         break;
                     case PedestrianController pedestrian: pedestrian.ApplyBulletDamageServer(damage); break;
                     case TruckController truck: truck.ApplyBulletDamageServer(damage); break;
+                    case MagneticHoverboardController board: board.ApplyBulletDamageServer(damage); break;
                     case TrafficVehicleController traffic: traffic.ApplyBulletDamageServer(damage); break;
                 }
             }

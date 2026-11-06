@@ -278,12 +278,14 @@ namespace CouchGuys.Gameplay.Pedestrians
             if (vehicleBody == null || vehicleBody.isKinematic) return;
             var truck = other.GetComponentInParent<CouchGuys.Gameplay.Vehicles.TruckController>();
             var car = other.GetComponentInParent<CouchGuys.Gameplay.Traffic.TrafficVehicleController>();
-            if ((truck == null || truck.IsDestroyed) && (car == null || car.IsDestroyed)) return;
+            var board = other.GetComponentInParent<CouchGuys.Gameplay.Vehicles.MagneticHoverboardController>();
+            if ((truck == null || truck.IsDestroyed) && (car == null || car.IsDestroyed) &&
+                (board == null || board.IsDestroyed)) return;
             Vector3 velocity = Vector3.ProjectOnPlane(vehicleBody.linearVelocity, Vector3.up);
             float speed = velocity.magnitude;
             if (speed < 0.1f) return;
             m_nextVehicleImpactTime = Time.time + 0.5f;
-            if (truck != null)
+            if (truck != null || board != null)
             {
                 // A human-sized impulse gives the truck a bump, capped at 8% speed loss.
                 float impactMass = Mathf.Min(75f, vehicleBody.mass * 0.08f);
@@ -294,7 +296,7 @@ namespace CouchGuys.Gameplay.Pedestrians
             if (ApplyVehicleImpactServer(speed, position, velocity.normalized))
             {
                 if (truck != null) truck.PlaySplatServer(position);
-                else car.PlaySplatServer(position);
+                else if (car != null) car.PlaySplatServer(position);
             }
         }
 

@@ -125,6 +125,11 @@ namespace CouchGuys.Gameplay.Weapons
                 case PedestrianController pedestrian:
                     pedestrian.ApplyBatImpactServer(settings.Damage, away * settings.NpcKnockback + Vector3.up * settings.NpcLift);
                     break;
+                case MagneticHoverboardController board:
+                    board.ApplyBulletDamageServer(settings.Damage);
+                    board.ApplyBatLaunchServer(away * settings.VehicleKnockback + Vector3.up * settings.VehicleLift,
+                        Vector3.Cross(Vector3.up, away) * settings.VehicleSpin);
+                    break;
                 case TruckController truck:
                     truck.ApplyBulletDamageServer(settings.Damage);
                     truck.ApplyBatLaunchServer(away * settings.VehicleKnockback + Vector3.up * settings.VehicleLift,

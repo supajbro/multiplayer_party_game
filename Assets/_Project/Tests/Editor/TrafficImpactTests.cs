@@ -1,8 +1,11 @@
 using System.Reflection;
 using CouchGuys.Gameplay.Enemies;
+using CouchGuys.Gameplay.Vehicles;
+using CouchGuys.Gameplay.Weapons;
 using CouchGuys.Player;
 using FishNet.Object.Synchronizing;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 
 namespace CouchGuys.Tests.Editor
@@ -11,6 +14,33 @@ namespace CouchGuys.Tests.Editor
     {
         private const BindingFlags Private = BindingFlags.Instance | BindingFlags.NonPublic;
         private GameObject m_object;
+
+        [TestCase(0f)]
+        [TestCase(4f)]
+        [TestCase(10f)]
+        [TestCase(100f)]
+        public void HoverboardTakesHalfTruckDamageWithTheSameThresholdAndCap(float speed)
+        {
+            var settings = AssetDatabase.LoadAssetAtPath<MagneticHoverboardSettings>(
+                "Assets/Settings/Vehicles/MagneticHoverboardSettings.asset");
+            Assert.That(settings.DamageSettings, Is.Not.Null);
+            var truck = settings.DamageSettings;
+            float truckDamage = Mathf.Min(Mathf.Max(0f, speed - truck.MinimumCollisionDamageSpeed) *
+                truck.CollisionDamageMultiplier, truck.MaximumCollisionDamage);
+            Assert.That(settings.CollisionDamage(speed), Is.EqualTo(truckDamage * .5f).Within(.001f));
+            Assert.That(settings.BulletDamage(100f), Is.EqualTo(100f * truck.BulletDamageMultiplier * .5f));
+            Assert.That(settings.BulletDamage(-100f), Is.Zero);
+        }
+
+        [Test]
+        public void HoverboardCompoundCollidersShareOneWeaponDamageTarget()
+        {
+            m_object = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/_Project/Prefabs/Vehicles/MagneticHoverboard.prefab"));
+            var board = m_object.GetComponent<MagneticHoverboardController>();
+            foreach (var collider in m_object.GetComponentsInChildren<Collider>(true))
+                Assert.That(RocketProjectile.FindDamageTarget(collider), Is.SameAs(board));
+        }
 
         [TearDown]
         public void TearDown()

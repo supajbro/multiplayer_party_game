@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Couch;
+using CouchGuys.Gameplay.Enemies;
+using CouchGuys.Gameplay.Pedestrians;
 using CouchGuys.Player;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
@@ -29,6 +31,11 @@ namespace CouchGuys.Gameplay.Vehicles
         private readonly SyncVar<NetworkObject> m_driver = new();
         private readonly SyncVar<NetworkObject> m_couch = new();
         private readonly SyncVar<float> m_steering = new();
+        private readonly SyncVar<float> m_health = new();
+        private readonly SyncVar<bool> m_destroyed = new();
+        private readonly Dictionary<int, float> m_nextCharacterImpactTime = new();
+        private readonly CouchGuys.Gameplay.Weapons.BaseballBatVehicleLaunch m_batLaunch = new();
+        private float m_nextCollisionDamageTime;
         private Vector2 m_input;
         private float m_lastInput, m_turn, m_armProgress;
         private bool m_ready;
@@ -36,6 +43,8 @@ namespace CouchGuys.Gameplay.Vehicles
         private Quaternion m_visualRotation, m_leftClosed, m_rightClosed;
         private PhysicsMaterial m_contactMaterial;
         public MagneticHoverboardSettings Settings => m_settings;
+        public float Health => m_health.Value;
+        public bool IsDestroyed => m_destroyed.Value;
         public NetworkObject Driver => m_driver.Value;
         public CouchCarryController Couch => m_couch.Value != null ? m_couch.Value.GetComponent<CouchCarryController>() : null;
         public Transform CouchAnchor => m_couchAnchor;
@@ -70,12 +79,14 @@ namespace CouchGuys.Gameplay.Vehicles
             m_couchAnchor.localPosition = m_settings.AttachmentPositionOffset;
             m_couchAnchor.localRotation = Quaternion.Euler(m_settings.AttachmentRotationOffset);
             m_couch.OnChange += OnCargoChanged;
+            m_destroyed.OnChange += OnDestroyedChanged;
         }
         private void OnEnable() => ActiveBoards.Add(this);
         private void OnDisable() => ActiveBoards.Remove(this);
         private void OnDestroy()
         {
             m_couch.OnChange -= OnCargoChanged;
+            m_destroyed.OnChange -= OnDestroyedChanged;
             if (m_contactMaterial != null) Destroy(m_contactMaterial);
         }
         private void OnCargoChanged(NetworkObject previous, NetworkObject next, bool asServer)
@@ -90,6 +101,10 @@ namespace CouchGuys.Gameplay.Vehicles
         public override void OnStartServer()
         {
             base.OnStartServer();
+            m_health.Value = m_settings.MaximumHealth;
+            m_destroyed.Value = false;
+            m_nextCharacterImpactTime.Clear();
+            m_nextCollisionDamageTime = 0f;
             m_ready = !m_placeNearDepot;
             if (m_placeNearDepot) { m_body.isKinematic = true; StartCoroutine(PlaceNearDepot()); }
             else m_body.isKinematic = false;
@@ -120,6 +135,7 @@ namespace CouchGuys.Gameplay.Vehicles
             if (!IsServerInitialized) m_body.isKinematic = true;
             m_armProgress = Couch != null ? 1f : 0f;
             OnCargoChanged(null,m_couch.Value,false);
+            OnDestroyedChanged(false, IsDestroyed, false);
         }
         public override void OnStopServer()
         {
@@ -131,7 +147,7 @@ namespace CouchGuys.Gameplay.Vehicles
 
         [Server] public bool TryMountServer(PlayerHoverboardInteractor player)
         {
-            if (!IsServerInitialized || player == null || Driver != null || !player.CanMount || Speed > m_settings.MagnetMaximumSpeed ||
+            if (!IsServerInitialized || IsDestroyed || player == null || Driver != null || !player.CanMount || Speed > m_settings.MagnetMaximumSpeed ||
                 Vector3.Distance(player.transform.position, MountPosition) > m_settings.MountRange) return false;
             m_driver.Value = player.NetworkObject;
             m_input = Vector2.zero; m_lastInput = Time.time;
@@ -144,14 +160,15 @@ namespace CouchGuys.Gameplay.Vehicles
         }
         [Server] public void SetInputServer(NetworkObject source, Vector2 input)
         {
-            if (source == null || source != Driver || !float.IsFinite(input.x) || !float.IsFinite(input.y)) return;
+            if (IsDestroyed || source == null || source != Driver || !float.IsFinite(input.x) || !float.IsFinite(input.y)) return;
             m_input = Vector2.ClampMagnitude(input, 1f); m_lastInput = Time.time;
         }
 
         private void FixedUpdate()
         {
             if (IsServerInitialized && !m_ready) { m_body.isKinematic = true; return; }
-            if (!IsServerInitialized || m_settings == null || m_body.isKinematic) return;
+            if (!IsServerInitialized || IsDestroyed || m_settings == null || m_body.isKinematic) return;
+            if (m_batLaunch.Tick(m_body)) return;
             if (Driver != null && (!Driver.IsSpawned || !Driver.Owner.IsActive ||
                 Driver.TryGetComponent(out PlayerHealth h) && (!h.IsAlive || h.IsKnockedDown)))
             {
@@ -197,14 +214,15 @@ namespace CouchGuys.Gameplay.Vehicles
             foreach (RaycastHit hit in Physics.RaycastAll(origin, Vector3.down, distance, m_settings.GroundMask, QueryTriggerInteraction.Ignore))
             {
                 if (hit.distance >= closest || hit.collider.transform.IsChildOf(transform) ||
-                    hit.collider.GetComponentInParent<CouchCarryController>() != null || hit.collider.GetComponentInParent<PlayerHealth>() != null) continue;
+                    hit.collider.GetComponentInParent<CouchCarryController>() != null || hit.collider.GetComponentInParent<PlayerHealth>() != null ||
+                    hit.collider.GetComponentInParent<PedestrianController>() != null || hit.collider.GetComponentInParent<ThiefHealth>() != null) continue;
                 ground = hit; closest = hit.distance;
             }
             return closest < float.PositiveInfinity;
         }
         private void LateUpdate()
         {
-            if (m_settings == null) return;
+            if (m_settings == null || IsDestroyed) return;
             float blend = 1f - Mathf.Exp(-m_settings.BankingSmoothing * Time.deltaTime);
             m_visual.localPosition = m_visualPosition + Vector3.up * (Mathf.Sin(Time.time * m_settings.BobbingFrequency * Mathf.PI * 2f) * m_settings.BobbingAmplitude);
             m_visual.localRotation = Quaternion.Slerp(m_visual.localRotation, m_visualRotation *
@@ -242,7 +260,7 @@ namespace CouchGuys.Gameplay.Vehicles
         }
         public CouchCarryController FindAvailableCouch()
         {
-            if (Couch != null || Speed > m_settings.MagnetMaximumSpeed) return null;
+            if (IsDestroyed || Couch != null || Speed > m_settings.MagnetMaximumSpeed) return null;
             CouchCarryController closest = null; float distance = float.PositiveInfinity;
             foreach (Collider c in Physics.OverlapSphere(MagnetPosition, m_settings.AttachmentRange + m_settings.LoadingPointRange, ~0, QueryTriggerInteraction.Ignore))
             {
@@ -258,7 +276,7 @@ namespace CouchGuys.Gameplay.Vehicles
         [Server] public bool InteractMagnetServer(PlayerHoverboardInteractor player, out string reason)
         {
             reason="Stop and dismount the hoverboard before loading";
-            if (!IsServerInitialized || player == null || !player.CanUseMagnet || Speed > m_settings.MagnetMaximumSpeed || Driver != null) return false;
+            if (!IsServerInitialized || IsDestroyed || player == null || !player.CanUseMagnet || Speed > m_settings.MagnetMaximumSpeed || Driver != null) return false;
             var carrier=player.GetComponent<PlayerCouchCarrier>();
             var carried=carrier != null ? carrier.CarriedCouch : null;
             reason="Move closer to either side loading point";
@@ -339,8 +357,109 @@ namespace CouchGuys.Gameplay.Vehicles
         }
         private void OnCollisionEnter(Collision collision)
         {
-            if (IsServerInitialized && !m_body.isKinematic && collision.contactCount > 0 && Mathf.Abs(collision.GetContact(0).normal.y)<.5f)
+            if (!IsServerInitialized || IsDestroyed || m_body.isKinematic || collision.contactCount == 0) return;
+            Vector3 velocity = Vector3.ProjectOnPlane(m_body.linearVelocity, Vector3.up);
+            Vector3 approach = Vector3.ProjectOnPlane(collision.relativeVelocity, Vector3.up);
+            if (approach.sqrMagnitude > velocity.sqrMagnitude) velocity = approach;
+            var pedestrian = collision.collider.GetComponentInParent<PedestrianController>();
+            if (pedestrian != null)
+            {
+                pedestrian.ApplyVehicleImpactServer(velocity.magnitude, collision.GetContact(0).point, velocity.normalized);
+                return;
+            }
+            var player = collision.collider.GetComponentInParent<PlayerHealth>();
+            var thief = collision.collider.GetComponentInParent<ThiefHealth>();
+            if (player != null || thief != null)
+            {
+                if (player == null || player.NetworkObject != Driver)
+                    ApplyCharacterImpactServer(player, thief, velocity, collision.GetContact(0).point);
+                return;
+            }
+            if (Mathf.Abs(collision.GetContact(0).normal.y)<.5f)
                 m_body.linearVelocity *= 1f-m_settings.CollisionBraking;
+            if (Time.time < m_nextCollisionDamageTime || TruckController.IsGroundSurface(collision.collider)) return;
+            float speed = 0f;
+            for (int i = 0; i < collision.contactCount; i++)
+            {
+                Vector3 normal = collision.GetContact(i).normal;
+                if (Mathf.Abs(normal.y) > .65f) continue;
+                speed = Mathf.Max(speed, Mathf.Abs(Vector3.Dot(collision.relativeVelocity, normal)));
+            }
+            float damage = m_settings.CollisionDamage(speed);
+            var streetlight = collision.collider.GetComponentInParent<CouchGuys.ProceduralGeneration.StreetlightPlaceholder>();
+            if (streetlight != null) damage *= streetlight.TruckCollisionDamageMultiplier;
+            if (damage <= 0f) return;
+            m_nextCollisionDamageTime = Time.time + m_settings.DamageSettings.CollisionDamageCooldown;
+            ApplyDamageServer(damage);
+        }
+
+        [Server]
+        private void ApplyCharacterImpactServer(PlayerHealth player, ThiefHealth thief, Vector3 velocity, Vector3 point)
+        {
+            var rules = m_settings.DamageSettings;
+            if (rules == null || velocity.magnitude < .1f) return;
+            int id = (player != null ? (Object)player : thief).GetInstanceID();
+            if (m_nextCharacterImpactTime.TryGetValue(id, out float next) && Time.time < next) return;
+            m_nextCharacterImpactTime[id] = Time.time + rules.CollisionDamageCooldown;
+            float damage = Mathf.Max(0f, velocity.magnitude - rules.MinimumCharacterImpactSpeed) * rules.CharacterImpactDamageMultiplier;
+            float scale = Mathf.Lerp(.2f, 1.5f, Mathf.InverseLerp(0f,
+                Mathf.Max(rules.MinimumCharacterImpactSpeed + .1f, rules.MaxForwardSpeed / 3.6f), velocity.magnitude));
+            float force = rules.CharacterKnockbackForce * scale;
+            float lift = rules.CharacterKnockbackUpwardForce * scale;
+            if (player != null) player.ApplyVehicleImpactServer(damage, velocity.normalized, force, lift);
+            else thief.ApplyVehicleImpactServer(Driver != null ? thief.CurrentHealth : damage,
+                velocity.normalized, Mathf.Max(force, velocity.magnitude), lift, impactPosition: point);
+        }
+
+        [Server]
+        public void ApplyBulletDamageServer(float rawDamage)
+        {
+            if (IsServerInitialized && m_settings != null && float.IsFinite(rawDamage))
+                ApplyDamageServer(m_settings.BulletDamage(rawDamage));
+        }
+
+        [Server]
+        public void ApplyBatLaunchServer(Vector3 velocity, Vector3 spin)
+        {
+            if (IsServerInitialized && !IsDestroyed) m_batLaunch.Launch(m_body, velocity, spin);
+        }
+
+        private void OnDestroyedChanged(bool previous, bool next, bool asServer)
+        {
+            if (!next || m_visual == null) return;
+            var properties = new MaterialPropertyBlock();
+            foreach (var renderer in m_visual.GetComponentsInChildren<Renderer>(true))
+            {
+                renderer.GetPropertyBlock(properties);
+                properties.SetColor("_BaseColor", new Color(.18f, .18f, .18f));
+                properties.SetColor("_Color", new Color(.18f, .18f, .18f));
+                properties.SetColor("_EmissionColor", Color.black);
+                renderer.SetPropertyBlock(properties);
+            }
+        }
+
+        [Server]
+        private void ApplyDamageServer(float damage)
+        {
+            if (!IsServerInitialized || IsDestroyed || damage <= 0f) return;
+            m_health.Value = Mathf.Max(0f, Health - damage);
+            if (Health > 0f) return;
+            m_destroyed.Value = true;
+            m_input = Vector2.zero;
+            m_steering.Value = 0f;
+            if (Driver != null && Driver.TryGetComponent(out PlayerHoverboardInteractor rider)) rider.ReleaseServer(true);
+            m_driver.Value = null;
+            var couch = Couch;
+            if (couch != null)
+            {
+                if (!TryGetCouchExit(couch, out Vector3 position, out Quaternion rotation))
+                {
+                    position = couch.transform.position + Vector3.up * 1.5f;
+                    rotation = couch.transform.rotation;
+                }
+                couch.ReleaseHoverboardServer(position, rotation);
+            }
+            m_couch.Value = null;
         }
     }
 }

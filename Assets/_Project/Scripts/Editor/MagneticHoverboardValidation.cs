@@ -250,8 +250,27 @@ namespace CouchGuys.Editor
             Request(replica.GetComponent<PlayerHoverboardInteractor>(),remoteBoard,false);
             until=Time.time+.8f; while(Time.time<until)yield return null;
             Check(board.Driver==remotePlayer && replica.GetComponent<PlayerHoverboardInteractor>().IsMounted,"Independent remote owner mounts through an actual ServerRpc");
+            float expectedHealth = board.Health - board.Settings.BulletDamage(100f);
+            board.ApplyBulletDamageServer(100f);
+            until=Time.time+.5f; while(Time.time<until)yield return null;
+            Check(Mathf.Abs(board.Health-expectedHealth)<.01f && Mathf.Abs(remoteBoard.Health-expectedHealth)<.01f,
+                "Server damage uses half truck scaling and health replicates to an independent client");
             s_remote.ClientManager.StopConnection(); until=Time.time+1f; while(Time.time<until)yield return null;
             Check(board.Driver==null,"Remote driver disconnect releases vehicle");
+            rival.GetComponent<ThirdPersonPlayerController>().Teleport(board.MountPosition+Vector3.right,Quaternion.identity);
+            rival.GetComponent<FishNet.Component.Transforming.NetworkTransform>().Teleport();
+            Request(other,board,false); until=Time.time+.5f; while(Time.time<until)yield return null;
+            Check(board.Driver==rival,"Living host player mounts before destruction test");
+            Check((bool)typeof(CouchCarryController).GetMethod("MountOnHoverboardServer",Private)
+                .Invoke(couch,new object[]{board,null}),"Destruction fixture attaches the original delivery couch");
+            Sync(board,"m_couch",couchObject);
+            board.ApplyBulletDamageServer(board.Settings.MaximumHealth / Mathf.Max(.001f,board.Settings.BulletDamage(1f)) + 1f);
+            until=Time.time+.5f; while(Time.time<until)yield return null;
+            Check(board.IsDestroyed && board.Health==0f && board.Driver==null && !other.IsMounted,
+                "Lethal damage destroys the board and releases rider occupancy");
+            Check(board.Couch==null && !couch.IsLoaded && couch.IsPickupAvailable && !couch.CouchRigidbody.isKinematic && couch.DeliveryId==731,
+                "Destroyed board releases its delivery couch with physics and identity intact");
+            Check(!board.TryMountServer(other),"Destroyed board rejects remounting");
             File.AppendAllText(Result,"COMPLETE: host movement, authority, occupancy, cargo identity, late join, detach, slopes, remote mounting and disconnect recovery passed.\n");
         }
     }

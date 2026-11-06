@@ -69,7 +69,7 @@ namespace CouchGuys.Player
             float closest = float.PositiveInfinity;
             foreach (MagneticHoverboardController board in MagneticHoverboardController.ActiveBoards)
             {
-                if (board == null || !board.IsSpawned || board.Settings == null || board.Driver != null || board.Speed > board.Settings.MagnetMaximumSpeed) continue;
+                if (board == null || !board.IsSpawned || board.IsDestroyed || board.Settings == null || board.Driver != null || board.Speed > board.Settings.MagnetMaximumSpeed) continue;
                 bool magnet = board.IsNearMagnet(LoadingOrigin,carried) && (carried != null ?
                     board.Couch == null && carried.ActiveCarrierCount == 1 && !carried.IsSled && !carried.IsLoaded &&
                     carried.IsPickupAvailable && board.IsCouchInLoadingRange(carried) : board.Couch != null || board.FindAvailableCouch() != null);
