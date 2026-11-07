@@ -2297,9 +2297,9 @@ AvatarMask:
   - m_Path: CouchGuy_Rig/Root
     m_Weight: 0
   - m_Path: CouchGuy_Rig/Root/Torso
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/Head
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/Head/Eye_L
     m_Weight: 0
   - m_Path: CouchGuy_Rig/Root/Torso/Head/Eye_R

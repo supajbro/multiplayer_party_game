@@ -148,6 +148,22 @@ namespace CouchGuys.Editor
             EditorUtility.SetDirty(catalogue);
         }
 
+        [MenuItem("Couch Guys/Weapons/Update Punch Body Mask")]
+        public static void UpdatePunchBodyMask()
+        {
+            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(CouchGuyAnimatorControllerBuilder.ControllerPath);
+            var mask = controller.layers.First(layer => layer.name == "Punches").avatarMask;
+            Undo.RecordObject(mask, "Enable authored punch body motion");
+            for (int i = 0; i < mask.transformCount; i++)
+            {
+                string path = mask.GetTransformPath(i);
+                if (path == "CouchGuy_Rig/Root/Torso" || path == "CouchGuy_Rig/Root/Torso/Head")
+                    mask.SetTransformActive(i, true);
+            }
+            EditorUtility.SetDirty(mask);
+            AssetDatabase.SaveAssets();
+        }
+
         public static void InstallPunchLayer()
         {
             if (AssetImporter.GetAtPath(PunchModel) is not ModelImporter importer) return;
@@ -170,7 +186,7 @@ namespace CouchGuys.Editor
             for (int i = 0; i < mask.transformCount; i++)
             {
                 string bone = mask.GetTransformPath(i).Split('/').Last();
-                mask.SetTransformActive(i, bone.StartsWith("UpperArm_") ||
+                mask.SetTransformActive(i, bone == "Torso" || bone == "Head" || bone.StartsWith("UpperArm_") ||
                     bone.StartsWith("LowerArm_") || bone.StartsWith("Hand_"));
             }
             var machine = existing?.stateMachine ?? new AnimatorStateMachine { name = "Punches" };

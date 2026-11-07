@@ -64,6 +64,7 @@ namespace CouchGuys.Player
         private float m_transitionStartedAt;
         private float m_surprisedUntil = float.NegativeInfinity;
         private float m_angryUntil = float.NegativeInfinity;
+        private float m_punchUntil = float.NegativeInfinity;
         private float m_happyUntil = float.NegativeInfinity;
         private float m_nextHappyAt;
         private float m_blinkStartedAt = float.NegativeInfinity;
@@ -117,6 +118,8 @@ namespace CouchGuys.Player
             m_angryUntil = Mathf.Max(m_angryUntil, Time.time + weaponHold);
         }
 
+        public void NotifyPunch(float remainingDuration) => m_punchUntil = Time.time + remainingDuration;
+
         /// <summary>Called by the health observer RPC so damage overrides every other face.</summary>
         public void NotifyDamage()
         {
@@ -126,6 +129,7 @@ namespace CouchGuys.Player
         private RobotFaceExpression ResolveExpression(float now)
         {
             if (now < m_surprisedUntil) return RobotFaceExpression.Surprised;
+            if (now < m_punchUntil) return RobotFaceExpression.Focused;
             if (now < m_angryUntil) return RobotFaceExpression.Angry;
             if (m_carrier != null && m_carrier.IsCarrying) return RobotFaceExpression.Focused;
             return now < m_happyUntil ? RobotFaceExpression.Happy : RobotFaceExpression.Normal;

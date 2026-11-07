@@ -162,6 +162,15 @@ namespace CouchGuys.Player
             if (m_hoverRing != null) m_hoverRing.position = position;
         }
 
+        private float m_punchWobbleStartedAt = float.NegativeInfinity;
+        private float m_punchWobbleStrength;
+
+        public void NotifyPunch(bool cross, float age)
+        {
+            m_punchWobbleStartedAt = Time.time - age;
+            m_punchWobbleStrength = cross ? -5f : 3f;
+        }
+
         private void AnimateRing()
         {
             if (m_hoverRing == null) return;
@@ -170,6 +179,13 @@ namespace CouchGuys.Player
                 360f);
             m_hoverRing.rotation = Quaternion.AngleAxis(m_ringAngle, Vector3.up) *
                 m_ringBaseLocalRotation;
+            float punchAge = Time.time - m_punchWobbleStartedAt;
+            if (!m_ringDetached && punchAge >= 0f && punchAge < .46f)
+            {
+                float wobble = Mathf.Sin(punchAge / .46f * Mathf.PI * 2f) *
+                    (1f - punchAge / .46f) * m_punchWobbleStrength;
+                m_hoverRing.rotation = Quaternion.AngleAxis(wobble, transform.forward) * m_hoverRing.rotation;
+            }
 
             if (m_ringEffects != null)
                 m_ringEffects.localRotation = Quaternion.AngleAxis(-m_ringAngle * 0.18f, Vector3.up);

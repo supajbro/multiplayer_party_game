@@ -733,8 +733,12 @@ MonoBehaviour:
   m_maximumAimOriginDistance: 6
   m_punchDamage: 25
   m_punchRange: 1.65
-  m_punchCooldown: 0.55
+  m_punchCooldown: 0.6
   m_punchKnockback: 2.5
+  m_punchComboWindow: 0.25
+  m_crossDamageMultiplier: 1.5
+  m_crossKnockbackMultiplier: 3
+  m_crossThiefLift: 2.5
 --- !u!114 &2114314630447923985
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -53,10 +53,14 @@ namespace CouchGuys.Gameplay.Weapons
         [Header("Unarmed")]
         [SerializeField, Min(0f)] private float m_punchDamage = 25f;
         [SerializeField, Min(0.1f)] private float m_punchRange = 1.65f;
-        [SerializeField, Min(0.1f)] private float m_punchCooldown = 0.55f;
+        [Tooltip("Recovery cooldown after the cross only.")]
+        [SerializeField, Min(0f)] private float m_punchCooldown = 0.6f;
         [SerializeField, Min(0f)] private float m_punchKnockback = 2.5f;
-        private float m_nextServerPunchTime;
-        private bool m_nextPunchRight;
+        [Tooltip("Time after jab recovery during which another press starts the cross. Earlier presses are buffered.")]
+        [SerializeField, Min(0f)] private float m_punchComboWindow = 0.25f;
+        [SerializeField, Min(0f)] private float m_crossDamageMultiplier = 1.5f;
+        [SerializeField, Min(0f)] private float m_crossKnockbackMultiplier = 3f;
+        [SerializeField, Min(0f)] private float m_crossThiefLift = 2.5f;
         private readonly SyncVar<int> m_selectedHotbarSlot = new();
         private readonly int[] m_magazine = new int[WeaponCount];
         private readonly int[] m_reserve = new int[WeaponCount];
@@ -170,6 +174,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void Update()
         {
+            UpdatePunchServer();
             UpdateBatSwingServer();
             if (IsServerInitialized && m_reloadingIndex >= 0 && Time.time >= m_reloadCompleteAt)
                 FinishReloadServer();
@@ -263,7 +268,7 @@ namespace CouchGuys.Gameplay.Weapons
                 !(m_couchCarrier != null && m_couchCarrier.IsCarrying))
             {
                 RequestPunchServerRpc();
-                m_nextLocalRequestTime = Time.time + m_punchCooldown;
+                m_nextLocalRequestTime = Time.time + 0.08f;
                 return;
             }
             WeaponDefinition weapon = GetWeapon(m_equippedIndex.Value);
@@ -471,35 +476,6 @@ namespace CouchGuys.Gameplay.Weapons
             m_equippedIndex.Value = -1;
             return true;
         }
-
-        [ServerRpc]
-        private void RequestPunchServerRpc()
-        {
-            if (!CanHandleWeaponServer || m_equippedIndex.Value >= 0 || Time.time < m_nextServerPunchTime ||
-                Time.time < m_switchCompleteAt) return;
-            m_nextServerPunchTime = Time.time + m_punchCooldown;
-            PlayPunchObserversRpc(m_nextPunchRight);
-            m_nextPunchRight = !m_nextPunchRight;
-            // The server chooses origin, facing and target; clients supply no damage data.
-            Vector3 origin = transform.position + Vector3.up;
-            ThiefHealth nearest = null;
-            float nearestDistance = m_punchRange;
-            foreach (Collider collider in Physics.OverlapSphere(origin, m_punchRange, m_hitMask, QueryTriggerInteraction.Ignore))
-            {
-                ThiefHealth thief = collider.GetComponentInParent<ThiefHealth>();
-                if (thief == null || !thief.IsAlive) continue;
-                Vector3 offset = collider.ClosestPoint(origin) - origin;
-                if (Vector3.Dot(transform.forward, offset.normalized) < 0.35f || offset.magnitude > nearestDistance) continue;
-                if (TryGetNearestNonSelfHit(origin, offset.normalized, offset.magnitude + 0.05f, out RaycastHit hit) &&
-                    hit.collider.GetComponentInParent<ThiefHealth>() != thief) continue;
-                nearest = thief;
-                nearestDistance = offset.magnitude;
-            }
-            nearest?.ApplyDamageServer(m_punchDamage, transform.forward, m_punchKnockback, m_health);
-        }
-
-        [ObserversRpc(RunLocally = true)]
-        private void PlayPunchObserversRpc(bool right) => m_animationDriver?.PlayPunch(right);
 
         [ServerRpc]
         private void RequestHotbarSelectionServerRpc(int slot)

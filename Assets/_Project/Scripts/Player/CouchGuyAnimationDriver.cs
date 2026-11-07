@@ -109,8 +109,11 @@ namespace CouchGuys.Player
             UpdateBaseballBatLayer();
             if (m_animator != null && m_punchLayer >= 0)
             {
-                bool punching = Time.time < m_punchUntil && m_equippedWeapon == 0 && !m_vehicleSeated &&
+                m_batHealth ??= GetComponent<PlayerHealth>();
+                bool punching = Time.time < m_punchUntil && m_equippedWeapon == 0 && !m_vehicleSeated && !m_holdingItem &&
+                    (m_batHealth == null || m_batHealth.IsAlive && !m_batHealth.IsKnockedDown) &&
                     !(m_couchCarrier != null && m_couchCarrier.IsCarrying);
+                if (!punching) m_punchUntil = 0f;
                 m_animator.SetLayerWeight(m_punchLayer, Mathf.MoveTowards(m_animator.GetLayerWeight(m_punchLayer),
                     punching ? 1f : 0f, Time.deltaTime * (punching ? 20f : 12f)));
             }
@@ -236,13 +239,16 @@ namespace CouchGuys.Player
                 active ? 1f : 0f, Time.deltaTime * 12f));
         }
 
-        public void PlayPunch(bool right)
+        public void StopPunch() => m_punchUntil = 0f;
+
+        public void PlayPunch(bool right, float age = 0f)
         {
             if (m_animator == null) return;
             m_punchLayer = m_animator.GetLayerIndex("Punches");
             if (m_punchLayer < 0) return;
-            m_punchUntil = Time.time + 0.48f;
-            m_animator.CrossFadeInFixedTime(right ? "Punch_Right" : "Punch_Left", 0.04f, m_punchLayer, 0f);
+            float duration = right ? PlayerWeaponController.CrossDuration : PlayerWeaponController.JabDuration;
+            m_punchUntil = Time.time + Mathf.Max(0f, duration - age);
+            m_animator.CrossFadeInFixedTime(right ? "Punch_Right" : "Punch_Left", 0.035f, m_punchLayer, age);
         }
 
         public void PlayWeaponShot(PlayerWeaponType weapon)
