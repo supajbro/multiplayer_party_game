@@ -107,6 +107,10 @@ namespace CouchGuys.Tests.Editor
         {
             GameObject source = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Player.prefab");
             GameObject nearCouch = Object.Instantiate(source), nearEnemy = Object.Instantiate(source);
+            GameObject thief = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/_Project/Prefabs/Enemies/Thief_Pistol.prefab"));
+            GameObject rogue = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(
+                "Assets/_Project/Prefabs/Enemies/RogueCar.prefab"));
             try
             {
                 var a = nearCouch.GetComponent<PlayerHealth>();
@@ -126,16 +130,41 @@ namespace CouchGuys.Tests.Editor
                 }
                 nearCouch.transform.position = Vector3.right;
                 nearEnemy.transform.position = Vector3.right * 20f;
-                Assert.That(GrapplerThief.FindTarget(Vector3.zero), Is.SameAs(a));
+                thief.transform.position = rogue.transform.position = Vector3.zero;
+                void AssertTargets(PlayerHealth expected)
+                {
+                    Assert.That(GrapplerThief.FindTarget(Vector3.zero), Is.EqualTo(expected), "Grappler");
+                    Assert.That(EnemyWeapon.FindClosestCouchEnemy(Vector3.zero), Is.EqualTo(expected), "Rocket");
+                    Assert.That(typeof(ThiefNavigator).GetMethod("GetClosestLivingTarget", Private)
+                        .Invoke(thief.GetComponent<ThiefNavigator>(), null), Is.EqualTo(expected), "Cached thief target");
+                    typeof(RogueCar).GetMethod("RefreshTarget", Private).Invoke(rogue.GetComponent<RogueCar>(), null);
+                    Assert.That(typeof(RogueCar).GetField("m_target", Private).GetValue(rogue.GetComponent<RogueCar>()),
+                        Is.EqualTo(expected), "Rogue car");
+                }
+                AssertTargets(a);
                 nearEnemy.transform.position = Vector3.right * 0.5f;
-                Assert.That(GrapplerThief.FindTarget(Vector3.zero), Is.SameAs(b));
+                // Expire only the distance cache; invalidation below must bypass its timer.
+                typeof(ThiefNavigator).GetField("m_nextPlayerSearchTime", Private).SetValue(thief.GetComponent<ThiefNavigator>(), 0f);
+                AssertTargets(b);
                 const BindingFlags both = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-                ((FishNet.Object.Synchronizing.SyncVar<bool>)typeof(PlayerHealth).GetField("m_knockedDown", both).GetValue(b)).Value = true;
-                Assert.That(GrapplerThief.FindTarget(Vector3.zero), Is.SameAs(a));
+                var knockedDown = (FishNet.Object.Synchronizing.SyncVar<bool>)typeof(PlayerHealth).GetField("m_knockedDown", both).GetValue(b);
+                var health = (FishNet.Object.Synchronizing.SyncVar<float>)typeof(PlayerHealth).GetField("m_currentHealth", both).GetValue(b);
+                knockedDown.Value = true;
+                AssertTargets(a);
+                health.Value = 0f;
+                AssertTargets(a);
+                knockedDown.Value = false;
+                AssertTargets(a); // Dead players remain excluded without the knockdown flag.
                 nearCouch.SetActive(false);
-                Assert.That(GrapplerThief.FindTarget(Vector3.zero), Is.Null);
+                AssertTargets(null);
+                health.Value = 100f;
+                AssertTargets(b); // Recovery makes the player available to normal acquisition again.
             }
-            finally { Object.DestroyImmediate(nearCouch); Object.DestroyImmediate(nearEnemy); }
+            finally
+            {
+                Object.DestroyImmediate(nearCouch); Object.DestroyImmediate(nearEnemy);
+                Object.DestroyImmediate(thief); Object.DestroyImmediate(rogue);
+            }
         }
 
         [Test]

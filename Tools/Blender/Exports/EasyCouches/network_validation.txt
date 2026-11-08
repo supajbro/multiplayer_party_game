@@ -1,12 +1,227 @@
 START: Easy couch host/independent client validation
 PASS: FishNet loopback host started
-PASS: Server random selection reaches couch 01
+PASS: Server random selection reaches couch 01 (index=3, visual=EasyCouch_01, rolls=7)
 PASS: Couch 01 applies its saved collision envelope and retains delivery identity
-PASS: Server random selection reaches couch 02
+PASS: Server random selection reaches couch 02 (index=4, visual=EasyCouch_02, rolls=9)
 PASS: Couch 02 applies its saved collision envelope and retains delivery identity
-PASS: Server random selection reaches couch 03
+PASS: Server random selection reaches couch 03 (index=5, visual=EasyCouch_03, rolls=9)
 PASS: Couch 03 applies its saved collision envelope and retains delivery identity
-FAIL: System.Exception: Server random selection reaches couch 04
-  at CouchGuys.Editor.EasyCouchPlayValidation.Check (System.Boolean condition, System.String message) [0x00009] in C:\Users\Jaden\Documents\MyUnityProjects\multiplayer_party_game\Assets\_Project\Scripts\Editor\EasyCouchPlayValidation.cs:67 
-  at CouchGuys.Editor.EasyCouchPlayValidation+<Probe>d__15.MoveNext () [0x004bc] in C:\Users\Jaden\Documents\MyUnityProjects\multiplayer_party_game\Assets\_Project\Scripts\Editor\EasyCouchPlayValidation.cs:99 
-  at CouchGuys.Editor.EasyCouchPlayValidation.Tick () [0x00087] in C:\Users\Jaden\Documents\MyUnityProjects\multiplayer_party_game\Assets\_Project\Scripts\Editor\EasyCouchPlayValidation.cs:55 
+PASS: Server random selection reaches couch 04 (index=6, visual=EasyCouch_04, rolls=29)
+PASS: Couch 04 applies its saved collision envelope and retains delivery identity
+PASS: Server random selection reaches couch 05 (index=7, visual=EasyCouch_05, rolls=5)
+PASS: Couch 05 applies its saved collision envelope and retains delivery identity
+PASS: Server random selection reaches couch 06 (index=8, visual=EasyCouch_06, rolls=4)
+PASS: Couch 06 applies its saved collision envelope and retains delivery identity
+PASS: Server random selection reaches couch 07 (index=9, visual=EasyCouch_07, rolls=4)
+PASS: Couch 07 applies its saved collision envelope and retains delivery identity
+PASS: Server random selection reaches couch 08 (index=10, visual=EasyCouch_08, rolls=44)
+PASS: Couch 08 applies its saved collision envelope and retains delivery identity
+PASS: Server random selection reaches couch 09 (index=11, visual=EasyCouch_09, rolls=3)
+PASS: Couch 09 applies its saved collision envelope and retains delivery identity
+PASS: Server random selection reaches couch 10 (index=12, visual=EasyCouch_10, rolls=6)
+PASS: Couch 10 applies its saved collision envelope and retains delivery identity
+PASS: Ten simultaneous deliveries retain ten independent variants
+PASS: Independent late client connected
+PASS: Late client received delivery 500
+PASS: Late client reconstructs visual and identity 500
+PASS: Late client uses identical collision bounds 500
+PASS: Late client received delivery 501
+PASS: Late client reconstructs visual and identity 501
+PASS: Late client uses identical collision bounds 501
+PASS: Late client received delivery 502
+PASS: Late client reconstructs visual and identity 502
+PASS: Late client uses identical collision bounds 502
+PASS: Late client received delivery 503
+PASS: Late client reconstructs visual and identity 503
+PASS: Late client uses identical collision bounds 503
+PASS: Late client received delivery 504
+PASS: Late client reconstructs visual and identity 504
+PASS: Late client uses identical collision bounds 504
+PASS: Late client received delivery 505
+PASS: Late client reconstructs visual and identity 505
+PASS: Late client uses identical collision bounds 505
+PASS: Late client received delivery 506
+PASS: Late client reconstructs visual and identity 506
+PASS: Late client uses identical collision bounds 506
+PASS: Late client received delivery 507
+PASS: Late client reconstructs visual and identity 507
+PASS: Late client uses identical collision bounds 507
+PASS: Late client received delivery 508
+PASS: Late client reconstructs visual and identity 508
+PASS: Late client uses identical collision bounds 508
+PASS: Late client received delivery 509
+PASS: Late client reconstructs visual and identity 509
+PASS: Late client uses identical collision bounds 509
+PASS: Legacy selection keeps original models and restores original collider on both peers
+PASS: Connected client receives subsequent Easy visual changes
+PASS: EasyCouch_07 accepts grab point 0
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_07 accepts grab point 1
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_07 accepts grab point 2
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_07 accepts grab point 3
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_02 accepts grab point 0
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_02 accepts grab point 1
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_02 accepts grab point 2
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_02 accepts grab point 3
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_03 accepts grab point 0
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_03 accepts grab point 1
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_03 accepts grab point 2
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_03 accepts grab point 3
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_04 accepts grab point 0
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_04 accepts grab point 1
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_04 accepts grab point 2
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_04 accepts grab point 3
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_05 accepts grab point 0
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_05 accepts grab point 1
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_05 accepts grab point 2
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_05 accepts grab point 3
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_06 accepts grab point 0
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_06 accepts grab point 1
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_06 accepts grab point 2
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_06 accepts grab point 3
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_07 accepts grab point 0
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_07 accepts grab point 1
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_07 accepts grab point 2
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_07 accepts grab point 3
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_08 accepts grab point 0
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_08 accepts grab point 1
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_08 accepts grab point 2
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_08 accepts grab point 3
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_09 accepts grab point 0
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_09 accepts grab point 1
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_09 accepts grab point 2
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_09 accepts grab point 3
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_10 accepts grab point 0
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_10 accepts grab point 1
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_10 accepts grab point 2
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_10 accepts grab point 3
+PASS: Drop releases player and couch occupancy
+PASS: EasyCouch_07 accepts truck cargo contract
+PASS: Truck cargo pose and physics replicate for delivery 500
+PASS: Truck unload restores authoritative physics 500
+PASS: EasyCouch_07 accepts sled cargo contract
+PASS: Sled attachment replicates for delivery 500
+PASS: Sled detachment replicates for delivery 500
+PASS: EasyCouch_07 accepts hoverboard cargo contract
+PASS: Hoverboard attachment replicates for delivery 500
+PASS: All cargo cycles preserve variant and delivery identity 500
+PASS: EasyCouch_02 accepts truck cargo contract
+PASS: Truck cargo pose and physics replicate for delivery 501
+PASS: Truck unload restores authoritative physics 501
+PASS: EasyCouch_02 accepts sled cargo contract
+PASS: Sled attachment replicates for delivery 501
+PASS: Sled detachment replicates for delivery 501
+PASS: EasyCouch_02 accepts hoverboard cargo contract
+PASS: Hoverboard attachment replicates for delivery 501
+PASS: All cargo cycles preserve variant and delivery identity 501
+PASS: EasyCouch_03 accepts truck cargo contract
+PASS: Truck cargo pose and physics replicate for delivery 502
+PASS: Truck unload restores authoritative physics 502
+PASS: EasyCouch_03 accepts sled cargo contract
+PASS: Sled attachment replicates for delivery 502
+PASS: Sled detachment replicates for delivery 502
+PASS: EasyCouch_03 accepts hoverboard cargo contract
+PASS: Hoverboard attachment replicates for delivery 502
+PASS: All cargo cycles preserve variant and delivery identity 502
+PASS: EasyCouch_04 accepts truck cargo contract
+PASS: Truck cargo pose and physics replicate for delivery 503
+PASS: Truck unload restores authoritative physics 503
+PASS: EasyCouch_04 accepts sled cargo contract
+PASS: Sled attachment replicates for delivery 503
+PASS: Sled detachment replicates for delivery 503
+PASS: EasyCouch_04 accepts hoverboard cargo contract
+PASS: Hoverboard attachment replicates for delivery 503
+PASS: All cargo cycles preserve variant and delivery identity 503
+PASS: EasyCouch_05 accepts truck cargo contract
+PASS: Truck cargo pose and physics replicate for delivery 504
+PASS: Truck unload restores authoritative physics 504
+PASS: EasyCouch_05 accepts sled cargo contract
+PASS: Sled attachment replicates for delivery 504
+PASS: Sled detachment replicates for delivery 504
+PASS: EasyCouch_05 accepts hoverboard cargo contract
+PASS: Hoverboard attachment replicates for delivery 504
+PASS: All cargo cycles preserve variant and delivery identity 504
+PASS: EasyCouch_06 accepts truck cargo contract
+PASS: Truck cargo pose and physics replicate for delivery 505
+PASS: Truck unload restores authoritative physics 505
+PASS: EasyCouch_06 accepts sled cargo contract
+PASS: Sled attachment replicates for delivery 505
+PASS: Sled detachment replicates for delivery 505
+PASS: EasyCouch_06 accepts hoverboard cargo contract
+PASS: Hoverboard attachment replicates for delivery 505
+PASS: All cargo cycles preserve variant and delivery identity 505
+PASS: EasyCouch_07 accepts truck cargo contract
+PASS: Truck cargo pose and physics replicate for delivery 506
+PASS: Truck unload restores authoritative physics 506
+PASS: EasyCouch_07 accepts sled cargo contract
+PASS: Sled attachment replicates for delivery 506
+PASS: Sled detachment replicates for delivery 506
+PASS: EasyCouch_07 accepts hoverboard cargo contract
+PASS: Hoverboard attachment replicates for delivery 506
+PASS: All cargo cycles preserve variant and delivery identity 506
+PASS: EasyCouch_08 accepts truck cargo contract
+PASS: Truck cargo pose and physics replicate for delivery 507
+PASS: Truck unload restores authoritative physics 507
+PASS: EasyCouch_08 accepts sled cargo contract
+PASS: Sled attachment replicates for delivery 507
+PASS: Sled detachment replicates for delivery 507
+PASS: EasyCouch_08 accepts hoverboard cargo contract
+PASS: Hoverboard attachment replicates for delivery 507
+PASS: All cargo cycles preserve variant and delivery identity 507
+PASS: EasyCouch_09 accepts truck cargo contract
+PASS: Truck cargo pose and physics replicate for delivery 508
+PASS: Truck unload restores authoritative physics 508
+PASS: EasyCouch_09 accepts sled cargo contract
+PASS: Sled attachment replicates for delivery 508
+PASS: Sled detachment replicates for delivery 508
+PASS: EasyCouch_09 accepts hoverboard cargo contract
+PASS: Hoverboard attachment replicates for delivery 508
+PASS: All cargo cycles preserve variant and delivery identity 508
+PASS: EasyCouch_10 accepts truck cargo contract
+PASS: Truck cargo pose and physics replicate for delivery 509
+PASS: Truck unload restores authoritative physics 509
+PASS: EasyCouch_10 accepts sled cargo contract
+PASS: Sled attachment replicates for delivery 509
+PASS: Sled detachment replicates for delivery 509
+PASS: EasyCouch_10 accepts hoverboard cargo contract
+PASS: Hoverboard attachment replicates for delivery 509
+PASS: All cargo cycles preserve variant and delivery identity 509
+COMPLETE: ten simultaneous variants, late join, live replication, collision bounds, original models, all forty grab/drop contracts, thirty vehicle load/unload cycles.

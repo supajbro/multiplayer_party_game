@@ -12,6 +12,7 @@ namespace CouchGuys.Gameplay.Traffic
     {
         private sealed class RogueDelivery
         {
+            public int DeliveryId;
             public readonly List<NetworkObject> Cars = new();
             public int SpawnCount;
             public float CheckAt;
@@ -46,7 +47,7 @@ namespace CouchGuys.Gameplay.Traffic
         {
             if (!m_rogueDeliveries.TryGetValue(id, out m_rogueContext))
             {
-                m_rogueContext = new RogueDelivery { CheckAt = Time.time + (settings != null ? settings.InitialSpawnDelay : 0f) };
+                m_rogueContext = new RogueDelivery { DeliveryId = id, CheckAt = Time.time + (settings != null ? settings.InitialSpawnDelay : 0f) };
                 m_rogueDeliveries.Add(id, m_rogueContext);
             }
         }
@@ -175,8 +176,10 @@ namespace CouchGuys.Gameplay.Traffic
             NetworkObject instance = Instantiate(prefab, position, rotation);
             TrafficVehicleController vehicle = instance.GetComponent<TrafficVehicleController>();
             InstanceFinder.ServerManager.Spawn(instance);
+            NetworkObject couch = m_rogueDelivery.TryGetDelivery(m_rogueContext.DeliveryId, out var delivery)
+                ? delivery.Couch : null;
             vehicle.InitialiseRogueServer(tier.RogueCarSettings, this,
-                vehicle.VisualVariantCount > 0 ? Random.Range(0, vehicle.VisualVariantCount) : 0);
+                vehicle.VisualVariantCount > 0 ? Random.Range(0, vehicle.VisualVariantCount) : 0, couch);
             m_rogueCars.Add(instance);
             m_rogueSpawnCount++;
             m_rogueSpawnStatus = $"Spawned {instance.name} at {position}.";

@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using CouchGuys.Gameplay.Couch;
+using CouchGuys.Gameplay.Sled;
+using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Player;
 using FishNet.Managing;
 using FishNet.Object;
@@ -66,6 +68,13 @@ namespace CouchGuys.Editor
         private static void Check(bool condition, string message)
         { if (!condition) throw new Exception(message); File.AppendAllText(Report, "PASS: " + message + "\n"); }
         private static GameObject Visual(CouchCarryController couch) => (GameObject)typeof(CouchCarryController).GetField("m_modelInstance", Private).GetValue(couch);
+        private static object Call(CouchCarryController couch, string method, params object[] args) =>
+            typeof(CouchCarryController).GetMethod(method, Private).Invoke(couch, args);
+        private static NetworkObject SpawnVehicle(string name, Vector3 position)
+        {
+            var obj = Object.Instantiate(AssetDatabase.LoadAssetAtPath<NetworkObject>($"Assets/_Project/Prefabs/Vehicles/{name}.prefab"), position, Quaternion.identity);
+            s_host.ServerManager.Spawn(obj); return obj;
+        }
         private static IEnumerator Probe()
         {
             Application.runInBackground = true;
@@ -96,7 +105,9 @@ namespace CouchGuys.Editor
                 int attempts = 0;
                 do { couch.SelectRandomModelVariantServer(true); attempts++; yield return null; }
                 while (couch.ModelVariantIndex != 3 + i && attempts < 200);
-                Check(couch.ModelVariantIndex == 3 + i && Visual(couch).name == $"EasyCouch_{i + 1:00}", $"Server random selection reaches couch {i + 1:00}");
+                float settle = Time.time + .2f; while (Time.time < settle) yield return null;
+                Check(couch.ModelVariantIndex == 3 + i && Visual(couch).name == $"EasyCouch_{i + 1:00}",
+                    $"Server random selection reaches couch {i + 1:00} (index={couch.ModelVariantIndex}, visual={Visual(couch)?.name}, rolls={attempts})");
                 var bounds = Visual(couch).GetComponent<CouchVisualBounds>().CollisionBounds;
                 Check(Vector3.Distance(couch.GetComponent<BoxCollider>().size, bounds.size) < .001f && couch.DeliveryId == 500 + i,
                     $"Couch {i + 1:00} applies its saved collision envelope and retains delivery identity");
@@ -155,7 +166,43 @@ namespace CouchGuys.Editor
                 }
                 couch.SetDepotTransportActiveServer(true);
             }
-            File.AppendAllText(Report, "COMPLETE: ten simultaneous variants, late join, live replication, collision bounds, original models, all forty grab/drop contracts.\n");
+            var truck = SpawnVehicle("Truck", origin + Vector3.forward * 12).GetComponent<TruckController>();
+            var sled = SpawnVehicle("Sled", origin + Vector3.forward * 24).GetComponent<SledController>();
+            var board = SpawnVehicle("MagneticHoverboard", origin + Vector3.forward * 36).GetComponent<MagneticHoverboardController>();
+            truck.GetComponent<Rigidbody>().isKinematic = true;
+            sled.CarryController.SetDepotTransportActiveServer(true);
+            board.enabled = false; board.GetComponent<Rigidbody>().isKinematic = true;
+            until = Time.time + .5f; while (Time.time < until) yield return null;
+            foreach (var couch in couches)
+            {
+                int identity = couch.DeliveryId, variant = couch.ModelVariantIndex;
+                var replica = s_remote.ClientManager.Objects.Spawned[couch.ObjectId].GetComponent<CouchCarryController>();
+                var ground = origin + Vector3.right * (identity - 500) * 4;
+                couch.SetDepotTransportActiveServer(false);
+                Check((bool)Call(couch, "LoadIntoTruckServer", truck, 0, .05f), Visual(couch).name + " accepts truck cargo contract");
+                until = Time.time + .35f; while (Time.time < until) yield return null;
+                Check(couch.IsLoaded && replica.IsLoaded && couch.transform.parent != null && couch.CouchRigidbody.isKinematic,
+                    "Truck cargo pose and physics replicate for delivery " + identity);
+                Call(couch, "UnloadFromTruckServer", ground, Quaternion.identity, .05f);
+                until = Time.time + .35f; while (Time.time < until) yield return null;
+                Check(!couch.IsLoaded && !replica.IsLoaded && !couch.CouchRigidbody.isKinematic, "Truck unload restores authoritative physics " + identity);
+                Check((bool)Call(couch, "MountOnSledServer", sled, Vector3.zero), Visual(couch).name + " accepts sled cargo contract");
+                until = Time.time + .2f; while (Time.time < until) yield return null;
+                Check(couch.transform.parent == sled.CouchAnchor && replica.transform.parent != null,
+                    "Sled attachment replicates for delivery " + identity);
+                Call(couch, "UnloadFromSledServer", ground, Quaternion.identity);
+                until = Time.time + .2f; while (Time.time < until) yield return null;
+                Check(couch.transform.parent == null && replica.transform.parent == null, "Sled detachment replicates for delivery " + identity);
+                Check((bool)Call(couch, "MountOnHoverboardServer", board, null), Visual(couch).name + " accepts hoverboard cargo contract");
+                until = Time.time + .8f; while (Time.time < until) yield return null;
+                Check(couch.IsLoaded && replica.IsLoaded && couch.transform.parent == board.CouchAnchor, "Hoverboard attachment replicates for delivery " + identity);
+                Call(couch, "ReleaseHoverboardServer", ground, Quaternion.identity);
+                until = Time.time + .25f; while (Time.time < until) yield return null;
+                Check(!couch.IsLoaded && !replica.IsLoaded && couch.DeliveryId == identity && couch.ModelVariantIndex == variant &&
+                    replica.DeliveryId == identity && replica.ModelVariantIndex == variant, "All cargo cycles preserve variant and delivery identity " + identity);
+                couch.SetDepotTransportActiveServer(true);
+            }
+            File.AppendAllText(Report, "COMPLETE: ten simultaneous variants, late join, live replication, collision bounds, original models, all forty grab/drop contracts, thirty vehicle load/unload cycles.\n");
         }
     }
 }

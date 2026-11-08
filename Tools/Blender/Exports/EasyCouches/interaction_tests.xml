@@ -1,0 +1,721 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="89" result="Failed(Child)" total="89" passed="84" failed="5" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:12Z" duration="1.2357746">
+  <test-suite type="TestSuite" id="1000" name="multiplayer_game" fullname="multiplayer_game" runstate="Runnable" testcasecount="253" result="Failed" site="Child" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:12Z" duration="1.235775" total="89" passed="84" failed="5" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="Assembly" id="1325" name="Assembly-CSharp-Editor.dll" fullname="C:/Users/Jaden/Documents/MyUnityProjects/multiplayer_party_game/Library/ScriptAssemblies/Assembly-CSharp-Editor.dll" runstate="Runnable" testcasecount="253" result="Failed" site="Child" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:12Z" duration="1.213422" total="89" passed="84" failed="5" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="9688" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestSuite" id="1326" name="CouchGuys" fullname="CouchGuys" runstate="Runnable" testcasecount="253" result="Failed" site="Child" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:12Z" duration="1.206710" total="89" passed="84" failed="5" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-suite type="TestSuite" id="1327" name="Tests" fullname="CouchGuys.Tests" runstate="Runnable" testcasecount="253" result="Failed" site="Child" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:12Z" duration="1.200189" total="89" passed="84" failed="5" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <failure>
+            <message><![CDATA[One or more child tests had errors]]></message>
+          </failure>
+          <test-suite type="TestSuite" id="1328" name="Editor" fullname="CouchGuys.Tests.Editor" runstate="Runnable" testcasecount="253" result="Failed" site="Child" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:12Z" duration="1.193586" total="89" passed="84" failed="5" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <failure>
+              <message><![CDATA[One or more child tests had errors]]></message>
+            </failure>
+            <test-suite type="TestFixture" id="1047" name="CouchPhysicsTests" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" testcasecount="28" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.080378" total="28" passed="28" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1070" name="AttachmentCorrection_PreventsCarrierEscapingItsGrabPoint" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.AttachmentCorrection_PreventsCarrierEscapingItsGrabPoint" methodname="AttachmentCorrection_PreventsCarrierEscapingItsGrabPoint" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="508113644" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.017885" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1058" name="CarryAcceleration_PreservesMomentumButReversesDecisively" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.CarryAcceleration_PreservesMomentumButReversesDecisively" methodname="CarryAcceleration_PreservesMomentumButReversesDecisively" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="133220013" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.003635" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1068" name="CarryFacingDirection_AlwaysPointsFromCarrierToAnchor" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.CarryFacingDirection_AlwaysPointsFromCarrierToAnchor" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.008525" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1064" name="CarryFacingDirection_AlwaysPointsFromCarrierToAnchor(-1.0f,-1.0f)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.CarryFacingDirection_AlwaysPointsFromCarrierToAnchor(-1.0f,-1.0f)" methodname="CarryFacingDirection_AlwaysPointsFromCarrierToAnchor" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="1121775472" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.001071" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1065" name="CarryFacingDirection_AlwaysPointsFromCarrierToAnchor(1.0f,-1.0f)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.CarryFacingDirection_AlwaysPointsFromCarrierToAnchor(1.0f,-1.0f)" methodname="CarryFacingDirection_AlwaysPointsFromCarrierToAnchor" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="1212657661" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000187" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1066" name="CarryFacingDirection_AlwaysPointsFromCarrierToAnchor(-1.0f,1.0f)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.CarryFacingDirection_AlwaysPointsFromCarrierToAnchor(-1.0f,1.0f)" methodname="CarryFacingDirection_AlwaysPointsFromCarrierToAnchor" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="81516972" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000140" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1067" name="CarryFacingDirection_AlwaysPointsFromCarrierToAnchor(1.0f,1.0f)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.CarryFacingDirection_AlwaysPointsFromCarrierToAnchor(1.0f,1.0f)" methodname="CarryFacingDirection_AlwaysPointsFromCarrierToAnchor" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="853677235" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000112" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="ParameterizedMethod" id="1055" name="CarrySprintBonus_IsSharedAndCapped" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.CarrySprintBonus_IsSharedAndCapped" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.007547" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1048" name="CarrySprintBonus_IsSharedAndCapped(0,0,1.0f)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.CarrySprintBonus_IsSharedAndCapped(0,0,1.0f)" methodname="CarrySprintBonus_IsSharedAndCapped" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="371506691" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000767" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1049" name="CarrySprintBonus_IsSharedAndCapped(0,2,1.0f)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.CarrySprintBonus_IsSharedAndCapped(0,2,1.0f)" methodname="CarrySprintBonus_IsSharedAndCapped" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="344565164" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000240" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1050" name="CarrySprintBonus_IsSharedAndCapped(1,1,1.25f)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.CarrySprintBonus_IsSharedAndCapped(1,1,1.25f)" methodname="CarrySprintBonus_IsSharedAndCapped" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="1215556513" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000134" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1051" name="CarrySprintBonus_IsSharedAndCapped(1,2,1.125f)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.CarrySprintBonus_IsSharedAndCapped(1,2,1.125f)" methodname="CarrySprintBonus_IsSharedAndCapped" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="204264904" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000120" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1052" name="CarrySprintBonus_IsSharedAndCapped(1,4,1.0625f)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.CarrySprintBonus_IsSharedAndCapped(1,4,1.0625f)" methodname="CarrySprintBonus_IsSharedAndCapped" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="2042622181" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000117" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1053" name="CarrySprintBonus_IsSharedAndCapped(4,4,1.25f)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.CarrySprintBonus_IsSharedAndCapped(4,4,1.25f)" methodname="CarrySprintBonus_IsSharedAndCapped" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="1250342582" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000116" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1054" name="CarrySprintBonus_IsSharedAndCapped(5,4,1.25f)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.CarrySprintBonus_IsSharedAndCapped(5,4,1.25f)" methodname="CarrySprintBonus_IsSharedAndCapped" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="642661565" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000117" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1056" name="CarrySprintBonus_UsesConfiguredMultiplier" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.CarrySprintBonus_UsesConfiguredMultiplier" methodname="CarrySprintBonus_UsesConfiguredMultiplier" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="1536078563" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000295" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1057" name="CooperationEfficiency_IsPredictableForAgreementAndConflict" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.CooperationEfficiency_IsPredictableForAgreementAndConflict" methodname="CooperationEfficiency_IsPredictableForAgreementAndConflict" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="1770654439" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000555" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1069" name="DebugCarryBehaviours_OnlyChangeTheSharedMovementIntentSource" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.DebugCarryBehaviours_OnlyChangeTheSharedMovementIntentSource" methodname="DebugCarryBehaviours_OnlyChangeTheSharedMovementIntentSource" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="247793710" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.003368" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1063" name="DesiredCarryVelocity_IsIndependentOfCouchOrientation" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.DesiredCarryVelocity_IsIndependentOfCouchOrientation" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.006338" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1059" name="DesiredCarryVelocity_IsIndependentOfCouchOrientation(0.0f)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.DesiredCarryVelocity_IsIndependentOfCouchOrientation(0.0f)" methodname="DesiredCarryVelocity_IsIndependentOfCouchOrientation" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="426216285" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000931" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1060" name="DesiredCarryVelocity_IsIndependentOfCouchOrientation(90.0f)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.DesiredCarryVelocity_IsIndependentOfCouchOrientation(90.0f)" methodname="DesiredCarryVelocity_IsIndependentOfCouchOrientation" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="898421480" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000162" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1061" name="DesiredCarryVelocity_IsIndependentOfCouchOrientation(180.0f)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.DesiredCarryVelocity_IsIndependentOfCouchOrientation(180.0f)" methodname="DesiredCarryVelocity_IsIndependentOfCouchOrientation" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="66332673" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000108" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1062" name="DesiredCarryVelocity_IsIndependentOfCouchOrientation(270.0f)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.DesiredCarryVelocity_IsIndependentOfCouchOrientation(270.0f)" methodname="DesiredCarryVelocity_IsIndependentOfCouchOrientation" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="1688689883" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000103" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1071" name="DirectionalResistance_ConstrainsPlayerButPreservesCouchIntent" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.DirectionalResistance_ConstrainsPlayerButPreservesCouchIntent" methodname="DirectionalResistance_ConstrainsPlayerButPreservesCouchIntent" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="1886231511" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.001041" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1079" name="GrabFacing_RequiresPlayerToLookTowardCouch" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.GrabFacing_RequiresPlayerToLookTowardCouch" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.006902" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1075" name="GrabFacing_RequiresPlayerToLookTowardCouch(0.0f,True)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.GrabFacing_RequiresPlayerToLookTowardCouch(0.0f,True)" methodname="GrabFacing_RequiresPlayerToLookTowardCouch" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="136288741" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.001167" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1076" name="GrabFacing_RequiresPlayerToLookTowardCouch(45.0f,True)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.GrabFacing_RequiresPlayerToLookTowardCouch(45.0f,True)" methodname="GrabFacing_RequiresPlayerToLookTowardCouch" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="1032680757" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000171" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1077" name="GrabFacing_RequiresPlayerToLookTowardCouch(90.0f,False)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.GrabFacing_RequiresPlayerToLookTowardCouch(90.0f,False)" methodname="GrabFacing_RequiresPlayerToLookTowardCouch" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="1837828037" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000115" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1078" name="GrabFacing_RequiresPlayerToLookTowardCouch(180.0f,False)" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.GrabFacing_RequiresPlayerToLookTowardCouch(180.0f,False)" methodname="GrabFacing_RequiresPlayerToLookTowardCouch" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="1086462176" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000108" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1072" name="HorizontalCarryForce_DoesNotDragPointMovingWithCarrierIntent" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.HorizontalCarryForce_DoesNotDragPointMovingWithCarrierIntent" methodname="HorizontalCarryForce_DoesNotDragPointMovingWithCarrierIntent" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="878080575" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000848" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1073" name="OffCentreHorizontalForce_ProducesMirroredYawTorque" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.OffCentreHorizontalForce_ProducesMirroredYawTorque" methodname="OffCentreHorizontalForce_ProducesMirroredYawTorque" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="1908325385" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000686" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1074" name="OpposingInputs_ProduceZeroDesiredTranslation" fullname="CouchGuys.Tests.Editor.CouchPhysicsTests.OpposingInputs_ProduceZeroDesiredTranslation" methodname="OpposingInputs_ProduceZeroDesiredTranslation" classname="CouchGuys.Tests.Editor.CouchPhysicsTests" runstate="Runnable" seed="1327099804" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000318" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1102" name="EasyCouchAssetTests" fullname="CouchGuys.Tests.Editor.EasyCouchAssetTests" classname="CouchGuys.Tests.Editor.EasyCouchAssetTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.026206" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1103" name="EasyVisualsHaveValidMaterialsLodsAndCollisionProfiles" fullname="CouchGuys.Tests.Editor.EasyCouchAssetTests.EasyVisualsHaveValidMaterialsLodsAndCollisionProfiles" methodname="EasyVisualsHaveValidMaterialsLodsAndCollisionProfiles" classname="CouchGuys.Tests.Editor.EasyCouchAssetTests" runstate="Runnable" seed="1119508521" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.018806" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[PASS: shared network couch retains original three models, four grab points and Easy config reference.
+PASS: EasyCouch_01: bounds (2.12, 1.42, 0.99), triangles 6140/2946/1228, 3 LODs, valid Toon materials.
+PASS: EasyCouch_02: bounds (2.12, 1.42, 0.99), triangles 4708/2258/940, 3 LODs, valid Toon materials.
+PASS: EasyCouch_03: bounds (2.12, 1.41, 0.99), triangles 8196/3934/1638, 3 LODs, valid Toon materials.
+PASS: EasyCouch_04: bounds (2.12, 1.42, 0.99), triangles 4708/2258/940, 3 LODs, valid Toon materials.
+PASS: EasyCouch_05: bounds (2.12, 1.55, 1.01), triangles 9398/4466/1808, 3 LODs, valid Toon materials.
+PASS: EasyCouch_06: bounds (2.22, 1.42, 1.08), triangles 5856/2810/1170, 3 LODs, valid Toon materials.
+PASS: EasyCouch_07: bounds (2.12, 1.42, 0.99), triangles 5604/2688/1120, 3 LODs, valid Toon materials.
+PASS: EasyCouch_08: bounds (2.12, 1.42, 1.01), triangles 8740/4194/1748, 3 LODs, valid Toon materials.
+PASS: EasyCouch_09: bounds (2.12, 1.42, 0.99), triangles 6056/2906/1210, 3 LODs, valid Toon materials.
+PASS: EasyCouch_10: bounds (2.12, 1.42, 1.01), triangles 7868/3775/1572, 3 LODs, valid Toon materials.
+PASS: Medium and Hard retain legacy visual selection.
+]]></output>
+              </test-case>
+              <test-case id="1104" name="SharedGameplayAndDifficultyPoolsRetainTheirConfiguredReferences" fullname="CouchGuys.Tests.Editor.EasyCouchAssetTests.SharedGameplayAndDifficultyPoolsRetainTheirConfiguredReferences" methodname="SharedGameplayAndDifficultyPoolsRetainTheirConfiguredReferences" classname="CouchGuys.Tests.Editor.EasyCouchAssetTests" runstate="Runnable" seed="1640213822" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.002222" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1115" name="GetawayTruckTests" fullname="CouchGuys.Tests.Editor.GetawayTruckTests" classname="CouchGuys.Tests.Editor.GetawayTruckTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.031735" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1119" name="CarriersFollowActualTruckBeforeItParks" fullname="CouchGuys.Tests.Editor.GetawayTruckTests.CarriersFollowActualTruckBeforeItParks" methodname="CarriersFollowActualTruckBeforeItParks" classname="CouchGuys.Tests.Editor.GetawayTruckTests" runstate="Runnable" seed="137459369" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.005930" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1117" name="DisconnectedAndNonReciprocalRoadsCannotBecomeEscapeRoutes" fullname="CouchGuys.Tests.Editor.GetawayTruckTests.DisconnectedAndNonReciprocalRoadsCannotBecomeEscapeRoutes" methodname="DisconnectedAndNonReciprocalRoadsCannotBecomeEscapeRoutes" classname="CouchGuys.Tests.Editor.GetawayTruckTests" runstate="Runnable" seed="1572051259" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.006301" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1118" name="MissedRoadWaypointDoesNotSendTruckBackwards" fullname="CouchGuys.Tests.Editor.GetawayTruckTests.MissedRoadWaypointDoesNotSendTruckBackwards" methodname="MissedRoadWaypointDoesNotSendTruckBackwards" classname="CouchGuys.Tests.Editor.GetawayTruckTests" runstate="Runnable" seed="1782335438" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.001657" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1116" name="RoutesFollowConnectedRoadsAroundBuildings" fullname="CouchGuys.Tests.Editor.GetawayTruckTests.RoutesFollowConnectedRoadsAroundBuildings" methodname="RoutesFollowConnectedRoadsAroundBuildings" classname="CouchGuys.Tests.Editor.GetawayTruckTests" runstate="Runnable" seed="1366348069" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.004487" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1121" name="SavedGetawayAssetsHaveCargoNetworkingAndBalanceSettings" fullname="CouchGuys.Tests.Editor.GetawayTruckTests.SavedGetawayAssetsHaveCargoNetworkingAndBalanceSettings" methodname="SavedGetawayAssetsHaveCargoNetworkingAndBalanceSettings" classname="CouchGuys.Tests.Editor.GetawayTruckTests" runstate="Runnable" seed="644757569" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.004195" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1120" name="SavedGetawayPrefabConstructsWithFishNetRpcStateIntact" fullname="CouchGuys.Tests.Editor.GetawayTruckTests.SavedGetawayPrefabConstructsWithFishNetRpcStateIntact" methodname="SavedGetawayPrefabConstructsWithFishNetRpcStateIntact" classname="CouchGuys.Tests.Editor.GetawayTruckTests" runstate="Runnable" seed="69971689" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.001574" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1122" name="GrappleGunTests" fullname="CouchGuys.Tests.Editor.GrappleGunTests" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" testcasecount="19" result="Failed" site="Child" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.193688" total="19" passed="18" failed="1" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-suite type="ParameterizedMethod" id="1141" name="EquippedMuzzleRemainsAtGunBarrelUnderScaledRig" fullname="CouchGuys.Tests.Editor.GrappleGunTests.EquippedMuzzleRemainsAtGunBarrelUnderScaledRig" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.030032" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1138" name="EquippedMuzzleRemainsAtGunBarrelUnderScaledRig(1.0f)" fullname="CouchGuys.Tests.Editor.GrappleGunTests.EquippedMuzzleRemainsAtGunBarrelUnderScaledRig(1.0f)" methodname="EquippedMuzzleRemainsAtGunBarrelUnderScaledRig" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="634434869" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.014316" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1139" name="EquippedMuzzleRemainsAtGunBarrelUnderScaledRig(50.0f)" fullname="CouchGuys.Tests.Editor.GrappleGunTests.EquippedMuzzleRemainsAtGunBarrelUnderScaledRig(50.0f)" methodname="EquippedMuzzleRemainsAtGunBarrelUnderScaledRig" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="942645641" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.004566" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1140" name="EquippedMuzzleRemainsAtGunBarrelUnderScaledRig(0.01f)" fullname="CouchGuys.Tests.Editor.GrappleGunTests.EquippedMuzzleRemainsAtGunBarrelUnderScaledRig(0.01f)" methodname="EquippedMuzzleRemainsAtGunBarrelUnderScaledRig" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="1171073291" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.004704" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1143" name="GrappleMigrationPreservesExistingWeaponTuning" fullname="CouchGuys.Tests.Editor.GrappleGunTests.GrappleMigrationPreservesExistingWeaponTuning" methodname="GrappleMigrationPreservesExistingWeaponTuning" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="1698801351" result="Failed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.011482" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[  Expected: 4
+  But was:  6
+]]></message>
+                  <stack-trace><![CDATA[at CouchGuys.Tests.Editor.GrappleGunTests.GrappleMigrationPreservesExistingWeaponTuning () [0x000b1] in C:\Users\Jaden\Documents\MyUnityProjects\multiplayer_party_game\Assets\_Project\Tests\Editor\GrappleGunTests.cs:262
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-case id="1130" name="GrappleSettingsAreAssignedToNetworkPlayer" fullname="CouchGuys.Tests.Editor.GrappleGunTests.GrappleSettingsAreAssignedToNetworkPlayer" methodname="GrappleSettingsAreAssignedToNetworkPlayer" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="1478538986" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000874" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1124" name="OneShotTrajectoryCorrectsDriftTowardAttachment" fullname="CouchGuys.Tests.Editor.GrappleGunTests.OneShotTrajectoryCorrectsDriftTowardAttachment" methodname="OneShotTrajectoryCorrectsDriftTowardAttachment" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="1429313869" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.001473" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1142" name="PickupShopAndVisualAssetsAreReadyForNetworkSpawning" fullname="CouchGuys.Tests.Editor.GrappleGunTests.PickupShopAndVisualAssetsAreReadyForNetworkSpawning" methodname="PickupShopAndVisualAssetsAreReadyForNetworkSpawning" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="1210233897" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.007127" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1137" name="PlayerFlickAddsMomentumAndUsesGravityVelocityForTakeoff" fullname="CouchGuys.Tests.Editor.GrappleGunTests.PlayerFlickAddsMomentumAndUsesGravityVelocityForTakeoff" methodname="PlayerFlickAddsMomentumAndUsesGravityVelocityForTakeoff" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="776260108" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.005349" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1144" name="PullAcceleratesSmoothlyCapsPullSpeedAndPreservesOtherMomentum" fullname="CouchGuys.Tests.Editor.GrappleGunTests.PullAcceleratesSmoothlyCapsPullSpeedAndPreservesOtherMomentum" methodname="PullAcceleratesSmoothlyCapsPullSpeedAndPreservesOtherMomentum" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="1801444119" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.004854" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1129" name="SavedGunHasEditableRopeAndWorldSettings" fullname="CouchGuys.Tests.Editor.GrappleGunTests.SavedGunHasEditableRopeAndWorldSettings" methodname="SavedGunHasEditableRopeAndWorldSettings" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="1852704652" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.001109" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1135" name="SwipeThrowsInItsDirectionWithStationaryCamera" fullname="CouchGuys.Tests.Editor.GrappleGunTests.SwipeThrowsInItsDirectionWithStationaryCamera" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.012803" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1131" name="SwipeThrowsInItsDirectionWithStationaryCamera(0.0f,-10.0f,0.0f,1.0f)" fullname="CouchGuys.Tests.Editor.GrappleGunTests.SwipeThrowsInItsDirectionWithStationaryCamera(0.0f,-10.0f,0.0f,1.0f)" methodname="SwipeThrowsInItsDirectionWithStationaryCamera" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="31592715" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.001796" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1132" name="SwipeThrowsInItsDirectionWithStationaryCamera(0.0f,10.0f,0.0f,-1.0f)" fullname="CouchGuys.Tests.Editor.GrappleGunTests.SwipeThrowsInItsDirectionWithStationaryCamera(0.0f,10.0f,0.0f,-1.0f)" methodname="SwipeThrowsInItsDirectionWithStationaryCamera" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="1902452391" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000256" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1133" name="SwipeThrowsInItsDirectionWithStationaryCamera(10.0f,0.0f,1.0f,0.0f)" fullname="CouchGuys.Tests.Editor.GrappleGunTests.SwipeThrowsInItsDirectionWithStationaryCamera(10.0f,0.0f,1.0f,0.0f)" methodname="SwipeThrowsInItsDirectionWithStationaryCamera" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="1892644532" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000207" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1134" name="SwipeThrowsInItsDirectionWithStationaryCamera(-10.0f,0.0f,-1.0f,0.0f)" fullname="CouchGuys.Tests.Editor.GrappleGunTests.SwipeThrowsInItsDirectionWithStationaryCamera(-10.0f,0.0f,-1.0f,0.0f)" methodname="SwipeThrowsInItsDirectionWithStationaryCamera" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="2114248277" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000162" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1136" name="TinySwipesAndReversalsDoNotThrowAndPowerIsConfigurable" fullname="CouchGuys.Tests.Editor.GrappleGunTests.TinySwipesAndReversalsDoNotThrowAndPowerIsConfigurable" methodname="TinySwipesAndReversalsDoNotThrowAndPowerIsConfigurable" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="1026279287" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.001051" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1123" name="WorldPullAcceleratesAndTensionPreservesTangentialSwing" fullname="CouchGuys.Tests.Editor.GrappleGunTests.WorldPullAcceleratesAndTensionPreservesTangentialSwing" methodname="WorldPullAcceleratesAndTensionPreservesTangentialSwing" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="1630265107" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000969" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1128" name="WorldReleaseRetainsConfiguredMomentum" fullname="CouchGuys.Tests.Editor.GrappleGunTests.WorldReleaseRetainsConfiguredMomentum" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.108072" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1125" name="WorldReleaseRetainsConfiguredMomentum(1.0f)" fullname="CouchGuys.Tests.Editor.GrappleGunTests.WorldReleaseRetainsConfiguredMomentum(1.0f)" methodname="WorldReleaseRetainsConfiguredMomentum" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="1165698057" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.005624" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1126" name="WorldReleaseRetainsConfiguredMomentum(0.5f)" fullname="CouchGuys.Tests.Editor.GrappleGunTests.WorldReleaseRetainsConfiguredMomentum(0.5f)" methodname="WorldReleaseRetainsConfiguredMomentum" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="330036339" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.003986" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1127" name="WorldReleaseRetainsConfiguredMomentum(0.0f)" fullname="CouchGuys.Tests.Editor.GrappleGunTests.WorldReleaseRetainsConfiguredMomentum(0.0f)" methodname="WorldReleaseRetainsConfiguredMomentum" classname="CouchGuys.Tests.Editor.GrappleGunTests" runstate="Runnable" seed="795960807" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.003749" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+            </test-suite>
+            <test-suite type="TestFixture" id="1145" name="GrapplerThiefTests" fullname="CouchGuys.Tests.Editor.GrapplerThiefTests" classname="CouchGuys.Tests.Editor.GrapplerThiefTests" runstate="Runnable" testcasecount="10" result="Failed" site="Child" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.049852" total="10" passed="9" failed="1" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1156" name="CoverAndNonPlayersBlockGrapple" fullname="CouchGuys.Tests.Editor.GrapplerThiefTests.CoverAndNonPlayersBlockGrapple" methodname="CoverAndNonPlayersBlockGrapple" classname="CouchGuys.Tests.Editor.GrapplerThiefTests" runstate="Runnable" seed="1660082636" result="Failed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.004457" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[  Expected: False
+  But was:  True
+]]></message>
+                  <stack-trace><![CDATA[at CouchGuys.Tests.Editor.GrapplerThiefTests.CoverAndNonPlayersBlockGrapple () [0x0011c] in C:\Users\Jaden\Documents\MyUnityProjects\multiplayer_party_game\Assets\_Project\Tests\Editor\GrapplerThiefTests.cs:165
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1154" name="DeliveryReplacementsAreConfigured" fullname="CouchGuys.Tests.Editor.GrapplerThiefTests.DeliveryReplacementsAreConfigured" classname="CouchGuys.Tests.Editor.GrapplerThiefTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.009145" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1151" name="DeliveryReplacementsAreConfigured(&quot;Easy&quot;,0.0f,0)" fullname="CouchGuys.Tests.Editor.GrapplerThiefTests.DeliveryReplacementsAreConfigured(&quot;Easy&quot;,0.0f,0)" methodname="DeliveryReplacementsAreConfigured" classname="CouchGuys.Tests.Editor.GrapplerThiefTests" runstate="Runnable" seed="1179479719" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.001850" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1152" name="DeliveryReplacementsAreConfigured(&quot;Medium&quot;,0.15f,1)" fullname="CouchGuys.Tests.Editor.GrapplerThiefTests.DeliveryReplacementsAreConfigured(&quot;Medium&quot;,0.15f,1)" methodname="DeliveryReplacementsAreConfigured" classname="CouchGuys.Tests.Editor.GrapplerThiefTests" runstate="Runnable" seed="326180277" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000320" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1153" name="DeliveryReplacementsAreConfigured(&quot;Hard&quot;,0.25f,2)" fullname="CouchGuys.Tests.Editor.GrapplerThiefTests.DeliveryReplacementsAreConfigured(&quot;Hard&quot;,0.25f,2)" methodname="DeliveryReplacementsAreConfigured" classname="CouchGuys.Tests.Editor.GrapplerThiefTests" runstate="Runnable" seed="1962630128" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000255" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1157" name="EnemyLaunchReplacesOpposingMomentumWithoutChangingPlayerFlick" fullname="CouchGuys.Tests.Editor.GrapplerThiefTests.EnemyLaunchReplacesOpposingMomentumWithoutChangingPlayerFlick" methodname="EnemyLaunchReplacesOpposingMomentumWithoutChangingPlayerFlick" classname="CouchGuys.Tests.Editor.GrapplerThiefTests" runstate="Runnable" seed="77616002" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.004857" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1150" name="PrefabReusesThiefSystemsAndSavedGunAndRope" fullname="CouchGuys.Tests.Editor.GrapplerThiefTests.PrefabReusesThiefSystemsAndSavedGunAndRope" methodname="PrefabReusesThiefSystemsAndSavedGunAndRope" classname="CouchGuys.Tests.Editor.GrapplerThiefTests" runstate="Runnable" seed="1949543020" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.006597" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1155" name="TargetIsClosestToCouchAndIgnoresDownedAndInactivePlayers" fullname="CouchGuys.Tests.Editor.GrapplerThiefTests.TargetIsClosestToCouchAndIgnoresDownedAndInactivePlayers" methodname="TargetIsClosestToCouchAndIgnoresDownedAndInactivePlayers" classname="CouchGuys.Tests.Editor.GrapplerThiefTests" runstate="Runnable" seed="1976819475" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.009903" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1149" name="ThrowTravelsAwayFromCouchWithConfiguredVelocity" fullname="CouchGuys.Tests.Editor.GrapplerThiefTests.ThrowTravelsAwayFromCouchWithConfiguredVelocity" classname="CouchGuys.Tests.Editor.GrapplerThiefTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.007794" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1146" name="ThrowTravelsAwayFromCouchWithConfiguredVelocity(-12.0f)" fullname="CouchGuys.Tests.Editor.GrapplerThiefTests.ThrowTravelsAwayFromCouchWithConfiguredVelocity(-12.0f)" methodname="ThrowTravelsAwayFromCouchWithConfiguredVelocity" classname="CouchGuys.Tests.Editor.GrapplerThiefTests" runstate="Runnable" seed="722765744" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000858" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1147" name="ThrowTravelsAwayFromCouchWithConfiguredVelocity(0.0f)" fullname="CouchGuys.Tests.Editor.GrapplerThiefTests.ThrowTravelsAwayFromCouchWithConfiguredVelocity(0.0f)" methodname="ThrowTravelsAwayFromCouchWithConfiguredVelocity" classname="CouchGuys.Tests.Editor.GrapplerThiefTests" runstate="Runnable" seed="443313956" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000208" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1148" name="ThrowTravelsAwayFromCouchWithConfiguredVelocity(12.0f)" fullname="CouchGuys.Tests.Editor.GrapplerThiefTests.ThrowTravelsAwayFromCouchWithConfiguredVelocity(12.0f)" methodname="ThrowTravelsAwayFromCouchWithConfiguredVelocity" classname="CouchGuys.Tests.Editor.GrapplerThiefTests" runstate="Runnable" seed="420736367" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000148" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+            </test-suite>
+            <test-suite type="TestFixture" id="1169" name="MultipleDeliveryTests" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" testcasecount="9" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.303024" total="9" passed="9" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1175" name="EnemyTruckCargoCannotAutoDeliver" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.EnemyTruckCargoCannotAutoDeliver" methodname="EnemyTruckCargoCannotAutoDeliver" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" seed="175008867" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.009076" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1170" name="ExhaustedDifficultyCannotReuseReservedHousesOrBlockOtherDifficulties" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.ExhaustedDifficultyCannotReuseReservedHousesOrBlockOtherDifficulties" methodname="ExhaustedDifficultyCannotReuseReservedHousesOrBlockOtherDifficulties" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" seed="1243886822" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.001516" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1177" name="GetawayClearanceIgnoresSourceSledButKeepsOtherVehiclesAsObstacles" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.GetawayClearanceIgnoresSourceSledButKeepsOtherVehiclesAsObstacles" methodname="GetawayClearanceIgnoresSourceSledButKeepsOtherVehiclesAsObstacles" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" seed="1921206240" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.003536" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1180" name="SnapshotReconstructsFiveDistinctOrderedTimersWithoutDuplicates" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.SnapshotReconstructsFiveDistinctOrderedTimersWithoutDuplicates" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.108636" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1178" name="SnapshotReconstructsFiveDistinctOrderedTimersWithoutDuplicates(1920,1080)" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.SnapshotReconstructsFiveDistinctOrderedTimersWithoutDuplicates(1920,1080)" methodname="SnapshotReconstructsFiveDistinctOrderedTimersWithoutDuplicates" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" seed="2003630723" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.015952" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1179" name="SnapshotReconstructsFiveDistinctOrderedTimersWithoutDuplicates(1280,720)" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.SnapshotReconstructsFiveDistinctOrderedTimersWithoutDuplicates(1280,720)" methodname="SnapshotReconstructsFiveDistinctOrderedTimersWithoutDuplicates" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" seed="1616087343" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.006979" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1176" name="ThievesUseLoadedSledGripsAndConfiguredSpeedWithoutChangingDeliveryIdentity" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.ThievesUseLoadedSledGripsAndConfiguredSpeedWithoutChangingDeliveryIdentity" methodname="ThievesUseLoadedSledGripsAndConfiguredSpeedWithoutChangingDeliveryIdentity" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" seed="272611725" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.001972" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1174" name="UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.079876" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1171" name="UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity(&quot;truck&quot;,&quot;m_loadedTruck&quot;)" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity(&quot;truck&quot;,&quot;m_loadedTruck&quot;)" methodname="UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" seed="427409197" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.002246" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1172" name="UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity(&quot;sled&quot;,&quot;m_mountedSled&quot;)" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity(&quot;sled&quot;,&quot;m_mountedSled&quot;)" methodname="UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" seed="675197410" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.001197" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1173" name="UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity(&quot;hoverboard&quot;,&quot;m_mountedHoverboard&quot;)" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity(&quot;hoverboard&quot;,&quot;m_mountedHoverboard&quot;)" methodname="UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" seed="1275032576" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.001290" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+            </test-suite>
+            <test-suite type="TestFixture" id="1223" name="SledPhysicsTests" fullname="CouchGuys.Tests.Editor.SledPhysicsTests" classname="CouchGuys.Tests.Editor.SledPhysicsTests" runstate="Runnable" testcasecount="9" result="Failed" site="Child" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:12Z" duration="0.212530" total="9" passed="8" failed="1" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1232" name="CouchLoadingAcceptsOffCentrePlacementButRejectsGroundAndDistantItems" fullname="CouchGuys.Tests.Editor.SledPhysicsTests.CouchLoadingAcceptsOffCentrePlacementButRejectsGroundAndDistantItems" methodname="CouchLoadingAcceptsOffCentrePlacementButRejectsGroundAndDistantItems" classname="CouchGuys.Tests.Editor.SledPhysicsTests" runstate="Runnable" seed="1624876070" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.004355" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1228" name="MixedCargoSharesCapacityAndWeaponReplicaDetachesCleanly" fullname="CouchGuys.Tests.Editor.SledPhysicsTests.MixedCargoSharesCapacityAndWeaponReplicaDetachesCleanly" methodname="MixedCargoSharesCapacityAndWeaponReplicaDetachesCleanly" classname="CouchGuys.Tests.Editor.SledPhysicsTests" runstate="Runnable" seed="863164964" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.011046" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1224" name="RaisedSledHandlesAreReachableWithOffsetPlayerCapsule" fullname="CouchGuys.Tests.Editor.SledPhysicsTests.RaisedSledHandlesAreReachableWithOffsetPlayerCapsule" methodname="RaisedSledHandlesAreReachableWithOffsetPlayerCapsule" classname="CouchGuys.Tests.Editor.SledPhysicsTests" runstate="Runnable" seed="666727558" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.005816" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1227" name="ReplicatedStackPosesPreserveIdentityAndCanBeRemovedIndependently" fullname="CouchGuys.Tests.Editor.SledPhysicsTests.ReplicatedStackPosesPreserveIdentityAndCanBeRemovedIndependently" methodname="ReplicatedStackPosesPreserveIdentityAndCanBeRemovedIndependently" classname="CouchGuys.Tests.Editor.SledPhysicsTests" runstate="Runnable" seed="1927763015" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.004575" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1226" name="SledMultipliersAreIndependentAndRegularCouchesKeepDefaults" fullname="CouchGuys.Tests.Editor.SledPhysicsTests.SledMultipliersAreIndependentAndRegularCouchesKeepDefaults" methodname="SledMultipliersAreIndependentAndRegularCouchesKeepDefaults" classname="CouchGuys.Tests.Editor.SledPhysicsTests" runstate="Runnable" seed="2111086229" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.000578" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1225" name="SledUsesTheSameControllerAndFourPointsWithDoubleCouchSpeeds" fullname="CouchGuys.Tests.Editor.SledPhysicsTests.SledUsesTheSameControllerAndFourPointsWithDoubleCouchSpeeds" methodname="SledUsesTheSameControllerAndFourPointsWithDoubleCouchSpeeds" classname="CouchGuys.Tests.Editor.SledPhysicsTests" runstate="Runnable" seed="1200968804" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.001265" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1233" name="ThreeWeaponRacksRemainDistinctAndPreservePickupAmmo" fullname="CouchGuys.Tests.Editor.SledPhysicsTests.ThreeWeaponRacksRemainDistinctAndPreservePickupAmmo" methodname="ThreeWeaponRacksRemainDistinctAndPreservePickupAmmo" classname="CouchGuys.Tests.Editor.SledPhysicsTests" runstate="Runnable" seed="390964445" result="Failed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:11Z" duration="0.004118" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <failure>
+                  <message><![CDATA[  Expected: 2
+  But was:  3
+]]></message>
+                  <stack-trace><![CDATA[at CouchGuys.Tests.Editor.SledPhysicsTests.ThreeWeaponRacksRemainDistinctAndPreservePickupAmmo () [0x001bb] in C:\Users\Jaden\Documents\MyUnityProjects\multiplayer_party_game\Assets\_Project\Tests\Editor\SledPhysicsTests.cs:274
+]]></stack-trace>
+                </failure>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1231" name="UnloadPlacementIgnoresPlayerAndStackButRejectsRealObstacles" fullname="CouchGuys.Tests.Editor.SledPhysicsTests.UnloadPlacementIgnoresPlayerAndStackButRejectsRealObstacles" classname="CouchGuys.Tests.Editor.SledPhysicsTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-11-08 02:06:11Z" end-time="2026-11-08 02:06:12Z" duration="0.084914" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1229" name="UnloadPlacementIgnoresPlayerAndStackButRejectsRealObstacles(0.0f)" fullname="CouchGuys.Tests.Editor.SledPhysicsTests.UnloadPlacementIgnoresPlayerAndStackButRejectsRealObstacles(0.0f)" methodname="UnloadPlacementIgnoresPlayerAndStackButRejectsRealObstacles" classname="CouchGuys.Tests.Editor.SledPhysicsTests" runstate="Runnable" seed="513276976" result="Passed" start-time="2026-11-08 02:06:12Z" end-time="2026-11-08 02:06:12Z" duration="0.010727" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1230" name="UnloadPlacementIgnoresPlayerAndStackButRejectsRealObstacles(12.0f)" fullname="CouchGuys.Tests.Editor.SledPhysicsTests.UnloadPlacementIgnoresPlayerAndStackButRejectsRealObstacles(12.0f)" methodname="UnloadPlacementIgnoresPlayerAndStackButRejectsRealObstacles" classname="CouchGuys.Tests.Editor.SledPhysicsTests" runstate="Runnable" seed="406977760" result="Passed" start-time="2026-11-08 02:06:12Z" end-time="2026-11-08 02:06:12Z" duration="0.007150" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+            </test-suite>
+            <test-suite type="TestFixture" id="1296" name="TruckCargoTests" fullname="CouchGuys.Tests.Editor.TruckCargoTests" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" testcasecount="6" result="Failed" site="Child" start-time="2026-11-08 02:06:12Z" end-time="2026-11-08 02:06:12Z" duration="0.287701" total="6" passed="4" failed="2" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <failure>
+                <message><![CDATA[One or more child tests had errors]]></message>
+              </failure>
+              <test-case id="1304" name="FullyBlockedAreaStillUnloadsAndRestoresObstacleCollisionAfterSeparation" fullname="CouchGuys.Tests.Editor.TruckCargoTests.FullyBlockedAreaStillUnloadsAndRestoresObstacleCollisionAfterSeparation" methodname="FullyBlockedAreaStillUnloadsAndRestoresObstacleCollisionAfterSeparation" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="180962279" result="Passed" start-time="2026-11-08 02:06:12Z" end-time="2026-11-08 02:06:12Z" duration="0.016327" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1303" name="ObstructedRearSearchesNearbyAndSaturatedQueriesStayBlocked" fullname="CouchGuys.Tests.Editor.TruckCargoTests.ObstructedRearSearchesNearbyAndSaturatedQueriesStayBlocked" methodname="ObstructedRearSearchesNearbyAndSaturatedQueriesStayBlocked" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="1618686819" result="Passed" start-time="2026-11-08 02:06:12Z" end-time="2026-11-08 02:06:12Z" duration="0.003060" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1299" name="RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes" fullname="CouchGuys.Tests.Editor.TruckCargoTests.RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-11-08 02:06:12Z" end-time="2026-11-08 02:06:12Z" duration="0.083246" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1297" name="RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes(0.0f)" fullname="CouchGuys.Tests.Editor.TruckCargoTests.RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes(0.0f)" methodname="RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="12641041" result="Passed" start-time="2026-11-08 02:06:12Z" end-time="2026-11-08 02:06:12Z" duration="0.001985" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1298" name="RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes(20.0f)" fullname="CouchGuys.Tests.Editor.TruckCargoTests.RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes(20.0f)" methodname="RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="375375873" result="Passed" start-time="2026-11-08 02:06:12Z" end-time="2026-11-08 02:06:12Z" duration="0.001379" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="ParameterizedMethod" id="1302" name="SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters" fullname="CouchGuys.Tests.Editor.TruckCargoTests.SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" testcasecount="2" result="Failed" site="Child" start-time="2026-11-08 02:06:12Z" end-time="2026-11-08 02:06:12Z" duration="0.102988" total="2" passed="0" failed="2" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <failure>
+                  <message><![CDATA[One or more child tests had errors]]></message>
+                </failure>
+                <test-case id="1300" name="SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters(True)" fullname="CouchGuys.Tests.Editor.TruckCargoTests.SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters(True)" methodname="SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="1754900915" result="Failed" label="Error" start-time="2026-11-08 02:06:12Z" end-time="2026-11-08 02:06:12Z" duration="0.005616" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <failure>
+                    <message><![CDATA[System.Reflection.TargetInvocationException : Exception has been thrown by the target of an invocation.
+  ----> System.NullReferenceException : Object reference not set to an instance of an object]]></message>
+                    <stack-trace><![CDATA[  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at CouchGuys.Tests.Editor.TruckCargoTests.Invoke (System.Object target, System.String method, System.Object[] args) [0x00000] in C:\Users\Jaden\Documents\MyUnityProjects\multiplayer_party_game\Assets\_Project\Tests\Editor\TruckCargoTests.cs:166 
+  at CouchGuys.Tests.Editor.TruckCargoTests.SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters (System.Boolean autoPosition) [0x00220] in C:\Users\Jaden\Documents\MyUnityProjects\multiplayer_party_game\Assets\_Project\Tests\Editor\TruckCargoTests.cs:93 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+--NullReferenceException
+  at FishNet.Object.NetworkBehaviour.get_IsServerInitialized () [0x00000] in .\Packages\com.firstgeargames.fishnet\Runtime\Object\NetworkBehaviour\NetworkBehaviour.QOL.cs:107 
+  at CouchGuys.Gameplay.Couch.CouchCarryController.SetCargoPhysics (System.Boolean loaded) [0x00075] in C:\Users\Jaden\Documents\MyUnityProjects\multiplayer_party_game\Assets\_Project\Scripts\Gameplay\Couch\CouchCarryController.cs:1132 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 ]]></stack-trace>
+                  </failure>
+                </test-case>
+                <test-case id="1301" name="SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters(False)" fullname="CouchGuys.Tests.Editor.TruckCargoTests.SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters(False)" methodname="SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="490490538" result="Failed" label="Error" start-time="2026-11-08 02:06:12Z" end-time="2026-11-08 02:06:12Z" duration="0.001661" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <failure>
+                    <message><![CDATA[System.Reflection.TargetInvocationException : Exception has been thrown by the target of an invocation.
+  ----> System.NullReferenceException : Object reference not set to an instance of an object]]></message>
+                    <stack-trace><![CDATA[  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x00083] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at System.Reflection.MethodBase.Invoke (System.Object obj, System.Object[] parameters) [0x00000] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+  at CouchGuys.Tests.Editor.TruckCargoTests.Invoke (System.Object target, System.String method, System.Object[] args) [0x00000] in C:\Users\Jaden\Documents\MyUnityProjects\multiplayer_party_game\Assets\_Project\Tests\Editor\TruckCargoTests.cs:166 
+  at CouchGuys.Tests.Editor.TruckCargoTests.SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters (System.Boolean autoPosition) [0x00220] in C:\Users\Jaden\Documents\MyUnityProjects\multiplayer_party_game\Assets\_Project\Tests\Editor\TruckCargoTests.cs:93 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 
+--NullReferenceException
+  at FishNet.Object.NetworkBehaviour.get_IsServerInitialized () [0x00000] in .\Packages\com.firstgeargames.fishnet\Runtime\Object\NetworkBehaviour\NetworkBehaviour.QOL.cs:107 
+  at CouchGuys.Gameplay.Couch.CouchCarryController.SetCargoPhysics (System.Boolean loaded) [0x00075] in C:\Users\Jaden\Documents\MyUnityProjects\multiplayer_party_game\Assets\_Project\Scripts\Gameplay\Couch\CouchCarryController.cs:1132 
+  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)
+  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <41d29b352f6a475ab1bf7c6628b82790>:0 ]]></stack-trace>
+                  </failure>
+                  <output><![CDATA[Saving results to: C:/Users/Jaden/AppData/LocalLow/DefaultCompany/multiplayer_game\TestResults.xml
+]]></output>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

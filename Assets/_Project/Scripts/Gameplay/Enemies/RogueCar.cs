@@ -1,6 +1,7 @@
 using CouchGuys.Gameplay.Traffic;
 using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Player;
+using FishNet.Object;
 using UnityEngine;
 
 namespace CouchGuys.Gameplay.Enemies
@@ -15,6 +16,7 @@ namespace CouchGuys.Gameplay.Enemies
         [SerializeField, Tooltip("Default tuning; the active Hard delivery settings take precedence when spawned.")]
         private RogueCarSettings m_settings;
         private PlayerHealth m_target;
+        private NetworkObject m_couch;
         private bool m_targetWasCarrier;
         private float m_refreshAt;
         private RogueVehicleMotor m_motor;
@@ -27,16 +29,19 @@ namespace CouchGuys.Gameplay.Enemies
             m_motor = new RogueVehicleMotor(m_body);
         }
 
-        internal void Initialise(RogueCarSettings settings)
+        internal void Initialise(RogueCarSettings settings, NetworkObject couch = null)
         {
             m_settings = settings;
+            m_couch = couch;
+            m_target = null;
+            m_refreshAt = 0f;
             m_vehicle = GetComponent<TrafficVehicleController>();
             m_body = GetComponent<Rigidbody>();
             m_motor = new RogueVehicleMotor(m_body);
         }
 
         private static bool IsLiving(PlayerHealth player) => player != null &&
-            player.isActiveAndEnabled && player.IsAlive && player.IsSpawned;
+            player.IsEnemyTargetable;
 
         private static bool IsCarrier(PlayerHealth player) =>
             player.TryGetComponent(out PlayerCouchCarrier carrier) && carrier.CarriedCouch != null;
@@ -69,12 +74,14 @@ namespace CouchGuys.Gameplay.Enemies
             if (Time.time >= m_refreshAt || !IsLiving(m_target) ||
                 (m_targetWasCarrier && !IsCarrier(m_target))) RefreshTarget();
 
-            if (m_target == null)
+            Transform target = m_target != null ? m_target.transform
+                : m_couch != null && m_couch.IsSpawned ? m_couch.transform : null;
+            if (target == null)
             {
                 m_motor.Stop(m_settings);
                 return;
             }
-            float steering = m_motor.Drive(m_settings, m_target.transform.position,
+            float steering = m_motor.Drive(m_settings, target.position,
                 m_settings.MaxSpeed, 0f, Time.fixedDeltaTime);
             m_vehicle.UpdateRogueImpactsServer(steering * 32f);
         }

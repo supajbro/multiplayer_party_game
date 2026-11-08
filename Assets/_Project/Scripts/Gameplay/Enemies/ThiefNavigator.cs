@@ -62,6 +62,7 @@ namespace CouchGuys.Gameplay.Enemies
         private const int MaximumThiefCouchCarriers = 2;
 
         private PlayerHealth m_target;
+        private bool m_followingCouchWithoutPlayer;
         private PlayerHealth m_closestPlayer;
         private EnemyWeapon m_weapon;
         private GrapplerThief m_grappler;
@@ -74,7 +75,6 @@ namespace CouchGuys.Gameplay.Enemies
         private Vector3 m_destination;
         private Vector3 m_carryIntent;
         private float m_nextPathTime;
-        private float m_nextSearchTime;
         private float m_nextPlayerSearchTime;
         private float m_nextRepositionTime;
         private float m_nextCouchSearchTime;
@@ -190,7 +190,12 @@ namespace CouchGuys.Gameplay.Enemies
 
         public void SetTargetServer(PlayerHealth target, float stoppingDistance)
         {
+            if (target != null && !target.IsEnemyTargetable) target = null;
+            if (target != null) m_followingCouchWithoutPlayer = false;
             bool changed = m_target != target;
+            if (changed && m_target != null && !m_target.IsEnemyTargetable &&
+                m_agent != null && m_agent.enabled && m_agent.isOnNavMesh)
+                m_agent.ResetPath();
             if (changed) { m_hasDestination = false; m_nextRepositionTime = 0f; }
             m_target = target;
             if (m_agent != null) m_agent.stoppingDistance = Mathf.Max(0.25f, stoppingDistance * 0.72f);
@@ -233,12 +238,23 @@ namespace CouchGuys.Gameplay.Enemies
 
             if (m_weapon != null && m_weapon.IsRocketLauncher)
             {
-                if (m_weapon.Target != null) UpdateFightObjective(m_weapon.Target);
-                else if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh) m_agent.isStopped = true;
+                CouchCarryController rocketCouch = GetActiveCouch();
+                PlayerHealth rocketTarget = m_weapon.Target;
+                if (rocketTarget == null || !rocketTarget.IsEnemyTargetable)
+                    rocketTarget = rocketCouch != null
+                        ? EnemyWeapon.FindClosestCouchEnemy(rocketCouch.transform.position) : null;
+                UpdateFightObjective(rocketTarget);
                 return;
             }
 
-            if (m_retaliationTarget != null && m_retaliationTarget.IsAlive && Time.time < m_retaliationUntil)
+            if (m_target != null && !m_target.IsEnemyTargetable)
+            {
+                m_retaliationTarget = null;
+                UpdateFightObjective(GetClosestLivingTarget());
+                return;
+            }
+
+            if (m_retaliationTarget != null && m_retaliationTarget.IsEnemyTargetable && Time.time < m_retaliationUntil)
             {
                 UpdateFightObjective(m_retaliationTarget);
                 return;
@@ -309,7 +325,7 @@ namespace CouchGuys.Gameplay.Enemies
         // Called by server-side damage handling, once per damaging hit (not per pellet).
         internal void ReactToAttackServer(PlayerHealth attacker)
         {
-            if (m_grappler != null || attacker == null || !attacker.IsAlive ||
+            if (m_grappler != null || attacker == null || !attacker.IsEnemyTargetable ||
                 (m_health != null && !m_health.IsAlive) || Random.value * 100f >= m_retaliationChance)
                 return;
 
@@ -327,7 +343,13 @@ namespace CouchGuys.Gameplay.Enemies
         private void UpdateGrapplerObjective()
         {
             PlayerHealth target = m_grappler.Target;
+            if (!GrapplerThief.IsTargetable(target))
+            {
+                CouchCarryController couch = GetActiveCouch();
+                target = couch != null ? GrapplerThief.FindTarget(couch.transform.position) : null;
+            }
             SetTargetServer(target, m_grappler.PreferredDistance);
+            if (target == null) { UpdateNoPlayerObjective(); return; }
             if (m_agent == null || !m_agent.enabled || !m_agent.isOnNavMesh) return;
             m_agent.updateRotation = false;
             if (!GrapplerThief.IsTargetable(target))
@@ -456,6 +478,7 @@ namespace CouchGuys.Gameplay.Enemies
                 return;
             }
 
+            SetTargetServer(null, 0.65f);
             m_weapon?.SetTargetServer(null);
             if ((point.transform.position - transform.position).sqrMagnitude <=
                 CouchGrabDistance * CouchGrabDistance &&
@@ -471,6 +494,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         private void UpdateEscortObjective(CouchCarryController couch)
         {
+            SetTargetServer(null, 3f);
             // Only non-combat roles clear the target. Clearing it before choosing
             // a combat role restarts the weapon's reaction delay every frame.
             m_weapon?.SetTargetServer(null);
@@ -479,6 +503,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         private void UpdateCarryingObjective(PlayerHealth closestPlayer)
         {
+            SetTargetServer(null, 0.25f);
             m_weapon?.SetTargetServer(null);
             float threatDistance = closestPlayer != null
                 ? Vector3.Distance(transform.position, closestPlayer.transform.position)
@@ -550,15 +575,12 @@ namespace CouchGuys.Gameplay.Enemies
 
         private void UpdateFightObjective(PlayerHealth target)
         {
-            if (target == null || !target.IsAlive)
-            {
-                if (Time.time < m_nextSearchTime) return;
-                m_nextSearchTime = Time.time + m_pathRefreshInterval;
+            if (target == null || !target.IsEnemyTargetable)
                 target = GetClosestLivingTarget();
-            }
 
             SetTargetServer(target, m_weapon != null ? m_weapon.PreferredRange : 1.25f);
             m_weapon?.SetTargetServer(m_target);
+            if (m_target == null) { UpdateNoPlayerObjective(); return; }
             if (m_agent == null || !m_agent.enabled || !m_agent.isOnNavMesh || m_target == null) return;
 
             Vector3 aim = Vector3.ProjectOnPlane(m_target.AimPoint - transform.position, Vector3.up);
@@ -573,6 +595,24 @@ namespace CouchGuys.Gameplay.Enemies
                 (targetPosition - m_lastTargetPosition).sqrMagnitude >= m_targetMovementThreshold * m_targetMovementThreshold)
                 RecalculateCombatDestination(targetPosition);
             ApplyDestination();
+        }
+
+        private void UpdateNoPlayerObjective()
+        {
+            SetTargetServer(null, 3f);
+            m_weapon?.SetTargetServer(null);
+            if (m_agent == null || !m_agent.enabled || !m_agent.isOnNavMesh) return;
+            // Discard the combat path before following the couch, even between path refreshes.
+            if (!m_followingCouchWithoutPlayer)
+            {
+                m_agent.ResetPath();
+                m_hasDestination = false;
+                m_nextPathTime = 0f;
+                m_followingCouchWithoutPlayer = true;
+            }
+            CouchCarryController couch = GetTheftCarryTarget(GetActiveCouch());
+            if (couch != null) UpdateEscortObjective(couch);
+            else m_agent.isStopped = true;
         }
 
         private void MoveTo(Vector3 targetPosition, float stoppingDistance)
@@ -774,8 +814,7 @@ namespace CouchGuys.Gameplay.Enemies
             for (int i = 0; i < players.Count; i++)
             {
                 PlayerHealth candidate = players[i];
-                if (candidate == null || !candidate.isActiveAndEnabled || !candidate.IsAlive ||
-                    candidate.NetworkObject == null || !candidate.NetworkObject.IsSpawned) continue;
+                if (candidate == null || !candidate.IsEnemyTargetable) continue;
                 float distance = (candidate.transform.position - transform.position).sqrMagnitude;
                 if (distance < bestDistance) { bestDistance = distance; best = candidate; }
             }
@@ -784,7 +823,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         private PlayerHealth GetClosestLivingTarget()
         {
-            if (m_closestPlayer == null || !m_closestPlayer.IsAlive ||
+            if (m_closestPlayer == null || !m_closestPlayer.IsEnemyTargetable ||
                 Time.time >= m_nextPlayerSearchTime)
             {
                 m_nextPlayerSearchTime = Time.time + m_pathRefreshInterval;

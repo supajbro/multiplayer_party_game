@@ -50,14 +50,15 @@ namespace CouchGuys.Gameplay.Traffic
         private VehicleAudioEmitter m_audio;
         private RogueCarSettings m_rogueSettings;
 
-        internal void InitialiseRogueServer(RogueCarSettings settings, TrafficManager manager, int visualVariant)
+        internal void InitialiseRogueServer(RogueCarSettings settings, TrafficManager manager, int visualVariant,
+            NetworkObject couch = null)
         {
             InitialiseServer(null, manager, visualVariant);
             m_rogueSettings = settings;
             m_health.Value = Mathf.Max(1f, settings.MaxHealth);
             RogueCar rogue = GetComponent<RogueCar>();
             if (rogue == null) rogue = gameObject.AddComponent<RogueCar>();
-            rogue.Initialise(settings);
+            rogue.Initialise(settings, couch);
         }
 
         internal void UpdateRogueImpactsServer(float steering)
@@ -519,6 +520,7 @@ namespace CouchGuys.Gameplay.Traffic
         private void ApplyCharacterImpact(Collider collider, Vector3 velocity, float speed)
         {
             PlayerHealth player = collider.GetComponentInParent<PlayerHealth>();
+            if (m_rogueSettings != null && player != null && !player.IsEnemyTargetable) return;
             ThiefHealth thief = collider.GetComponentInParent<ThiefHealth>();
             Object victim = player != null ? (Object)player : thief;
             if (victim == null) return;

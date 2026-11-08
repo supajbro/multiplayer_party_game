@@ -278,6 +278,8 @@ scene.render.image_settings.file_format='PNG'; scene.render.filepath=str(REVIEW/
 (REVIEW/'mesh_statistics.json').write_text(json.dumps(stats,indent=2))
 manifest=[{'name':m.name,'color':list(m.diffuse_color),'texture':('Assets/_Project/Models/Couch/Easy/Textures/'+m.name+'.png') if (TEX/(m.name+'.png')).exists() else ''} for m in bpy.data.materials if m.name.startswith('EC_')]
 (REVIEW/'materials.json').write_text(json.dumps({'materials':manifest},indent=2))
+for im in bpy.data.images:
+    if im.source == 'FILE': im.pack()
 bpy.ops.wm.save_as_mainfile(filepath=str(ROOT/'Tools/Blender/Sources/easy_couches.blend'))
 bpy.ops.render.render(write_still=True)
 print('EASY_COUCHES_COMPLETE',flush=True)

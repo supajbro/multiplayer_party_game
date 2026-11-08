@@ -115,6 +115,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         private void SetCombatTarget(PlayerHealth target)
         {
+            if (target != null && !target.IsEnemyTargetable) target = null;
             if (m_target != target || m_targetTruck != null)
             {
                 EndRifleBurstServer();
@@ -151,14 +152,15 @@ namespace CouchGuys.Gameplay.Enemies
                 m_delivery ??= FindFirstObjectByType<DeliveryManager>();
                 NetworkObject couch = m_delivery != null && TryGetComponent(out ThiefSpawnMember member) && m_delivery.TryGetDelivery(member.DeliveryId, out var job) ? job.Couch : null;
                 if (couch == null) { SetCombatTarget(null); return; }
-                if (Time.time >= m_nextRocketTargetTime)
+                if (Time.time >= m_nextRocketTargetTime || m_target == null || !m_target.IsEnemyTargetable)
                 {
                     m_nextRocketTargetTime = Time.time + m_rocketTargetInterval;
                     SetCombatTarget(FindClosestCouchEnemy(couch.transform.position));
                 }
             }
-            if (m_targetTruck != null ? m_targetTruck.IsDestroyed : m_target == null || !m_target.IsAlive)
+            if (m_targetTruck != null ? m_targetTruck.IsDestroyed : m_target == null || !m_target.IsEnemyTargetable)
             {
+                if (m_targetTruck == null) SetCombatTarget(null);
                 EndRifleBurstServer();
                 return;
             }
@@ -190,8 +192,7 @@ namespace CouchGuys.Gameplay.Enemies
             float distance = float.PositiveInfinity;
             foreach (PlayerHealth player in PlayerHealth.Instances)
             {
-                if (player == null || !player.isActiveAndEnabled || !player.IsAlive ||
-                    player.NetworkObject == null || !player.NetworkObject.IsSpawned) continue;
+                if (player == null || !player.IsEnemyTargetable) continue;
                 float squared = (player.transform.position - couchPosition).sqrMagnitude;
                 if (squared < distance) { distance = squared; closest = player; }
             }

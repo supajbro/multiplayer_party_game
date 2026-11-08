@@ -44,8 +44,7 @@ namespace CouchGuys.Gameplay.Enemies
         }
 
         public static bool IsTargetable(PlayerHealth player) => player != null &&
-            player.isActiveAndEnabled && player.IsAlive && !player.IsKnockedDown &&
-            player.NetworkObject != null && player.NetworkObject.IsSpawned &&
+            player.IsEnemyTargetable &&
             ((player.Owner.IsValid && player.Owner.IsActive) || player.IsAiTeammate ||
                 (player.TryGetComponent(out DebugCouchBotController bot) && bot.IsAiTeammate)) &&
             !(player.TryGetComponent(out PlayerTruckInteractor truck) && truck.CurrentTruck != null);
@@ -80,7 +79,8 @@ namespace CouchGuys.Gameplay.Enemies
                 m_attackCouch = couch;
                 m_nextEvaluation = 0f;
             }
-            if (Time.time >= m_nextEvaluation)
+            if (m_held != null && !IsTargetable(m_held)) CancelAttack();
+            if (Time.time >= m_nextEvaluation || !IsTargetable(m_target))
             {
                 m_nextEvaluation = Time.time + Mathf.Max(0.1f, m_settings.TargetEvaluationInterval);
                 PlayerHealth target = FindTarget(couch.transform.position);

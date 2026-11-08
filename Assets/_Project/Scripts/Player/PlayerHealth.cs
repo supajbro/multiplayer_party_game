@@ -107,6 +107,8 @@ namespace CouchGuys.Player
             (m_carrier == null || !m_carrier.IsCarrying) && (m_truck == null || m_truck.CurrentTruck == null);
         public bool HasReviveInteraction => FindReviveTarget() != null;
         public bool IsKnockedDown => m_knockedDown.Value;
+        public bool IsEnemyTargetable => isActiveAndEnabled && IsAlive && !IsKnockedDown &&
+            !IsReturningToRing && NetworkObject != null && NetworkObject.IsSpawned;
         public bool IsReturningToRing => m_returningToRing.Value;
         public Vector3 RingAnchor => m_ringAnchor.Value;
         public bool IsAiTeammate => m_aiTeammateIndex.Value >= 0;

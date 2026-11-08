@@ -25,6 +25,7 @@ namespace CouchGuys.Tests.Editor
                 "CouchGuys.Tests.Editor.CouchPhysicsTests", "CouchGuys.Tests.Editor.MultipleDeliveryTests",
                 "CouchGuys.Tests.Editor.TruckCargoTests", "CouchGuys.Tests.Editor.SledPhysicsTests",
                 "CouchGuys.Tests.Editor.GetawayTruckTests", "CouchGuys.Tests.Editor.EasyCouchAssetTests"
+                , "CouchGuys.Tests.Editor.GrappleGunTests", "CouchGuys.Tests.Editor.GrapplerThiefTests"
             }}));
         }
         private sealed class Results : ICallbacks
