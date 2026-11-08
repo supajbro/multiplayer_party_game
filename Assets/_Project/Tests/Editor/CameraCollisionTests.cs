@@ -160,7 +160,7 @@ namespace CouchGuys.Tests.Editor
         }
 
         [Test]
-        public void HeldCouch_ClearingPhysicsOverlap_DoesNotLeavePivotInsideTallerVisual()
+        public void HeldCouch_TallerVisual_DoesNotLiftOrbitPivot()
         {
             WithCouch(couch =>
             {
@@ -173,7 +173,7 @@ namespace CouchGuys.Tests.Editor
                 UpdateVisualBounds(couch);
                 Physics.SyncTransforms();
                 Vector3 result = Invoke("GetClearCollisionPivot", pivot);
-                Assert.That(result.y, Is.GreaterThan(bounds.max.y + 0.3f));
+                Assert.That(result.y, Is.LessThan(bounds.max.y), "Only world geometry should lift the query pivot.");
             });
         }
 
@@ -205,6 +205,93 @@ namespace CouchGuys.Tests.Editor
                 Assert.That(Vector3.Distance(result, Origin + new Vector3(0.65f, 0f, -4.5f)), Is.LessThan(0.002f));
             });
         }
+
+        [Test]
+        public void HeldCouch_AcrossSightLine_DoesNotShortenClearBoomOrLiftPivot()
+        {
+            WithCouch(couch =>
+            {
+                couch.transform.position += Vector3.back * 2f;
+                UpdateVisualBounds(couch);
+                Physics.SyncTransforms();
+                Vector3 desired = Origin + Vector3.back * 8f;
+                Assert.That(Invoke("GetClearCollisionPivot", Origin), Is.EqualTo(Origin));
+                Assert.That(Vector3.Distance(Invoke("ResolveCollisionPosition", Origin, desired), desired), Is.LessThan(0.002f));
+                Bounds bounds = VisualBounds(couch);
+                Assert.That(Invoke("GetClearCollisionPivot", bounds.center), Is.EqualTo(bounds.center));
+            });
+        }
+
+        [Test]
+        public void CarryDistance_GrabAndReleaseBlendTowardConfiguredDistances()
+        {
+            WithCouch(couch =>
+            {
+                UpdateVisualBounds(couch);
+                StepPreferredDistance(1f / 60f);
+                float first = Field<float>("m_preferredDistance");
+                Assert.That(first, Is.InRange(4.5f, 5.625f));
+                for (int i = 0; i < 120; i++) StepPreferredDistance(1f / 60f);
+                Assert.That(Field<float>("m_preferredDistance"), Is.EqualTo(5.625f).Within(0.002f));
+                UpdateVisualBounds(null);
+                StepPreferredDistance(1f / 60f);
+                Assert.That(Field<float>("m_preferredDistance"), Is.InRange(4.51f, 5.624f));
+                for (int i = 0; i < 120; i++) StepPreferredDistance(1f / 60f);
+                Assert.That(Field<float>("m_preferredDistance"), Is.EqualTo(4.5f).Within(0.002f));
+            });
+        }
+
+        [TestCase(30)]
+        [TestCase(60)]
+        [TestCase(120)]
+        public void CollisionDamping_FastCompressionSlowRecoveryAndBriefGapHold(int fps)
+        {
+            float dt = 1f / fps;
+            SmoothBoom(5f, dt);
+            float inward = 5f - Vector3.Distance(Origin, SmoothBoom(2f, dt));
+            // Settle against an obstacle, then repeatedly expose a single clear frame.
+            for (int i = 0; i < fps; i++) SmoothBoom(2f, dt);
+            for (int i = 0; i < 8; i++)
+            {
+                float before = Field<float>("m_smoothedBoomDistance");
+                SmoothBoom(5f, dt);
+                Assert.That(Field<float>("m_smoothedBoomDistance"), Is.LessThanOrEqualTo(before + 0.001f));
+                SmoothBoom(1.95f, dt);
+            }
+            float outward = 0f;
+            for (int i = 0; i < fps && outward <= 0f; i++)
+            {
+                float start = Field<float>("m_smoothedBoomDistance");
+                outward = Vector3.Distance(Origin, SmoothBoom(5f, dt)) - start;
+            }
+            Assert.That(outward, Is.GreaterThan(0f).And.LessThan(inward));
+        }
+
+        [Test]
+        public void TightCorner_MovingAndRotatingBoomStaysOutsideWalls()
+        {
+            BoxCollider backWall = CreateBox(Origin + Vector3.back * 3f, new Vector3(12f, 6f, 0.2f));
+            BoxCollider sideWall = CreateBox(Origin + Vector3.right * 3f, new Vector3(0.2f, 6f, 12f));
+            Physics.SyncTransforms();
+            for (int frame = 0; frame < 360; frame++)
+            {
+                Vector3 pivot = Origin + new Vector3(Mathf.Sin(frame * 0.02f), 0f, Mathf.Cos(frame * 0.02f));
+                Quaternion rotation = Quaternion.Euler(12f, frame * 2f, 0f);
+                Vector3 safe = Invoke("CalculateCollisionPosition", pivot, rotation);
+                Vector3 damped = Invoke("SmoothCollisionPosition", pivot, safe, 1f / 60f);
+                Vector3 result = Invoke("ResolveCollisionPosition", pivot, damped);
+                Assert.That(Vector3.Distance(result, backWall.ClosestPoint(result)), Is.GreaterThanOrEqualTo(0.199f));
+                Assert.That(Vector3.Distance(result, sideWall.ClosestPoint(result)), Is.GreaterThanOrEqualTo(0.199f));
+            }
+        }
+
+        private T Field<T>(string name) => (T)typeof(ThirdPersonCameraController).GetField(name, Private).GetValue(m_camera);
+
+        private void StepPreferredDistance(float dt) => typeof(ThirdPersonCameraController)
+            .GetMethod("UpdatePreferredDistance", Private).Invoke(m_camera, new object[] { dt });
+
+        private Vector3 SmoothBoom(float distance, float dt) =>
+            Invoke("SmoothCollisionPosition", Origin, Origin + Vector3.back * distance, dt);
 
         [Test]
         public void ObstructedBoom_ReproducesFaceClipping_ThenKeepsCameraOutsidePlayer()

@@ -39,6 +39,8 @@ namespace CouchGuys.Gameplay.Couch
         [SerializeField] private CouchCarryPoint[] m_carryPoints = new CouchCarryPoint[MaximumCarryPoints];
         [SerializeField] private Transform m_modelRoot;
         [SerializeField] private GameObject[] m_modelPrefabs;
+        [Tooltip("Shared Easy delivery visual list. Legacy indices remain reserved for the original models.")]
+        [SerializeField] private CouchGuys.Gameplay.Delivery.DeliveryTierConfig m_easyDeliveryVisuals;
         [SerializeField] private CouchCarrySettings m_settings;
         [SerializeField] private SledSettings m_sledSettings;
 
@@ -112,6 +114,9 @@ namespace CouchGuys.Gameplay.Couch
         private GameObject m_modelInstance;
         private int m_appliedModelVariantIndex = -1;
         private Collider[] m_colliders;
+        private BoxCollider m_visualCollider;
+        private Bounds m_originalVisualColliderBounds;
+        private Bounds m_originalCargoBounds;
         private readonly RaycastHit[] m_stepHits = new RaycastHit[12];
         private Coroutine m_cargoTransition;
         private Bounds m_cargoBounds;
@@ -212,6 +217,10 @@ namespace CouchGuys.Gameplay.Couch
                 }
             }
             if (!foundCargoBounds) m_cargoBounds = new Bounds(Vector3.up * .45f, new Vector3(2.1f, .9f, .9f));
+            m_originalCargoBounds = m_cargoBounds;
+            m_visualCollider = GetComponent<BoxCollider>();
+            if (m_visualCollider != null)
+                m_originalVisualColliderBounds = new Bounds(m_visualCollider.center, m_visualCollider.size);
             if (m_modelRoot != null)
             {
                 m_modelBaseRotation = m_modelRoot.localRotation;
@@ -306,14 +315,17 @@ namespace CouchGuys.Gameplay.Couch
 
         /// <summary>Selects the visual used by this couch. Carry points and physics stay on the shared root.</summary>
         [Server]
-        public void SelectRandomModelVariantServer()
+        public void SelectRandomModelVariantServer(bool easyDelivery = false)
         {
             if (!IsServerInitialized || m_modelPrefabs == null || m_modelPrefabs.Length == 0)
             {
                 return;
             }
 
-            m_modelVariantIndex.Value = Random.Range(0, m_modelPrefabs.Length);
+            int easyCount = easyDelivery && m_easyDeliveryVisuals != null ? m_easyDeliveryVisuals.CouchVisualCount : 0;
+            m_modelVariantIndex.Value = easyCount > 0
+                ? m_modelPrefabs.Length + Random.Range(0, easyCount)
+                : Random.Range(0, m_modelPrefabs.Length);
             ApplyModelVariant(m_modelVariantIndex.Value);
         }
 
@@ -324,8 +336,8 @@ namespace CouchGuys.Gameplay.Couch
 
         private void ApplyModelVariant(int selectedIndex)
         {
-            if (m_modelPrefabs == null || selectedIndex < 0 || selectedIndex >= m_modelPrefabs.Length ||
-                m_modelPrefabs[selectedIndex] == null ||
+            GameObject prefab = ResolveModelVariant(selectedIndex);
+            if (prefab == null ||
                 (m_appliedModelVariantIndex == selectedIndex && m_modelInstance != null))
             {
                 return;
@@ -337,9 +349,25 @@ namespace CouchGuys.Gameplay.Couch
             }
 
             Transform modelRoot = m_modelRoot != null ? m_modelRoot : transform;
-            m_modelInstance = Instantiate(m_modelPrefabs[selectedIndex], modelRoot, false);
-            m_modelInstance.name = m_modelPrefabs[selectedIndex].name;
+            m_modelInstance = Instantiate(prefab, modelRoot, false);
+            m_modelInstance.name = prefab.name;
+            var profile = prefab.GetComponent<CouchVisualBounds>();
+            if (m_visualCollider != null)
+            {
+                Bounds bounds = profile != null ? profile.CollisionBounds : m_originalVisualColliderBounds;
+                m_visualCollider.center = bounds.center;
+                m_visualCollider.size = bounds.size;
+                m_cargoBounds = profile != null ? bounds : m_originalCargoBounds;
+            }
             m_appliedModelVariantIndex = selectedIndex;
+        }
+
+        private GameObject ResolveModelVariant(int index)
+        {
+            int legacyCount = m_modelPrefabs != null ? m_modelPrefabs.Length : 0;
+            if (index < 0) return null;
+            if (index < legacyCount) return m_modelPrefabs[index];
+            return m_easyDeliveryVisuals != null ? m_easyDeliveryVisuals.GetCouchVisual(index - legacyCount) : null;
         }
 
         private void FixedUpdate()

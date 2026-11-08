@@ -12,22 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 51fc72a80ed64c56a07d68c1cdf9b1a3, type: 3}
   m_Name: CarSettings
   m_EditorClassIdentifier: 
-  m_maximumHealth: 120
-  m_maximumDrivingSpeed: 13
-  m_acceleration: 8
-  m_brakingStrength: 18
-  m_playerBrakingStrength: 18
-  m_turningSpeed: 95
-  m_safeFollowingDistance: 9
-  m_collisionDamage: 28
-  m_collisionKnockbackStrength: 13
-  m_minimumCollisionSpeed: 3.5
-  m_collisionDamageCooldown: 0.65
-  m_explosionDamage: 38
-  m_explosionKnockback: 18
-  m_explosionRadius: 6
   Destruction:
     ExplosionLaunchForce: 19
     RandomHorizontalForce: 10
     RotationalTorque: 11
     DestroyedVehicleLifetime: 10
+  m_maximumHealth: 1000
+  m_maximumDrivingSpeed: 40
+  m_acceleration: 12
+  m_brakingStrength: 4
+  m_playerBrakingStrength: 18
+  m_turningSpeed: 95
+  m_safeFollowingDistance: 9
+  m_collisionDamage: 35
+  m_collisionKnockbackStrength: 13
+  m_minimumCollisionSpeed: 3.5
+  m_collisionDamageCooldown: 0.65
+  m_explosionDamage: 60
+  m_explosionKnockback: 25
+  m_explosionRadius: 12

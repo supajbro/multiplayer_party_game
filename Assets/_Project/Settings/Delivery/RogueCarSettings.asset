@@ -12,25 +12,31 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 48b8b2096a154a978e753dcc1d692864, type: 3}
   m_Name: RogueCarSettings
   m_EditorClassIdentifier: 
-  MaxSpeed: 15
-  Acceleration: 10
-  ReverseSpeed: 5
-  TurnSpeed: 95
-  MinTurningRadius: 4
-  TargetRefreshInterval: 0.5
-  StuckDetectionTime: 2
-  MaxHealth: 120
-  PlayerCollisionDamage: 28
-  PlayerKnockbackForce: 13
-  StructureCollisionDamageMultiplier: 5
-  MinimumDamagingCollisionSpeed: 3.5
-  InitialSpawnDelay: 15
-  SpawnCheckInterval: 20
-  SpawnChance: 0.6
-  MaxActiveCars: 2
-  MaxSpawnsPerDelivery: 30
   Destruction:
     ExplosionLaunchForce: 19
     RandomHorizontalForce: 10
     RotationalTorque: 11
     DestroyedVehicleLifetime: 10
+  MaxSpeed: 15
+  Acceleration: 10
+  ReverseSpeed: 5
+  TurnSpeed: 95
+  MinTurningRadius: 4
+  AngularAcceleration: 8
+  CompensateSteeringInertia: 0
+  TargetRefreshInterval: 0.5
+  StuckDetectionTime: 2
+  ReverseTowardsNearbyTargets: 0
+  TurnaroundForwardDuration: 2
+  TurnaroundReverseDuration: 1.4
+  TurnaroundTimeout: 12
+  MaxHealth: 120
+  PlayerCollisionDamage: 28
+  PlayerKnockbackForce: 13
+  StructureCollisionDamageMultiplier: 5
+  MinimumDamagingCollisionSpeed: 3.5
+  InitialSpawnDelay: 5
+  SpawnCheckInterval: 10
+  SpawnChance: 0.6
+  MaxActiveCars: 5
+  MaxSpawnsPerDelivery: 50

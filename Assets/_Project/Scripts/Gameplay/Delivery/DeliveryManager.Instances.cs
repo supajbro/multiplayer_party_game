@@ -127,7 +127,7 @@ namespace CouchGuys.Gameplay.Delivery
             CouchCarryController couch = instance.GetComponent<CouchCarryController>();
             Spawn(instance);
             couch.AssignDeliveryServer(id);
-            couch.SelectRandomModelVariantServer();
+            couch.SelectRandomModelVariantServer(GetTierConfig(job.TierIndex).Tier == DeliveryTier.Easy);
             job.CouchObjectId = instance.ObjectId;
             job.Status = conveyor ? DeliveryState.CouchSpawned : DeliveryState.Transport;
             SetDelivery(job);

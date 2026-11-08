@@ -36,6 +36,13 @@ namespace CouchGuys.Gameplay.Delivery
         [SerializeField] private Sprite m_icon;
         [SerializeField] private Color m_colour = new Color(1f, 0.72f, 0.12f);
 
+        [Header("Easy couch visuals")]
+        [Tooltip("Saved visual prefabs used by Easy deliveries. Selection is independent and uniform per spawn.")]
+        [SerializeField] private GameObject[] m_couchVisualPrefabs = Array.Empty<GameObject>();
+        public int CouchVisualCount => m_tier == DeliveryTier.Easy ? m_couchVisualPrefabs.Length : 0;
+        public GameObject GetCouchVisual(int index) => index >= 0 && index < CouchVisualCount
+            ? m_couchVisualPrefabs[index] : null;
+
         [Header("Economy")]
         [SerializeField, Min(0)] private int m_purchasePrice;
         [SerializeField, Min(0)] private int m_reward = 100;

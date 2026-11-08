@@ -1,0 +1,12 @@
+PASS: shared network couch retains original three models, four grab points and Easy config reference.
+PASS: EasyCouch_01: bounds (2.12, 1.42, 0.99), triangles 6140/2946/1228, 3 LODs, valid Toon materials.
+PASS: EasyCouch_02: bounds (2.12, 1.42, 0.99), triangles 4708/2258/940, 3 LODs, valid Toon materials.
+PASS: EasyCouch_03: bounds (2.12, 1.41, 0.99), triangles 8196/3934/1638, 3 LODs, valid Toon materials.
+PASS: EasyCouch_04: bounds (2.12, 1.42, 0.99), triangles 4708/2258/940, 3 LODs, valid Toon materials.
+PASS: EasyCouch_05: bounds (2.12, 1.55, 1.01), triangles 9398/4466/1808, 3 LODs, valid Toon materials.
+PASS: EasyCouch_06: bounds (2.22, 1.42, 1.08), triangles 5856/2810/1170, 3 LODs, valid Toon materials.
+PASS: EasyCouch_07: bounds (2.12, 1.42, 0.99), triangles 5604/2688/1120, 3 LODs, valid Toon materials.
+PASS: EasyCouch_08: bounds (2.12, 1.42, 1.01), triangles 8740/4194/1748, 3 LODs, valid Toon materials.
+PASS: EasyCouch_09: bounds (2.12, 1.42, 0.99), triangles 6056/2906/1210, 3 LODs, valid Toon materials.
+PASS: EasyCouch_10: bounds (2.12, 1.42, 1.01), triangles 7868/3775/1572, 3 LODs, valid Toon materials.
+PASS: Medium and Hard retain legacy visual selection.

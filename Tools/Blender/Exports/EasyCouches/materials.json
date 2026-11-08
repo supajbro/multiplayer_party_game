@@ -1,0 +1,234 @@
+{
+  "materials": [
+    {
+      "name": "EC_01_Coral",
+      "color": [
+        0.8600000143051147,
+        0.07500000298023224,
+        0.04500000178813934,
+        1.0
+      ],
+      "texture": ""
+    },
+    {
+      "name": "EC_02_Blue",
+      "color": [
+        0.02500000037252903,
+        0.38999998569488525,
+        0.7200000286102295,
+        1.0
+      ],
+      "texture": ""
+    },
+    {
+      "name": "EC_02_CreamStripes",
+      "color": [
+        0.02500000037252903,
+        0.38999998569488525,
+        0.7200000286102295,
+        1.0
+      ],
+      "texture": "Assets/_Project/Models/Couch/Easy/Textures/EC_02_CreamStripes.png"
+    },
+    {
+      "name": "EC_03_OlivePillow",
+      "color": [
+        0.4300000071525574,
+        0.5199999809265137,
+        0.07999999821186066,
+        1.0
+      ],
+      "texture": ""
+    },
+    {
+      "name": "EC_03_RedBand",
+      "color": [
+        0.800000011920929,
+        0.07999999821186066,
+        0.03999999910593033,
+        1.0
+      ],
+      "texture": ""
+    },
+    {
+      "name": "EC_03_Sunshine",
+      "color": [
+        1.0,
+        0.5699999928474426,
+        0.014999999664723873,
+        1.0
+      ],
+      "texture": ""
+    },
+    {
+      "name": "EC_04_Daisy",
+      "color": [
+        0.3100000023841858,
+        0.47999998927116394,
+        0.07500000298023224,
+        1.0
+      ],
+      "texture": "Assets/_Project/Models/Couch/Easy/Textures/EC_04_Daisy.png"
+    },
+    {
+      "name": "EC_05_Lavender",
+      "color": [
+        0.47999998927116394,
+        0.23999999463558197,
+        0.6899999976158142,
+        1.0
+      ],
+      "texture": ""
+    },
+    {
+      "name": "EC_06_BlueBorderThrow",
+      "color": [
+        0.9599999785423279,
+        0.8299999833106995,
+        0.6100000143051147,
+        1.0
+      ],
+      "texture": "Assets/_Project/Models/Couch/Easy/Textures/EC_06_BlueBorderThrow.png"
+    },
+    {
+      "name": "EC_06_OrangePlaid",
+      "color": [
+        0.9200000166893005,
+        0.20000000298023224,
+        0.02500000037252903,
+        1.0
+      ],
+      "texture": "Assets/_Project/Models/Couch/Easy/Textures/EC_06_OrangePlaid.png"
+    },
+    {
+      "name": "EC_07_PillowStripes",
+      "color": [
+        0.02500000037252903,
+        0.38999998569488525,
+        0.7200000286102295,
+        1.0
+      ],
+      "texture": "Assets/_Project/Models/Couch/Easy/Textures/EC_07_PillowStripes.png"
+    },
+    {
+      "name": "EC_07_Turquoise",
+      "color": [
+        0.014999999664723873,
+        0.5099999904632568,
+        0.5600000023841858,
+        1.0
+      ],
+      "texture": ""
+    },
+    {
+      "name": "EC_08_Rose",
+      "color": [
+        0.9200000166893005,
+        0.14000000059604645,
+        0.28999999165534973,
+        1.0
+      ],
+      "texture": ""
+    },
+    {
+      "name": "EC_09_Denim",
+      "color": [
+        0.07500000298023224,
+        0.23999999463558197,
+        0.550000011920929,
+        1.0
+      ],
+      "texture": ""
+    },
+    {
+      "name": "EC_09_PolkaThrow",
+      "color": [
+        1.0,
+        0.5199999809265137,
+        0.019999999552965164,
+        1.0
+      ],
+      "texture": "Assets/_Project/Models/Couch/Easy/Textures/EC_09_PolkaThrow.png"
+    },
+    {
+      "name": "EC_10_Gingham",
+      "color": [
+        1.0,
+        0.5,
+        0.10000000149011612,
+        1.0
+      ],
+      "texture": "Assets/_Project/Models/Couch/Easy/Textures/EC_10_Gingham.png"
+    },
+    {
+      "name": "EC_10_Lime",
+      "color": [
+        0.4399999976158142,
+        0.6200000047683716,
+        0.04500000178813934,
+        1.0
+      ],
+      "texture": ""
+    },
+    {
+      "name": "EC_Cream",
+      "color": [
+        1.0,
+        0.8399999737739563,
+        0.5899999737739563,
+        1.0
+      ],
+      "texture": ""
+    },
+    {
+      "name": "EC_Gold",
+      "color": [
+        1.0,
+        0.550000011920929,
+        0.02500000037252903,
+        1.0
+      ],
+      "texture": ""
+    },
+    {
+      "name": "EC_HoneyWood",
+      "color": [
+        0.4300000071525574,
+        0.20000000298023224,
+        0.054999999701976776,
+        1.0
+      ],
+      "texture": ""
+    },
+    {
+      "name": "EC_IvoryPiping",
+      "color": [
+        1.0,
+        0.8199999928474426,
+        0.47999998927116394,
+        1.0
+      ],
+      "texture": ""
+    },
+    {
+      "name": "EC_PinkPillow",
+      "color": [
+        0.9900000095367432,
+        0.30000001192092896,
+        0.46000000834465027,
+        1.0
+      ],
+      "texture": ""
+    },
+    {
+      "name": "EC_Studio",
+      "color": [
+        0.8899999856948853,
+        0.8600000143051147,
+        0.8199999928474426,
+        1.0
+      ],
+      "texture": ""
+    }
+  ]
+}

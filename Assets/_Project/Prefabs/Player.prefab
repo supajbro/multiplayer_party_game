@@ -1123,6 +1123,7 @@ MonoBehaviour:
   m_input: {fileID: 100003}
   m_playerVisualRoot: {fileID: 2135271257120216723}
   m_cameraDistance: 4.5
+  m_couchCarryDistanceMultiplier: 1.25
   m_pivotHeight: 0.15
   m_shoulderOffset: 0.65
   m_mouseSensitivity: 0.12
@@ -1136,6 +1137,9 @@ MonoBehaviour:
     m_Bits: 4294967295
   m_collisionRadius: 0.2
   m_collisionPadding: 0.1
+  m_collisionSmoothingSpeed: 12
+  m_returnSmoothingSpeed: 4
+  m_minimumCameraDistance: 0.65
   m_grappleResistance: 8
   m_grappleScreenMargin: 0.04
   m_grappleTensionAngle: 15

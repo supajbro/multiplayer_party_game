@@ -17,6 +17,17 @@ MonoBehaviour:
   m_description: A nearby, mostly flat run in the early neighbourhood.
   m_icon: {fileID: 0}
   m_colour: {r: 0.24, g: 0.76, b: 0.34, a: 1}
+  m_couchVisualPrefabs:
+  - {fileID: 7588957768625589253, guid: dec1e148ae96654408eaf3b8fd138ac7, type: 3}
+  - {fileID: 7015994181390816634, guid: f06802ccd18bcc747aa12a674e764ca0, type: 3}
+  - {fileID: 2091820719554160173, guid: 7281d8b1de91c7641b80e25660878137, type: 3}
+  - {fileID: 3050038168220507525, guid: f126889d325873a41a5363b637215efc, type: 3}
+  - {fileID: 5366528585247426227, guid: 240182e6d4e7ac34f846a19b39190e51, type: 3}
+  - {fileID: 2783406030262052844, guid: eb6a191d59cf9af4d93456ece8bbc42a, type: 3}
+  - {fileID: 8955293610893466230, guid: 4ae59e738fbe3954b8bdd6a292222ad5, type: 3}
+  - {fileID: 1552124233703400442, guid: b4c71ec9be5f9ee458b82970d60bf602, type: 3}
+  - {fileID: 8840446959697038502, guid: 3a21441d209822140a8c377401a4193b, type: 3}
+  - {fileID: 8528170061306509084, guid: 78aa1140b8ffef348a7f1f56e719364b, type: 3}
   m_purchasePrice: 0
   m_reward: 1500
   m_baseDeliveryTime: 120

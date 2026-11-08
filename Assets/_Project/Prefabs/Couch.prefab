@@ -217,7 +217,9 @@ MonoBehaviour:
   - {fileID: 919132149155446097, guid: 08e6ddc2aedd2ec46927d5be9ab454e0, type: 3}
   - {fileID: 919132149155446097, guid: b7e7fe563a097ff44b491e73d1e780cd, type: 3}
   - {fileID: 919132149155446097, guid: e491c7b88b92ca04a93849f28ec6fd46, type: 3}
+  m_easyDeliveryVisuals: {fileID: 11400000, guid: 1735b882beba4d4395630071f5d36936, type: 2}
   m_settings: {fileID: 11400000, guid: 4f1d13f1162045bca704bdd737c0039d, type: 2}
+  m_sledSettings: {fileID: 0}
 --- !u!1 &2000
 GameObject:
   m_ObjectHideFlags: 0

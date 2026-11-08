@@ -13,6 +13,7 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] private CanvasGroup m_content;
         [SerializeField] private Text m_key;
         [SerializeField] private GameObject m_keycap;
+        [SerializeField] private GameObject m_pressHolder;
         [SerializeField] private Text m_action;
         [SerializeField] private Image m_holdFill;
         [SerializeField] private GameObject m_holdTrack;
@@ -86,6 +87,8 @@ namespace CouchGuys.Gameplay.Weapons
             }
 
             bool hold = visible && duration > 0f;
+            bool press = visible && m_keycap.activeSelf && !hold;
+            if (m_pressHolder.activeSelf != press) m_pressHolder.SetActive(press);
             if (m_holdTrack.activeSelf != hold) m_holdTrack.SetActive(hold);
             float fill = hold ? Mathf.Clamp01(progress / duration) : 0f;
             if (m_holdFill.fillAmount != fill) m_holdFill.fillAmount = fill;

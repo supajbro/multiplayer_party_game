@@ -22,6 +22,7 @@ namespace CouchGuys.CameraSystem
 
         [Header("Framing")]
         [SerializeField, Min(0.1f)] private float m_cameraDistance = 4.5f;
+        [SerializeField, Min(1f)] private float m_couchCarryDistanceMultiplier = 1.25f;
         [SerializeField] private float m_pivotHeight = 0.15f;
         [SerializeField] private float m_shoulderOffset = 0.65f;
 
@@ -39,6 +40,11 @@ namespace CouchGuys.CameraSystem
         [SerializeField] private LayerMask m_collisionLayers = ~0;
         [SerializeField, Min(0.01f)] private float m_collisionRadius = 0.2f;
         [SerializeField, Min(0f)] private float m_collisionPadding = 0.1f;
+        [Tooltip("Inward damping rate in inverse seconds. Keep faster than the return rate.")]
+        [SerializeField, Min(0.01f)] private float m_collisionSmoothingSpeed = 12f;
+        [SerializeField, Min(0.01f)] private float m_returnSmoothingSpeed = 4f;
+        [Tooltip("Preferred closest boom distance. Actual geometry clearance takes priority in tight spaces.")]
+        [SerializeField, Min(0.01f)] private float m_minimumCameraDistance = 0.65f;
 
         [Header("Grapple Camera Tension")]
         [SerializeField, Min(0f)] private float m_grappleResistance = 8f;
@@ -60,6 +66,11 @@ namespace CouchGuys.CameraSystem
         private RaycastHit[] m_collisionHits = new RaycastHit[16];
         private Collider[] m_pivotOverlaps = new Collider[16];
         private PlayerCouchCarrier m_couchCarrier;
+        private Transform m_carriedCouchRoot;
+        private float m_preferredDistance;
+        private float m_smoothedBoomDistance;
+        private float m_collisionReleaseDelay;
+        private bool m_hasBoomDistance;
         private readonly List<Renderer> m_carriedCouchRenderers = new();
         private Bounds m_carriedCouchBounds;
         private bool m_hasCarriedCouchBounds;
@@ -193,6 +204,8 @@ namespace CouchGuys.CameraSystem
         public void FollowPlayer()
         {
             m_vehicleTarget = null;
+            m_hasBoomDistance = false;
+            m_collisionReleaseDelay = 0f;
             m_previousPivotPosition = GetPivotPosition();
             m_hasPreviousPivotPosition = true;
         }
@@ -219,6 +232,8 @@ namespace CouchGuys.CameraSystem
 
         private void OnEnable()
         {
+            m_hasBoomDistance = false;
+            m_collisionReleaseDelay = 0f;
             m_previousPivotPosition = GetPivotPosition();
             m_hasPreviousPivotPosition = true;
             ApplyCursorState();
@@ -258,6 +273,7 @@ namespace CouchGuys.CameraSystem
             Vector3 pivot = GetPivotPosition();
             CompensateForTargetMovement(pivot);
             pivot = GetClearCollisionPivot(pivot);
+            UpdatePreferredDistance(Time.deltaTime);
 
             Vector2 lookInput = m_input.Look;
             Bounds grappleBounds = default;
@@ -284,6 +300,7 @@ namespace CouchGuys.CameraSystem
                 SetOrbitAngles(desiredRotation);
                 desiredPosition = CalculateCollisionPosition(pivot, desiredRotation);
             }
+            desiredPosition = SmoothCollisionPosition(pivot, desiredPosition, Time.deltaTime);
 
             float positionBlend = 1f - Mathf.Exp(-m_followSmoothing * Time.deltaTime);
             float rotationBlend = 1f - Mathf.Exp(-m_rotationSmoothing * Time.deltaTime);
@@ -291,6 +308,9 @@ namespace CouchGuys.CameraSystem
             // Smoothing can cross furniture even when both orbit destinations are clear.
             // Collision correction must be the last position operation of the frame.
             transform.position = ResolveCollisionPosition(pivot, smoothedPosition);
+            // Remember emergency clearance so the damper does not fight it next frame.
+            if ((transform.position - smoothedPosition).sqrMagnitude > 0.000001f)
+                m_smoothedBoomDistance = Vector3.Distance(pivot, transform.position);
             transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, rotationBlend);
             if (constrained)
             {
@@ -444,22 +464,55 @@ namespace CouchGuys.CameraSystem
         private Vector3 CalculateCollisionPosition(Vector3 pivot, Quaternion orbitRotation)
         {
             pivot = GetClearCollisionPivot(pivot);
-            Vector3 desiredOffset = orbitRotation * new Vector3(m_shoulderOffset, 0f, -m_cameraDistance);
+            float distance = m_preferredDistance > 0f ? m_preferredDistance : m_cameraDistance;
+            Vector3 desiredOffset = orbitRotation * new Vector3(m_shoulderOffset, 0f, -distance);
             return ResolveCollisionPosition(pivot, pivot + desiredOffset);
+        }
+
+        private void UpdatePreferredDistance(float deltaTime)
+        {
+            if (m_preferredDistance <= 0f) m_preferredDistance = m_cameraDistance;
+            float target = m_cameraDistance * (m_carriedCouchRoot != null ? m_couchCarryDistanceMultiplier : 1f);
+            m_preferredDistance = Mathf.Lerp(m_preferredDistance, target,
+                1f - Mathf.Exp(-m_returnSmoothingSpeed * deltaTime));
+        }
+
+        private Vector3 SmoothCollisionPosition(Vector3 pivot, Vector3 safePosition, float deltaTime)
+        {
+            Vector3 offset = safePosition - pivot;
+            float safeDistance = offset.magnitude;
+            if (safeDistance < 0.0001f) return safePosition;
+            Vector3 direction = offset / safeDistance;
+            // A larger probe starts compression before the hard clearance limit is
+            // reached. Only world geometry affects this anticipation, never a carrier.
+            float targetDistance = Vector3.Distance(pivot, CastWorldCameraBoom(pivot, safePosition,
+                m_collisionRadius + Mathf.Max(0.25f, m_collisionPadding)));
+            targetDistance = Mathf.Min(safeDistance, Mathf.Max(m_minimumCameraDistance, targetDistance));
+            if (!m_hasBoomDistance)
+            {
+                m_smoothedBoomDistance = safeDistance;
+                m_hasBoomDistance = true;
+            }
+            // Hold compression through brief gaps at wall edges and moving geometry.
+            // Small changes do not alternate inward/outward corrections every frame.
+            float preferred = m_preferredDistance > 0f ? m_preferredDistance : m_cameraDistance;
+            float preferredBoom = new Vector3(m_shoulderOffset, 0f, preferred).magnitude;
+            if (targetDistance < preferredBoom - 0.02f) m_collisionReleaseDelay = 0.15f;
+            else m_collisionReleaseDelay = Mathf.Max(0f, m_collisionReleaseDelay - deltaTime);
+            bool inward = targetDistance < m_smoothedBoomDistance;
+            if (inward || m_collisionReleaseDelay <= 0f)
+            {
+                float speed = inward ? Mathf.Max(m_collisionSmoothingSpeed, m_returnSmoothingSpeed) : m_returnSmoothingSpeed;
+                m_smoothedBoomDistance = Mathf.Lerp(m_smoothedBoomDistance, targetDistance,
+                    1f - Mathf.Exp(-speed * deltaTime));
+            }
+            return pivot + direction * m_smoothedBoomDistance;
         }
 
         private Vector3 GetClearCollisionPivot(Vector3 pivot)
         {
-            // The animated visual can extend beyond its physics collider. Query its
-            // current rendered bounds independently of physics interpolation/layers.
-            if (m_hasCarriedCouchBounds)
-            {
-                Bounds bounds = GetExpandedCarriedCouchBounds();
-                if (bounds.Contains(pivot)) pivot.y = bounds.max.y + 0.001f;
-            }
-            // A carrier can overlap the couch because their mutual collision is ignored.
-            // Sphere casts do not detect colliders overlapping their starting sphere.
-            // Lift the query origin above those colliders before testing the camera boom.
+            // Sphere casts miss initial overlaps. Clear world geometry, but keep
+            // the orbit pivot stable when the local body or held couch moves across it.
             for (int attempt = 0; attempt < 4; attempt++)
             {
                 int count;
@@ -474,7 +527,7 @@ namespace CouchGuys.CameraSystem
                 for (int index = 0; index < count; index++)
                 {
                     Collider obstacle = m_pivotOverlaps[index];
-                    if (IsPlayerCollider(obstacle.transform)) continue;
+                    if (IsIgnoredBoomCollider(obstacle.transform)) continue;
                     clearHeight = Mathf.Max(clearHeight,
                         obstacle.bounds.max.y + m_collisionRadius + m_collisionPadding + 0.001f);
                 }
@@ -483,14 +536,13 @@ namespace CouchGuys.CameraSystem
                 pivot.y = clearHeight;
             }
 
-            // Clearing another collider may have lifted a pivot into the animated
-            // couch bounds, so check the visual once more after the physics passes.
-            if (m_hasCarriedCouchBounds)
-            {
-                Bounds bounds = GetExpandedCarriedCouchBounds();
-                if (bounds.Contains(pivot)) pivot.y = bounds.max.y + 0.001f;
-            }
             return pivot;
+        }
+
+        private bool IsIgnoredBoomCollider(Transform colliderTransform)
+        {
+            return IsPlayerCollider(colliderTransform) ||
+                (m_carriedCouchRoot != null && colliderTransform.IsChildOf(m_carriedCouchRoot));
         }
 
         private bool IsPlayerCollider(Transform colliderTransform)
@@ -501,7 +553,20 @@ namespace CouchGuys.CameraSystem
         private Vector3 ResolveCollisionPosition(Vector3 pivot, Vector3 desiredPosition)
         {
             pivot = GetClearCollisionPivot(pivot);
+            // The couch may cross the sight line without obstructing the camera.
+            // Only an actual near-plane overlap needs a visual safety correction.
+            if (m_hasCarriedCouchBounds && GetExpandedCarriedCouchBounds().Contains(desiredPosition))
+            {
+                pivot.y = Mathf.Max(pivot.y, GetExpandedCarriedCouchBounds().max.y + 0.001f);
+                pivot = GetClearCollisionPivot(pivot);
+            }
             Vector3 result = CastCameraBoom(pivot, desiredPosition);
+            if (m_hasCarriedCouchBounds && GetExpandedCarriedCouchBounds().Contains(result))
+            {
+                pivot.y = Mathf.Max(pivot.y, GetExpandedCarriedCouchBounds().max.y + 0.001f);
+                pivot = GetClearCollisionPivot(pivot);
+                result = CastCameraBoom(pivot, desiredPosition);
+            }
             if (!m_hasPlayerVisualBounds) return result;
 
             Bounds playerBounds = GetExpandedVisualBounds(m_playerVisualBounds);
@@ -513,6 +578,8 @@ namespace CouchGuys.CameraSystem
             // already-tested segment preserves world and held-couch clearance too.
             pivot.y = Mathf.Max(pivot.y, playerBounds.max.y + 0.001f);
             pivot = GetClearCollisionPivot(pivot);
+            if (m_hasCarriedCouchBounds && GetExpandedCarriedCouchBounds().Contains(pivot))
+                pivot.y = GetExpandedCarriedCouchBounds().max.y + 0.001f;
             result = CastCameraBoom(pivot, desiredPosition);
             Vector3 offset = result - pivot;
             float distance = offset.magnitude;
@@ -522,6 +589,19 @@ namespace CouchGuys.CameraSystem
         }
 
         private Vector3 CastCameraBoom(Vector3 pivot, Vector3 desiredPosition)
+        {
+            Vector3 result = CastWorldCameraBoom(pivot, desiredPosition, m_collisionRadius);
+            if (!m_hasCarriedCouchBounds) return result;
+            Bounds couchBounds = GetExpandedCarriedCouchBounds();
+            if (!couchBounds.Contains(result)) return result;
+            Vector3 offset = result - pivot;
+            float distance = offset.magnitude;
+            if (distance > 0.0001f && couchBounds.IntersectRay(new Ray(pivot, offset / distance), out float hit))
+                result = pivot + offset / distance * Mathf.Min(distance, Mathf.Max(0f, hit - 0.001f));
+            return result;
+        }
+
+        private Vector3 CastWorldCameraBoom(Vector3 pivot, Vector3 desiredPosition, float radius)
         {
             Vector3 desiredOffset = desiredPosition - pivot;
             float desiredDistance = desiredOffset.magnitude;
@@ -533,7 +613,7 @@ namespace CouchGuys.CameraSystem
             // NonAlloc results are unordered. A full buffer can omit the nearest hit.
             while ((hitCount = Physics.SphereCastNonAlloc(
                 pivot,
-                m_collisionRadius,
+                radius,
                 castDirection,
                 m_collisionHits,
                 desiredDistance,
@@ -546,7 +626,7 @@ namespace CouchGuys.CameraSystem
             for (int index = 0; index < hitCount; index++)
             {
                 Transform hitTransform = m_collisionHits[index].transform;
-                if (IsPlayerCollider(hitTransform))
+                if (IsIgnoredBoomCollider(hitTransform))
                 {
                     continue;
                 }
@@ -557,16 +637,12 @@ namespace CouchGuys.CameraSystem
             float correctedDistance = nearestDistance < desiredDistance
                 ? Mathf.Max(0f, nearestDistance - m_collisionPadding)
                 : desiredDistance;
-            if (m_hasCarriedCouchBounds && GetExpandedCarriedCouchBounds().IntersectRay(
-                    new Ray(pivot, castDirection), out float visualDistance))
-            {
-                correctedDistance = Mathf.Min(correctedDistance, Mathf.Max(0f, visualDistance - 0.001f));
-            }
             return pivot + castDirection * correctedDistance;
         }
 
         private void UpdateCarriedCouchBounds(CouchCarryController couch)
         {
+            m_carriedCouchRoot = couch != null ? couch.transform : null;
             m_hasCarriedCouchBounds = false;
             m_carriedCouchRenderers.Clear();
             if (couch == null) return;
@@ -575,7 +651,8 @@ namespace CouchGuys.CameraSystem
             couch.GetComponentsInChildren(false, m_carriedCouchRenderers);
             foreach (Renderer visual in m_carriedCouchRenderers)
             {
-                if (visual == null || !visual.enabled || !visual.gameObject.activeInHierarchy) continue;
+                if (!(visual is MeshRenderer || visual is SkinnedMeshRenderer) ||
+                    !visual.enabled || !visual.gameObject.activeInHierarchy) continue;
                 if (m_hasCarriedCouchBounds) m_carriedCouchBounds.Encapsulate(visual.bounds);
                 else m_carriedCouchBounds = visual.bounds;
                 m_hasCarriedCouchBounds = true;
@@ -644,6 +721,11 @@ namespace CouchGuys.CameraSystem
         private void OnValidate()
         {
             m_cameraDistance = Mathf.Max(0.1f, m_cameraDistance);
+            m_couchCarryDistanceMultiplier = Mathf.Max(1f, m_couchCarryDistanceMultiplier);
+            m_collisionSmoothingSpeed = Mathf.Max(0.01f, m_collisionSmoothingSpeed);
+            m_returnSmoothingSpeed = Mathf.Max(0.01f, m_returnSmoothingSpeed);
+            m_minimumCameraDistance = Mathf.Max(0.01f, m_minimumCameraDistance);
+            m_collisionPadding = Mathf.Max(0f, m_collisionPadding);
             m_maximumVerticalAngle = Mathf.Max(m_minimumVerticalAngle, m_maximumVerticalAngle);
             m_initialVerticalAngle = Mathf.Clamp(m_initialVerticalAngle, m_minimumVerticalAngle, m_maximumVerticalAngle);
         }

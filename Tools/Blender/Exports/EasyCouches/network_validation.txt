@@ -1,0 +1,12 @@
+START: Easy couch host/independent client validation
+PASS: FishNet loopback host started
+PASS: Server random selection reaches couch 01
+PASS: Couch 01 applies its saved collision envelope and retains delivery identity
+PASS: Server random selection reaches couch 02
+PASS: Couch 02 applies its saved collision envelope and retains delivery identity
+PASS: Server random selection reaches couch 03
+PASS: Couch 03 applies its saved collision envelope and retains delivery identity
+FAIL: System.Exception: Server random selection reaches couch 04
+  at CouchGuys.Editor.EasyCouchPlayValidation.Check (System.Boolean condition, System.String message) [0x00009] in C:\Users\Jaden\Documents\MyUnityProjects\multiplayer_party_game\Assets\_Project\Scripts\Editor\EasyCouchPlayValidation.cs:67 
+  at CouchGuys.Editor.EasyCouchPlayValidation+<Probe>d__15.MoveNext () [0x004bc] in C:\Users\Jaden\Documents\MyUnityProjects\multiplayer_party_game\Assets\_Project\Scripts\Editor\EasyCouchPlayValidation.cs:99 
+  at CouchGuys.Editor.EasyCouchPlayValidation.Tick () [0x00087] in C:\Users\Jaden\Documents\MyUnityProjects\multiplayer_party_game\Assets\_Project\Scripts\Editor\EasyCouchPlayValidation.cs:55 
