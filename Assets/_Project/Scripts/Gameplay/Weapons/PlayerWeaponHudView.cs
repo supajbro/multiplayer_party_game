@@ -76,6 +76,7 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] private Image m_hotbarHolder;
         [SerializeField] private Image m_activeSlotHighlight;
         [SerializeField] private RectTransform[] m_hotbarSlots;
+        [SerializeField] private Text[] m_healingQuantities;
         [SerializeField] private Vector2 m_highlightOffset;
         [SerializeField] private Vector2 m_highlightScale = Vector2.one;
         [SerializeField, Min(0f)] private float m_highlightAnimationDuration = 0.12f;
@@ -133,6 +134,15 @@ namespace CouchGuys.Gameplay.Weapons
 
         public void PresentWeapon(PlayerWeaponController weapons)
         {
+            if (m_healingQuantities != null)
+                for (int slot = 0; slot < m_healingQuantities.Length; slot++)
+                {
+                    Text label = m_healingQuantities[slot];
+                    if (label == null) continue;
+                    int quantity = weapons.GetInventoryHealingQuantity(slot);
+                    label.gameObject.SetActive(quantity > 1);
+                    label.text = quantity > 1 ? quantity.ToString() : string.Empty;
+                }
             bool healing = weapons.EquippedHealingItem != null;
             bool equipped = weapons.HasEquippedWeapon;
             bool melee = equipped && weapons.EquippedWeapon == PlayerWeaponType.BaseballBat;

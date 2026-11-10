@@ -165,6 +165,50 @@ namespace CouchGuys.Editor
                 end=Time.time+settings.UseDuration+.3f; while(Time.time<end) yield return null;
                 Check(health.CurrentHealth==200,"Healing capped at maximum");
             }
+            // Stack capacity, shared acquisition paths, and one-at-a-time consumption.
+            var stackItem=catalogue.Items[0];
+            for(int count=1;count<=6;count++)
+            {
+                Check(inventory.AcquireHealingItemServer(stackItem),"Acquire identical healing item "+count);
+                Check(inventory.GetInventoryHealingQuantity(0)==count && inventory.GetInventoryWeaponIndex(1)==-1,
+                    "Identical pickups share one slot up to six");
+            }
+            Check(inventory.AcquireHealingItemServer(stackItem) && inventory.GetInventoryHealingQuantity(0)==6 &&
+                inventory.GetInventoryHealingQuantity(1)==1,"Seventh healing item overflows into a new slot");
+            Check(inventory.AcquireHealingItemServer(catalogue.Items[1]) && inventory.GetInventoryHealingItem(2)==catalogue.Items[1] &&
+                inventory.AcquireHealingItemServer(catalogue.Items[2]) && inventory.GetInventoryHealingItem(3)==catalogue.Items[2],
+                "Different healing types occupy separate slots");
+            Check(manager.TryBeginDialogueServer(npc,carrier) && manager.TryPurchaseShopItemServer(carrier,stackItem.name,request++),
+                "Shop purchase adds to a partial stack");
+            Check(inventory.GetInventoryHealingQuantity(1)==2,"Shop uses existing matching stack");
+            var stackPickup=WeaponPickup.SpawnHealingServer(stackItem,player.transform.position+Vector3.up*.6f,Quaternion.identity,Vector3.zero);
+            Physics.SyncTransforms();
+            Check(stackPickup.TryPickupServer(inventory) && inventory.GetInventoryHealingQuantity(1)==3,
+                "World pickup uses existing matching stack");
+            var hud=Object.Instantiate(AssetDatabase.LoadAssetAtPath<PlayerWeaponHudView>("Assets/_Project/Prefabs/UI/PlayerWeaponHud.prefab"));
+            hud.PresentWeapon(inventory);
+            var quantities=new SerializedObject(hud).FindProperty("m_healingQuantities");
+            Check(quantities.arraySize==5,"Saved HUD has quantity labels for all five existing slots");
+            var quantity=(UnityEngine.UI.Text)quantities.GetArrayElementAtIndex(0).objectReferenceValue;
+            Check(quantity.gameObject.activeSelf && quantity.text=="6" && quantity.rectTransform.anchorMin==new Vector2(1,0),
+                "HUD displays stacked quantity in bottom-right corner");
+            var singleQuantity=(UnityEngine.UI.Text)quantities.GetArrayElementAtIndex(2).objectReferenceValue;
+            Check(!singleQuantity.gameObject.activeSelf,"HUD hides quantity for a single item");
+            for(int slot=0;slot<4;slot++)
+            {
+                typeof(PlayerWeaponController).GetMethod("EquipInventorySlotServer",Fields).Invoke(inventory,new object[]{slot});
+                while(inventory.GetInventoryHealingQuantity(slot)>0)
+                {
+                    int count=inventory.GetInventoryHealingQuantity(slot), id=inventory.GetInventoryWeaponIndex(slot);
+                    SetSync(health,"m_currentHealth",1f);
+                    Check(inventory.ConsumeHealingItemServer(slot,id) && inventory.GetInventoryHealingQuantity(slot)==count-1,
+                        "Consumption removes exactly one item");
+                    Check(inventory.GetInventoryWeaponIndex(slot)==(count>1?id:-1),"Only final consumption clears the slot");
+                }
+            }
+            hud.PresentWeapon(inventory);
+            Check(!quantity.gameObject.activeSelf,"HUD clears quantity immediately after final consumption");
+            Object.Destroy(hud.gameObject);
             // A separate client-only manager exercises actual packet serialization and remote replicas.
             var remoteRoot=new GameObject("Healing remote client"); remoteRoot.SetActive(false);
             s_remote=remoteRoot.AddComponent<NetworkManager>();
@@ -197,8 +241,11 @@ namespace CouchGuys.Editor
             {
                 SetSync(remoteHealth,"m_currentHealth",10f);
                 Check(remoteInventory.AcquireHealingItemServer(settings),"Server grants remote player's item: "+settings.DisplayName);
+                Check(remoteInventory.AcquireHealingItemServer(settings),"Server stacks remote player's second item");
                 timeout=Time.realtimeSinceStartup+3;
-                while(replica.GetComponent<PlayerWeaponController>().EquippedHealingItem!=settings && Time.realtimeSinceStartup<timeout) yield return null;
+                while((replica.GetComponent<PlayerWeaponController>().EquippedHealingItem!=settings ||
+                    replica.GetComponent<PlayerWeaponController>().GetInventoryHealingQuantity(0)!=2) && Time.realtimeSinceStartup<timeout) yield return null;
+                Check(replica.GetComponent<PlayerWeaponController>().GetInventoryHealingQuantity(0)==2,"Stack quantity replicated to independent client");
                 float readyAt=Time.time+.3f; while(Time.time<readyAt) yield return null;
                 replica.GetComponent<HealingItem>().RequestUseServerRpc();
                 timeout=Time.realtimeSinceStartup+2;
@@ -207,9 +254,16 @@ namespace CouchGuys.Editor
                 timeout=Time.realtimeSinceStartup+settings.UseDuration+2;
                 float expected=Mathf.Min(100,10+settings.HealingPercentage);
                 while((Mathf.Abs(replica.GetComponent<PlayerHealth>().CurrentHealth-expected)>.01f ||
-                    replica.GetComponent<PlayerWeaponController>().GetInventoryWeaponIndex(0)!=-1) && Time.realtimeSinceStartup<timeout) yield return null;
+                    replica.GetComponent<PlayerWeaponController>().GetInventoryHealingQuantity(0)!=1) && Time.realtimeSinceStartup<timeout) yield return null;
                 Check(Mathf.Abs(remoteHealth.CurrentHealth-expected)<.01f && Mathf.Abs(replica.GetComponent<PlayerHealth>().CurrentHealth-expected)<.01f &&
-                    replica.GetComponent<PlayerWeaponController>().GetInventoryWeaponIndex(0)==-1,"Remote health and consumed inventory agree with server: "+settings.DisplayName);
+                    replica.GetComponent<PlayerWeaponController>().GetInventoryHealingQuantity(0)==1 && remoteInventory.GetInventoryHealingQuantity(0)==1,
+                    "Remote health and single-item stack consumption agree with server: "+settings.DisplayName);
+                SetSync(remoteHealth,"m_currentHealth",10f);
+                replica.GetComponent<HealingItem>().RequestUseServerRpc();
+                timeout=Time.realtimeSinceStartup+settings.UseDuration+3;
+                while(replica.GetComponent<PlayerWeaponController>().GetInventoryWeaponIndex(0)!=-1 && Time.realtimeSinceStartup<timeout) yield return null;
+                Check(remoteInventory.GetInventoryHealingQuantity(0)==0 && replica.GetComponent<PlayerWeaponController>().GetInventoryWeaponIndex(0)==-1 &&
+                    replica.GetComponent<PlayerWeaponController>().GetInventoryHealingQuantity(0)==0,"Final remote consumption clears stack on server and client");
             }
             var tape=catalogue.Items[0];
             Check(inventory.AcquireHealingItemServer(tape),"Acquire cancellation test item");
@@ -218,6 +272,10 @@ namespace CouchGuys.Editor
             typeof(PlayerWeaponController).GetMethod("EquipInventorySlotServer",Fields).Invoke(inventory,new object[]{4});
             Check(!healing.IsUsing && health.CurrentHealth==100 && inventory.GetInventoryHealingItem(0)==tape,"Switching slots cancels without consumption or healing");
             while(inventory.CanAcquireHealingItemServer(tape)) inventory.AcquireHealingItemServer(tape);
+            Check(Enumerable.Range(0,5).All(s=>inventory.GetInventoryHealingQuantity(s)==6),"All five stacks cap at six");
+            var rejectedPickup=WeaponPickup.SpawnHealingServer(tape,player.transform.position+Vector3.up*.6f,Quaternion.identity,Vector3.zero);
+            Physics.SyncTransforms();
+            Check(!rejectedPickup.TryPickupServer(inventory) && rejectedPickup.IsSpawned,"Full inventory leaves world pickup available");
             Check(manager.TryBeginDialogueServer(npc,carrier),"Reopen dispatcher for capacity check");
             int money=manager.CurrentCurrency;
             Check(!manager.TryPurchaseShopItemServer(carrier,tape.name,request++) && manager.CurrentCurrency==money,"Full inventory rejects purchase without charging");
@@ -246,6 +304,12 @@ namespace CouchGuys.Editor
                     Check(Count()==before+1,"Thief death spawns one healing pickup: "+catalogue.Items[index].DisplayName);
                     thief.ApplyDamageServer(10000,Vector3.forward,0);
                     Check(Count()==before+1,"Repeated death damage cannot duplicate healing drop");
+                    var enemyDrop=Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None)
+                        .Where(p=>p.IsSpawned && p.HealingSettings==catalogue.Items[index])
+                        .OrderBy(p=>(p.transform.position-enemy.transform.position).sqrMagnitude).First();
+                    enemyDrop.transform.position=rival.transform.position+Vector3.up*.6f; Physics.SyncTransforms();
+                    Check(enemyDrop.TryPickupServer(rivalInventory) && rivalInventory.GetInventoryHealingQuantity(index)==1,
+                        "Enemy drop enters shared healing inventory");
                 }
             }
             finally { for(int i=0;i<3;i++) chanceField.SetValue(catalogue.Items[i],original[i]); }

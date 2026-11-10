@@ -159,7 +159,12 @@ namespace CouchGuys.Gameplay.Weapons
                 m_reserve[i] = weapon.StartingReserve;
             }
             m_inventory.Clear();
-            for (int slot = 0; slot < InventorySlotCount; slot++) m_inventory.Add(-1);
+            m_healingQuantities.Clear();
+            for (int slot = 0; slot < InventorySlotCount; slot++)
+            {
+                m_inventory.Add(-1);
+                m_healingQuantities.Add(0);
+            }
             m_equippedIndex.Value = -1;
             m_selectedHotbarSlot.Value = 3;
             m_switchCompleteAt = Time.time + m_switchDuration;
@@ -324,6 +329,7 @@ namespace CouchGuys.Gameplay.Weapons
             if (ValidIndex(GetInventoryWeaponIndex(slot)) && !DropOwnedWeaponServer()) return false;
             WeaponDefinition weapon = GetWeapon(index);
             m_inventory[slot] = index;
+            m_healingQuantities[slot] = 0;
             int capacity = GetMagazineCapacity(index);
             m_storedMagazines[slot] = magazine < 0 ? capacity : Mathf.Clamp(magazine, 0, capacity);
             if (type == PlayerWeaponType.GrappleGun) m_grappleDrainRemainders[slot] = 0f;
@@ -409,10 +415,12 @@ namespace CouchGuys.Gameplay.Weapons
                 int index = m_inventory[slot];
                 if (HealingItemCatalogue.Load()?.Find(index) is HealingItemSettings healing)
                 {
-                    if (WeaponPickup.SpawnHealingServer(healing, deathPosition + Vector3.up * (0.6f + slot * .15f),
-                        Quaternion.identity, Vector3.zero) == null) return false;
-                    m_inventory[slot] = -1;
-                    if (slot == SelectedHotbarSlot) m_equippedIndex.Value = -1;
+                    while (GetInventoryHealingQuantity(slot) > 0)
+                    {
+                        if (WeaponPickup.SpawnHealingServer(healing, deathPosition + Vector3.up * (0.6f + slot * .15f),
+                            Quaternion.identity, Vector3.zero) == null) return false;
+                        RemoveHealingItemServer(slot);
+                    }
                     continue;
                 }
                 if (!ValidIndex(index)) continue;
@@ -449,8 +457,7 @@ namespace CouchGuys.Gameplay.Weapons
                     return false;
                 }
                 GetComponent<HealingItem>()?.CancelUseServer();
-                m_inventory[SelectedHotbarSlot] = -1;
-                m_equippedIndex.Value = -1;
+                RemoveHealingItemServer(SelectedHotbarSlot);
                 return true;
             }
             if (!ValidIndex(index)) return true;
@@ -579,6 +586,7 @@ namespace CouchGuys.Gameplay.Weapons
             EndRifleBurstServer();
             m_reloadingIndex = -1;
             m_inventory[0] = index;
+            m_healingQuantities[0] = 0;
             m_selectedHotbarSlot.Value = 0;
             m_equippedIndex.Value = index;
             m_switchCompleteAt = Time.time;
