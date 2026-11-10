@@ -2,6 +2,67 @@ using UnityEngine;
 
 namespace CouchGuys.Gameplay.Pedestrians
 {
+    // Shared by thief impacts and pedestrian punches. Keep launch and standing
+    // knockback calculations identical while each controller owns its AI state.
+    internal static class NpcImpactPhysics
+    {
+        internal const float KnockbackDuration = .22f;
+        internal const float KnockbackDamping = 14f;
+        internal const float DamageRagdollImpulseScale = .2f;
+        internal const float GroundedRecoveryDuration = 2.5f;
+        internal static readonly Vector2 AirborneFlipSpeed = new(7f, 11f);
+
+        internal static Vector3 Impulse(Vector3 direction, float force, float lift) =>
+            direction.normalized * Mathf.Max(0f, force) + Vector3.up * Mathf.Max(0f, lift);
+
+        internal static Vector3 StepKnockback(ref Vector3 velocity, float damping, float deltaTime)
+        {
+            Vector3 displacement = velocity * deltaTime;
+            velocity = Vector3.MoveTowards(velocity, Vector3.zero, damping * deltaTime);
+            return displacement;
+        }
+
+        internal static bool TryStandingPosition(Transform root, Collider standingCollider, Vector3 candidate, out Vector3 position)
+        {
+            position = default;
+            foreach (RaycastHit hit in Physics.RaycastAll(candidate + Vector3.up * .4f, Vector3.down,
+                         .8f, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.collider.transform.IsChildOf(root) || hit.normal.y < .65f) continue;
+                float radius = .35f;
+                float height = 1.8f;
+                if (standingCollider is CapsuleCollider capsule)
+                {
+                    Vector3 scale = capsule.transform.lossyScale;
+                    radius = capsule.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
+                    height = Mathf.Max(radius * 2f, capsule.height * Mathf.Abs(scale.y));
+                }
+                Vector3 bottom = hit.point + Vector3.up * (radius + .05f);
+                Vector3 top = hit.point + Vector3.up * (height - radius + .05f);
+                bool blocked = false;
+                foreach (Collider obstacle in Physics.OverlapCapsule(bottom, top, radius * .9f,
+                             ~0, QueryTriggerInteraction.Ignore))
+                    if (!obstacle.transform.IsChildOf(root)) { blocked = true; break; }
+                if (blocked) continue;
+                position = hit.point;
+                return true;
+            }
+            return false;
+        }
+
+        internal static Vector3 CreateAirborneSpin(Vector3 velocity, Vector3 forward, Vector2 flipSpeed)
+        {
+            Vector3 travel = Vector3.ProjectOnPlane(velocity, Vector3.up);
+            if (travel.sqrMagnitude < .01f) travel = forward;
+            Vector3 flipAxis = Vector3.Cross(Vector3.up, travel).normalized;
+            if (Random.value < .5f) flipAxis = -flipAxis;
+            Vector3 axis = (flipAxis + Random.insideUnitSphere * .35f).normalized;
+            float minimum = Mathf.Max(0f, Mathf.Min(flipSpeed.x, flipSpeed.y));
+            float maximum = Mathf.Max(minimum, Mathf.Max(flipSpeed.x, flipSpeed.y));
+            return axis * Random.Range(minimum, maximum);
+        }
+    }
+
     /// <summary>Shared, locally simulated bone physics. Gameplay state remains server-owned.</summary>
     public sealed class PedestrianRagdoll : MonoBehaviour
     {

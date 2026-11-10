@@ -59,6 +59,69 @@ namespace CouchGuys.Gameplay.Pedestrians
         private float m_batLastGroundContact;
         private Vector3 m_batGroundPoint;
         private bool m_grappleHeld;
+        private Vector3 m_punchKnockbackVelocity;
+        private float m_punchResumeAt;
+        private readonly SyncVar<Vector3> m_punchSpin = new();
+        private readonly SyncVar<bool> m_punchKnockdown = new();
+
+        [Server]
+        public void ApplyPunchImpactServer(float damage, Vector3 direction, float force, bool cross, float lift)
+        {
+            if (!m_initialised || !IsAlive || (!cross && damage <= 0f)) return;
+            Vector3 impulse = NpcImpactPhysics.Impulse(direction, force, cross ? lift : 0f);
+            bool wasFallen = m_batAirborne.Value;
+            // Set the death impulse before health callbacks enter the permanent ragdoll.
+            if (damage >= m_health)
+            {
+                m_punchDeathImpulse.Value = impulse * (cross ? 1f : NpcImpactPhysics.DamageRagdollImpulseScale);
+                m_punchSpin.Value = impulse.y > .5f || wasFallen
+                    ? NpcImpactPhysics.CreateAirborneSpin(impulse, transform.forward, NpcImpactPhysics.AirborneFlipSpeed)
+                    : Vector3.zero;
+                m_punchDeath.Value = true;
+                m_batAirborne.Value = true;
+            }
+            ApplyBulletDamageServer(damage);
+            if (!IsAlive) return;
+            if (!cross && !wasFallen)
+            {
+                m_punchKnockbackVelocity += impulse;
+                m_punchResumeAt = Time.time + NpcImpactPhysics.KnockbackDuration;
+                FrightenServer(transform.position - impulse);
+                return;
+            }
+            if (!cross)
+            {
+                PunchLaunchObserversRpc(impulse * NpcImpactPhysics.DamageRagdollImpulseScale, Vector3.zero);
+                return;
+            }
+            m_grappleHeld = false;
+            m_punchKnockdown.Value = true;
+            m_punchSpin.Value = wasFallen ? Vector3.zero :
+                NpcImpactPhysics.CreateAirborneSpin(impulse, transform.forward, NpcImpactPhysics.AirborneFlipSpeed);
+            m_punchKnockbackVelocity = Vector3.zero;
+            m_batImpulse.Value = impulse;
+            // Thieves wait .2s for a new airborne transition, 1s for a hit while fallen.
+            m_batRecoverAfter = Time.time + (wasFallen ? 1f : .2f);
+            m_batGroundedSince = 0f;
+            m_batLastGroundContact = float.NegativeInfinity;
+            m_batAirborne.Value = true;
+            PunchLaunchObserversRpc(m_batImpulse.Value, m_punchSpin.Value);
+        }
+
+        private readonly SyncVar<bool> m_punchDeath = new();
+        private readonly SyncVar<Vector3> m_punchDeathImpulse = new();
+        private bool m_deathReactionApplied, m_deathSpinApplied;
+        private Vector3 m_appliedDeathImpulse;
+
+        private void PunchDeathChanged(bool previous, bool next, bool asServer) => ApplyState();
+        private void PunchDeathImpulseChanged(Vector3 previous, Vector3 next, bool asServer) => ApplyState();
+
+        [ObserversRpc(RunLocally = true)]
+        private void PunchLaunchObserversRpc(Vector3 impulse, Vector3 spin)
+        {
+            ApplyRagdollLaunch(impulse);
+            m_ragdoll?.AddTumble(spin);
+        }
 
         [Server]
         internal void SetGrappledServer(bool held)
@@ -80,6 +143,8 @@ namespace CouchGuys.Gameplay.Pedestrians
         public void ApplyBatImpactServer(float damage, Vector3 impulse)
         {
             if (!m_initialised || !IsAlive) return;
+            m_punchKnockdown.Value = false;
+            m_punchKnockbackVelocity = Vector3.zero;
             ApplyBulletDamageServer(damage);
             m_batImpulse.Value = impulse;
             m_batRecoverAfter = Time.time + .6f;
@@ -90,7 +155,9 @@ namespace CouchGuys.Gameplay.Pedestrians
         }
 
         [ObserversRpc(RunLocally = true)]
-        private void BatLaunchObserversRpc(Vector3 impulse)
+        private void BatLaunchObserversRpc(Vector3 impulse) => ApplyRagdollLaunch(impulse);
+
+        private void ApplyRagdollLaunch(Vector3 impulse)
         {
             if (m_ragdoll == null) return;
             m_collider.enabled = false;
@@ -118,12 +185,22 @@ namespace CouchGuys.Gameplay.Pedestrians
                     m_batGroundPoint = ground;
                     if (m_batGroundedSince == 0f) m_batGroundedSince = Time.time;
                 }
-                else if (Time.time > m_batLastGroundContact + .2f) m_batGroundedSince = 0f;
-                if (m_batGroundedSince > 0f && Time.time >= m_batGroundedSince + .4f)
+                else
+                {
+                    if (Time.time > m_batLastGroundContact + (m_punchKnockdown.Value ? .25f : .2f)) m_batGroundedSince = 0f;
+                    if (m_punchKnockdown.Value) return IsAlive;
+                }
+                float recoveryDuration = m_punchKnockdown.Value ? NpcImpactPhysics.GroundedRecoveryDuration : .4f;
+                if (m_batGroundedSince > 0f && Time.time >= m_batGroundedSince + recoveryDuration)
                 {
                     Vector3 position = new Vector3(m_ragdoll.Body.position.x, m_batGroundPoint.y, m_ragdoll.Body.position.z);
                     if (NavMesh.SamplePosition(position, out NavMeshHit nav, 2f, NavMesh.AllAreas))
                         position = nav.position;
+                    if (m_punchKnockdown.Value)
+                    {
+                        if (!TryPunchRecoveryPosition(position, out position)) return true;
+                        m_punchResumeAt = Time.time + .4f;
+                    }
                     m_batRecoveryPosition.Value = position;
                     m_batAirborne.Value = false;
                     if (m_deliveryManager == null) FrightenServer(position - m_batImpulse.Value);
@@ -132,9 +209,26 @@ namespace CouchGuys.Gameplay.Pedestrians
             return m_batAirborne.Value && IsAlive;
         }
 
+        private bool TryPunchRecoveryPosition(Vector3 candidate, out Vector3 position)
+        {
+            if (NpcImpactPhysics.TryStandingPosition(transform, m_collider, candidate, out position) ||
+                NpcImpactPhysics.TryStandingPosition(transform, m_collider, m_batGroundPoint, out position)) return true;
+            for (int ring = 1; ring <= 3; ring++)
+            for (int step = 0; step < 8; step++)
+            {
+                float angle = step * Mathf.PI / 4f;
+                Vector3 point = m_batGroundPoint + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * (4f * ring / 3f);
+                if (NpcImpactPhysics.TryStandingPosition(transform, m_collider, point, out position)) return true;
+            }
+            return false;
+        }
+
         private void Awake()
         {
             m_batAirborne.OnChange += BatAirborneChanged;
+            m_punchDeath.OnChange += PunchDeathChanged;
+            m_punchDeathImpulse.OnChange += PunchDeathImpulseChanged;
+            m_punchSpin.OnChange += PunchDeathImpulseChanged;
             m_body = GetComponent<Rigidbody>();
             m_collider = GetComponent<CapsuleCollider>();
             // Navigation owns this kinematic root. A solid collider would give it
@@ -151,7 +245,15 @@ namespace CouchGuys.Gameplay.Pedestrians
             base.OnStartClient();
             if (!IsServerInitialized) m_collider.enabled = false;
             ApplyState();
-            if (m_batAirborne.Value && m_ragdoll != null) { m_collider.enabled = false; m_ragdoll.Fall(m_batImpulse.Value, !IsAlive); }
+            if (m_batAirborne.Value && m_ragdoll != null)
+            {
+                m_collider.enabled = false;
+                if (IsAlive)
+                {
+                    m_ragdoll.Fall(m_batImpulse.Value, false);
+                    if (m_punchKnockdown.Value) m_ragdoll.AddTumble(m_punchSpin.Value);
+                }
+            }
             ApplyCelebration();
         }
 
@@ -212,6 +314,9 @@ namespace CouchGuys.Gameplay.Pedestrians
         private void OnDestroy()
         {
             m_batAirborne.OnChange -= BatAirborneChanged;
+            m_punchDeath.OnChange -= PunchDeathChanged;
+            m_punchDeathImpulse.OnChange -= PunchDeathImpulseChanged;
+            m_punchSpin.OnChange -= PunchDeathImpulseChanged;
             m_state.OnChange -= StateChanged;
             m_deliveryCompleted.OnChange -= DeliveryCompletedChanged;
         }
@@ -344,6 +449,7 @@ namespace CouchGuys.Gameplay.Pedestrians
                 }
                 return;
             }
+            if (Time.time < m_punchResumeAt) return;
             if (m_state.Value == MovementState.Frightened && Time.time >= m_calmAt && Time.time >= m_nextThink)
                 BeginReturn();
             if (m_state.Value == MovementState.Walking) Walk(Time.fixedDeltaTime);
@@ -608,11 +714,30 @@ namespace CouchGuys.Gameplay.Pedestrians
         {
             if (m_state.Value != MovementState.Dead) return;
             m_collider.enabled = false;
-            m_ragdoll?.Fall(transform.forward * 2f);
+            if (m_ragdoll == null) return;
+            Vector3 impulse = m_punchDeath.Value ? m_punchDeathImpulse.Value : transform.forward * 2f + Vector3.up;
+            if (!m_deathReactionApplied)
+            {
+                m_ragdoll.Fall(impulse, true);
+                m_deathReactionApplied = true;
+            }
+            else if ((impulse - m_appliedDeathImpulse).sqrMagnitude > .000001f)
+                m_ragdoll.AddImpulse(impulse - m_appliedDeathImpulse);
+            m_appliedDeathImpulse = impulse;
+            // SyncVar callbacks may arrive before or after the dead state. Correct
+            // the impulse once all values arrive without adding the default death shove.
+            if (m_punchDeath.Value && !m_deathSpinApplied && m_punchSpin.Value.sqrMagnitude > .001f)
+            {
+                m_ragdoll.AddTumble(m_punchSpin.Value);
+                m_deathSpinApplied = true;
+            }
         }
 
         private void Update()
         {
+            if (IsServerInitialized && m_initialised && IsAlive && !m_batAirborne.Value && Time.time < m_punchResumeAt)
+                transform.position += NpcImpactPhysics.StepKnockback(ref m_punchKnockbackVelocity,
+                    NpcImpactPhysics.KnockbackDamping, Time.deltaTime);
             if (m_animator == null || !m_animator.enabled || m_state.Value == MovementState.Dead) return;
             float speed = m_state.Value == MovementState.Walking ? 0.5f :
                 m_state.Value == MovementState.Frightened || m_state.Value == MovementState.Returning ? 1f : 0f;

@@ -93,8 +93,9 @@ namespace CouchGuys.Gameplay.Weapons
             Vector3 point = origin;
             float distance = m_punchRange;
             foreach (Collider collider in Physics.OverlapSphere(origin, m_punchRange, m_hitMask,
-                         QueryTriggerInteraction.Ignore))
+                         QueryTriggerInteraction.Collide))
             {
+                if (collider.isTrigger && collider.GetComponentInParent<PedestrianController>() == null) continue;
                 Component target = RocketProjectile.FindDamageTarget(collider);
                 if (target == null || target == m_health || target.transform.IsChildOf(transform)) continue;
                 if (target is PlayerHealth player && !player.IsAlive ||
@@ -123,7 +124,7 @@ namespace CouchGuys.Gameplay.Weapons
                     if (Owner.IsValid) ConfirmHostileHitTargetRpc(Owner, !thief.IsAlive);
                     break;
                 case PedestrianController pedestrian:
-                    pedestrian.ApplyBatImpactServer(damage, direction * force);
+                    pedestrian.ApplyPunchImpactServer(damage, direction, force, cross, m_crossThiefLift);
                     break;
                 case MagneticHoverboardController board:
                     board.ApplyBulletDamageServer(damage);

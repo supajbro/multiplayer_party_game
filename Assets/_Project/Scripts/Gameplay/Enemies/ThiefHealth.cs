@@ -18,19 +18,19 @@ namespace CouchGuys.Gameplay.Enemies
         [SerializeField, Min(0.02f), Tooltip("Maximum gap below the standing collider before entering airborne ragdoll.")]
         private float m_groundSupportDistance = 0.15f;
         [SerializeField, Tooltip("Random airborne flip speed in radians per second. Zero disables the extra tumble.")]
-        private Vector2 m_airborneFlipSpeed = new(7f, 11f);
+        private Vector2 m_airborneFlipSpeed = NpcImpactPhysics.AirborneFlipSpeed;
         [Header("Ragdoll Recovery")]
         [SerializeField, Min(.2f), Tooltip("Seconds a living thief stays ragdolled after landing before getting up.")]
-        private float m_groundedRecoveryDuration = 2.5f;
+        private float m_groundedRecoveryDuration = NpcImpactPhysics.GroundedRecoveryDuration;
         [SerializeField, Min(.2f), Tooltip("Delay after landing before searching farther for a clear standing spot.")]
         private float m_recoveryFallbackDelay = 1.25f;
         [SerializeField, Min(1f)] private float m_recoverySearchRadius = 4f;
         [SerializeField, Min(.02f), Tooltip("Shared allowed height difference between physical ground and the baked NavMesh.")]
         private float m_navigationSurfaceTolerance = .35f;
         [SerializeField, Range(0f, 1f), Tooltip("Scales weapon knockback on ragdoll bodies; vehicle impacts retain their full impulse.")]
-        private float m_damageRagdollImpulseScale = 0.2f;
+        private float m_damageRagdollImpulseScale = NpcImpactPhysics.DamageRagdollImpulseScale;
         private float MaxHealth => m_settings != null ? m_settings.Health.MaxHealth : 100f;
-        private float KnockbackDuration => m_settings != null ? m_settings.Health.KnockbackDuration : 0.22f;
+        private float KnockbackDuration => m_settings != null ? m_settings.Health.KnockbackDuration : NpcImpactPhysics.KnockbackDuration;
         private readonly SyncVar<float> m_currentHealth = new();
         private readonly SyncVar<bool> m_dead = new();
         // State and initial impulse replicate only on transitions. NetworkTransform carries the hips root.
@@ -211,33 +211,8 @@ namespace CouchGuys.Gameplay.Enemies
             return false;
         }
 
-        private bool TryStandingPosition(Vector3 candidate, out Vector3 position)
-        {
-            position = default;
-            foreach (RaycastHit hit in Physics.RaycastAll(candidate + Vector3.up * .4f, Vector3.down,
-                         .8f, ~0, QueryTriggerInteraction.Ignore))
-            {
-                if (hit.collider.transform.IsChildOf(transform) || hit.normal.y < .65f) continue;
-                float radius = .35f;
-                float height = 1.8f;
-                if (m_collider is CapsuleCollider capsule)
-                {
-                    Vector3 scale = capsule.transform.lossyScale;
-                    radius = capsule.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
-                    height = Mathf.Max(radius * 2f, capsule.height * Mathf.Abs(scale.y));
-                }
-                Vector3 bottom = hit.point + Vector3.up * (radius + .05f);
-                Vector3 top = hit.point + Vector3.up * (height - radius + .05f);
-                bool blocked = false;
-                foreach (Collider obstacle in Physics.OverlapCapsule(bottom, top, radius * .9f,
-                             ~0, QueryTriggerInteraction.Ignore))
-                    if (!obstacle.transform.IsChildOf(transform)) { blocked = true; break; }
-                if (blocked) continue;
-                position = hit.point;
-                return true;
-            }
-            return false;
-        }
+        private bool TryStandingPosition(Vector3 candidate, out Vector3 position) =>
+            NpcImpactPhysics.TryStandingPosition(transform, m_collider, candidate, out position);
 
         private bool HasGroundSupport()
         {
@@ -279,15 +254,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         private Vector3 CreateAirborneSpin(Vector3 velocity)
         {
-            Vector3 travel = Vector3.ProjectOnPlane(velocity, Vector3.up);
-            if (travel.sqrMagnitude < .01f) travel = transform.forward;
-            Vector3 flipAxis = Vector3.Cross(Vector3.up, travel).normalized;
-            if (UnityEngine.Random.value < .5f) flipAxis = -flipAxis;
-            // Mostly end-over-end flips, with a different sideways twist per launch.
-            Vector3 axis = (flipAxis + UnityEngine.Random.insideUnitSphere * .35f).normalized;
-            float minimum = Mathf.Max(0f, Mathf.Min(m_airborneFlipSpeed.x, m_airborneFlipSpeed.y));
-            float maximum = Mathf.Max(minimum, Mathf.Max(m_airborneFlipSpeed.x, m_airborneFlipSpeed.y));
-            return axis * UnityEngine.Random.Range(minimum, maximum);
+            return NpcImpactPhysics.CreateAirborneSpin(velocity, transform.forward, m_airborneFlipSpeed);
         }
 
         private void ApplyRagdollState()
@@ -338,11 +305,10 @@ namespace CouchGuys.Gameplay.Enemies
             RetryNavigationAfterRecovery();
             if (Time.time < m_resumeNavigationAt)
             {
-                Vector3 displacement = m_knockbackVelocity * Time.deltaTime;
+                float damping = m_settings != null ? m_settings.Health.KnockbackDamping : NpcImpactPhysics.KnockbackDamping;
+                Vector3 displacement = NpcImpactPhysics.StepKnockback(ref m_knockbackVelocity, damping, Time.deltaTime);
                 if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh) m_agent.Move(displacement);
                 else transform.position += displacement;
-                float damping = m_settings != null ? m_settings.Health.KnockbackDamping : 14f;
-                m_knockbackVelocity = Vector3.MoveTowards(m_knockbackVelocity, Vector3.zero, damping * Time.deltaTime);
             }
             else if (m_agent != null && m_agent.enabled && m_agent.isOnNavMesh && m_agent.isStopped &&
                 (m_navigator == null || !m_navigator.IsAlerting)) m_agent.isStopped = false;
@@ -431,8 +397,7 @@ namespace CouchGuys.Gameplay.Enemies
                 (damage <= 0f && knockbackForce <= 0f && upwardForce <= 0f) || !IsAlive) return;
             float appliedDamage = Mathf.Max(0f, damage);
             m_currentHealth.Value = Mathf.Max(0f, m_currentHealth.Value - appliedDamage);
-            Vector3 impulse = impactDirection.normalized * Mathf.Max(0f, knockbackForce) +
-                Vector3.up * Mathf.Max(0f, upwardForce);
+            Vector3 impulse = NpcImpactPhysics.Impulse(impactDirection, knockbackForce, upwardForce);
             if (m_currentHealth.Value <= 0f)
             {
                 CouchGuys.Gameplay.Healing.HealingItemCatalogue.DropFromThiefServer(transform.position);
