@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Enemies;
+using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Gameplay.Pedestrians;
 using CouchGuys.Gameplay.Traffic;
 using CouchGuys.Gameplay.Vehicles;
@@ -110,7 +111,8 @@ namespace CouchGuys.Gameplay.Weapons
         {
             // Match the existing hitscan target priority, deduplicating compound hurtboxes by behaviour.
             if (collider == null) return null;
-            Component target = collider.GetComponentInParent<PedestrianController>();
+            Component target = collider.GetComponentInParent<DeliveryNPC>();
+            if (target == null) target = collider.GetComponentInParent<PedestrianController>();
             if (target == null) target = collider.GetComponentInParent<PlayerHealth>();
             if (target == null) target = collider.GetComponentInParent<ThiefHealth>();
             if (target == null) target = collider.GetComponentInParent<TruckController>();
@@ -151,6 +153,7 @@ namespace CouchGuys.Gameplay.Weapons
                 float lift = m_weapon.ExplosionUpwardForce * strength;
                 switch (entry.Key)
                 {
+                    case DeliveryNPC dispatcher: dispatcher.ReactToAttackServer(direction, force, strength); break;
                     case PlayerHealth player: player.ApplyExplosionDamageServer(damage, direction, force, lift); break;
                     case ThiefHealth thief:
                         thief.ApplyExplosionDamageServer(damage, direction, force, lift, m_shooter);

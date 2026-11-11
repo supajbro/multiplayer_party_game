@@ -80,6 +80,20 @@ MonoBehaviour:
   m_vehicleSpawnOffset: {x: 6, y: 0, z: 1.5}
   m_couchSpawnPoint: {fileID: 0}
   m_vehicleSpawnPoint: {fileID: 0}
+  m_attackKnockbackMultiplier: 0.65
+  m_rocketBounceForce: 8
+  m_angryExpressionDuration: 3
+  m_aggressiveDialogueCooldown: 1.5
+  m_grappleRetaliationForce: 22
+  m_maximumReactionDistance: 2.5
+  m_aggressiveLines:
+  - BACK OFF, MEATBAG!
+  - TOUCH ME AGAIN. I DARE YOU.
+  - I'M REPORTING YOU TO MANAGEMENT!
+  - THAT'S COMING OUT OF YOUR PAY!
+  - I HAVE CAMERAS, IDIOT!
+  - DO I LOOK LIKE A PUNCHING BAG?
+  - YOU'RE LUCKY I'M ON WHEELS!
 --- !u!114 &100004
 MonoBehaviour:
   m_ObjectHideFlags: 0

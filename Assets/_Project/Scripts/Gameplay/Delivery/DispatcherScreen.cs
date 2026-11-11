@@ -15,9 +15,14 @@ namespace CouchGuys.Gameplay.Delivery
         private static readonly int SpeechId = Shader.PropertyToID("_Speech");
         private static readonly int EmphasisId = Shader.PropertyToID("_Emphasis");
         private static readonly int TimeId = Shader.PropertyToID("_AnimationTime");
+        private static readonly int AngerId = Shader.PropertyToID("_Anger");
         private MaterialPropertyBlock m_block;
         private float m_speech, m_emphasis, m_phase, m_emphasisUntil;
         private bool m_ambientSpeaking;
+        private bool m_angryTarget;
+        private float m_anger;
+
+        public void SetAngry(bool angry) => m_angryTarget = angry;
 
         public void SetAmbientSpeaking(bool speaking) => m_ambientSpeaking = speaking;
 
@@ -37,6 +42,7 @@ namespace CouchGuys.Gameplay.Delivery
             bool talking = m_ambientSpeaking || (manager != null && manager.IsDispatcherSpeaking);
             bool emphasis = Time.time < m_emphasisUntil;
             float step = Time.deltaTime / Mathf.Max(0.01f, m_transitionSeconds);
+            m_anger = Mathf.MoveTowards(m_anger, m_angryTarget ? 1f : 0f, step);
             m_speech = Mathf.MoveTowards(m_speech, talking || emphasis ? 1f : 0f, step);
             m_emphasis = Mathf.MoveTowards(m_emphasis, emphasis ? 1f : 0f, step);
             m_phase += Time.deltaTime * Mathf.Lerp(1f, m_emphasisSpeed, m_emphasis);
@@ -53,6 +59,7 @@ namespace CouchGuys.Gameplay.Delivery
                 m_block.SetFloat(SpeechId, m_speech);
                 m_block.SetFloat(EmphasisId, m_emphasis);
                 m_block.SetFloat(TimeId, m_phase);
+                m_block.SetFloat(AngerId, m_anger);
                 screen.SetPropertyBlock(m_block);
             }
         }
@@ -60,6 +67,8 @@ namespace CouchGuys.Gameplay.Delivery
         private void OnDisable()
         {
             m_ambientSpeaking = false;
+            m_angryTarget = false;
+            m_anger = 0f;
             m_speech = m_emphasis = m_emphasisUntil = 0f;
             if (m_block != null) Apply();
         }

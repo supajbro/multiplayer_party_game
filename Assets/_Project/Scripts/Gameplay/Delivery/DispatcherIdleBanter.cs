@@ -35,6 +35,17 @@ namespace CouchGuys.Gameplay.Delivery
         private Camera m_camera;
         private float m_nextAt, m_hideAt, m_startedAt, m_nextVisibilityCheck;
         private bool m_visible, m_wasEligible, m_nearby;
+        private float m_aggressiveUntil;
+        private string m_aggressiveLine;
+        private bool m_showingAggressive;
+
+        public void ShowAggressive(string line, float remainingSeconds)
+        {
+            if (string.IsNullOrWhiteSpace(line) || remainingSeconds <= 0f) return;
+            Hide();
+            m_aggressiveLine = line;
+            m_aggressiveUntil = Time.time + remainingSeconds;
+        }
 
         private void Awake()
         {
@@ -61,7 +72,8 @@ namespace CouchGuys.Gameplay.Delivery
         private void Update()
         {
             var manager = m_npc != null ? m_npc.Manager : null;
-            bool idle = manager != null && manager.IsClientInitialized && !manager.IsDispatcherSpeaking;
+            bool aggressive = Time.time < m_aggressiveUntil;
+            bool idle = manager != null && manager.IsClientInitialized && (aggressive || !manager.IsDispatcherSpeaking);
             if (Time.time >= m_nextVisibilityCheck)
             {
                 m_nextVisibilityCheck = Time.time + 0.5f;
@@ -82,6 +94,12 @@ namespace CouchGuys.Gameplay.Delivery
                 return;
             }
             if (!m_wasEligible) { Schedule(); m_wasEligible = true; }
+            if (aggressive)
+            {
+                if (!m_showingAggressive) ShowBubble(m_aggressiveLine, m_aggressiveUntil - Time.time, true);
+                return;
+            }
+            if (m_showingAggressive) { Hide(); Schedule(); }
             if (m_visible)
             {
                 if (Time.time >= m_hideAt) { Hide(); Schedule(); }
@@ -90,14 +108,21 @@ namespace CouchGuys.Gameplay.Delivery
             if (Time.time < m_nextAt) return;
             Schedule(); // Empty/invalid lists retry on a cooldown, never every frame.
             if (m_bubblePrefab == null || !m_deck.TryNext(out string line)) return;
+            ShowBubble(line, Mathf.Max(0.5f, m_displaySeconds), false);
+        }
+
+        private void ShowBubble(string line, float seconds, bool aggressive)
+        {
+            if (m_bubblePrefab == null) return;
             if (m_bubble == null)
             {
                 m_bubble = Instantiate(m_bubblePrefab, transform);
                 m_bubble.transform.localPosition = m_anchorOffset;
             }
             m_startedAt = Time.time;
-            m_hideAt = Time.time + Mathf.Max(0.5f, m_displaySeconds);
+            m_hideAt = Time.time + seconds;
             m_visible = true;
+            m_showingAggressive = aggressive;
             m_bubble.Show(line);
             if (m_screen != null) m_screen.SetAmbientSpeaking(true);
         }
@@ -114,6 +139,7 @@ namespace CouchGuys.Gameplay.Delivery
         {
             if (!m_visible) return;
             m_visible = false;
+            m_showingAggressive = false;
             if (m_bubble != null) m_bubble.Hide();
             if (m_screen != null) m_screen.SetAmbientSpeaking(false);
         }

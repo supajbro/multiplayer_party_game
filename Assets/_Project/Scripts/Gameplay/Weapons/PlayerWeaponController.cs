@@ -69,6 +69,7 @@ namespace CouchGuys.Gameplay.Weapons
         private readonly RaycastHit[] m_hits = new RaycastHit[RaycastBufferSize];
         private readonly Dictionary<Component, RaycastHit> m_bloodHits = new(8);
         private readonly Dictionary<PlayerHealth, float> m_playerDamage = new(8);
+        private readonly Dictionary<DeliveryNPC, float> m_dispatcherHits = new();
         private readonly Dictionary<ThiefHealth, float> m_thiefDamage = new(8);
         private readonly Dictionary<CouchGuys.Gameplay.Pedestrians.PedestrianController, float> m_pedestrianDamage = new(8);
         private readonly Dictionary<TruckController, float> m_truckDamage = new(4);
@@ -725,6 +726,7 @@ namespace CouchGuys.Gameplay.Weapons
         {
             m_bloodHits.Clear();
             m_playerDamage.Clear();
+            m_dispatcherHits.Clear();
             m_thiefDamage.Clear();
             m_pedestrianDamage.Clear();
             m_truckDamage.Clear();
@@ -748,6 +750,16 @@ namespace CouchGuys.Gameplay.Weapons
                 normals[pellet] = nearest.normal;
                 surfaces[pellet] = (byte)ClassifySurface(nearest.collider);
                 float damage = weapon.DamageAtDistance(nearest.distance);
+                var dispatcher = nearest.collider.GetComponentInParent<DeliveryNPC>();
+                if (dispatcher != null)
+                {
+                    if (damage > 0f)
+                    {
+                        m_dispatcherHits.TryGetValue(dispatcher, out float total);
+                        m_dispatcherHits[dispatcher] = total + damage;
+                    }
+                    continue;
+                }
                 var pedestrian = nearest.collider.GetComponentInParent<CouchGuys.Gameplay.Pedestrians.PedestrianController>();
                 if (pedestrian != null)
                 {
@@ -795,6 +807,12 @@ namespace CouchGuys.Gameplay.Weapons
             }
 
             float maximumShotDamage = weapon.DamagePerPellet * weapon.Pellets;
+            foreach (var hit in m_dispatcherHits)
+            {
+                float force = weapon.Knockback * Mathf.Lerp(.25f, 1f,
+                    Mathf.Clamp01(hit.Value / Mathf.Max(.001f, maximumShotDamage)));
+                hit.Key.ReactToAttackServer(forward, force);
+            }
             foreach (KeyValuePair<PlayerHealth, float> entry in m_playerDamage)
             {
                 float force = weapon.Knockback * Mathf.Lerp(0.25f, 1f,

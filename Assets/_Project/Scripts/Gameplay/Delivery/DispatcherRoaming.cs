@@ -116,7 +116,7 @@ namespace CouchGuys.Gameplay.Delivery
                     }
                     else FinishHome();
                 }
-                TickServer(Time.deltaTime);
+                if (!m_npc.TickAttackReactionServer(Time.deltaTime)) TickServer(Time.deltaTime);
                 Publish();
             }
             else if (m_network.IsClientInitialized) TickClient();

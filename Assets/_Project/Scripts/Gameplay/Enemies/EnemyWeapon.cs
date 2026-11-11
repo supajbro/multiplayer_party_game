@@ -66,6 +66,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         private readonly Dictionary<Component, RaycastHit> m_bloodHits = new(8);
         private readonly Dictionary<PlayerHealth, float> m_damageByPlayer = new();
+        private readonly HashSet<DeliveryNPC> m_dispatcherHits = new();
         private readonly Dictionary<TruckController, float> m_damageByTruck = new();
         private readonly Dictionary<CouchGuys.Gameplay.Pedestrians.PedestrianController, float> m_damageByPedestrian = new();
         private readonly List<Vector3> m_tracerEnds = new(12);
@@ -250,6 +251,7 @@ namespace CouchGuys.Gameplay.Enemies
             Vector3 shotDirection = miss ? GetMissDirection(origin, spread) : m_aimDirection;
 
             m_damageByPlayer.Clear();
+            m_dispatcherHits.Clear();
             m_damageByTruck.Clear();
             m_damageByPedestrian.Clear();
             m_bloodHits.Clear();
@@ -266,6 +268,12 @@ namespace CouchGuys.Gameplay.Enemies
                     if (!CouchGuys.Gameplay.Pedestrians.PedestrianController.IsBulletHit(hit.collider) ||
                         hit.collider.transform.root == transform.root) continue;
                     end = hit.point;
+                    var dispatcher = hit.collider.GetComponentInParent<DeliveryNPC>();
+                    if (dispatcher != null)
+                    {
+                        if (m_damagePerPellet > 0f) m_dispatcherHits.Add(dispatcher);
+                        break;
+                    }
                     var pedestrian = hit.collider.GetComponentInParent<CouchGuys.Gameplay.Pedestrians.PedestrianController>();
                     if (pedestrian != null)
                     {
@@ -294,6 +302,8 @@ namespace CouchGuys.Gameplay.Enemies
                 m_tracerEnds.Add(end);
             }
 
+            foreach (var dispatcher in m_dispatcherHits)
+                dispatcher.ReactToAttackServer(shotDirection, m_knockbackForce);
             foreach (KeyValuePair<PlayerHealth, float> damage in m_damageByPlayer)
             {
                 Vector3 impact = Vector3.ProjectOnPlane(damage.Key.transform.position - transform.position, Vector3.up).normalized;

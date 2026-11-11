@@ -1,0 +1,9 @@
+.venv/
+.env
+config.json
+data/
+models/
+__pycache__/
+*.egg-info/
+secrets/
+*.log

@@ -1,4 +1,5 @@
 using CouchGuys.Gameplay.Enemies;
+using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Gameplay.Pedestrians;
 using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Player;
@@ -115,6 +116,9 @@ namespace CouchGuys.Gameplay.Weapons
             Vector3 direction = transform.forward;
             switch (nearest)
             {
+                case DeliveryNPC dispatcher:
+                    dispatcher.ReactToAttackServer(direction, force);
+                    break;
                 case PlayerHealth player:
                     player.ApplyDamageWithFullKnockbackServer(damage, direction, force);
                     break;

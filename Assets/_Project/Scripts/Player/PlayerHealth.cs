@@ -471,6 +471,16 @@ namespace CouchGuys.Player
                 damage, impactDirection, knockbackForce, true, upwardForce, true, directionalKnockback);
         }
 
+        /// <summary>Non-damaging retaliation using the existing launch, knockdown and recovery path.</summary>
+        [Server]
+        internal void ApplyDispatcherRetaliationServer(Vector3 direction, float force)
+        {
+            ApplyDamageInternal(0f, direction, force, true, explicitUpwardForce: force * .45f,
+                allowPushWithoutDamage: true, directionalKnockback: true, explosionLaunch: true,
+                forceKnockdown: true);
+            GetComponent<PlayerWeaponController>()?.CancelActionsForDownedServer();
+        }
+
         private void ApplyDamageInternal(
             float damage,
             Vector3 impactDirection,
@@ -480,7 +490,8 @@ namespace CouchGuys.Player
             bool allowPushWithoutDamage = false,
             bool directionalKnockback = false,
             bool explosionLaunch = false,
-            bool batLaunch = false)
+            bool batLaunch = false,
+            bool forceKnockdown = false)
         {
             if ((!allowPushWithoutDamage && damage <= 0f) ||
                 (damage <= 0f && knockbackForce <= 0f && explicitUpwardForce <= 0f) ||
@@ -500,7 +511,7 @@ namespace CouchGuys.Player
             }
 
             horizontalDirection.Normalize();
-            bool severeHit = appliedDamage >= m_maxHealth * m_knockdownDamageFraction || died;
+            bool severeHit = forceKnockdown || appliedDamage >= m_maxHealth * m_knockdownDamageFraction || died;
             float appliedForce = severeHit || useFullKnockback
                 ? knockbackForce
                 : knockbackForce * 0.3f;

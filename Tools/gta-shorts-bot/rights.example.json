@@ -1,0 +1,17 @@
+{
+  "source_id": "local:my-recording-001",
+  "creator": "YOUR NAME",
+  "source_url": "",
+  "basis": "owned",
+  "evidence": "REPLACE with permission document path, licence terms, or recording provenance",
+  "commercial_use": false,
+  "editing": false,
+  "youtube_distribution": false,
+  "third_party_audio_cleared": false,
+  "game_content_cleared": false,
+  "access_authorized": false,
+  "attribution": "Gameplay recorded by YOUR NAME",
+  "expires": null,
+  "layout": "fit",
+  "focus_x": 0.5
+}

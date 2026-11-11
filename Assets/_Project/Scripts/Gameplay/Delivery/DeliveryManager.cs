@@ -174,6 +174,7 @@ namespace CouchGuys.Gameplay.Delivery
         {
             base.OnStartServer();
             m_dispatcherSpeaking.Value = false;
+            m_dispatcherAttack.Value = default;
             m_dialogues.Clear();
             ClearDeliveriesServer();
             m_usedDestinationIndices.Clear();
@@ -708,6 +709,7 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void OnRegionClearing(NeighbourhoodGenerator generator)
         {
+            if (IsServerInitialized) m_dispatcherAttack.Value = default;
             ClearDeliveriesServer();
             ClearGetawaysServer();
             ClearRecipientsServer();

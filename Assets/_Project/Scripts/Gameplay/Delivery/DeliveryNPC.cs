@@ -6,7 +6,7 @@ namespace CouchGuys.Gameplay.Delivery
 {
     /// <summary>Local interaction marker for the delivery dispatcher.</summary>
     [DisallowMultipleComponent]
-    public sealed class DeliveryNPC : MonoBehaviour
+    public sealed partial class DeliveryNPC : MonoBehaviour
     {
         [SerializeField] private DeliveryManager m_deliveryManager;
         [SerializeField] private Vector3 m_couchSpawnOffset = new Vector3(0f, 0.5f, 2.5f);

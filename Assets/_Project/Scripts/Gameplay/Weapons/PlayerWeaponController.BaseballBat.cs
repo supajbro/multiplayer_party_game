@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Enemies;
+using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Gameplay.Pedestrians;
 using CouchGuys.Gameplay.Traffic;
 using CouchGuys.Gameplay.Vehicles;
@@ -115,6 +116,9 @@ namespace CouchGuys.Gameplay.Weapons
             BaseballBatAssets settings = m_baseballBatAssets;
             switch (target)
             {
+                case DeliveryNPC dispatcher:
+                    dispatcher.ReactToAttackServer(away, settings.NpcKnockback);
+                    break;
                 case PlayerHealth player:
                     player.ApplyBatImpactServer(settings.Damage, away, settings.PlayerKnockback, settings.PlayerLift);
                     break;

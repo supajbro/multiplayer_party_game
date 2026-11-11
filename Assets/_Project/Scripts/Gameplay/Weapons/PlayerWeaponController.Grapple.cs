@@ -201,6 +201,15 @@ namespace CouchGuys.Gameplay.Weapons
                 !TryGetNearestNonSelfHit(muzzle, direction.normalized, range, out RaycastHit hit))
             { ShowGrappleShotObserversRpc(muzzle, false); return; }
 
+            var dispatcher = hit.collider.GetComponentInParent<CouchGuys.Gameplay.Delivery.DeliveryNPC>();
+            if (dispatcher != null)
+            {
+                // Resolve before treating non-networked scenery as a world anchor.
+                // StopGrappleServer above has already cleared every pull/claim.
+                dispatcher.RepelGrappleServer(m_health);
+                ShowGrappleShotObserversRpc(muzzle, false);
+                return;
+            }
             NetworkObject target = null;
             PlayerHealth player = hit.collider.GetComponentInParent<PlayerHealth>();
             ThiefHealth thief = hit.collider.GetComponentInParent<ThiefHealth>();
