@@ -53,7 +53,7 @@ class Settings(BaseModel):
     whisper_model: str = "small"
     whisper_device: str = "cpu"
     whisper_compute: str = "int8"
-    voice_model: Path = Path("models/en_US-lessac-medium.onnx")
+    voice_model: Path = Path("models/en_US-ljspeech-high.onnx")
     voice_license_evidence: str = ""
     font_file: Path = Path("C:/Windows/Fonts/arialbd.ttf")
     youtube_queries: list[str] = ["GTA 6 funny gameplay", "GTA 6 fails glitches"]
@@ -63,6 +63,7 @@ class Settings(BaseModel):
     max_sources_per_run: int = Field(8, ge=1, le=50)
     max_source_seconds: int = Field(180, ge=15, le=3600)
     min_score: float = Field(7.5, ge=0, le=10)
+    payoff_sound: bool = False
     upload_enabled: bool = False
     auto_publish: bool = False
     testing_complete: bool = False
@@ -70,6 +71,7 @@ class Settings(BaseModel):
     contains_synthetic_media: bool = False
     oauth_client: Path = Path("secrets/client_secret.json")
     oauth_token: Path = Path("secrets/youtube_token.json")
+    twitch_token: Path = Path("secrets/twitch_token.json")
 
     @model_validator(mode="after")
     def local_only(self):
@@ -84,9 +86,9 @@ class Settings(BaseModel):
 
 def load(path: Path) -> Settings:
     load_dotenv(path.resolve().parent / ".env")
-    cfg = Settings.model_validate_json(path.read_text(encoding="utf-8"))
+    cfg = Settings.model_validate_json(path.read_text(encoding="utf-8-sig"))
     # Paths are relative to config, independent of Task Scheduler's working directory.
-    for name in ("data_dir", "voice_model", "font_file", "oauth_client", "oauth_token"):
+    for name in ("data_dir", "voice_model", "font_file", "oauth_client", "oauth_token", "twitch_token"):
         value = getattr(cfg, name)
         if not value.is_absolute():
             setattr(cfg, name, path.resolve().parent / value)
@@ -97,6 +99,8 @@ def load(path: Path) -> Settings:
                                                     backupCount=5, encoding="utf-8")
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s",
                         handlers=[handler, logging.StreamHandler()])
+    for name in ("httpx", "httpx2", "httpcore", "httpcore2", "huggingface_hub"):
+        logging.getLogger(name).setLevel(logging.WARNING)
     return cfg
 
 
@@ -116,6 +120,8 @@ class Store:
           CREATE TABLE IF NOT EXISTS events (
             time TEXT NOT NULL, stage TEXT NOT NULL, detail TEXT NOT NULL);
         ''')
+        if "attempted" not in {r[1] for r in self.db.execute("PRAGMA table_info(sources)")}:
+            self.db.execute("ALTER TABLE sources ADD COLUMN attempted TEXT")
         self.db.commit()
 
     def event(self, stage, detail):

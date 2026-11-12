@@ -1,0 +1,122 @@
+[
+  {
+    "name": "Shotgun_Shell",
+    "generator": "Pixal3D native ComfyUI, local INT8",
+    "source_sha256": "65bd141092807a8190ee0fca01e22fa93317cbc632fd26ce9142946b0d7e9ee5",
+    "vertices": 797,
+    "triangles": 1200,
+    "bounds_min": [
+      -0.014000000000000002,
+      0.0,
+      -0.014000000000000002
+    ],
+    "bounds_max": [
+      0.014000000000000002,
+      0.07,
+      0.014000000000000002
+    ],
+    "mesh": "Assets/_Project/Models/Weapons/Ammunition/Shotgun_Shell.asset",
+    "material": "Assets/_Project/Materials/Weapons/Ammunition/Shotgun_Shell.mat",
+    "prefab": "Assets/_Project/Prefabs/Weapons/Ammunition/Shotgun_Shell.prefab"
+  },
+  {
+    "name": "AssaultRifle_Cartridge",
+    "generator": "Pixal3D native ComfyUI, local INT8",
+    "source_sha256": "758a3f2f023bae058e0aa29323bf0be54d0b39930e1397dd783db140a815ee17",
+    "vertices": 834,
+    "triangles": 1200,
+    "bounds_min": [
+      -0.006333333333333333,
+      0.0,
+      -0.006333333333333333
+    ],
+    "bounds_max": [
+      0.006333333333333333,
+      0.056999999999999995,
+      0.006333333333333333
+    ],
+    "mesh": "Assets/_Project/Models/Weapons/Ammunition/AssaultRifle_Cartridge.asset",
+    "material": "Assets/_Project/Materials/Weapons/Ammunition/AssaultRifle_Cartridge.mat",
+    "prefab": "Assets/_Project/Prefabs/Weapons/Ammunition/AssaultRifle_Cartridge.prefab"
+  },
+  {
+    "name": "Pistol_Cartridge",
+    "generator": "Pixal3D native ComfyUI, local INT8",
+    "source_sha256": "f15b8fdc5ebaaa58e658e260e4c07255368a10077866b3d2373343101dfee052",
+    "vertices": 898,
+    "triangles": 1200,
+    "bounds_min": [
+      -0.004999999999999999,
+      0.0,
+      -0.005
+    ],
+    "bounds_max": [
+      0.004999999999999999,
+      0.03,
+      0.005
+    ],
+    "mesh": "Assets/_Project/Models/Weapons/Ammunition/Pistol_Cartridge.asset",
+    "material": "Assets/_Project/Materials/Weapons/Ammunition/Pistol_Cartridge.mat",
+    "prefab": "Assets/_Project/Prefabs/Weapons/Ammunition/Pistol_Cartridge.prefab"
+  },
+  {
+    "name": "AssaultRifle_Bullet",
+    "generator": "Pixal3D native ComfyUI, local INT8",
+    "source_sha256": "d7467f281adff8f4bdd3af7b4e41c74884b79415db55d475380333f8acb92f0d",
+    "vertices": 197,
+    "triangles": 256,
+    "bounds_min": [
+      -0.5,
+      -0.5,
+      -0.5
+    ],
+    "bounds_max": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "mesh": "Assets/_Project/Models/Weapons/Ammunition/AssaultRifle_Bullet.asset",
+    "material": "Assets/_Project/Materials/Weapons/Ammunition/AssaultRifle_Bullet.mat",
+    "prefab": "Assets/_Project/Prefabs/Weapons/Projectiles/AssaultRifle_Bullet.prefab"
+  },
+  {
+    "name": "Pistol_Bullet",
+    "generator": "Pixal3D native ComfyUI, local INT8",
+    "source_sha256": "2b04edb1e032f2d53f33237334fbb9f3fc4eb978d15e963d6afbc08a085621e7",
+    "vertices": 226,
+    "triangles": 256,
+    "bounds_min": [
+      -0.5,
+      -0.5,
+      -0.49999999999999994
+    ],
+    "bounds_max": [
+      0.5,
+      0.5,
+      0.49999999999999994
+    ],
+    "mesh": "Assets/_Project/Models/Weapons/Ammunition/Pistol_Bullet.asset",
+    "material": "Assets/_Project/Materials/Weapons/Ammunition/Pistol_Bullet.mat",
+    "prefab": "Assets/_Project/Prefabs/Weapons/Projectiles/Pistol_Bullet.prefab"
+  },
+  {
+    "name": "Shotgun_Pellet",
+    "generator": "Pixal3D native ComfyUI, local INT8",
+    "source_sha256": "3fce9899b7b17dd542b3b40e2ca21cc7b415d3694f6f9c924d2deb1da33b74ee",
+    "vertices": 95,
+    "triangles": 96,
+    "bounds_min": [
+      -0.5,
+      -0.5,
+      -0.5
+    ],
+    "bounds_max": [
+      0.5,
+      0.5,
+      0.5
+    ],
+    "mesh": "Assets/_Project/Models/Weapons/Ammunition/Shotgun_Pellet.asset",
+    "material": "Assets/_Project/Materials/Weapons/Ammunition/Shotgun_Pellet.mat",
+    "prefab": "Assets/_Project/Prefabs/Weapons/Projectiles/Shotgun_Pellet.prefab"
+  }
+]

@@ -335,7 +335,7 @@ MonoBehaviour:
   _componentIndexCache: 0
   _addedNetworkObject: {fileID: 4753475039817145927}
   _networkObjectCache: {fileID: 4753475039817145927}
-  _componentConfiguration: 1
+  _componentConfiguration: 0
   _synchronizeParent: 0
   _packing:
     Position: 1
@@ -615,7 +615,7 @@ MonoBehaviour:
     m_bulletPrefab: {fileID: 3735381363240024366, guid: f59bac2ce39e9c34d8047a11bc3a447b, type: 3}
     m_bulletSpeed: 62
     m_bulletLifetime: 0.55
-    m_bulletSize: {x: 0.055, y: 0.055, z: 0.18}
+    m_bulletSize: {x: 0.055, y: 0.055, z: 0.055}
     m_bulletColour: {r: 1, g: 0.72, b: 0.12, a: 1}
     m_trailWidth: 0.03
     m_trailColour: {r: 1, g: 0.55, b: 0.08, a: 0.85}

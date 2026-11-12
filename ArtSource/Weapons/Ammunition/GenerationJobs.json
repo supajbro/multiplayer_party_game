@@ -1,0 +1,26 @@
+[
+  {
+    "name": "Shotgun_Shell",
+    "prompt_id": "0d8087b7-0eb7-4a40-98b5-e5352c5fd3ac"
+  },
+  {
+    "name": "AssaultRifle_Cartridge",
+    "prompt_id": "1366b855-30af-4a2a-a499-9327b1aa0cfc"
+  },
+  {
+    "name": "Pistol_Cartridge",
+    "prompt_id": "32bab835-b24f-4194-ae95-2cf838155fbb"
+  },
+  {
+    "name": "AssaultRifle_Bullet",
+    "prompt_id": "cb6f587b-74f1-44ba-a737-aae385f6232e"
+  },
+  {
+    "name": "Pistol_Bullet",
+    "prompt_id": "9d13e079-4547-49d7-b2fc-187bce7c6244"
+  },
+  {
+    "name": "Shotgun_Pellet",
+    "prompt_id": "830a410c-484f-4d41-acbc-c9801653f9d8"
+  }
+]

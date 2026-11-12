@@ -1,0 +1,35 @@
+{
+  "mode": "built-in ImageGen",
+  "assets": [
+    {
+      "name": "Shotgun_Shell",
+      "prompt": "Use case: stylized-concept. Asset type: reference image for Pixal3D generation of a single cartoon ammunition or projectile game prop. Style: clean chunky stylized 3D videogame render, lightly faceted bevels, simple broad color regions, warm saturated metals, matches a playful low-poly party game. One isolated object only, upright vertical, entire object centered with generous transparent margin, nearly side-on orthographic view turned very slightly to reveal its round cross-section. Soft even studio lighting, readable silhouette, minimal baked shadows. No floor, no cast shadow, no scene, no writing, no logos, no diagrams, no extra objects. Actual transparent background. Subject: one complete unused red shotgun shell cartridge: stout cylindrical crimson-red plastic hull with subtle vertical ribs, short brass base collar and slightly wider brass bottom rim, top closed with a red star crimp. Simple arcade proportions, height about 2.7 times diameter.",
+      "source": "C:\\Users\\Jaden\\.codex\\generated_images\\01a1c4d3-7873-7b51-a4d2-1db323f5b19a\\exec-10660892-5ce6-4d65-897b-24a15df63b1a.png"
+    },
+    {
+      "name": "AssaultRifle_Cartridge",
+      "prompt": "Use case: stylized-concept. Asset type: reference image for Pixal3D generation of a single cartoon ammunition or projectile game prop. Style: clean chunky stylized 3D videogame render, lightly faceted bevels, simple broad color regions, warm saturated metals, matches a playful low-poly party game. One isolated object only, upright vertical, entire object centered with generous transparent margin, nearly side-on orthographic view turned very slightly to reveal its round cross-section. Soft even studio lighting, readable silhouette, minimal baked shadows. No floor, no cast shadow, no scene, no writing, no logos, no diagrams, no extra objects. Actual transparent background. Subject: one complete rifle ammunition cartridge: long tapered golden brass case with a distinct bottleneck shoulder and narrow neck, copper pointed projectile protruding from the top, small brass rim at bottom. Slender silhouette, height about 5 times diameter.",
+      "source": "C:\\Users\\Jaden\\.codex\\generated_images\\01a1c4d3-7873-7b51-a4d2-1db323f5b19a\\exec-41ee398b-1724-4384-9a49-7761fc417de1.png"
+    },
+    {
+      "name": "Pistol_Cartridge",
+      "prompt": "Use case: stylized-concept. Asset type: reference image for Pixal3D generation of a single cartoon ammunition or projectile game prop. Style: clean chunky stylized 3D videogame render, lightly faceted bevels, simple broad color regions, warm saturated metals, matches a playful low-poly party game. One isolated object only, upright vertical, entire object centered with generous transparent margin, nearly side-on orthographic view turned very slightly to reveal its round cross-section. Soft even studio lighting, readable silhouette, minimal baked shadows. No floor, no cast shadow, no scene, no writing, no logos, no diagrams, no extra objects. Actual transparent background. Subject: one complete pistol ammunition cartridge: short straight golden brass cylindrical case with a subtle rim and extractor groove at its bottom, large smoothly rounded copper projectile emerging from the top. Stout silhouette, height about 2.8 times diameter.",
+      "source": "C:\\Users\\Jaden\\.codex\\generated_images\\01a1c4d3-7873-7b51-a4d2-1db323f5b19a\\exec-24063a9b-1ae5-4f66-b28f-63842828def6.png"
+    },
+    {
+      "name": "AssaultRifle_Bullet",
+      "prompt": "Use case: stylized-concept. Asset type: reference image for Pixal3D generation of a single cartoon ammunition or projectile game prop. Style: clean chunky stylized 3D videogame render, lightly faceted bevels, simple broad color regions, warm saturated metals, matches a playful low-poly party game. One isolated object only, upright vertical, entire object centered with generous transparent margin, nearly side-on orthographic view turned very slightly to reveal its round cross-section. Soft even studio lighting, readable silhouette, minimal baked shadows. No floor, no cast shadow, no scene, no writing, no logos, no diagrams, no extra objects. Actual transparent background. Subject: one bare copper-colored rifle projectile, separated from its cartridge case: an elongated solid copper-jacket bullet with a long pointed ogive nose on top, straight cylindrical lower body and flat circular base. Height about 3.2 times diameter. NO brass cartridge, NO case, NO fins, NO fire or trail.",
+      "source": "C:\\Users\\Jaden\\.codex\\generated_images\\01a1c4d3-7873-7b51-a4d2-1db323f5b19a\\exec-917dccbe-bf5e-460d-84c4-4c894d02ae0f.png"
+    },
+    {
+      "name": "Pistol_Bullet",
+      "prompt": "Use case: stylized-concept. Asset type: reference image for Pixal3D generation of a single cartoon ammunition or projectile game prop. Style: clean chunky stylized 3D videogame render, lightly faceted bevels, simple broad color regions, warm saturated metals, matches a playful low-poly party game. One isolated object only, upright vertical, entire object centered with generous transparent margin, nearly side-on orthographic view turned very slightly to reveal its round cross-section. Soft even studio lighting, readable silhouette, minimal baked shadows. No floor, no cast shadow, no scene, no writing, no logos, no diagrams, no extra objects. Actual transparent background. Subject: one bare copper-colored pistol projectile, separated from its cartridge case: a short solid copper-jacket bullet with a broad smoothly rounded dome nose on top, straight cylindrical lower body and flat circular base. Height about 1.7 times diameter. NO brass cartridge, NO case, NO fins, NO fire or trail.",
+      "source": "C:\\Users\\Jaden\\.codex\\generated_images\\01a1c4d3-7873-7b51-a4d2-1db323f5b19a\\exec-644faed3-cb78-417c-bfa0-ae01b286349e.png"
+    },
+    {
+      "name": "Shotgun_Pellet",
+      "prompt": "Use case: stylized-concept. Asset type: reference image for Pixal3D generation of a single cartoon ammunition or projectile game prop. Style: clean chunky stylized 3D videogame render, lightly faceted bevels, simple broad color regions, warm saturated metals, matches a playful low-poly party game. One isolated object only, upright vertical, entire object centered with generous transparent margin, nearly side-on orthographic view turned very slightly to reveal its round cross-section. Soft even studio lighting, readable silhouette, minimal baked shadows. No floor, no cast shadow, no scene, no writing, no logos, no diagrams, no extra objects. Actual transparent background. Subject: one solid spherical shotgun pellet, a single chunky round bead of warm dark gunmetal gray with a lightly faceted smooth surface. Perfectly round silhouette, subtle metallic highlight and evenly lit visible surface. NO shell casing, NO hole, NO seam, NO pedestal, NO fire or trail.",
+      "source": "C:\\Users\\Jaden\\.codex\\generated_images\\01a1c4d3-7873-7b51-a4d2-1db323f5b19a\\exec-17ffd691-7d8f-4cc6-b465-2a6128fbf924.png"
+    }
+  ]
+}

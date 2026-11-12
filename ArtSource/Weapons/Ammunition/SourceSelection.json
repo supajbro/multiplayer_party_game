@@ -1,0 +1,8 @@
+{
+  "Shotgun_Shell": {"file": "Shotgun_Shell_v2_00001.glb", "reason": "Complete rounded geometry after foreground-mask correction."},
+  "AssaultRifle_Cartridge": {"file": "AssaultRifle_Cartridge_v2_00001.glb", "reason": "Complete joined cartridge after foreground-mask correction."},
+  "Pistol_Cartridge": {"file": "Pistol_Cartridge_00001.glb", "reason": "The first candidate has clean unmarked textures on all reviewed sides and complete round geometry; the second candidate added unwanted markings."},
+  "AssaultRifle_Bullet": {"file": "AssaultRifle_Bullet_v2_00001.glb", "reason": "Clean complete pointed projectile."},
+  "Pistol_Bullet": {"file": "Pistol_Bullet_v2_00001.glb", "reason": "Clean complete rounded projectile without the first candidate's floating fragment."},
+  "Shotgun_Pellet": {"file": "Shotgun_Pellet_v2_00001.glb", "reason": "Clean round low-polygon pellet."}
+}

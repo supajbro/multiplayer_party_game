@@ -1,0 +1,16 @@
+{
+  "mode": "built-in ImageGen",
+  "reason": "Improve depth cues and regenerate malformed hidden geometry.",
+  "assets": [
+    {
+      "name": "Shotgun_Shell",
+      "prompt": "A single complete cartoon shotgun shell game prop. Thick solid cylindrical red plastic hull with shallow vertical ribs, short gold brass collar and complete round brass rim at the bottom, closed red star-crimp on top. A solid round cylinder all the way around, no cutaway and no missing rear. Chunky arcade proportions, height 2.5 times diameter. Clear three-quarter product view from 25 degrees above, showing the top as a broad ellipse and the complete curved right side. Neutral perspective, 50mm product lens. Entire object on transparent background, evenly lit, clean stylized low-poly 3D render, subtle broad highlights, no floor or shadow or text or diagrams. Exactly one shell, no other objects.",
+      "source": "C:\\Users\\Jaden\\.codex\\generated_images\\01a1c4d3-7873-7b51-a4d2-1db323f5b19a\\exec-92f55009-64f3-4314-a749-9dc40926a674.png"
+    },
+    {
+      "name": "AssaultRifle_Cartridge",
+      "prompt": "A single complete cartoon assault-rifle cartridge game prop. One intact golden brass cartridge case, a stout long cylinder with one crisp bottleneck shoulder, a narrow neck gripping a pointed copper bullet on top, and one complete circular brass rim at its bottom. The case and copper bullet are tightly joined as one complete loaded round. Chunky readable arcade proportions, full height about four times case diameter. Upright but tilted 12 degrees to the left in the image; camera elevated 20 degrees, clear three-quarter product view showing cylindrical depth and the elliptical base rim. Neutral perspective, 50mm product lens. Clean stylized low-poly 3D render, broad simple facets, soft even studio light, no blown highlights. Whole object centered on actual transparent background with margin. Exactly one complete cartridge. No separate pieces, no duplicates, no exploded view, no cutaway, no floor, no text or logos.",
+      "source": "C:\\Users\\Jaden\\.codex\\generated_images\\01a1c4d3-7873-7b51-a4d2-1db323f5b19a\\exec-160e3fd0-295e-4ee4-997e-b81c884c1033.png"
+    }
+  ]
+}

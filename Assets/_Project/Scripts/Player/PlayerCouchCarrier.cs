@@ -403,15 +403,46 @@ namespace CouchGuys.Player
 
         private void TryRequestNearestInteraction()
         {
+            FindNearestInteraction(out CouchCarryPoint closestPoint, out SledController closestUnloadSled,
+                out DeliveryNPC closestNpc, out WeaponPickup closestWeapon, out bool depotDoorButton);
+            if (closestPoint != null)
+            {
+                RequestGrabServerRpc(closestPoint.Couch.NetworkObject, closestPoint.PointIndex);
+            }
+            else if (closestUnloadSled != null)
+            {
+                RequestSledUnloadServerRpc(closestUnloadSled.NetworkObject);
+            }
+            else if (closestNpc != null)
+            {
+                RequestDeliveryServerRpc();
+            }
+            else if (closestWeapon != null)
+            {
+                RequestWeaponPickupServerRpc(closestWeapon.NetworkObject);
+            }
+            else if (depotDoorButton)
+            {
+                RequestDepotDoorServerRpc();
+            }
+        }
+
+        // Share target selection with the prompt so it describes what pressing E will do.
+        private void FindNearestInteraction(out CouchCarryPoint closestPoint, out SledController closestUnloadSled,
+            out DeliveryNPC closestNpc, out WeaponPickup closestWeapon, out bool depotDoorButton)
+        {
+            closestPoint = null;
+            closestUnloadSled = null;
+            closestNpc = null;
+            closestWeapon = null;
+            depotDoorButton = false;
             var rackPickup = FindNearbyRackPickup();
             if (rackPickup != null)
             {
-                RequestWeaponPickupServerRpc(rackPickup.NetworkObject);
+                closestWeapon = rackPickup;
                 return;
             }
             CouchCarryPoint[] points = FindObjectsByType<CouchCarryPoint>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-            CouchCarryPoint closestPoint = null;
-            SledController closestUnloadSled = null;
             float closestDistanceSquared = m_interactionRange * m_interactionRange;
 
             foreach (CouchCarryPoint point in points)
@@ -449,7 +480,6 @@ namespace CouchGuys.Player
                 closestUnloadSled = sled;
             }
 
-            DeliveryNPC closestNpc = null;
             DeliveryNPC[] npcs = FindObjectsByType<DeliveryNPC>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
             foreach (DeliveryNPC npc in npcs)
             {
@@ -463,7 +493,6 @@ namespace CouchGuys.Player
                 }
             }
 
-            WeaponPickup closestWeapon = null;
             foreach (WeaponPickup pickup in FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None))
             {
                 float distance = (pickup.transform.position - transform.position).sqrMagnitude;
@@ -475,7 +504,6 @@ namespace CouchGuys.Player
                 closestNpc = null;
             }
 
-            bool depotDoorButton = false;
             DepotController depot = FindFirstObjectByType<DepotController>();
             if (depot != null && depot.HasNearbyButton(transform.position,
                     Mathf.Sqrt(closestDistanceSquared), out _))
@@ -487,26 +515,6 @@ namespace CouchGuys.Player
                 closestNpc = null;
             }
 
-            if (closestPoint != null)
-            {
-                RequestGrabServerRpc(closestPoint.Couch.NetworkObject, closestPoint.PointIndex);
-            }
-            else if (closestUnloadSled != null)
-            {
-                RequestSledUnloadServerRpc(closestUnloadSled.NetworkObject);
-            }
-            else if (closestNpc != null)
-            {
-                RequestDeliveryServerRpc();
-            }
-            else if (closestWeapon != null)
-            {
-                RequestWeaponPickupServerRpc(closestWeapon.NetworkObject);
-            }
-            else if (depotDoorButton)
-            {
-                RequestDepotDoorServerRpc();
-            }
         }
 
         [ServerRpc]
@@ -546,7 +554,7 @@ namespace CouchGuys.Player
             if (IsCarrying)
             {
                 var loadingSled = SledController.FindLoadingSled(transform.position + Vector3.up);
-                m_sledInteractionPrompt = loadingSled == null ? string.Empty :
+                m_sledInteractionPrompt = loadingSled == null ? "Press E to release couch" :
                     loadingSled.HasCargoSpace ? $"Press E to load couch | {loadingSled.CargoStatus}" : loadingSled.LoadingStatus;
                 return;
             }
@@ -561,6 +569,13 @@ namespace CouchGuys.Player
             if (rackPickup != null)
             {
                 m_sledInteractionPrompt = $"Press E to pick up {rackPickup.DisplayName} | {rackPickup.MountedSled.CargoStatus}";
+                return;
+            }
+            FindNearestInteraction(out CouchCarryPoint carryPoint, out _, out _, out _, out _);
+            if (carryPoint != null && !carryPoint.Couch.IsSled &&
+                (!TryGetComponent(out PlayerStamina stamina) || stamina.CanAttachToCouch))
+            {
+                m_sledInteractionPrompt = "Press E to carry couch";
                 return;
             }
             foreach (var sled in FindObjectsByType<SledController>(FindObjectsSortMode.None))

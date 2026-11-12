@@ -199,22 +199,10 @@ MonoBehaviour:
         Weight: 0.75
         AllowedInParks: 1
         AllowedRoadside: 0
-      - Prefab: {fileID: 3096068039576058628, guid: 89c535e1c3bf0bf4d87266b0b81a2a43, type: 3}
-        Weight: 0.9
-        AllowedInParks: 1
-        AllowedRoadside: 0
-      - Prefab: {fileID: 6983059004955542910, guid: 61a870414c8cf084baad7e64a8865b4a, type: 3}
-        Weight: 0.7
-        AllowedInParks: 0
-        AllowedRoadside: 1
       - Prefab: {fileID: 8504114683684851983, guid: 7aa0eb70acc483a418fda28d1ff75823, type: 3}
         Weight: 0.5
         AllowedInParks: 0
         AllowedRoadside: 1
-      - Prefab: {fileID: 7593145894090393864, guid: 3046a035345daf849820a0a627f7cc12, type: 3}
-        Weight: 0.35
-        AllowedInParks: 1
-        AllowedRoadside: 0
     ResidentialDecorations:
       Enabled: 1
       BinProbability: 0.7
@@ -237,25 +225,25 @@ MonoBehaviour:
       - {fileID: 1001001, guid: b38e9c3fa045678901bcdef234567890, type: 3}
       Bench: {fileID: 4910921757220290626, guid: bea4b1ee7af8c9648ac0a649b7bac297, type: 3}
       Bin: {fileID: 4903883153855092555, guid: 6c9ef0645a455124aa614fec96b02fac, type: 3}
-      PublicBin: {fileID: 2397117203645329998, guid: 9d4d3c2a06d328b4dacac146800c2366, type: 3}
-      Mailbox: {fileID: 672857168569710017, guid: ded04ad9419d0594a9ed872bf19983de, type: 3}
+      PublicBin: {fileID: 0}
+      Mailbox: {fileID: 0}
       FlowerCluster: {fileID: 2554265449759307080, guid: 8b7ce3d1fb733954986ac1bde39cc435, type: 3}
-      Bush: {fileID: 8793972095355824061, guid: 0dc3a5d33ba888b4c9d31ccd00910f2d, type: 3}
+      Bush: {fileID: 0}
       Fountain: {fileID: 7539993096332369416, guid: 5f073b482531af8439406b2a846e3004, type: 3}
       Statue: {fileID: 7611975954099184691, guid: f5211013f5d4a484f92be819e122e4b7, type: 3}
-      Playground: {fileID: 3096068039576058628, guid: 89c535e1c3bf0bf4d87266b0b81a2a43, type: 3}
+      Playground: {fileID: 0}
       Gazebo: {fileID: 6479280250502734365, guid: b2e6e2822fa5a3043b0b6ca32475bc26, type: 3}
-      BusStop: {fileID: 6983059004955542910, guid: 61a870414c8cf084baad7e64a8865b4a, type: 3}
+      BusStop: {fileID: 0}
       ParkSign: {fileID: 3481702279890179335, guid: 271ce85012773244083f886731aa8639, type: 3}
       ParkPath: {fileID: 2339326659669230358, guid: b2ec6dbd325637b4d82606220c728e5a, type: 3}
       ParkBoundary: {fileID: 8168994977871789672, guid: 246fbd308f21a454dac9263eb764dfe9, type: 3}
       NoticeBoard: {fileID: 8504114683684851983, guid: 7aa0eb70acc483a418fda28d1ff75823, type: 3}
       PicnicArea: {fileID: 8223794025572331755, guid: a27426b64db352943a9285f75f6ad2d4, type: 3}
-      Plaza: {fileID: 7593145894090393864, guid: 3046a035345daf849820a0a627f7cc12, type: 3}
-      FireHydrant: {fileID: 581633271307692041, guid: d12163fb4cabbb24c90b53c82780be11, type: 3}
-      StreetSign: {fileID: 4978699380169544079, guid: a978c1747a741884f8b84a0db8e1a81d, type: 3}
-      UtilityBox: {fileID: 4583614624074251791, guid: edc14cfd608e1d3448248bf28f8cfe25, type: 3}
-      PlantingBed: {fileID: 7345769390577267960, guid: b2576165791529e4ab62d8b6974d33d5, type: 3}
+      Plaza: {fileID: 0}
+      FireHydrant: {fileID: 0}
+      StreetSign: {fileID: 0}
+      UtilityBox: {fileID: 0}
+      PlantingBed: {fileID: 0}
   m_props: []
   m_hazards: []
   m_buildNavMesh: 1

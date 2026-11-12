@@ -276,9 +276,7 @@ namespace CouchGuys.Gameplay.Vehicles
             if (seatIndex < 0) return false;
             if (m_rearDoorsOpen.Value && !m_settings.AllowDrivingWithDoorsOpen)
             {
-                // Loaded couches have their colliders disabled while secured, so this
-                // still refuses entry when a loose couch/player is blocking the doors.
-                if (IsDoorwayObstructed()) return false;
+                // Rear cargo clearance must not prevent entry into a cab seat.
                 SetRearDoorsServer(false);
             }
             SetOccupant(seatIndex, player.NetworkObject);

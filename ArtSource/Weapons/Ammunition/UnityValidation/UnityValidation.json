@@ -1,0 +1,1 @@
+{"passed":true,"assets":6,"checks":["Unity import","mesh and material references","UVs and normals","triangle budgets","projectile launch","preserved trails","round shotgun pellet","three-angle render per asset"]}

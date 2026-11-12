@@ -1,0 +1,105 @@
+{
+  "248": {
+    "class_type": "ComfySwitchNode",
+    "inputs": {
+      "switch": true,
+      "on_false": [
+        "500",
+        0
+      ],
+      "on_true": [
+        "192",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Switch: Remove background"
+    }
+  },
+  "192": {
+    "class_type": "RemoveBackground",
+    "inputs": {
+      "bg_removal_model": [
+        "193",
+        0
+      ],
+      "image": [
+        "122",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "RemoveBackground"
+    }
+  },
+  "193": {
+    "class_type": "LoadBackgroundRemovalModel",
+    "inputs": {
+      "bg_removal_name": "birefnet.safetensors"
+    },
+    "_meta": {
+      "title": "LoadBackgroundRemovalModel"
+    }
+  },
+  "312": {
+    "class_type": "ImageCropToMask",
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "pad_factor": 1.1,
+      "grow_mask": 0,
+      "background": "#000000",
+      "images": [
+        "122",
+        0
+      ],
+      "masks": [
+        "303",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ImageCropToMask"
+    }
+  },
+  "402": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "312",
+        0
+      ],
+      "filename_prefix": "Ammunition/Inputs/Shotgun_Shell_v2"
+    }
+  },
+  "500": {
+    "class_type": "InvertMask",
+    "inputs": {
+      "mask": [
+        "122",
+        1
+      ]
+    }
+  },
+  "122": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "Shotgun_Shell_v2.png"
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "303": {
+    "class_type": "MaskPreview",
+    "inputs": {
+      "mask": [
+        "248",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "MaskPreview"
+    }
+  }
+}

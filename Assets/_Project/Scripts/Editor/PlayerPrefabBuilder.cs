@@ -150,8 +150,11 @@ namespace CouchGuys.Editor
             }
 
             SerializedObject serialisedTransform = new SerializedObject(networkTransform);
+            // Remote players still need a server-side collider for damage and door
+            // detection. Ownership gates the movement script; vehicle interactors
+            // manage the capsule while seated. FishNet must not disable it by ownership.
             serialisedTransform.FindProperty("_componentConfiguration").enumValueIndex =
-                (int)NetworkTransform.ComponentConfigurationType.CharacterController;
+                (int)NetworkTransform.ComponentConfigurationType.Disabled;
             serialisedTransform.FindProperty("_clientAuthoritative").boolValue = true;
             serialisedTransform.FindProperty("_synchronizePosition").boolValue = true;
             serialisedTransform.FindProperty("_synchronizeRotation").boolValue = true;

@@ -6,6 +6,9 @@ namespace CouchGuys.Gameplay.Weapons
     [DisallowMultipleComponent]
     public sealed class WeaponProjectileVisual : MonoBehaviour
     {
+        [SerializeField, Tooltip("Tint the mesh with the weapon colour. Disable to preserve textured projectile materials; trails still use the weapon colour.")]
+        private bool m_tintMeshWithWeaponColour = true;
+
         private Vector3 m_end;
         private float m_speed;
         private float m_expiresAt;
@@ -28,7 +31,7 @@ namespace CouchGuys.Gameplay.Weapons
             transform.localScale = weapon.BulletSize;
 
             Renderer renderer = GetComponentInChildren<Renderer>(true);
-            if (renderer != null)
+            if (renderer != null && m_tintMeshWithWeaponColour)
             {
                 MaterialPropertyBlock properties = new();
                 renderer.GetPropertyBlock(properties);

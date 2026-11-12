@@ -22,18 +22,6 @@ namespace CouchGuys.Editor
 
         private static readonly Dictionary<string, Material> Materials = new Dictionary<string, Material>();
 
-        [InitializeOnLoadMethod]
-        private static void BuildMissingAssetsAfterImport()
-        {
-            EditorApplication.delayCall += () =>
-            {
-                if (EditorApplication.isPlayingOrWillChangePlaymode ||
-                    StreetLightPrefabBuilder.EnsurePrefab() != null)
-                    return;
-                BuildAll();
-            };
-        }
-
         [MenuItem("Couch Guys/World/Create or Refresh Neighbourhood Environment")]
         public static void BuildAll()
         {
@@ -98,17 +86,6 @@ namespace CouchGuys.Editor
                 Cube(root, "Lid", new Vector3(0f, 1.13f, -0.02f), new Vector3(0.76f, 0.12f, 0.68f), "Yellow");
                 Cube(root, "Handle", new Vector3(0f, 1.24f, 0.16f), new Vector3(0.35f, 0.08f, 0.1f), "MetalDark");
             });
-            GameObject publicBin = CreatePrefab("PublicBin_Placeholder", new Vector2(0.9f, 0.9f), 0.25f, root =>
-            {
-                Cube(root, "Body", new Vector3(0f, 0.6f, 0f), new Vector3(0.78f, 1.2f, 0.72f), "Blue");
-                Cube(root, "Top", new Vector3(0f, 1.24f, 0f), new Vector3(0.88f, 0.16f, 0.82f), "MetalDark");
-            });
-            GameObject mailbox = CreatePrefab("Mailbox_Placeholder", new Vector2(0.8f, 0.65f), 0.25f, root =>
-            {
-                Cube(root, "Post", new Vector3(0f, 0.75f, 0f), new Vector3(0.18f, 1.5f, 0.18f), "Wood");
-                Cube(root, "Box", new Vector3(0f, 1.48f, 0.08f), new Vector3(0.65f, 0.48f, 0.85f), "White");
-                Cube(root, "Flag", new Vector3(0.39f, 1.6f, 0f), new Vector3(0.08f, 0.5f, 0.08f), "Red");
-            });
             GameObject flowers = CreatePrefab("FlowerCluster_Placeholder", new Vector2(1.6f, 1.1f), 0.2f, root =>
             {
                 Cube(root, "Bed", new Vector3(0f, 0.12f, 0f), new Vector3(1.6f, 0.24f, 1.05f), "Wood");
@@ -119,17 +96,6 @@ namespace CouchGuys.Editor
                     Cube(root, $"Stem_{i}", new Vector3(x, 0.38f, z), new Vector3(0.09f, 0.38f, 0.09f), "GrassDark");
                     Cube(root, $"Flower_{i}", new Vector3(x, 0.62f, z), Vector3.one * 0.22f, i % 3 == 0 ? "Yellow" : i % 3 == 1 ? "Pink" : "Purple");
                 }
-            });
-            GameObject bush = CreatePrefab("Bush_Placeholder", new Vector2(1.7f, 1.5f), 0.25f, root =>
-            {
-                Cube(root, "BushLeft", new Vector3(-0.42f, 0.55f, 0f), new Vector3(1f, 1.05f, 1.15f), "GrassDark");
-                Cube(root, "BushRight", new Vector3(0.4f, 0.62f, 0.08f), new Vector3(1.05f, 1.2f, 1.25f), "GrassBright");
-            });
-            GameObject tree = CreatePrefab("Tree_Placeholder", new Vector2(2.2f, 2.2f), 0.45f, root =>
-            {
-                Cube(root, "Trunk", new Vector3(0f, 1.4f, 0f), new Vector3(0.6f, 2.8f, 0.6f), "Wood");
-                Cube(root, "CanopyLower", new Vector3(0f, 3.35f, 0f), new Vector3(2.6f, 1.7f, 2.5f), "GrassDark");
-                Cube(root, "CanopyUpper", new Vector3(0.15f, 4.55f, 0f), new Vector3(2.05f, 1.45f, 2f), "GrassBright");
             });
             GameObject bench = CreatePrefab("Bench_Placeholder", new Vector2(2.4f, 0.95f), 0.35f, root =>
             {
@@ -147,15 +113,6 @@ namespace CouchGuys.Editor
                 Cube(root, "Statue", new Vector3(0f, 2.65f, 0f), new Vector3(1.15f, 2.8f, 1.15f), "Blue");
                 Cube(root, "Head", new Vector3(0f, 4.35f, 0f), Vector3.one * 0.85f, "Blue");
             });
-            GameObject playground = CreatePrefab("Playground_Placeholder", new Vector2(8f, 7f), 1f, root =>
-            {
-                Cube(root, "Mat", new Vector3(0f, 0.08f, 0f), new Vector3(8f, 0.16f, 7f), "Path");
-                Cube(root, "Tower", new Vector3(-1.8f, 1.5f, 0.5f), new Vector3(2.2f, 3f, 2.2f), "Yellow");
-                Cube(root, "Slide", new Vector3(0f, 0.9f, -0.8f), new Vector3(1.1f, 0.25f, 4.3f), "Blue");
-                Cube(root, "SwingBar", new Vector3(2.6f, 2.1f, 0.7f), new Vector3(3.2f, 0.25f, 0.25f), "Red");
-                Cube(root, "SwingPostL", new Vector3(1.25f, 1.05f, 0.7f), new Vector3(0.25f, 2.1f, 0.25f), "Red");
-                Cube(root, "SwingPostR", new Vector3(3.95f, 1.05f, 0.7f), new Vector3(0.25f, 2.1f, 0.25f), "Red");
-            });
             GameObject gazebo = CreatePrefab("Gazebo_Placeholder", new Vector2(6f, 6f), 0.8f, root =>
             {
                 Cube(root, "Floor", new Vector3(0f, 0.18f, 0f), new Vector3(5.8f, 0.36f, 5.8f), "Wood");
@@ -167,12 +124,6 @@ namespace CouchGuys.Editor
                 }
                 Cube(root, "Roof", new Vector3(0f, 3.65f, 0f), new Vector3(6.4f, 0.55f, 6.4f), "Red");
             });
-            GameObject busStop = CreatePrefab("BusStop_Placeholder", new Vector2(4f, 1.8f), 0.6f, root =>
-            {
-                Cube(root, "Back", new Vector3(0f, 1.45f, 0.72f), new Vector3(4f, 2.9f, 0.18f), "Blue");
-                Cube(root, "Roof", new Vector3(0f, 3f, 0f), new Vector3(4.3f, 0.25f, 1.8f), "Yellow");
-                Cube(root, "Seat", new Vector3(0f, 0.6f, 0.18f), new Vector3(2.8f, 0.24f, 0.65f), "Wood");
-            });
             GameObject parkSign = SignPrefab("ParkSign_Placeholder", "GrassDark", new Vector2(2.3f, 0.65f));
             GameObject noticeBoard = SignPrefab("NoticeBoard_Placeholder", "Yellow", new Vector2(2.8f, 0.9f));
             GameObject picnic = CreatePrefab("PicnicArea_Placeholder", new Vector2(4.2f, 3.2f), 0.65f, root =>
@@ -180,26 +131,6 @@ namespace CouchGuys.Editor
                 Cube(root, "Table", new Vector3(0f, 0.85f, 0f), new Vector3(3.2f, 0.25f, 1.35f), "Wood");
                 Cube(root, "BenchL", new Vector3(-1.85f, 0.5f, 0f), new Vector3(0.55f, 0.2f, 3.2f), "Wood");
                 Cube(root, "BenchR", new Vector3(1.85f, 0.5f, 0f), new Vector3(0.55f, 0.2f, 3.2f), "Wood");
-            });
-            GameObject plaza = CreatePrefab("Plaza_Placeholder", new Vector2(8f, 8f), 0.8f, root =>
-            {
-                Cube(root, "Paving", new Vector3(0f, 0.08f, 0f), new Vector3(8f, 0.16f, 8f), "Concrete");
-                Cube(root, "PlanterL", new Vector3(-2.8f, 0.35f, 0f), new Vector3(1.2f, 0.7f, 4.8f), "Wood");
-                Cube(root, "PlanterR", new Vector3(2.8f, 0.35f, 0f), new Vector3(1.2f, 0.7f, 4.8f), "Wood");
-            });
-            GameObject hydrant = CreatePrefab("FireHydrant_Placeholder", new Vector2(0.8f, 0.8f), 0.25f, root =>
-            {
-                Cube(root, "Body", new Vector3(0f, 0.55f, 0f), new Vector3(0.55f, 1.1f, 0.55f), "Red");
-                Cube(root, "Cap", new Vector3(0f, 1.16f, 0f), new Vector3(0.72f, 0.22f, 0.72f), "Yellow");
-                Cube(root, "Side", new Vector3(0.42f, 0.7f, 0f), new Vector3(0.4f, 0.35f, 0.35f), "Red");
-            });
-            GameObject streetSign = SignPrefab("StreetSign_Placeholder", "Blue", new Vector2(1.5f, 0.6f));
-            GameObject utility = CreatePrefab("UtilityBox_Placeholder", new Vector2(1.3f, 0.9f), 0.3f, root =>
-                Cube(root, "Box", new Vector3(0f, 0.65f, 0f), new Vector3(1.25f, 1.3f, 0.85f), "GrassDark"));
-            GameObject planting = CreatePrefab("PlantingBed_Placeholder", new Vector2(3f, 1.4f), 0.25f, root =>
-            {
-                Cube(root, "Bed", new Vector3(0f, 0.16f, 0f), new Vector3(3f, 0.32f, 1.4f), "Wood");
-                Cube(root, "Plants", new Vector3(0f, 0.48f, 0f), new Vector3(2.5f, 0.55f, 0.95f), "GrassBright");
             });
             GameObject path = CreatePrefab("ParkPath_Placeholder", new Vector2(2.2f, 1f), 0f, root =>
                 Cube(root, "Path", new Vector3(0f, 0.035f, 0f), new Vector3(2.2f, 0.07f, 1f), "Path"), false);
@@ -210,20 +141,18 @@ namespace CouchGuys.Editor
             GameObject largePark = ParkRoot("LargePark_Placeholder", new Vector2(60f, 60f));
             GameObject[] treePrefabs =
             {
-                AssetDatabase.LoadAssetAtPath<GameObject>($"{TreePrefabFolder}/tree_01.prefab") ?? tree,
-                AssetDatabase.LoadAssetAtPath<GameObject>($"{TreePrefabFolder}/tree_02.prefab") ?? tree,
-                AssetDatabase.LoadAssetAtPath<GameObject>($"{TreePrefabFolder}/tree_03.prefab") ?? tree
+                AssetDatabase.LoadAssetAtPath<GameObject>($"{TreePrefabFolder}/tree_01.prefab"),
+                AssetDatabase.LoadAssetAtPath<GameObject>($"{TreePrefabFolder}/tree_02.prefab"),
+                AssetDatabase.LoadAssetAtPath<GameObject>($"{TreePrefabFolder}/tree_03.prefab")
             };
 
             return new EnvironmentPrefabLibrary
             {
                 SmallPark = smallPark, MediumPark = mediumPark, LargePark = largePark,
-                TreePrefabs = treePrefabs, Bench = bench, Bin = bin, PublicBin = publicBin, Mailbox = mailbox,
-                FlowerCluster = flowers, Bush = bush, Fountain = fountain, Statue = statue,
-                Playground = playground, Gazebo = gazebo, BusStop = busStop, ParkSign = parkSign,
-                ParkPath = path, ParkBoundary = boundary, NoticeBoard = noticeBoard, PicnicArea = picnic,
-                Plaza = plaza, FireHydrant = hydrant, StreetSign = streetSign, UtilityBox = utility,
-                PlantingBed = planting
+                TreePrefabs = treePrefabs, Bench = bench, Bin = bin,
+                FlowerCluster = flowers, Fountain = fountain, Statue = statue,
+                Gazebo = gazebo, ParkSign = parkSign,
+                ParkPath = path, ParkBoundary = boundary, NoticeBoard = noticeBoard, PicnicArea = picnic
             };
         }
 
@@ -290,10 +219,7 @@ namespace CouchGuys.Editor
                 new WeightedEnvironmentPrefab { Prefab = library.Fountain, Weight = 1.2f, AllowedInParks = true },
                 new WeightedEnvironmentPrefab { Prefab = library.Statue, Weight = 0.8f, AllowedInParks = true },
                 new WeightedEnvironmentPrefab { Prefab = library.Gazebo, Weight = 0.75f, AllowedInParks = true },
-                new WeightedEnvironmentPrefab { Prefab = library.Playground, Weight = 0.9f, AllowedInParks = true },
-                new WeightedEnvironmentPrefab { Prefab = library.BusStop, Weight = 0.7f, AllowedRoadside = true },
                 new WeightedEnvironmentPrefab { Prefab = library.NoticeBoard, Weight = 0.5f, AllowedRoadside = true },
-                new WeightedEnvironmentPrefab { Prefab = library.Plaza, Weight = 0.35f, AllowedInParks = true }
             };
             region.ConfigureEnvironment(settings);
             EditorUtility.SetDirty(region);

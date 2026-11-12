@@ -64,7 +64,7 @@ def import_file(cfg, store: Store, path: Path, rights: Rights):
     folder = cfg.data_dir / "media"
     folder.mkdir(exist_ok=True)
     target = folder / (sha + path.suffix.lower())
-    if not target.exists():
+    if not target.exists() or digest(target) != sha:
         shutil.copy2(path, target)
     if not old:
         store.discover(rights.source_id, "local", {"creator": rights.creator, "url": rights.source_url})
