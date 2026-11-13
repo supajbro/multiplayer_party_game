@@ -77,6 +77,7 @@ namespace CouchGuys.CameraSystem
         private readonly List<Renderer> m_playerVisualRenderers = new();
         private Bounds m_playerVisualBounds;
         private bool m_hasPlayerVisualBounds;
+        private bool m_needsPlayerFraming;
         private Transform m_vehicleTarget;
         private float m_vehicleDistance;
         private float m_vehicleHeight;
@@ -250,6 +251,7 @@ namespace CouchGuys.CameraSystem
 
         private void LateUpdate()
         {
+            m_needsPlayerFraming = false;
             UpdateCarriedCouchBounds(m_couchCarrier != null ? m_couchCarrier.CarriedCouch : null);
             UpdatePlayerVisualBounds();
             if (DispatcherCameraActive)
@@ -312,6 +314,7 @@ namespace CouchGuys.CameraSystem
             if ((transform.position - smoothedPosition).sqrMagnitude > 0.000001f)
                 m_smoothedBoomDistance = Vector3.Distance(pivot, transform.position);
             transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, rotationBlend);
+            transform.rotation = CorrectPlayerFraming(transform.rotation);
             if (constrained)
             {
                 // Enforce visibility at the actual, collision-corrected camera pose too.
@@ -572,20 +575,32 @@ namespace CouchGuys.CameraSystem
             Bounds playerBounds = GetExpandedVisualBounds(m_playerVisualBounds);
             if (!playerBounds.Contains(result)) return result;
 
-            // The boom normally starts inside the player and ignores their physics
-            // colliders. A couch/wall can shorten it back into the face. Retry from
-            // above the visible body, then stop before entering it. Shortening this
-            // already-tested segment preserves world and held-couch clearance too.
+            // Keep the full boom when lifting it above the body. Aiming the raised
+            // pivot at the old destination instead collapses it onto the head.
+            m_needsPlayerFraming = true;
+            Vector3 originalPivot = pivot;
             pivot.y = Mathf.Max(pivot.y, playerBounds.max.y + 0.001f);
             pivot = GetClearCollisionPivot(pivot);
             if (m_hasCarriedCouchBounds && GetExpandedCarriedCouchBounds().Contains(pivot))
                 pivot.y = GetExpandedCarriedCouchBounds().max.y + 0.001f;
-            result = CastCameraBoom(pivot, desiredPosition);
+            result = CastCameraBoom(pivot, desiredPosition + pivot - originalPivot);
             Vector3 offset = result - pivot;
             float distance = offset.magnitude;
             if (distance > 0.0001f && playerBounds.IntersectRay(new Ray(pivot, offset / distance), out float hit))
                 result = pivot + offset / distance * Mathf.Min(distance, Mathf.Max(0f, hit - 0.001f));
             return result;
+        }
+
+        private Quaternion CorrectPlayerFraming(Quaternion rotation)
+        {
+            if (!m_needsPlayerFraming || !m_hasPlayerVisualBounds) return rotation;
+            // Clearance can leave the camera above the robot. Keep the robot in
+            // view without changing the user's orbit angles or weakening collision.
+            Vector3 direction = m_playerVisualBounds.center - transform.position;
+            if (direction.sqrMagnitude < 0.000001f) return rotation;
+            Vector3 up = Mathf.Abs(Vector3.Dot(direction.normalized, Vector3.up)) > .99f
+                ? rotation * Vector3.up : Vector3.up;
+            return Quaternion.LookRotation(direction, up);
         }
 
         private Vector3 CastCameraBoom(Vector3 pivot, Vector3 desiredPosition)

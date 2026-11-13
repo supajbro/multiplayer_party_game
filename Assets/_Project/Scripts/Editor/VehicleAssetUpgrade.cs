@@ -31,7 +31,8 @@ namespace CouchGuys.Editor
             {
                 string path = $"Assets/_Project/Prefabs/Vehicles/{name}.prefab";
                 GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-                if (prefab == null || Find(prefab.transform, "DoorEntryExit_Front_Right") != null) continue;
+                if (prefab == null || prefab.GetComponent<TruckController>().IsHoverTruck ||
+                    Find(prefab.transform, "DoorEntryExit_Front_Right") != null) continue;
                 GameObject contents = PrefabUtility.LoadPrefabContents(path);
                 try
                 {

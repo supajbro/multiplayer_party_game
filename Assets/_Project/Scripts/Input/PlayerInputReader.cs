@@ -57,6 +57,7 @@ namespace CouchGuys.Input
         public bool VehicleInteractHeld => !MenuBlocked && (m_interactAction?.IsPressed() ?? false);
         public bool VehicleInteractPressedThisFrame => m_consumedInteractFrame != Time.frameCount && !MenuBlocked && (m_interactAction?.WasPressedThisFrame() ?? false);
         public bool VehicleHornPressedThisFrame => !MenuBlocked && (Mouse.current?.leftButton.wasPressedThisFrame ?? false);
+        public bool VehicleShootHeld => !MenuBlocked && (m_shootAction?.IsPressed() ?? false);
         public Vector2 Look => !GameplaySuppressed ? m_lookAction?.ReadValue<Vector2>() ?? Vector2.zero : Vector2.zero;
         public bool JumpPressedThisFrame => !GameplaySuppressed && (m_jumpAction?.WasPressedThisFrame() ?? false);
         public bool SprintHeld => !GameplaySuppressed && (m_sprintAction?.IsPressed() ?? false);

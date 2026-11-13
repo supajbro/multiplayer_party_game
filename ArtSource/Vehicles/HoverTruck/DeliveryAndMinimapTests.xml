@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="6" result="Passed" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-11-13 08:19:53Z" end-time="2026-11-13 08:19:53Z" duration="0.0902168">
+  <test-suite type="TestSuite" id="1000" name="multiplayer_game" fullname="multiplayer_game" runstate="Runnable" testcasecount="23" result="Passed" start-time="2026-11-13 08:19:53Z" end-time="2026-11-13 08:19:53Z" duration="0.090217" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1033" name="Assembly-CSharp-Editor.dll" fullname="C:/Users/Jaden/AppData/Local/Temp/CouchGuysHoverTruckAuthoring/Library/ScriptAssemblies/Assembly-CSharp-Editor.dll" runstate="Runnable" testcasecount="23" result="Passed" start-time="2026-11-13 08:19:53Z" end-time="2026-11-13 08:19:53Z" duration="0.080631" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="44052" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1034" name="CouchGuys" fullname="CouchGuys" runstate="Runnable" testcasecount="23" result="Passed" start-time="2026-11-13 08:19:53Z" end-time="2026-11-13 08:19:53Z" duration="0.079057" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1035" name="Tests" fullname="CouchGuys.Tests" runstate="Runnable" testcasecount="23" result="Passed" start-time="2026-11-13 08:19:53Z" end-time="2026-11-13 08:19:53Z" duration="0.077846" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1036" name="Editor" fullname="CouchGuys.Tests.Editor" runstate="Runnable" testcasecount="23" result="Passed" start-time="2026-11-13 08:19:53Z" end-time="2026-11-13 08:19:53Z" duration="0.076706" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1001" name="MinimapNavigationTests" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-11-13 08:19:53Z" end-time="2026-11-13 08:19:53Z" duration="0.046428" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="ParameterizedMethod" id="1006" name="AttachmentRequiresLocalOccupancyAndUpdatesOnUnload" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.AttachmentRequiresLocalOccupancyAndUpdatesOnUnload" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-13 08:19:53Z" end-time="2026-11-13 08:19:53Z" duration="0.038802" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1003" name="AttachmentRequiresLocalOccupancyAndUpdatesOnUnload(&quot;truck&quot;)" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.AttachmentRequiresLocalOccupancyAndUpdatesOnUnload(&quot;truck&quot;)" methodname="AttachmentRequiresLocalOccupancyAndUpdatesOnUnload" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="951960799" result="Passed" start-time="2026-11-13 08:19:53Z" end-time="2026-11-13 08:19:53Z" duration="0.020209" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1004" name="AttachmentRequiresLocalOccupancyAndUpdatesOnUnload(&quot;sled&quot;)" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.AttachmentRequiresLocalOccupancyAndUpdatesOnUnload(&quot;sled&quot;)" methodname="AttachmentRequiresLocalOccupancyAndUpdatesOnUnload" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="1803405773" result="Passed" start-time="2026-11-13 08:19:53Z" end-time="2026-11-13 08:19:53Z" duration="0.002889" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1005" name="AttachmentRequiresLocalOccupancyAndUpdatesOnUnload(&quot;hoverboard&quot;)" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.AttachmentRequiresLocalOccupancyAndUpdatesOnUnload(&quot;hoverboard&quot;)" methodname="AttachmentRequiresLocalOccupancyAndUpdatesOnUnload" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="1689548067" result="Passed" start-time="2026-11-13 08:19:53Z" end-time="2026-11-13 08:19:53Z" duration="0.002584" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+            </test-suite>
+            <test-suite type="TestFixture" id="1010" name="MultipleDeliveryTests" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" testcasecount="9" result="Passed" start-time="2026-11-13 08:19:53Z" end-time="2026-11-13 08:19:53Z" duration="0.026729" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="ParameterizedMethod" id="1015" name="UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-13 08:19:53Z" end-time="2026-11-13 08:19:53Z" duration="0.022784" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1012" name="UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity(&quot;truck&quot;,&quot;m_loadedTruck&quot;)" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity(&quot;truck&quot;,&quot;m_loadedTruck&quot;)" methodname="UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" seed="1445247686" result="Passed" start-time="2026-11-13 08:19:53Z" end-time="2026-11-13 08:19:53Z" duration="0.017552" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1013" name="UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity(&quot;sled&quot;,&quot;m_mountedSled&quot;)" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity(&quot;sled&quot;,&quot;m_mountedSled&quot;)" methodname="UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" seed="456817749" result="Passed" start-time="2026-11-13 08:19:53Z" end-time="2026-11-13 08:19:53Z" duration="0.002001" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1014" name="UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity(&quot;hoverboard&quot;,&quot;m_mountedHoverboard&quot;)" fullname="CouchGuys.Tests.Editor.MultipleDeliveryTests.UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity(&quot;hoverboard&quot;,&quot;m_mountedHoverboard&quot;)" methodname="UnattendedCargoUsesVehicleRadiusAndDeliveryIdentity" classname="CouchGuys.Tests.Editor.MultipleDeliveryTests" runstate="Runnable" seed="1079346399" result="Passed" start-time="2026-11-13 08:19:53Z" end-time="2026-11-13 08:19:53Z" duration="0.001490" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[Saving results to: C:/Users/Jaden/AppData/LocalLow/DefaultCompany/multiplayer_game\TestResults.xml
+]]></output>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

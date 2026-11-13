@@ -106,6 +106,12 @@ namespace CouchGuys.Player
                         RequestHornServerRpc();
                     }
                 }
+                else if (current.IsHoverTruck && m_playerCamera != null && Time.unscaledTime >= m_nextInputSendTime)
+                {
+                    m_nextInputSendTime = Time.unscaledTime + .05f;
+                    Ray aim = m_playerCamera.ViewportPointToRay(new Vector3(.5f, .5f));
+                    SendTurretInputServerRpc(current.GetTurretAimDirection(m_currentSeatIndex.Value, aim), m_input.VehicleShootHeld);
+                }
                 UpdateHold(current.Settings.ExitHoldDuration, RequestExitServerRpc);
             }
             else
@@ -146,7 +152,8 @@ namespace CouchGuys.Player
             float closest = float.PositiveInfinity;
             foreach (TruckController truck in TruckController.ActiveTrucks)
             {
-                if (truck == null || truck.Settings == null || truck.IsDestroyed || truck.IsOccupied || !truck.IsPlayerNearRear(transform)) continue;
+                if (truck == null || truck.Settings == null || truck.IsDestroyed ||
+                    (truck.IsOccupied && !truck.IsHoverTruck) || !truck.IsPlayerNearRear(transform)) continue;
                 float distance = (truck.RearDoorInteractionPoint.position - transform.position).sqrMagnitude;
                 if (distance < closest) { closest = distance; m_rearInteractionTruck = truck; }
             }
@@ -154,6 +161,12 @@ namespace CouchGuys.Player
 
         private string GetRearPrompt(TruckController truck)
         {
+            if (truck.IsHoverTruck)
+            {
+                var carried = GetComponent<PlayerCouchCarrier>();
+                return carried != null && carried.IsCarrying ? "Press E to Load Nearest Free Dock" :
+                    truck.LoadedCouchCount > 0 ? "Press E to Unload Nearest Couch" : "Magnetic Docks Empty";
+            }
             if (!truck.RearDoorsOpen) return "Press E to Open Doors";
             PlayerCouchCarrier carrier = GetComponent<PlayerCouchCarrier>();
             CouchGuys.Gameplay.Couch.CouchCarryController couch = carrier != null ? carrier.CarriedCouch : null;
@@ -239,6 +252,13 @@ namespace CouchGuys.Player
         private void RequestHornServerRpc()
         {
             if (m_currentSeatIndex.Value == 0) CurrentTruck?.HornServer(this);
+        }
+
+        [ServerRpc]
+        private void SendTurretInputServerRpc(Vector3 direction, bool fire)
+        {
+            if (CurrentTruck != null && m_currentSeatIndex.Value > 0)
+                CurrentTruck.SetTurretInputServer(this, direction, fire);
         }
 
         [ServerRpc]
@@ -328,8 +348,11 @@ namespace CouchGuys.Player
             }
             if (truck == null) return;
             Transform seat = truck.GetSeatAnchor(m_currentSeatIndex.Value);
-            if (seat != null) transform.SetPositionAndRotation(seat.position + truck.transform.rotation * truck.SeatedRootOffset,
-                truck.transform.rotation);
+            if (seat != null)
+            {
+                Quaternion rotation = truck.IsHoverTruck ? seat.rotation : truck.transform.rotation;
+                transform.SetPositionAndRotation(seat.position + rotation * truck.SeatedRootOffset, rotation);
+            }
         }
 
         private void ApplyVehicleState(TruckController truck)

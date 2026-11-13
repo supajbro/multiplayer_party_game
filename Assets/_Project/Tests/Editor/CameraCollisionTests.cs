@@ -318,6 +318,47 @@ namespace CouchGuys.Tests.Editor
             Assert.That(Vector3.Distance(Invoke("ResolveCollisionPosition", Origin, desired), desired), Is.LessThan(0.002f));
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void CompressedCamera_RecoveryKeepsRobotInViewAndClearOfHeldCouch(bool carrying)
+        {
+            Renderer head = CreatePlayerHead();
+            Camera lens = m_camera.gameObject.AddComponent<Camera>();
+            lens.fieldOfView = 65f;
+            lens.nearClipPlane = .1f;
+            lens.aspect = 16f / 9f;
+            typeof(ThirdPersonCameraController).GetField("m_camera", Private).SetValue(m_camera, lens);
+            CreateBox(Origin + Vector3.back * .85f, new Vector3(3f, 2.4f, .2f));
+
+            void CheckRecovery(CouchCarryController couch)
+            {
+                Physics.SyncTransforms();
+                Vector3 result = Invoke("ResolveCollisionPosition", Origin,
+                    Origin + new Vector3(.65f, 0f, -4.5f));
+                m_camera.transform.position = result;
+                m_camera.transform.rotation = (Quaternion)typeof(ThirdPersonCameraController)
+                    .GetMethod("CorrectPlayerFraming", Private).Invoke(m_camera, new object[] { Quaternion.identity });
+                Vector3 screen = lens.WorldToViewportPoint(head.bounds.center);
+                Assert.That(screen.z, Is.GreaterThan(lens.nearClipPlane));
+                Assert.That(screen.x, Is.InRange(.1f, .9f));
+                Assert.That(screen.y, Is.InRange(.1f, .9f));
+                Assert.That(Vector3.Distance(result, head.bounds.ClosestPoint(result)), Is.GreaterThan(.299f));
+                if (couch != null)
+                    Assert.That(Vector3.Distance(result, VisualBounds(couch).ClosestPoint(result)), Is.GreaterThan(.299f));
+                foreach (Collider obstacle in Physics.OverlapSphere(result, .199f))
+                    Assert.Fail("Recovered camera overlaps " + obstacle.name);
+            }
+
+            if (carrying)
+                WithCouch(couch =>
+                {
+                    couch.transform.position += Vector3.forward * 2f;
+                    UpdateVisualBounds(couch);
+                    CheckRecovery(couch);
+                });
+            else CheckRecovery(null);
+        }
+
         [TestCase(0)]
         [TestCase(1)]
         [TestCase(2)]

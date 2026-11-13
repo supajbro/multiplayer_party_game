@@ -14,7 +14,7 @@ namespace CouchGuys.Gameplay.Vehicles
     [DisallowMultipleComponent]
     [RequireComponent(typeof(VehicleAudioEmitter), typeof(VehicleDestruction))]
     [UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "CouchGuys.Gameplay.Vehicles", sourceAssembly: "Assembly-CSharp", sourceClassName: "VanController")]
-    public sealed class TruckController : NetworkBehaviour
+    public sealed partial class TruckController : NetworkBehaviour
     {
         public const int MaximumSeats = 4;
         public static readonly HashSet<TruckController> ActiveTrucks = new();
@@ -144,7 +144,11 @@ namespace CouchGuys.Gameplay.Vehicles
             m_audio = GetComponent<VehicleAudioEmitter>();
             if (m_settings != null) m_rigidbody.mass = m_settings.VehicleMass;
             ConfigureArcadeColliderFriction();
-            if (m_visualModel != null) m_visualBaseRotation = m_visualModel.localRotation;
+            if (m_visualModel != null)
+            {
+                m_visualBaseRotation = m_visualModel.localRotation;
+                m_visualBasePosition = m_visualModel.localPosition;
+            }
             if (m_destroyedRenderer != null)
             {
                 m_runtimeBodyMaterial = m_destroyedRenderer.material;
@@ -200,7 +204,15 @@ namespace CouchGuys.Gameplay.Vehicles
             m_fuel.Value = m_settings.MaxFuel;
             m_health.Value = IsGetawayTruck ? m_getaway.MaximumHealth : m_settings.MaxHealth;
             m_destroyed.Value = false;
-            m_rearDoorsOpen.Value = false;
+            m_rearDoorsOpen.Value = IsHoverTruck;
+            m_turretShots.Clear();
+            for (int index = 0; index < 3; index++)
+            {
+                m_turretFire[index] = false;
+                m_nextTurretShot[index] = 0f;
+                m_requestedAim[index] = Vector2.zero;
+                TurretAim(index).Value = Vector2.zero;
+            }
             for (int index = 0; index < MaximumSeats; index++) SetOccupant(index, null);
             m_loadedCouches.Clear();
             int capacity = Mathf.Min(m_settings.CargoCapacity, m_cargoPoints != null ? m_cargoPoints.Length : 0);
@@ -210,6 +222,7 @@ namespace CouchGuys.Gameplay.Vehicles
 
         public override void OnStopServer()
         {
+            ClearTurretShotsServer();
             RecoverLoadedCouchesServer();
             ReleaseAllOccupantsServer();
             base.OnStopServer();
@@ -257,14 +270,21 @@ namespace CouchGuys.Gameplay.Vehicles
         private void FixedUpdate()
         {
             if (IsDestroyed) return;
+            if (IsServerInitialized && IsHoverTruck && m_turretSettings != null)
+                TickTurretShotsServer(Time.fixedDeltaTime);
             if (IsServerInitialized && m_batLaunch.Tick(m_rigidbody)) return;
             if (!IsServerInitialized || m_settings == null || m_rigidbody.isKinematic || IsGetawayTruck) return;
             if (Time.time - m_lastInputTime > 0.35f) m_driveInput = Vector2.zero;
             SimulateDriving(Time.fixedDeltaTime);
+            if (IsHoverTruck) TickHoverServer(Time.fixedDeltaTime);
             ConsumeFuel(Time.fixedDeltaTime);
         }
 
-        private void LateUpdate() => UpdateVisuals(Time.deltaTime);
+        private void LateUpdate()
+        {
+            UpdateVisuals(Time.deltaTime);
+            UpdateHoverVisuals(Time.deltaTime);
+        }
 
         [Server]
         public bool TryEnterServer(PlayerTruckInteractor player, out int seatIndex)
@@ -288,6 +308,7 @@ namespace CouchGuys.Gameplay.Vehicles
         public void SetInputServer(PlayerTruckInteractor player, Vector2 input)
         {
             if (player == null || m_driver.Value != player.NetworkObject || IsDestroyed) return;
+            if (!float.IsFinite(input.x) || !float.IsFinite(input.y)) return;
             m_driveInput = Vector2.ClampMagnitude(input, 1f);
             m_lastInputTime = Time.time;
         }
@@ -349,6 +370,8 @@ namespace CouchGuys.Gameplay.Vehicles
         [Server]
         private void SetOccupant(int seatIndex, NetworkObject occupant)
         {
+            if (seatIndex > 0 && seatIndex < MaximumSeats)
+                m_turretFire[seatIndex - 1] = false;
             switch (seatIndex)
             {
                 case 0: m_driver.Value = occupant; break;
@@ -367,14 +390,34 @@ namespace CouchGuys.Gameplay.Vehicles
         internal bool IsCouchInLoadingRange(CouchCarryController couch, float range)
         {
             if (couch == null || couch.IsSled || m_settings == null) return false;
+            Vector3 loadingPosition = CargoLoadingPoint.position;
+            if (IsHoverTruck)
+            {
+                float closest = float.PositiveInfinity;
+                foreach (Transform dock in m_cargoPoints)
+                {
+                    if (dock == null) continue;
+                    float distance = (couch.transform.position - dock.position).sqrMagnitude;
+                    if (distance >= closest) continue;
+                    closest = distance;
+                    loadingPosition = dock.position;
+                }
+            }
             Vector3 nearest = couch.transform.TransformPoint(couch.CargoBounds.ClosestPoint(
-                couch.transform.InverseTransformPoint(CargoLoadingPoint.position)));
-            return (nearest - CargoLoadingPoint.position).sqrMagnitude <= range * range;
+                couch.transform.InverseTransformPoint(loadingPosition)));
+            return (nearest - loadingPosition).sqrMagnitude <= range * range;
         }
 
         public bool IsPlayerNearRear(Transform player)
         {
             if (IsGetawayTruck || player == null || m_settings == null) return false;
+            if (IsHoverTruck)
+            {
+                foreach (Transform dock in m_cargoPoints)
+                    if (dock != null && (player.position - dock.position).sqrMagnitude <=
+                        m_settings.DoorInteractionRange * m_settings.DoorInteractionRange) return true;
+                return false;
+            }
             return (player.position - RearDoorInteractionPoint.position).sqrMagnitude <=
                 m_settings.DoorInteractionRange * m_settings.DoorInteractionRange;
         }
@@ -382,7 +425,18 @@ namespace CouchGuys.Gameplay.Vehicles
         [Server]
         public void InteractWithRearServer(PlayerTruckInteractor player, PlayerCouchCarrier carrier)
         {
-            if (IsGetawayTruck || player == null || m_settings == null || IsDestroyed || IsOccupied || !IsPlayerNearRear(player.transform)) return;
+            if (IsGetawayTruck || player == null || m_settings == null || IsDestroyed ||
+                (IsOccupied && !IsHoverTruck) || !IsPlayerNearRear(player.transform)) return;
+            if (IsHoverTruck)
+            {
+                CouchCarryController carried = carrier != null ? carrier.GetCarriedCouchServer() : null;
+                if (carried != null)
+                {
+                    if (!TryLoadCouchServer(player, carried)) player.ShowVehicleFeedbackServer("No magnetic dock available in range");
+                }
+                else TryUnloadFirstCouchServer(player);
+                return;
+            }
             if (!m_rearDoorsOpen.Value)
             {
                 SetRearDoorsServer(true);
@@ -422,11 +476,19 @@ namespace CouchGuys.Gameplay.Vehicles
         {
             if (couch == null || couch.IsLoaded || !couch.IsPickupAvailable || LoadedCouchCount >= m_loadedCouches.Count) return false;
             float rangeSquared = m_settings.CouchLoadingRange * m_settings.CouchLoadingRange;
-            if ((player.transform.position - CargoLoadingPoint.position).sqrMagnitude > rangeSquared ||
+            if ((!IsHoverTruck && (player.transform.position - CargoLoadingPoint.position).sqrMagnitude > rangeSquared) ||
                 !IsCouchInLoadingRange(couch)) return false;
             int slot = -1;
+            float nearest = float.PositiveInfinity;
             for (int index = 0; index < m_loadedCouches.Count; index++)
-                if (m_loadedCouches[index] == null) { slot = index; break; }
+            {
+                Transform point = GetCargoPoint(index);
+                if (m_loadedCouches[index] != null || point == null) continue;
+                float distance = IsHoverTruck ? (player.transform.position - point.position).sqrMagnitude : index;
+                if (distance >= nearest) continue;
+                nearest = distance;
+                slot = index;
+            }
             if (slot < 0 || GetCargoPoint(slot) == null ||
                 !couch.LoadIntoTruckServer(this, slot, m_settings.CouchLoadingDuration)) return false;
             m_loadedCouches[slot] = couch.NetworkObject;
@@ -443,6 +505,24 @@ namespace CouchGuys.Gameplay.Vehicles
         [Server]
         private bool TryUnloadFirstCouchServer(PlayerTruckInteractor player)
         {
+            if (IsHoverTruck)
+            {
+                int nearestSlot = -1;
+                float nearestDistance = float.PositiveInfinity;
+                for (int index = 0; index < m_loadedCouches.Count; index++)
+                {
+                    if (m_loadedCouches[index] == null || GetCargoPoint(index) == null) continue;
+                    float distance = (player.transform.position - GetCargoPoint(index).position).sqrMagnitude;
+                    if (distance >= nearestDistance) continue;
+                    nearestDistance = distance;
+                    nearestSlot = index;
+                }
+                if (nearestSlot < 0 || !m_loadedCouches[nearestSlot].TryGetComponent(out CouchCarryController selected) || selected.IsCargoTransitioning) return false;
+                GetCouchUnloadPose(selected, nearestSlot, out Vector3 selectedPosition, out Quaternion selectedRotation);
+                m_loadedCouches[nearestSlot] = null;
+                selected.UnloadFromTruckServer(selectedPosition, selectedRotation, m_settings.CouchUnloadingDuration);
+                return true;
+            }
             for (int slot = 0; slot < m_loadedCouches.Count; slot++)
             {
                 NetworkObject couchObject = m_loadedCouches[slot];
@@ -565,6 +645,7 @@ namespace CouchGuys.Gameplay.Vehicles
             m_health.Value = Mathf.Max(0f, m_health.Value - Mathf.Max(0f, damage));
             if (m_health.Value > 0f) return;
             m_destroyed.Value = true;
+            ClearTurretShotsServer();
             m_driveInput = Vector2.zero;
             RecoverLoadedCouchesServer();
             ReleaseAllOccupantsServer();
@@ -848,7 +929,8 @@ namespace CouchGuys.Gameplay.Vehicles
                 float direction = Mathf.Sign(forwardSpeed);
                 m_rigidbody.MoveRotation(m_rigidbody.rotation * Quaternion.Euler(0f, m_steering * direction * speed01 * dt, 0f));
             }
-            m_rigidbody.AddTorque(Vector3.Cross(transform.up, Vector3.up) * m_settings.AntiRollStrength, ForceMode.Acceleration);
+            if (!IsHoverTruck)
+                m_rigidbody.AddTorque(Vector3.Cross(transform.up, Vector3.up) * m_settings.AntiRollStrength, ForceMode.Acceleration);
         }
 
         private void ConsumeFuel(float dt)
@@ -872,7 +954,7 @@ namespace CouchGuys.Gameplay.Vehicles
                 m_leftDoorPivot.localRotation = m_leftDoorClosedRotation * Quaternion.AngleAxis(m_settings.DoorOpenAngle * easedDoor, m_rearDoorRotationAxis);
             if (m_rightDoorPivot != null)
                 m_rightDoorPivot.localRotation = m_rightDoorClosedRotation * Quaternion.AngleAxis(-m_settings.DoorOpenAngle * easedDoor, m_rearDoorRotationAxis);
-            if (m_visualModel != null)
+            if (m_visualModel != null && !IsHoverTruck)
             {
                 float pitch = -m_driveInput.y * m_settings.BodyPitchAmount;
                 float roll = -m_driveInput.x * Mathf.Clamp01(SpeedKph / m_settings.MaxForwardSpeed) * m_settings.BodyTiltAmount;

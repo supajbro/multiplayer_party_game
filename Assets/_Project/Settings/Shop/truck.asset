@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: truck
   m_EditorClassIdentifier: 
   m_itemId: truck
-  m_displayName: Truck
-  m_description: Nimble starter truck with room for one couch.
+  m_displayName: Hover Truck
+  m_description: Four-seat hover truck with three passenger turrets and four magnetic couch docks.
   m_price: 15000
   m_category: 0
   m_icon: {fileID: 0}

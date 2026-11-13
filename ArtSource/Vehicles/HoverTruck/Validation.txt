@@ -1,0 +1,3 @@
+PASS saved prefab, four independent seat entries, 2x2 seats, 2x2 docks, three turret pivots, six hover probes, eight clamps, server transform authority, existing network behaviour IDs, finite aim validation, backward aiming, projectile/impact references, flat-ground suspension settle.
+Separate remote-client ownership and automatic recipient delivery require end-to-end testing.
+PASS gameplay delivery manager, shop catalogue, purchase and network spawn references resolve to the redesigned truck. Scene truck instances 0.

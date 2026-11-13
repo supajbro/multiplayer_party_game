@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="7" result="Passed" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.1021734">
+  <test-suite type="TestSuite" id="1000" name="multiplayer_game" fullname="multiplayer_game" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.102173" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1012" name="Assembly-CSharp-Editor.dll" fullname="C:/Users/Jaden/AppData/Local/Temp/CouchGuysHoverTruckAuthoring/Library/ScriptAssemblies/Assembly-CSharp-Editor.dll" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.093129" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="60368" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1013" name="CouchGuys" fullname="CouchGuys" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.092364" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1014" name="Tests" fullname="CouchGuys.Tests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.091991" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1015" name="Editor" fullname="CouchGuys.Tests.Editor" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.091573" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1001" name="TruckCargoTests" fullname="CouchGuys.Tests.Editor.TruckCargoTests" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.079718" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1009" name="FullyBlockedAreaStillUnloadsAndRestoresObstacleCollisionAfterSeparation" fullname="CouchGuys.Tests.Editor.TruckCargoTests.FullyBlockedAreaStillUnloadsAndRestoresObstacleCollisionAfterSeparation" methodname="FullyBlockedAreaStillUnloadsAndRestoresObstacleCollisionAfterSeparation" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="410033727" result="Passed" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.037377" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1008" name="ObstructedRearSearchesNearbyAndSaturatedQueriesStayBlocked" fullname="CouchGuys.Tests.Editor.TruckCargoTests.ObstructedRearSearchesNearbyAndSaturatedQueriesStayBlocked" methodname="ObstructedRearSearchesNearbyAndSaturatedQueriesStayBlocked" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="561013108" result="Passed" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.007093" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1004" name="RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes" fullname="CouchGuys.Tests.Editor.TruckCargoTests.RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.007482" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1002" name="RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes(0.0f)" fullname="CouchGuys.Tests.Editor.TruckCargoTests.RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes(0.0f)" methodname="RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="1519223719" result="Passed" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.002710" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1003" name="RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes(20.0f)" fullname="CouchGuys.Tests.Editor.TruckCargoTests.RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes(20.0f)" methodname="RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="878195437" result="Passed" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.002014" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="ParameterizedMethod" id="1007" name="SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters" fullname="CouchGuys.Tests.Editor.TruckCargoTests.SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.011927" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1005" name="SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters(True)" fullname="CouchGuys.Tests.Editor.TruckCargoTests.SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters(True)" methodname="SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="1664211613" result="Passed" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.009017" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1006" name="SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters(False)" fullname="CouchGuys.Tests.Editor.TruckCargoTests.SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters(False)" methodname="SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="1437582570" result="Passed" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.001827" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+            </test-suite>
+            <test-suite type="TestFixture" id="1010" name="TruckSeatingTests" fullname="CouchGuys.Tests.Editor.TruckSeatingTests" classname="CouchGuys.Tests.Editor.TruckSeatingTests" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.010952" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1011" name="VehiclePrefabsUseTruckModelAndFourModelAlignedSeats" fullname="CouchGuys.Tests.Editor.TruckSeatingTests.VehiclePrefabsUseTruckModelAndFourModelAlignedSeats" methodname="VehiclePrefabsUseTruckModelAndFourModelAlignedSeats" classname="CouchGuys.Tests.Editor.TruckSeatingTests" runstate="Runnable" seed="242426092" result="Passed" start-time="2026-11-13 08:17:58Z" end-time="2026-11-13 08:17:58Z" duration="0.009732" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Saving results to: C:/Users/Jaden/AppData/LocalLow/DefaultCompany/multiplayer_game\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

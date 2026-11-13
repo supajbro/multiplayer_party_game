@@ -539,6 +539,25 @@ namespace CouchGuys.Gameplay.Couch
 
         private void LateUpdate()
         {
+            if (m_cargoTransition == null && m_loadedTruck.Value != null &&
+                m_loadedTruck.Value.TryGetComponent(out TruckController truck) && truck.IsHoverTruck)
+            {
+                Transform point = truck.GetCargoPoint(m_loadedCargoSlot.Value);
+                if (point != null)
+                {
+                    if (transform.parent != point) ApplyLoadedStateImmediately();
+                    transform.localPosition = Vector3.zero;
+                    if (truck.Settings.AutoPositionLoadedCouches) transform.localRotation = Quaternion.identity;
+                    // Keep the kinematic body's cached world pose aligned with its moving
+                    // parent so a physics update cannot introduce drift under suspension.
+                    if (m_rigidbody != null && m_rigidbody.isKinematic)
+                    {
+                        m_rigidbody.position = transform.position;
+                        m_rigidbody.rotation = transform.rotation;
+                    }
+                    return;
+                }
+            }
             if (!m_hoverboardReleasePending && m_mountedHoverboard.Value != null &&
                 m_mountedHoverboard.Value.TryGetComponent(out MagneticHoverboardController board) && board.CouchAnchor != null)
             {

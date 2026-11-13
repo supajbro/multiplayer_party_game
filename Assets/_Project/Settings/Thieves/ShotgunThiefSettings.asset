@@ -37,7 +37,7 @@ MonoBehaviour:
     AlertPauseDuration: 1.2
     AlertCooldown: 10
   Health:
-    MaxHealth: 100
+    MaxHealth: 50
     KnockbackDuration: 0.22
     KnockbackDamping: 14
     DeathDespawnDelay: 2.5

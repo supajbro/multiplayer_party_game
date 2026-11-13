@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 100001}
+  - component: {fileID: 8886201400000000001}
   - component: {fileID: 100002}
   - component: {fileID: 9000000000000000001}
   - component: {fileID: 100003}
@@ -12470,3 +12471,20 @@ MonoBehaviour:
   m_board: {fileID: 0}
   m_rider: {fileID: 8122471884558885471}
   m_mountedVolumeMultiplier: 0.5
+--- !u!114 &8886201400000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83b7284cbea94428b9c5effd25cd408c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.MagneticCarryAura
+  m_carrier: {fileID: 6842772898105403012}
+  m_animation: {fileID: 7262616249922094815}
+  m_auraPrefab: {fileID: 15874004329490329, guid: fb06f42f6b771f244aaac9e894949e4b, type: 3}
+  m_handClearance: 0.22
+  m_movementLean: 4

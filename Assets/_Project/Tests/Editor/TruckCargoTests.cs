@@ -3,6 +3,7 @@ using System.Reflection;
 using CouchGuys.Gameplay.Couch;
 using CouchGuys.Gameplay.Vehicles;
 using FishNet.Component.Transforming;
+using FishNet.Object;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -32,6 +33,10 @@ namespace CouchGuys.Tests.Editor
             m_body.center = CouchBounds.center;
             m_body.size = CouchBounds.size;
             m_couch = couch.AddComponent<CouchCarryController>();
+            // Edit mode does not run FishNet's Awake cache binding.
+            foreach (NetworkBehaviour behaviour in new NetworkBehaviour[] { m_truck, m_couch })
+                typeof(NetworkBehaviour).GetField("_networkObjectCache", Private).SetValue(behaviour,
+                    behaviour.GetComponent<NetworkObject>());
             Set(m_couch, "m_colliders", new Collider[] { m_body });
             Set(m_couch, "m_cargoBounds", CouchBounds);
             Set(m_couch, "m_rigidbody", couch.GetComponent<Rigidbody>());
