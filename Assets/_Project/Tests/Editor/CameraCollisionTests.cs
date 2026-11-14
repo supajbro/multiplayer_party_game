@@ -30,6 +30,33 @@ namespace CouchGuys.Tests.Editor
             m_objects.Clear();
         }
 
+        [Test]
+        public void PassengerVehicleViewStartsAlignedAndRestoresPlayerFollow()
+        {
+            var seat = Create("Passenger seat", Origin).transform;
+            seat.rotation = Quaternion.Euler(0f, 70f, 0f);
+            m_camera.FollowVehicle(seat, 4f, .8f, .12f, -35f, 65f, 9f, 7f, .3f, .8f, true, 12f);
+
+            Assert.That(typeof(ThirdPersonCameraController).GetField("m_vehicleTarget", Private).GetValue(m_camera), Is.SameAs(seat));
+            Assert.That((float)typeof(ThirdPersonCameraController).GetField("m_yaw", Private).GetValue(m_camera), Is.EqualTo(70f).Within(.01f));
+            Assert.That(m_camera.VerticalAngle, Is.EqualTo(12f).Within(.01f));
+            m_camera.FollowPlayer();
+            Assert.That(typeof(ThirdPersonCameraController).GetField("m_vehicleTarget", Private).GetValue(m_camera), Is.Null);
+        }
+
+        [Test]
+        public void ExistingVehicleFollowKeepsCurrentOrbitAndCentredFraming()
+        {
+            var target = Create("Vehicle target", Origin).transform;
+            typeof(ThirdPersonCameraController).GetField("m_yaw", Private).SetValue(m_camera, 42f);
+            typeof(ThirdPersonCameraController).GetField("m_pitch", Private).SetValue(m_camera, 22f);
+            m_camera.FollowVehicle(target, 8.5f, 2.4f, .12f, -35f, 65f, 9f, 7f, .3f);
+
+            Assert.That((float)typeof(ThirdPersonCameraController).GetField("m_yaw", Private).GetValue(m_camera), Is.EqualTo(42f));
+            Assert.That(m_camera.VerticalAngle, Is.EqualTo(22f));
+            Assert.That((float)typeof(ThirdPersonCameraController).GetField("m_vehicleShoulderOffset", Private).GetValue(m_camera), Is.Zero);
+        }
+
         [TestCase(-35f)]
         [TestCase(12f)]
         [TestCase(65f)]

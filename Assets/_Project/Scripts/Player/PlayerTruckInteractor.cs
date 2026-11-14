@@ -11,6 +11,7 @@ namespace CouchGuys.Player
     /// <summary>Owner input and server-validated player/truck occupancy bridge.</summary>
     [RequireComponent(typeof(PlayerInputReader), typeof(ThirdPersonPlayerController), typeof(NetworkObject))]
     [DisallowMultipleComponent]
+    [DefaultExecutionOrder(100)]
     [UnityEngine.Scripting.APIUpdating.MovedFrom(true, sourceNamespace: "CouchGuys.Player", sourceAssembly: "Assembly-CSharp", sourceClassName: "PlayerVanInteractor")]
     public sealed class PlayerTruckInteractor : NetworkBehaviour
     {
@@ -362,17 +363,26 @@ namespace CouchGuys.Player
             m_controller?.SetExternalControlPaused(seated);
             if (m_characterController != null) m_characterController.enabled = !seated;
             m_animationDriver?.SetVehicleSeated(seated, m_currentSeatIndex.Value == 0);
+            m_animationDriver?.SetTurretGrips(
+                seated ? truck.GetTurretLeftGrip(m_currentSeatIndex.Value) : null,
+                seated ? truck.GetTurretRightGrip(m_currentSeatIndex.Value) : null);
             if (m_hoverVfx != null) m_hoverVfx.enabled = !seated;
             if (!IsOwner) return;
             m_input?.SetGameplaySuppressed(seated);
             if (seated)
             {
-                m_cameraController?.FollowVehicle(truck.CameraTarget,
-                    truck.Settings.CameraDistance, truck.Settings.CameraHeight,
+                bool turretPassenger = truck.IsHoverTruck && m_currentSeatIndex.Value > 0;
+                var hover = truck.HoverSettings;
+                m_cameraController?.FollowVehicle(turretPassenger ? truck.GetSeatAnchor(m_currentSeatIndex.Value) : truck.CameraTarget,
+                    turretPassenger ? hover.PassengerCameraDistance : truck.Settings.CameraDistance,
+                    turretPassenger ? hover.PassengerCameraHeight : truck.Settings.CameraHeight,
                     truck.Settings.CameraLookSensitivity,
                     truck.Settings.CameraMinimumPitch, truck.Settings.CameraMaximumPitch,
                     truck.Settings.CameraFollowSmoothness, truck.Settings.CameraRotationSmoothness,
-                    truck.Settings.CameraCollisionRadius);
+                    truck.Settings.CameraCollisionRadius,
+                    turretPassenger ? hover.PassengerCameraShoulderOffset : 0f,
+                    turretPassenger,
+                    turretPassenger ? hover.PassengerCameraPitch : 12f);
                 if (m_playerCamera != null) m_playerCamera.fieldOfView = truck.Settings.CameraFieldOfView;
             }
             else

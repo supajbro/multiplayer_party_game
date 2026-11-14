@@ -22,6 +22,9 @@ namespace CouchGuys.Gameplay.Vehicles
         [SerializeField] private Transform[] m_turretPitch = System.Array.Empty<Transform>();
         [SerializeField] private Transform[] m_turretMuzzles = System.Array.Empty<Transform>();
         [SerializeField] private Transform[] m_dockClamps = System.Array.Empty<Transform>();
+        [SerializeField] private Transform[] m_turretLeftGrips = System.Array.Empty<Transform>();
+        [SerializeField] private Transform[] m_turretRightGrips = System.Array.Empty<Transform>();
+        [SerializeField] private Transform[] m_turretAuraTargets = System.Array.Empty<Transform>();
         private readonly SyncVar<Vector2> m_turretAim0 = new();
         private readonly SyncVar<Vector2> m_turretAim1 = new();
         private readonly SyncVar<Vector2> m_turretAim2 = new();
@@ -46,6 +49,17 @@ namespace CouchGuys.Gameplay.Vehicles
         }
 
         public bool IsHoverTruck => m_hoverSettings != null && !IsGetawayTruck;
+        public HoverTruckSettings HoverSettings => m_hoverSettings;
+
+        public Transform GetTurretLeftGrip(int seatIndex) => TurretReference(m_turretLeftGrips, seatIndex);
+        public Transform GetTurretRightGrip(int seatIndex) => TurretReference(m_turretRightGrips, seatIndex);
+        public Transform GetTurretAuraTarget(int seatIndex) => TurretReference(m_turretAuraTargets, seatIndex);
+
+        private Transform TurretReference(Transform[] references, int seatIndex)
+        {
+            int index = seatIndex - 1;
+            return IsHoverTruck && index >= 0 && index < references.Length ? references[index] : null;
+        }
 
         public Vector3 GetTurretAimDirection(int seatIndex, Ray cameraRay)
         {

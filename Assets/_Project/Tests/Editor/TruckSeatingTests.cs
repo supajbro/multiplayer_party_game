@@ -36,7 +36,7 @@ namespace CouchGuys.Tests.Editor
                 Bounds truckBounds = renderers[0].bounds;
                 foreach (Renderer renderer in renderers.Skip(1)) truckBounds.Encapsulate(renderer.bounds);
                 Assert.That(truckBounds.size.x, Is.InRange(3.5f, 4.2f), $"{prefabName} width");
-                Assert.That(truckBounds.size.y, Is.InRange(2.5f, 3.2f), $"{prefabName} height");
+                Assert.That(truckBounds.size.y, Is.InRange(2f, 2.6f), $"{prefabName} height");
                 Assert.That(truckBounds.size.z, Is.InRange(9f, 10.5f), $"{prefabName} length");
 
                 TruckController controller = prefab.GetComponent<TruckController>();
@@ -52,7 +52,7 @@ namespace CouchGuys.Tests.Editor
                     Assert.That(seat, Is.Not.Null, $"{prefabName} seat {seatIndex}");
                     Assert.That(marker, Is.Not.Null, $"{prefabName} marker {ModelMarkerNames[seatIndex]}");
                     Assert.That(seat, Is.EqualTo(marker), "Use the saved model-aligned seat anchor");
-                    Assert.That((seat.position + controller.SeatedRootOffset).y, Is.InRange(1f, 1.2f));
+                    Assert.That((seat.position + controller.SeatedRootOffset).y, Is.InRange(.45f, .75f));
                     Transform door = controller.GetDoorPoint(seatIndex);
                     Assert.That(door, Is.Not.Null);
                     Assert.That(door.position.z, Is.EqualTo(seat.position.z).Within(.02f));
@@ -69,6 +69,31 @@ namespace CouchGuys.Tests.Editor
                 Assert.That(controller.GetSeatAnchor(2).position.z, Is.EqualTo(controller.GetSeatAnchor(3).position.z).Within(.01f));
                 Assert.That(controller.GetSeatAnchor(0).position.z, Is.GreaterThan(controller.GetSeatAnchor(2).position.z));
                 Assert.That(new SerializedObject(controller).FindProperty("m_turretYaw").arraySize, Is.EqualTo(3));
+                for (int seatIndex = 1; seatIndex < 4; seatIndex++)
+                {
+                    Assert.That(controller.GetTurretLeftGrip(seatIndex), Is.Not.Null);
+                    Assert.That(controller.GetTurretRightGrip(seatIndex), Is.Not.Null);
+                    Assert.That(controller.GetTurretAuraTarget(seatIndex), Is.Not.Null);
+                    Assert.That(controller.GetTurretLeftGrip(seatIndex).position.x,
+                        Is.LessThan(controller.GetTurretRightGrip(seatIndex).position.x));
+                }
+                Assert.That(controller.GetTurretAuraTarget(0), Is.Null);
+            }
+        }
+
+        [Test]
+        public void RearTurretForwardShotsClearTheFrontChairs()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Vehicles/Truck.prefab");
+            var truck = prefab.GetComponent<TruckController>();
+            var muzzles = new SerializedObject(truck).FindProperty("m_turretMuzzles");
+            for (int turret = 1; turret < 3; turret++)
+            {
+                var muzzle = (Transform)muzzles.GetArrayElementAtIndex(turret).objectReferenceValue;
+                var shot = new Ray(muzzle.position, prefab.transform.forward);
+                for (int seat = 0; seat < 2; seat++)
+                    foreach (var renderer in Find(prefab.transform, "Seat_" + seat).GetComponentsInChildren<Renderer>())
+                        Assert.That(renderer.bounds.IntersectRay(shot), Is.False, "Rear turret shot crosses front chair " + seat);
             }
         }
 

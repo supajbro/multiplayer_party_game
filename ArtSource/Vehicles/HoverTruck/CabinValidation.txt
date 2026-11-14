@@ -1,0 +1,3 @@
+PASS larger 2x2 chairs, three saved control pairs, six hands reaching controls, reused magnetic aura, passenger camera preview.
+PASS host session with passenger turret auras active and released after dismount.
+PASS 41 truck and camera regression tests, including forward clearance of rear turret shots past front chairs.

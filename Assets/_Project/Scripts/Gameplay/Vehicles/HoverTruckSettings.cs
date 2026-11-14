@@ -20,5 +20,11 @@ namespace CouchGuys.Gameplay.Vehicles
         [Min(0f)] public float BobFrequency = 1.4f;
         [Min(.05f)] public float ClampDuration = .5f;
         [Range(0f, 90f)] public float ClampOpenAngle = 32f;
+
+        [Header("Passenger Camera")]
+        [Min(.5f)] public float PassengerCameraDistance = 2.5f;
+        public float PassengerCameraHeight = .8f;
+        public float PassengerCameraShoulderOffset = 1.3f;
+        [Range(-35f, 65f)] public float PassengerCameraPitch = 12f;
     }
 }

@@ -13,6 +13,7 @@ namespace CouchGuys.Player
         [SerializeField, Min(0.05f)] private float m_handClearance = .22f;
         [SerializeField, Range(0f, 10f)] private float m_movementLean = 4f;
         private MagneticCarryEffect m_effect;
+        private PlayerTruckInteractor m_truckInteractor;
         private Transform m_target, m_torso;
         private readonly Transform[] m_upper = new Transform[2], m_lower = new Transform[2], m_hands = new Transform[2];
         private Collider[] m_couchColliders;
@@ -22,6 +23,7 @@ namespace CouchGuys.Player
         {
             m_carrier ??= GetComponent<PlayerCouchCarrier>();
             m_animation ??= GetComponent<CouchGuyAnimationDriver>();
+            m_truckInteractor = GetComponent<PlayerTruckInteractor>();
             m_previousPosition = transform.position;
             if (m_animation == null || m_animation.Animator == null) return;
             Transform rig = Find(m_animation.Animator.transform, "CouchGuy_Rig");
@@ -42,6 +44,9 @@ namespace CouchGuys.Player
             var point = couch != null && !couch.IsSled && !couch.IsLoaded
                 ? couch.GetPoint(m_carrier.CarriedPointIndex) : null;
             Transform target = point != null ? point.transform : null;
+            var truck = m_truckInteractor != null ? m_truckInteractor.CurrentTruck : null;
+            bool usingTurret = truck != null && !m_truckInteractor.IsDriver;
+            if (usingTurret) target = truck.GetTurretAuraTarget(m_truckInteractor.CurrentSeatIndex);
             if (target != m_target)
             {
                 if (m_effect != null) m_effect.Release();
@@ -58,6 +63,7 @@ namespace CouchGuys.Player
             Vector3 velocity = (transform.position - m_previousPosition) / Mathf.Max(Time.deltaTime, .0001f);
             m_previousPosition = transform.position;
             if (target == null) return;
+            if (usingTurret) return;
             if (velocity.sqrMagnitude > 225f) velocity = Vector3.zero;
             Vector3 local = transform.InverseTransformDirection(velocity);
             m_lean = Vector3.Lerp(m_lean, new Vector3(local.z, 0, -local.x) * m_movementLean,

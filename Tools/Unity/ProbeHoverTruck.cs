@@ -149,6 +149,9 @@ public static class ProbeHoverTruck
                 if (now < deadline) return;
                 Require(target.Health < targetHealth, "Projectile damage on another truck");
                 Require(Mathf.Approximately(truck.Health, ownHealth), "Own truck excluded from shots");
+                for (int index = 1; index < 4; index++)
+                    Require(Field(players[index].GetComponent<MagneticCarryAura>(), "m_effect") != null, "Passenger magnetic turret aura " + index);
+                Require(Field(players[0].GetComponent<MagneticCarryAura>(), "m_effect") == null, "Driver has no turret aura");
                 var aims = new[] { "m_turretAim0", "m_turretAim1", "m_turretAim2" }.Select(name => ((SyncVar<Vector2>)Field(truck, name)).Value).ToArray();
                 Require(Mathf.Abs(Mathf.DeltaAngle(aims[0].x, 90f)) < 3f && Mathf.Abs(Mathf.DeltaAngle(aims[1].x, 180f)) < 1f && Mathf.Abs(Mathf.DeltaAngle(aims[2].x, -90f)) < 1f, "Independent turret poses including backward aim");
                 for (int index = 1; index < 4; index++) Invoke(truck, "SetTurretInputServer", players[index], Vector3.forward, false);
@@ -173,9 +176,10 @@ public static class ProbeHoverTruck
             else if (stage == 6 && now >= deadline)
             {
                 Require(truck == null || !truck.IsSpawned, "Destroyed truck despawns");
+                Require(players.All(player => Field(player.GetComponent<MagneticCarryAura>(), "m_effect") == null), "Turret auras release after dismount");
                 Finish(0, "PASS host server/client startup, four networked occupants, passenger driving rejection, driver turret rejection, " +
                     "three independent turret poses including rear aiming, swept projectile damage to another vehicle, own-truck exclusion, " +
-                    "four couch attachments with delivery IDs, delivery vehicle lookup, selected couch unloading, driver movement, moving cargo alignment, destruction dismount/cargo recovery and despawn.\n" +
+                    "four couch attachments with delivery IDs, delivery vehicle lookup, selected couch unloading, driver movement, moving cargo alignment, passenger turret auras, aura cleanup on dismount, destruction dismount/cargo recovery and despawn.\n" +
                     "Separate remote client ownership and automatic recipient delivery remain unverified.\n");
             }
         }

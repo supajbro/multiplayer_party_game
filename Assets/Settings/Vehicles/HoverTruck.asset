@@ -26,3 +26,7 @@ MonoBehaviour:
   BobFrequency: 1.4
   ClampDuration: 0.5
   ClampOpenAngle: 32
+  PassengerCameraDistance: 2.5
+  PassengerCameraHeight: 0.8
+  PassengerCameraShoulderOffset: 1.3
+  PassengerCameraPitch: 12

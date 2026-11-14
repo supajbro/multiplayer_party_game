@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="41" result="Passed" total="41" passed="41" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.4902013">
+  <test-suite type="TestSuite" id="1000" name="multiplayer_game" fullname="multiplayer_game" runstate="Runnable" testcasecount="57" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.490201" total="41" passed="41" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1073" name="Assembly-CSharp-Editor.dll" fullname="C:/Users/Jaden/AppData/Local/Temp/CouchGuysHoverTruckAuthoring/Library/ScriptAssemblies/Assembly-CSharp-Editor.dll" runstate="Runnable" testcasecount="57" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.480288" total="41" passed="41" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="36876" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1074" name="CouchGuys" fullname="CouchGuys" runstate="Runnable" testcasecount="57" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.477742" total="41" passed="41" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1075" name="Tests" fullname="CouchGuys.Tests" runstate="Runnable" testcasecount="57" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.475537" total="41" passed="41" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1076" name="Editor" fullname="CouchGuys.Tests.Editor" runstate="Runnable" testcasecount="57" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.473326" total="41" passed="41" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1001" name="CameraCollisionTests" fullname="CouchGuys.Tests.Editor.CameraCollisionTests" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" testcasecount="33" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.422381" total="33" passed="33" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1018" name="AlternateCameraBlend_InsideHeldCouch_IsCorrected" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.AlternateCameraBlend_InsideHeldCouch_IsCorrected" methodname="AlternateCameraBlend_InsideHeldCouch_IsCorrected" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="459037555" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.067993" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1021" name="CarryDistance_GrabAndReleaseBlendTowardConfiguredDistances" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.CarryDistance_GrabAndReleaseBlendTowardConfiguredDistances" methodname="CarryDistance_GrabAndReleaseBlendTowardConfiguredDistances" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="423679789" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.006770" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1010" name="ClearBoom_PreservesConfiguredDistance" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.ClearBoom_PreservesConfiguredDistance" methodname="ClearBoom_PreservesConfiguredDistance" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1208293126" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.001288" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1025" name="CollisionDamping_FastCompressionSlowRecoveryAndBriefGapHold" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.CollisionDamping_FastCompressionSlowRecoveryAndBriefGapHold" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.008890" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1022" name="CollisionDamping_FastCompressionSlowRecoveryAndBriefGapHold(30)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.CollisionDamping_FastCompressionSlowRecoveryAndBriefGapHold(30)" methodname="CollisionDamping_FastCompressionSlowRecoveryAndBriefGapHold" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1296866151" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.002836" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1023" name="CollisionDamping_FastCompressionSlowRecoveryAndBriefGapHold(60)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.CollisionDamping_FastCompressionSlowRecoveryAndBriefGapHold(60)" methodname="CollisionDamping_FastCompressionSlowRecoveryAndBriefGapHold" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1310773981" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.001095" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1024" name="CollisionDamping_FastCompressionSlowRecoveryAndBriefGapHold(120)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.CollisionDamping_FastCompressionSlowRecoveryAndBriefGapHold(120)" methodname="CollisionDamping_FastCompressionSlowRecoveryAndBriefGapHold" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="22306407" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.001262" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="ParameterizedMethod" id="1031" name="CompressedCamera_RecoveryKeepsRobotInViewAndClearOfHeldCouch" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.CompressedCamera_RecoveryKeepsRobotInViewAndClearOfHeldCouch" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.009088" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1029" name="CompressedCamera_RecoveryKeepsRobotInViewAndClearOfHeldCouch(False)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.CompressedCamera_RecoveryKeepsRobotInViewAndClearOfHeldCouch(False)" methodname="CompressedCamera_RecoveryKeepsRobotInViewAndClearOfHeldCouch" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="172994781" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.005448" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1030" name="CompressedCamera_RecoveryKeepsRobotInViewAndClearOfHeldCouch(True)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.CompressedCamera_RecoveryKeepsRobotInViewAndClearOfHeldCouch(True)" methodname="CompressedCamera_RecoveryKeepsRobotInViewAndClearOfHeldCouch" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1204879867" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.001933" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1039" name="CrowdedBoom_DoesNotLoseNearestColliderWhenHitBufferFills" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.CrowdedBoom_DoesNotLoseNearestColliderWhenHitBufferFills" methodname="CrowdedBoom_DoesNotLoseNearestColliderWhenHitBufferFills" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1381983954" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.002460" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1003" name="ExistingVehicleFollowKeepsCurrentOrbitAndCentredFraming" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.ExistingVehicleFollowKeepsCurrentOrbitAndCentredFraming" methodname="ExistingVehicleFollowKeepsCurrentOrbitAndCentredFraming" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="2051185052" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.001053" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1020" name="HeldCouch_AcrossSightLine_DoesNotShortenClearBoomOrLiftPivot" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.HeldCouch_AcrossSightLine_DoesNotShortenClearBoomOrLiftPivot" methodname="HeldCouch_AcrossSightLine_DoesNotShortenClearBoomOrLiftPivot" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="498010154" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.003814" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1015" name="HeldCouch_AllOrbitAnglesAndEmbeddedPivots_KeepCameraOutsideVisual" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.HeldCouch_AllOrbitAnglesAndEmbeddedPivots_KeepCameraOutsideVisual" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.088079" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1012" name="HeldCouch_AllOrbitAnglesAndEmbeddedPivots_KeepCameraOutsideVisual(0)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.HeldCouch_AllOrbitAnglesAndEmbeddedPivots_KeepCameraOutsideVisual(0)" methodname="HeldCouch_AllOrbitAnglesAndEmbeddedPivots_KeepCameraOutsideVisual" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="852404170" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.029603" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1013" name="HeldCouch_AllOrbitAnglesAndEmbeddedPivots_KeepCameraOutsideVisual(1)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.HeldCouch_AllOrbitAnglesAndEmbeddedPivots_KeepCameraOutsideVisual(1)" methodname="HeldCouch_AllOrbitAnglesAndEmbeddedPivots_KeepCameraOutsideVisual" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1500025328" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.028722" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1014" name="HeldCouch_AllOrbitAnglesAndEmbeddedPivots_KeepCameraOutsideVisual(2)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.HeldCouch_AllOrbitAnglesAndEmbeddedPivots_KeepCameraOutsideVisual(2)" methodname="HeldCouch_AllOrbitAnglesAndEmbeddedPivots_KeepCameraOutsideVisual" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="730408657" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.027386" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1011" name="HeldCouch_AnimatedVisualOutsideCollider_BlocksSmoothedCamera" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.HeldCouch_AnimatedVisualOutsideCollider_BlocksSmoothedCamera" methodname="HeldCouch_AnimatedVisualOutsideCollider_BlocksSmoothedCamera" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="814094851" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.002673" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1017" name="HeldCouch_TallerVisual_DoesNotLiftOrbitPivot" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.HeldCouch_TallerVisual_DoesNotLiftOrbitPivot" methodname="HeldCouch_TallerVisual_DoesNotLiftOrbitPivot" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1133162389" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.001832" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1016" name="HeldCouch_WideNearPlaneAndChildOffset_RemainOutsideVisual" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.HeldCouch_WideNearPlaneAndChildOffset_RemainOutsideVisual" methodname="HeldCouch_WideNearPlaneAndChildOffset_RemainOutsideVisual" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="12517783" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.002815" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1035" name="HeldCouchAndPlayer_EmbeddedSmoothedCameraStaysOutsideBoth" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.HeldCouchAndPlayer_EmbeddedSmoothedCameraStaysOutsideBoth" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.008203" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1032" name="HeldCouchAndPlayer_EmbeddedSmoothedCameraStaysOutsideBoth(0)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.HeldCouchAndPlayer_EmbeddedSmoothedCameraStaysOutsideBoth(0)" methodname="HeldCouchAndPlayer_EmbeddedSmoothedCameraStaysOutsideBoth" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1792425228" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.002514" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1033" name="HeldCouchAndPlayer_EmbeddedSmoothedCameraStaysOutsideBoth(1)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.HeldCouchAndPlayer_EmbeddedSmoothedCameraStaysOutsideBoth(1)" methodname="HeldCouchAndPlayer_EmbeddedSmoothedCameraStaysOutsideBoth" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="2023203226" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.001775" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1034" name="HeldCouchAndPlayer_EmbeddedSmoothedCameraStaysOutsideBoth(2)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.HeldCouchAndPlayer_EmbeddedSmoothedCameraStaysOutsideBoth(2)" methodname="HeldCouchAndPlayer_EmbeddedSmoothedCameraStaysOutsideBoth" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1835372376" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.001586" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1027" name="ObstructedBoom_ReproducesFaceClipping_ThenKeepsCameraOutsidePlayer" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.ObstructedBoom_ReproducesFaceClipping_ThenKeepsCameraOutsidePlayer" methodname="ObstructedBoom_ReproducesFaceClipping_ThenKeepsCameraOutsidePlayer" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="341758192" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.000895" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1007" name="Orbit_StartingInsideCouch_KeepsCameraSphereOutside" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.Orbit_StartingInsideCouch_KeepsCameraSphereOutside" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.003403" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1004" name="Orbit_StartingInsideCouch_KeepsCameraSphereOutside(-35.0f)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.Orbit_StartingInsideCouch_KeepsCameraSphereOutside(-35.0f)" methodname="Orbit_StartingInsideCouch_KeepsCameraSphereOutside" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1263002609" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.000880" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1005" name="Orbit_StartingInsideCouch_KeepsCameraSphereOutside(12.0f)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.Orbit_StartingInsideCouch_KeepsCameraSphereOutside(12.0f)" methodname="Orbit_StartingInsideCouch_KeepsCameraSphereOutside" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1660054950" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.000348" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1006" name="Orbit_StartingInsideCouch_KeepsCameraSphereOutside(65.0f)" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.Orbit_StartingInsideCouch_KeepsCameraSphereOutside(65.0f)" methodname="Orbit_StartingInsideCouch_KeepsCameraSphereOutside" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="51103918" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.000335" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1002" name="PassengerVehicleViewStartsAlignedAndRestoresPlayerFollow" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.PassengerVehicleViewStartsAlignedAndRestoresPlayerFollow" methodname="PassengerVehicleViewStartsAlignedAndRestoresPlayerFollow" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="65967738" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.001515" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1009" name="Pivot_IgnoresPlayerAndTriggers_ButClearsFurniture" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.Pivot_IgnoresPlayerAndTriggers_ButClearsFurniture" methodname="Pivot_IgnoresPlayerAndTriggers_ButClearsFurniture" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="516153892" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.000964" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1028" name="PlayerVisualGuard_ClearBoomPreservesNormalFraming" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.PlayerVisualGuard_ClearBoomPreservesNormalFraming" methodname="PlayerVisualGuard_ClearBoomPreservesNormalFraming" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1812471389" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.000545" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1036" name="PlayerVisualGuard_ProtectsWideNearPlaneDuringCameraBlend" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.PlayerVisualGuard_ProtectsWideNearPlaneDuringCameraBlend" methodname="PlayerVisualGuard_ProtectsWideNearPlaneDuringCameraBlend" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="375186370" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.000684" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1019" name="ReleasedCouch_ClearsVisualGuard" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.ReleasedCouch_ClearsVisualGuard" methodname="ReleasedCouch_ClearsVisualGuard" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1743210957" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.001240" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1037" name="SavedPlayerPrefab_ReferencesItsOwnVisualForCameraProtection" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.SavedPlayerPrefab_ReferencesItsOwnVisualForCameraProtection" methodname="SavedPlayerPrefab_ReferencesItsOwnVisualForCameraProtection" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1585652619" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.147087" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1038" name="SavedRobotVisual_ObstructedCameraRemainsOutsideBodyAndFace" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.SavedRobotVisual_ObstructedCameraRemainsOutsideBodyAndFace" methodname="SavedRobotVisual_ObstructedCameraRemainsOutsideBodyAndFace" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1191539693" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.019690" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1008" name="SmoothedPosition_InsideFurniture_IsClampedBeforeSurface" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.SmoothedPosition_InsideFurniture_IsClampedBeforeSurface" methodname="SmoothedPosition_InsideFurniture_IsClampedBeforeSurface" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="84518667" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.001247" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1026" name="TightCorner_MovingAndRotatingBoomStaysOutsideWalls" fullname="CouchGuys.Tests.Editor.CameraCollisionTests.TightCorner_MovingAndRotatingBoomStaysOutsideWalls" methodname="TightCorner_MovingAndRotatingBoomStaysOutsideWalls" classname="CouchGuys.Tests.Editor.CameraCollisionTests" runstate="Runnable" seed="1269476907" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.014456" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+            </test-suite>
+            <test-suite type="TestFixture" id="1061" name="TruckCargoTests" fullname="CouchGuys.Tests.Editor.TruckCargoTests" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" testcasecount="6" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.029741" total="6" passed="6" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1069" name="FullyBlockedAreaStillUnloadsAndRestoresObstacleCollisionAfterSeparation" fullname="CouchGuys.Tests.Editor.TruckCargoTests.FullyBlockedAreaStillUnloadsAndRestoresObstacleCollisionAfterSeparation" methodname="FullyBlockedAreaStillUnloadsAndRestoresObstacleCollisionAfterSeparation" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="1575661954" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.015154" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1068" name="ObstructedRearSearchesNearbyAndSaturatedQueriesStayBlocked" fullname="CouchGuys.Tests.Editor.TruckCargoTests.ObstructedRearSearchesNearbyAndSaturatedQueriesStayBlocked" methodname="ObstructedRearSearchesNearbyAndSaturatedQueriesStayBlocked" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="1288490847" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.002645" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1064" name="RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes" fullname="CouchGuys.Tests.Editor.TruckCargoTests.RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.003966" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1062" name="RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes(0.0f)" fullname="CouchGuys.Tests.Editor.TruckCargoTests.RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes(0.0f)" methodname="RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="881694230" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.001811" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1063" name="RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes(20.0f)" fullname="CouchGuys.Tests.Editor.TruckCargoTests.RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes(20.0f)" methodname="RepeatedPlacementHandlesRotatedDisabledCouchesAndSlopes" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="165723354" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.001190" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="ParameterizedMethod" id="1067" name="SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters" fullname="CouchGuys.Tests.Editor.TruckCargoTests.SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.005328" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1065" name="SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters(True)" fullname="CouchGuys.Tests.Editor.TruckCargoTests.SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters(True)" methodname="SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="2092282097" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.003461" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1066" name="SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters(False)" fullname="CouchGuys.Tests.Editor.TruckCargoTests.SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters(False)" methodname="SecuredCargoFollowsTruckWithoutPhysicsOrNetworkPoseWriters" classname="CouchGuys.Tests.Editor.TruckCargoTests" runstate="Runnable" seed="1243078466" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.001105" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+            </test-suite>
+            <test-suite type="TestFixture" id="1070" name="TruckSeatingTests" fullname="CouchGuys.Tests.Editor.TruckSeatingTests" classname="CouchGuys.Tests.Editor.TruckSeatingTests" runstate="Runnable" testcasecount="2" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.016604" total="2" passed="2" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-case id="1072" name="RearTurretForwardShotsClearTheFrontChairs" fullname="CouchGuys.Tests.Editor.TruckSeatingTests.RearTurretForwardShotsClearTheFrontChairs" methodname="RearTurretForwardShotsClearTheFrontChairs" classname="CouchGuys.Tests.Editor.TruckSeatingTests" runstate="Runnable" seed="467077845" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.009759" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1071" name="VehiclePrefabsUseTruckModelAndFourModelAlignedSeats" fullname="CouchGuys.Tests.Editor.TruckSeatingTests.VehiclePrefabsUseTruckModelAndFourModelAlignedSeats" methodname="VehiclePrefabsUseTruckModelAndFourModelAlignedSeats" classname="CouchGuys.Tests.Editor.TruckSeatingTests" runstate="Runnable" seed="616930423" result="Passed" start-time="2026-11-13 09:03:05Z" end-time="2026-11-13 09:03:05Z" duration="0.005532" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Saving results to: C:/Users/Jaden/AppData/LocalLow/DefaultCompany/multiplayer_game\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

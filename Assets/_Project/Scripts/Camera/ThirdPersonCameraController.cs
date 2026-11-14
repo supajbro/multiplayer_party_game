@@ -87,6 +87,7 @@ namespace CouchGuys.CameraSystem
         private float m_vehicleFollowSmoothing;
         private float m_vehicleRotationSmoothing;
         private float m_vehicleCollisionRadius;
+        private float m_vehicleShoulderOffset;
         private Camera m_camera;
         private PlayerWeaponController m_grappleSource;
         private Vector2 m_grappleLookScale = Vector2.one;
@@ -187,7 +188,10 @@ namespace CouchGuys.CameraSystem
             float maximumPitch,
             float followSmoothing,
             float rotationSmoothing,
-            float collisionRadius)
+            float collisionRadius,
+            float shoulderOffset = 0f,
+            bool alignToTarget = false,
+            float initialPitch = 12f)
         {
             m_vehicleTarget = target;
             m_vehicleDistance = Mathf.Max(0.1f, distance);
@@ -199,6 +203,12 @@ namespace CouchGuys.CameraSystem
             m_vehicleFollowSmoothing = Mathf.Max(0.01f, followSmoothing);
             m_vehicleRotationSmoothing = Mathf.Max(0.01f, rotationSmoothing);
             m_vehicleCollisionRadius = Mathf.Max(0.01f, collisionRadius);
+            m_vehicleShoulderOffset = shoulderOffset;
+            if (alignToTarget && target != null)
+            {
+                m_yaw = target.eulerAngles.y;
+                m_pitch = Mathf.Clamp(initialPitch, m_vehicleMinimumPitch, m_vehicleMaximumPitch);
+            }
             m_hasPreviousPivotPosition = false;
         }
 
@@ -418,6 +428,7 @@ namespace CouchGuys.CameraSystem
             Vector3 pivot = m_vehicleTarget.position + Vector3.up * m_vehicleHeight;
             Quaternion desiredRotation = Quaternion.Euler(m_pitch, m_yaw, 0f);
             Vector3 direction = desiredRotation * Vector3.back;
+            pivot += desiredRotation * Vector3.right * m_vehicleShoulderOffset;
             float clearDistance = m_vehicleDistance;
             int hitCount = Physics.SphereCastNonAlloc(
                 pivot, m_vehicleCollisionRadius, direction, m_collisionHits, m_vehicleDistance,
@@ -425,7 +436,8 @@ namespace CouchGuys.CameraSystem
             for (int index = 0; index < hitCount; index++)
             {
                 Transform hit = m_collisionHits[index].transform;
-                if (hit != null && hit.IsChildOf(m_vehicleTarget.root)) continue;
+                if (hit != null && (hit.IsChildOf(m_vehicleTarget.root) ||
+                    (m_playerRoot != null && hit.IsChildOf(m_playerRoot)))) continue;
                 clearDistance = Mathf.Min(clearDistance, m_collisionHits[index].distance);
             }
 

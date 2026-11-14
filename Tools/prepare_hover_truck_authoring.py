@@ -61,7 +61,7 @@ for relative in ('Assets/_Project/Prefabs/Vehicles/Truck.prefab',
                  'Assets/_Project/Prefabs/Couch.prefab',
                  'Assets/_Project/Prefabs/Weapons/Effects/Impact_MetalSparks.prefab'):
     dependency(ROOT / relative)
-for name in ('TruckSeatingTests', 'TruckCargoTests', 'MultipleDeliveryTests', 'MinimapNavigationTests'):
+for name in ('TruckSeatingTests', 'TruckCargoTests', 'MultipleDeliveryTests', 'MinimapNavigationTests', 'CameraCollisionTests'):
     copy_file(ROOT / ('Assets/_Project/Tests/Editor/' + name + '.cs'))
 for path in (ROOT / 'Assets/_Project/Models/Vehicles/HoverTruck').rglob('*'):
     if path.is_file():

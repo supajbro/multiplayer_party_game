@@ -244,14 +244,6 @@ for side in (-1, 1):
     post = box('Windscreen_Frame', (side * 1.34, -3.62, 1.78), (.14, .16, 1.05), dark, chassis)
     post.rotation_euler.x = -.3
 box('Windscreen', (0, -3.72, 1.75), (2.55, .06, .7), glass, chassis, .025).rotation_euler.x = -.3
-for side in (-1, 1):
-    start = Vector((side * 1.49, -3.65, 1.82))
-    end = Vector((side * 1.49, -2.2, 2.72))
-    beam = box('Cockpit_Rollbar', (start + end) * .5, (.22, .22, (end - start).length), dark, chassis)
-    beam.rotation_euler = (end - start).to_track_quat('Z', 'Y').to_euler()
-    box('Worklight_Housing', (side * .65, -2.38, 2.8), (.75, .42, .35), dark, chassis, .12)
-    box('Worklight_Lens', (side * .65, -2.61, 2.8), (.53, .035, .16), cyan, chassis, .04)
-box('Cockpit_Crossbar', (0, -2.2, 2.69), (3.15, .24, .24), dark, chassis)
 
 # Six independent propulsion units with named glow groups.
 for row, y in enumerate((-3.55, -.2, 3.35)):
@@ -265,22 +257,22 @@ for row, y in enumerate((-3.55, -.2, 3.35)):
         ring('Ion_Ring', (0, 0, -.07), .53, .035, cyan, glow)
         empty(f'HoverProbe_{index}', (x, y, .7), chassis)
 
-seat_positions = [(-.8, -2.9), (.8, -2.9), (-.8, -1.35), (.8, -1.35)]
+seat_positions = [(-.85, -2.55), (.85, -2.55), (-.85, -.65), (.85, -.65)]
 for index, (x, y) in enumerate(seat_positions):
     seat = empty(f'Seat_{index}', (x, y, 1.06), chassis)
     box('Seat_Base', (0, 0, .12), (.8, .9, .24), dark, seat)
     box('Seat_Cushion', (0, -.05, .29), (.73, .72, .23), orange, seat, .12)
-    box('Seat_BackFrame', (0, .34, .7), (.82, .2, 1.05), white, seat, .1)
-    box('Seat_Back', (0, .16, .73), (.75, .32, 1.02), orange, seat, .13)
-    box('Seat_Headrest', (0, .2, 1.22), (.66, .26, .28), orange, seat, .1)
-    box('Seat_Badge', (0, -.012, 1.05), (.3, .025, .07), white, seat, .02)
+    box('Seat_BackFrame', (0, .34, .55), (.82, .2, .7), white, seat, .1)
+    box('Seat_Back', (0, .16, .57), (.75, .32, .7), orange, seat, .13)
+    box('Seat_Headrest', (0, .2, .9), (.66, .26, .168), orange, seat, .07)
+    box('Seat_Badge', (0, -.012, .8), (.3, .025, .042), white, seat, .015)
     for side in (-1, 1):
         box('Seat_Arm', (side * .4, 0, .52), (.12, .7, .14), white, seat)
+    seat.scale = (1.3, 1.3, 1.15)
     # Player root offset is -0.8 m, matching the existing seated animation.
     empty(f'SeatAnchor_{index}', (x, y, 1.9), chassis)
     if index > 0:
-        outward = -1 if x < 0 else 1
-        turret = empty(f'TurretYaw_{index - 1}', (outward * 1.38, y - .1, 1.62), chassis)
+        turret = empty(f'TurretYaw_{index - 1}', (1.68 if x > 0 else -1.68, y - .6, 1.52), chassis)
         cylinder('Turret_Base', (0, 0, 0), .23, .22, steel, turret)
         box('Turret_Shield', (0, -.06, .17), (.45, .3, .4), white, turret)
         box('Turret_Display', (0, -.23, .17), (.26, .025, .23), cyan, turret)
@@ -290,10 +282,10 @@ for index, (x, y) in enumerate(seat_positions):
         cylinder('Turret_Muzzle', (0, -.69, 0), .115, .06, cyan, pitch, (math.pi / 2, 0, 0))
         empty(f'TurretMuzzle_{index - 1}', (0, -.78, 0), pitch)
 
-steering = empty('Steering_Wheel', (-.8, -3.55, 1.65), chassis)
+steering = empty('Steering_Wheel', (-.85, -3.2, 1.65), chassis)
 ring('Steering_Rim', (0, 0, 0), .26, .045, dark, steering, (.8, 0, 0))
 box('Steering_Hub', (0, 0, 0), (.34, .07, .07), steel, steering)
-box('Steering_Column', (-.8, -3.5, 1.37), (.12, .14, .55), dark, chassis)
+box('Steering_Column', (-.85, -3.15, 1.37), (.12, .14, .55), dark, chassis)
 
 for index, (x, y) in enumerate([(-.88, 1.05), (.88, 1.05), (-.88, 3.45), (.88, 3.45)]):
     dock = empty(f'MagneticDock_{index}', (x, y, 1.08), chassis)

@@ -9,6 +9,7 @@ namespace CouchGuys.Player
     /// and server-driven debug bots without sending separate animation messages.
     /// </summary>
     [DisallowMultipleComponent]
+    [DefaultExecutionOrder(175)]
     public sealed class CouchGuyAnimationDriver : MonoBehaviour
     {
         private static readonly int SpeedHash = Animator.StringToHash("Speed");
@@ -68,6 +69,13 @@ namespace CouchGuys.Player
         private bool m_vehicleDriver;
         private Transform m_hoverLeftGrip, m_hoverRightGrip;
         private Transform m_handLeft, m_handRight;
+        private Transform m_turretLeftGrip, m_turretRightGrip;
+
+        public void SetTurretGrips(Transform left, Transform right)
+        {
+            m_turretLeftGrip = left;
+            m_turretRightGrip = right;
+        }
 
         public void SetHoverboardGrips(Transform left, Transform right)
         { m_hoverLeftGrip=left; m_hoverRightGrip=right; }
@@ -146,7 +154,15 @@ namespace CouchGuys.Player
                 ReachGrip(m_upperArmLeft,m_lowerArmLeft,m_handLeft,m_hoverRightGrip);
                 ReachGrip(m_upperArmRight,m_lowerArmRight,m_handRight,m_hoverLeftGrip);
             }
-            else if (m_vehicleSeated) ApplyVehicleSeatPose();
+            else if (m_vehicleSeated)
+            {
+                ApplyVehicleSeatPose();
+                if (m_turretLeftGrip != null && m_turretRightGrip != null)
+                {
+                    ReachGrip(m_upperArmLeft, m_lowerArmLeft, m_handLeft, m_turretRightGrip);
+                    ReachGrip(m_upperArmRight, m_lowerArmRight, m_handRight, m_turretLeftGrip);
+                }
+            }
             else ApplyProceduralRecoil();
         }
 
