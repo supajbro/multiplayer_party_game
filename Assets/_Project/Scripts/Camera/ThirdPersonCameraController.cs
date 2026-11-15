@@ -267,7 +267,10 @@ namespace CouchGuys.CameraSystem
             if (DispatcherCameraActive)
             {
                 UpdateDispatcherCamera();
-                ResolveCameraVisualOverlap();
+                // A screen focus is an authored camera pose. Orbit-body clearance would
+                // lift it above nearby players and override CameraFocusPoint adjustments.
+                // Resume the normal clearance checks while blending back to gameplay.
+                if (!m_dispatcherFocusing) ResolveCameraVisualOverlap();
                 return;
             }
             if (m_vehicleTarget != null)

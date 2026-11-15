@@ -403,6 +403,12 @@ namespace CouchGuys.Player
 
         private void TryRequestNearestInteraction()
         {
+            var terminal = WeaponShopTerminal.FindNearby(transform.position);
+            if (terminal != null)
+            {
+                RequestWeaponTerminalServerRpc(terminal.transform.position);
+                return;
+            }
             FindNearestInteraction(out CouchCarryPoint closestPoint, out SledController closestUnloadSled,
                 out DeliveryNPC closestNpc, out WeaponPickup closestWeapon, out bool depotDoorButton);
             if (closestPoint != null)
@@ -546,6 +552,11 @@ namespace CouchGuys.Player
 
         private void UpdateSledInteractionPrompt()
         {
+            if (!IsCarrying)
+            {
+                var terminal = WeaponShopTerminal.FindNearby(transform.position);
+                if (terminal != null) { m_sledInteractionPrompt = terminal.Prompt; return; }
+            }
             if (CarriedSled != null)
             {
                 m_sledInteractionPrompt = "Press E to release sled";
@@ -645,6 +656,13 @@ namespace CouchGuys.Player
         }
 
         [ServerRpc]
+        private void RequestWeaponTerminalServerRpc(Vector3 terminalPosition)
+        {
+            var terminal = WeaponShopTerminal.Resolve(terminalPosition);
+            FindFirstObjectByType<DeliveryManager>()?.TryBeginWeaponTerminalServer(terminal, this);
+        }
+
+        [ServerRpc]
         private void RequestDeliveryPurchaseServerRpc(int tierIndex)
         {
             if (TryGetComponent(out PlayerHealth health) && health.IsKnockedDown) return;
@@ -661,10 +679,10 @@ namespace CouchGuys.Player
         }
 
         [ServerRpc]
-        private void RequestCloseDialogueServerRpc()
+        private void RequestCloseDialogueServerRpc(uint sessionId)
         {
             DeliveryManager deliveryManager = FindFirstObjectByType<DeliveryManager>();
-            deliveryManager?.ReleaseDialogueLockServer(this);
+            deliveryManager?.ReleaseDialogueLockServer(this, sessionId);
         }
 
         [TargetRpc]
@@ -672,7 +690,7 @@ namespace CouchGuys.Player
             bool easyAvailable, string easyReason, bool mediumAvailable, string mediumReason,
             bool hardAvailable, string hardReason,
             bool[] shopAvailable, string[] shopReasons, int currentCurrency,
-            string notice, bool openShop, bool purchaseSucceeded)
+            string notice, bool openShop, bool purchaseSucceeded, bool weaponTerminal)
         {
             if (!IsOwner) return;
             if (sessionId <= m_closedDispatcherSession || (m_dispatcherMenu != null && m_dispatcherMenu.IsClosing)) return;
@@ -703,7 +721,7 @@ namespace CouchGuys.Player
             for (int index = 0; index < shopCount; index++)
             {
                 ShopItemDefinition item = manager.GetShopItem(index);
-                if (item == null) continue;
+                if (!DeliveryManager.IsShopItemAllowed(item, weaponTerminal)) continue;
                 string capturedItemId = item.ItemId;
                 bool itemAvailable = shopAvailable != null && index < shopAvailable.Length &&
                                      shopAvailable[index];
@@ -743,24 +761,30 @@ namespace CouchGuys.Player
 
             if (m_dispatcherMenu == null || m_dispatcherSession != sessionId)
             {
-                float nearest = float.PositiveInfinity;
-                foreach (var npc in FindObjectsByType<DeliveryNPC>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+                m_dispatcherMenu = null;
+                if (weaponTerminal)
+                    m_dispatcherMenu = WeaponShopTerminal.Resolve(dispatcherPosition)?.Menu;
+                else
                 {
-                    float distance = (npc.transform.position - dispatcherPosition).sqrMagnitude;
-                    if (distance >= nearest || !npc.TryGetComponent(out DispatcherMenuController menu)) continue;
-                    nearest = distance;
-                    m_dispatcherMenu = menu;
+                    float nearest = float.PositiveInfinity;
+                    foreach (var npc in FindObjectsByType<DeliveryNPC>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+                    {
+                        float distance = (npc.transform.position - dispatcherPosition).sqrMagnitude;
+                        if (distance >= nearest || !npc.TryGetComponent(out DispatcherMenuController menu)) continue;
+                        nearest = distance;
+                        m_dispatcherMenu = menu;
+                    }
                 }
             }
             m_dispatcherSession = sessionId;
             if (m_dispatcherMenu == null || !m_dispatcherMenu.OpenLocal(this, categories, currentCurrency, notice, () =>
                 {
                     m_closedDispatcherSession = sessionId;
-                    RequestCloseDialogueServerRpc();
+                    RequestCloseDialogueServerRpc(sessionId);
                 }))
             {
                 m_closedDispatcherSession = sessionId;
-                RequestCloseDialogueServerRpc();
+                RequestCloseDialogueServerRpc(sessionId);
             }
             else if (purchaseSucceeded) m_dispatcherMenu.ShowPurchaseConfirmation(notice);
         }

@@ -113,6 +113,46 @@ namespace CouchGuys.Tests.Editor
         }
 
         [Test]
+        public void AuthoredFocusInsidePlayerBoundsFollowsEditsWithoutBeingLiftedByOrbitCollision()
+        {
+            var player = new GameObject("FocusOverlapPlayer", typeof(PlayerInputReader));
+            player.transform.position = new Vector3(6000, 0, 6000);
+            var body = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            body.transform.SetParent(player.transform, false);
+            body.transform.localPosition = Vector3.up;
+            body.transform.localScale = new Vector3(1, 2, 1);
+            var rig = new GameObject("FocusOverlapRig");
+            var cameraObject = new GameObject("FocusOverlapCamera", typeof(Camera));
+            cameraObject.transform.SetParent(rig.transform, false);
+            cameraObject.transform.localPosition = new Vector3(.1f, 0, .2f);
+            var focus = new GameObject("EditableTerminalFocus");
+            var controller = rig.AddComponent<ThirdPersonCameraController>();
+            try
+            {
+                Set(controller, "m_cameraTarget", player.transform);
+                Set(controller, "m_input", player.GetComponent<PlayerInputReader>());
+                Set(controller, "m_playerVisualRoot", body.transform);
+                Call(controller, "Awake");
+                focus.transform.SetPositionAndRotation(player.transform.position + Vector3.up, Quaternion.Euler(12, 180, 0));
+                controller.FocusDispatcher(focus.transform, 0f, 48f);
+                for (int i = 0; i < 3; i++)
+                {
+                    Call(controller, "LateUpdate");
+                    Assert.That(Vector3.Distance(cameraObject.transform.position, focus.transform.position), Is.LessThan(.001f));
+                    Assert.That(Quaternion.Angle(cameraObject.transform.rotation, focus.transform.rotation), Is.LessThan(.01f));
+                    focus.transform.position += Vector3.down * .15f;
+                    focus.transform.rotation *= Quaternion.Euler(-5, 0, 0);
+                }
+                bool returned = false;
+                controller.ReturnFromDispatcher(0, () => returned = true, true);
+                Assert.That(returned, Is.True);
+                Assert.That(controller.DispatcherCameraActive, Is.False);
+                Assert.That(body.GetComponent<Renderer>().enabled, Is.True);
+            }
+            finally { Object.DestroyImmediate(rig); Object.DestroyImmediate(focus); Object.DestroyImmediate(player); }
+        }
+
+        [Test]
         public void TabPropertiesAffectOnlyThisInstanceAndFaceSlotAcrossAllLods()
         {
             var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(DispatcherMenuAuthoring.NpcPath);

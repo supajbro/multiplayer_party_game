@@ -75,6 +75,7 @@ namespace CouchGuys.Gameplay.Delivery
         private sealed class DispatcherSession
         {
             public DeliveryNPC Npc;
+            public WeaponShopTerminal Terminal;
             public uint LastPurchaseRequest;
             public uint Id;
         }
@@ -206,10 +207,8 @@ namespace CouchGuys.Gameplay.Delivery
                 {
                     var player = pair.Key;
                     if (player == null || !player.IsSpawned || !player.Owner.IsValid ||
-                        pair.Value.Npc == null ||
-                        (player.TryGetComponent(out PlayerHealth health) && !health.IsAlive) ||
-                        pair.Value.Npc.InteractionDistanceSquared(player.transform.position) >
-                            m_dialogueMaximumDistance * m_dialogueMaximumDistance)
+                        !IsSessionInRange(pair.Value, player.transform.position) ||
+                        (player.TryGetComponent(out PlayerHealth health) && (!health.IsAlive || health.IsKnockedDown)))
                         ReleaseDialogueLockServer(player, true, "Dispatcher interaction ended.");
                 }
                 if (m_refreshDialogues)
@@ -279,7 +278,34 @@ namespace CouchGuys.Gameplay.Delivery
                 session = new DispatcherSession { Npc = npc, Id = ++m_nextDialogueId };
                 m_dialogues.Add(player, session);
             }
+            else if (session.Npc != npc)
+            {
+                session = new DispatcherSession { Npc = npc, Id = ++m_nextDialogueId };
+                m_dialogues[player] = session;
+            }
             m_dispatcherSpeaking.Value = true;
+            SendDialogueState(player);
+            return true;
+        }
+
+        private bool IsSessionInRange(DispatcherSession session, Vector3 position) =>
+            session.Terminal != null ? session.Terminal.IsInRange(position, .35f) :
+            session.Npc != null && session.Npc.isActiveAndEnabled &&
+            session.Npc.InteractionDistanceSquared(position) <= m_dialogueMaximumDistance * m_dialogueMaximumDistance;
+
+        public static bool IsShopItemAllowed(ShopItemDefinition item, bool weaponTerminal) =>
+            item != null && (item.Category == ShopItemCategory.Weapon) == weaponTerminal;
+
+        [Server]
+        public bool TryBeginWeaponTerminalServer(WeaponShopTerminal terminal, PlayerCouchCarrier player)
+        {
+            if (!IsServerInitialized || terminal == null || player == null || !player.IsSpawned ||
+                !player.Owner.IsValid || !terminal.IsInRange(player.transform.position, .35f) || player.IsCarrying ||
+                (player.TryGetComponent(out PlayerHealth health) && (!health.IsAlive || health.IsKnockedDown)) ||
+                (player.TryGetComponent(out PlayerTruckInteractor truck) && truck.CurrentTruck != null) ||
+                (player.TryGetComponent(out PlayerHoverboardInteractor board) && board.IsMounted)) return false;
+            m_dialogues[player] = new DispatcherSession { Terminal = terminal, Id = ++m_nextDialogueId };
+            m_dispatcherSpeaking.Value = m_dialogues.Values.Any(s => s.Npc != null);
             SendDialogueState(player);
             return true;
         }
@@ -291,10 +317,18 @@ namespace CouchGuys.Gameplay.Delivery
         }
 
         [Server]
+        public void ReleaseDialogueLockServer(PlayerCouchCarrier player, uint sessionId)
+        {
+            // A delayed close from the dispatcher must not close a newer terminal session.
+            if (player != null && m_dialogues.TryGetValue(player, out var session) && session.Id == sessionId)
+                ReleaseDialogueLockServer(player, false, string.Empty);
+        }
+
+        [Server]
         private void ReleaseDialogueLockServer(PlayerCouchCarrier player, bool closeClient, string message)
         {
             if (ReferenceEquals(player, null) || !m_dialogues.Remove(player)) return;
-            m_dispatcherSpeaking.Value = m_dialogues.Count > 0;
+            m_dispatcherSpeaking.Value = m_dialogues.Values.Any(s => s.Npc != null);
             if (closeClient && player != null && player.Owner.IsValid)
                 player.CloseDeliveryDialogueTargetRpc(player.Owner, message);
         }
@@ -314,7 +348,7 @@ namespace CouchGuys.Gameplay.Delivery
             if (!IsServerInitialized || player == null || !m_dialogues.TryGetValue(player, out var session)) return false;
             DeliveryNPC npc = session.Npc;
             DeliveryTierConfig tier = GetTierConfig(tierIndex);
-            if (npc == null || tier == null) return false;
+            if (npc == null || tier == null || session.Terminal != null) return false;
             if (npc.InteractionDistanceSquared(player.transform.position) >
                 m_dialogueMaximumDistance * m_dialogueMaximumDistance)
             {
@@ -363,7 +397,7 @@ namespace CouchGuys.Gameplay.Delivery
         {
             if (!IsServerInitialized || player == null || !m_dialogues.TryGetValue(player, out var session)) return false;
             DeliveryNPC npc = session.Npc;
-            if (npc == null) return false;
+            if (npc == null && session.Terminal == null) return false;
 
             // A monotonically increasing client request ID makes retransmitted or
             // duplicated button input harmless while the dialogue remains open.
@@ -371,21 +405,20 @@ namespace CouchGuys.Gameplay.Delivery
                 return false;
             session.LastPurchaseRequest = requestId;
 
-            if (npc.InteractionDistanceSquared(player.transform.position) >
-                m_dialogueMaximumDistance * m_dialogueMaximumDistance)
+            if (!IsSessionInRange(session, player.transform.position))
             {
                 ReleaseDialogueLockServer(player, true, "You moved too far from the Delivery Manager.");
                 return false;
             }
 
             ShopItemDefinition item = m_shopCatalogue != null ? m_shopCatalogue.Find(itemId) : null;
-            if (item == null || item.PurchaseBehaviour == null)
+            if (!IsShopItemAllowed(item, session.Terminal != null) || item.PurchaseBehaviour == null)
             {
                 SendDialogueState(player, "That item is not available.", true);
                 return false;
             }
 
-            if (player.TryGetComponent(out PlayerHealth health) && !health.IsAlive)
+            if (player.TryGetComponent(out PlayerHealth health) && (!health.IsAlive || health.IsKnockedDown))
             {
                 SendDialogueState(player, "You cannot shop right now.", true);
                 return false;
@@ -778,7 +811,8 @@ namespace CouchGuys.Gameplay.Delivery
             bool openShop = false,
             bool purchaseSucceeded = false)
         {
-            if (player == null || !player.Owner.IsValid || !m_dialogues.TryGetValue(player, out var session) || session.Npc == null) return;
+            if (player == null || !player.Owner.IsValid || !m_dialogues.TryGetValue(player, out var session) ||
+                (session.Npc == null && session.Terminal == null)) return;
             EnsureCandidateCache();
             bool[] available = new bool[3];
             string[] reasons = new string[3];
@@ -797,7 +831,7 @@ namespace CouchGuys.Gameplay.Delivery
             for (int index = 0; index < shopCount; index++)
             {
                 ShopItemDefinition item = m_shopCatalogue.Items[index];
-                if (item == null) shopReasons[index] = "Not configured";
+                if (!IsShopItemAllowed(item, session.Terminal != null)) shopReasons[index] = "Available at the other shop";
                 else if (item.PurchaseBehaviour == null) shopReasons[index] = "Purchase behaviour is missing";
                 else if (m_currency.Value < item.Price)
                     shopReasons[index] = $"Need ${item.Price - m_currency.Value:N0} more";
@@ -806,9 +840,9 @@ namespace CouchGuys.Gameplay.Delivery
                 else shopAvailable[index] = true;
             }
 
-            player.OpenDeliveryDialogueTargetRpc(player.Owner, session.Npc.transform.position, session.Id,
+            player.OpenDeliveryDialogueTargetRpc(player.Owner, session.Terminal != null ? session.Terminal.transform.position : session.Npc.transform.position, session.Id,
                 available[0], reasons[0], available[1], reasons[1], available[2], reasons[2],
-                shopAvailable, shopReasons, m_currency.Value, notice, openShop, purchaseSucceeded);
+                shopAvailable, shopReasons, m_currency.Value, notice, openShop, purchaseSucceeded, session.Terminal != null);
         }
 
         private void OnCurrencyChanged(int previous, int next, bool asServer)

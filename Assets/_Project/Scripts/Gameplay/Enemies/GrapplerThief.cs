@@ -19,6 +19,7 @@ namespace CouchGuys.Gameplay.Enemies
         private readonly SyncVar<NetworkObject> m_heldTarget = new();
         private readonly RaycastHit[] m_hits = new RaycastHit[32];
         private ThiefHealth m_health;
+        private ThiefNavigator m_navigator;
         private ThiefAnimationDriver m_animation;
         private DeliveryManager m_delivery;
         private PlayerHealth m_target, m_held;
@@ -33,6 +34,7 @@ namespace CouchGuys.Gameplay.Enemies
         private void Awake()
         {
             m_health = GetComponent<ThiefHealth>();
+            m_navigator = GetComponent<ThiefNavigator>();
             m_animation = GetComponent<ThiefAnimationDriver>();
         }
 
@@ -65,6 +67,11 @@ namespace CouchGuys.Gameplay.Enemies
         private void Update()
         {
             if (!IsServerInitialized || m_settings == null) return;
+            if (m_navigator != null && m_navigator.IsDeparting)
+            {
+                StopForDepartureServer();
+                return;
+            }
             NetworkObject couch = m_delivery != null && TryGetComponent(out ThiefSpawnMember member) && m_delivery.TryGetDelivery(member.DeliveryId, out var job) ? job.Couch : null;
             if (!m_health.IsAlive || m_health.IsBeingKnockedBack || couch == null)
             {
@@ -132,6 +139,13 @@ namespace CouchGuys.Gameplay.Enemies
             m_releaseAt = Time.time + Mathf.Max(0.1f, m_settings.HoldDuration);
             m_nextPull = 0f;
             m_held.GetComponent<PlayerCouchCarrier>()?.ReleaseForDamageServer();
+        }
+
+        internal void StopForDepartureServer()
+        {
+            CancelAttack();
+            m_target = null;
+            m_aimTarget.Value = null;
         }
 
         public bool HasLineOfSight(PlayerHealth player)

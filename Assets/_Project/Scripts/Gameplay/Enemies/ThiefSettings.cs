@@ -14,6 +14,18 @@ namespace CouchGuys.Gameplay.Enemies
         public CombatSettings Combat = new();
         public AudioSettings Audio = new();
         public AnimationSettings Animation = new();
+        public DepartureSettings Departure = new();
+
+        [Serializable]
+        public sealed class DepartureSettings
+        {
+            [Min(0f)] public float ChaseDuration = 5f;
+            [Min(0.1f)] public float LostSightDuration = 1.25f;
+            [Min(0.1f)] public float FrustrationDuration = 1f;
+            [Min(1f)] public float RetreatDistance = 25f;
+            [Min(1f)] public float DespawnDistance = 35f;
+            [Min(0.1f)] public float RetreatSpeedMultiplier = 1.25f;
+        }
 
         [Serializable]
         public sealed class MovementSettings

@@ -14,11 +14,16 @@ namespace CouchGuys.UI
     /// <summary>Presentation only. Purchases remain callbacks to the existing authoritative systems.</summary>
     public sealed class DispatcherMenuController : MonoBehaviour
     {
-        [Header("Saved UI and Dispatcher Anchors")]
+        [Header("Saved UI and Screen Anchors")]
         [SerializeField] private DispatcherMenuUI m_menuPrefab;
         [SerializeField] private Transform m_cameraFocusPoint, m_screenCanvasAnchor;
         [SerializeField, Min(.01f)] private float m_transitionSeconds = .6f;
         [SerializeField, Range(25f, 75f)] private float m_focusFieldOfView = 48f;
+        [Tooltip("Use the shop panel only, for a dedicated purchasing terminal.")]
+        [SerializeField] private bool m_shopOnly;
+        [SerializeField] private GameObject m_idleScreen;
+        [Tooltip("Hide the owning player's visuals locally while using this screen; restore them after the camera returns.")]
+        [SerializeField] private bool m_hideLocalPlayerWhileOpen;
         [Header("Existing Screen and Physical Buttons (all LODs)")]
         [SerializeField] private Renderer[] m_screens, m_deliveriesButtons, m_shopButtons;
         [SerializeField] private Collider m_deliveriesCollider, m_shopCollider;
@@ -45,6 +50,7 @@ namespace CouchGuys.UI
         private readonly List<EventSystem> m_suspendedSystems = new();
         private readonly List<GraphicRaycaster> m_suspendedRaycasters = new();
         private readonly List<(Renderer renderer, int slot, MaterialPropertyBlock block)> m_originalBlocks = new();
+        private readonly List<(Renderer renderer, bool forceRenderingOff)> m_hiddenPlayerVisuals = new();
         private MaterialPropertyBlock m_block;
         private static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
         private static readonly int Emission = Shader.PropertyToID("_EmissionColor");
@@ -67,7 +73,7 @@ namespace CouchGuys.UI
             m_cameraController = m_camera != null ? m_camera.GetComponentInParent<ThirdPersonCameraController>() : null;
             if (m_menuPrefab == null || m_cameraController == null || m_cameraFocusPoint == null || m_screenCanvasAnchor == null)
             {
-                Debug.LogError("Dispatcher menu references are incomplete.", this);
+                Debug.LogError("World-space menu references are incomplete.", this);
                 return false;
             }
             Owner = owner;
@@ -80,14 +86,21 @@ namespace CouchGuys.UI
             m_previousCursorVisible = Cursor.visible;
             m_input?.SetGameplaySuppressed(true);
             m_motor?.SetExternalControlPaused(true);
+            if (m_hideLocalPlayerWhileOpen)
+                foreach (var renderer in owner.GetComponentsInChildren<Renderer>(true))
+                {
+                    m_hiddenPlayerVisuals.Add((renderer, renderer.forceRenderingOff));
+                    renderer.forceRenderingOff = true;
+                }
             m_openFrame = Time.frameCount;
             m_readyAt = Time.unscaledTime + m_transitionSeconds;
             s_active = this;
             IsClosing = false;
             m_ui = Instantiate(m_menuPrefab, m_screenCanvasAnchor, false);
+            if (m_idleScreen != null) m_idleScreen.SetActive(false);
             m_ui.ConfigureCamera(m_camera);
             m_ui.Bind(categories, funds, notice);
-            m_ui.ShowCategory(0);
+            m_ui.ShowCategory(m_shopOnly ? 1 : 0);
             m_ui.SetInteractive(false);
             var ownSystem = m_ui.GetComponentInChildren<EventSystem>(true);
             foreach (var system in FindObjectsByType<EventSystem>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
@@ -174,7 +187,7 @@ namespace CouchGuys.UI
         }
         public void SelectCategory(int category)
         {
-            if (m_ui == null || IsClosing || m_ui.IsConfirmingPurchase) return;
+            if (m_ui == null || IsClosing || m_ui.IsConfirmingPurchase || (m_shopOnly && category != 1)) return;
             m_ui.ShowCategory(category);
             UpdateButtonColors();
         }
@@ -211,6 +224,7 @@ namespace CouchGuys.UI
             IsClosing = true;
             s_closedFrame = Time.frameCount;
             if (m_ui != null) { m_ui.SetInteractive(false); Destroy(m_ui.gameObject); m_ui = null; }
+            if (m_idleScreen != null) m_idleScreen.SetActive(true);
             foreach (var entry in m_originalBlocks)
             {
                 if (entry.renderer == null) continue;
@@ -229,6 +243,9 @@ namespace CouchGuys.UI
         }
         private void FinishClosing()
         {
+            foreach (var entry in m_hiddenPlayerVisuals)
+                if (entry.renderer != null) entry.renderer.forceRenderingOff = entry.forceRenderingOff;
+            m_hiddenPlayerVisuals.Clear();
             m_input?.SetGameplaySuppressed(m_previousSuppressed);
             m_motor?.SetExternalControlPaused(m_previousMotorPaused);
             Cursor.lockState = m_previousCursorLock; Cursor.visible = m_previousCursorVisible;

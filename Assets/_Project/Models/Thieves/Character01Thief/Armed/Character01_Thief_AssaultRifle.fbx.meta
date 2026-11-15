@@ -7,11 +7,6 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
-      name: Character01_Thief
-    second: {fileID: 2100000, guid: 07d50df90893400c9f5ca571a3e5d5e5, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
       name: CG_Weapon_Blue
     second: {fileID: 2100000, guid: 18c746be646358d4f8b40fea2699c75c, type: 2}
   - first:
@@ -54,6 +49,11 @@ ModelImporter:
       assembly: UnityEngine.CoreModule
       name: CG_Weapon_YellowLight
     second: {fileID: 2100000, guid: bf10b206701117f4e84016d1d1817afb, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Character01_Thief
+    second: {fileID: 2100000, guid: 07d50df90893400c9f5ca571a3e5d5e5, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0
@@ -187,6 +187,35 @@ ModelImporter:
       keepOriginalOrientation: 0
       keepOriginalPositionY: 1
       keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: Character01_Thief_Rig|Thief_Frustration
+      takeName: Character01_Thief_Rig|Thief_Frustration
+      internalID: -5397328404234533847
+      firstFrame: 0
+      lastFrame: 30
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
+      loopBlend: 0
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 1
       heightFromFeet: 0
       mirror: 0
       bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000

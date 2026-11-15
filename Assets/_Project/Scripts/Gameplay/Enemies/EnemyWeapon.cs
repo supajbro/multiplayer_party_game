@@ -85,6 +85,7 @@ namespace CouchGuys.Gameplay.Enemies
         private float m_reactionEndsAt;
         private int m_burstShotsRemaining;
         private bool m_rifleBurstActive;
+        private ThiefNavigator m_navigator;
 
         public EnemyWeaponType WeaponType => m_weaponType;
         public float PreferredRange => m_preferredRange;
@@ -94,6 +95,7 @@ namespace CouchGuys.Gameplay.Enemies
         private void Awake()
         {
             m_animationDriver = GetComponentInChildren<ThiefAnimationDriver>(true);
+            m_navigator = GetComponent<ThiefNavigator>();
             m_agent = GetComponent<NavMeshAgent>();
             m_audio = GetComponent<WeaponAudioEmitter>();
             if (m_audio == null) m_audio = gameObject.AddComponent<WeaponAudioEmitter>();
@@ -142,7 +144,12 @@ namespace CouchGuys.Gameplay.Enemies
         private void Update()
         {
             if (!IsServerInitialized) return;
-            if (IsRocketLauncher)
+            if (m_navigator != null && !m_navigator.CanAttack)
+            {
+                SetCombatTarget(null);
+                return;
+            }
+            if (IsRocketLauncher && (m_navigator == null || !m_navigator.IsDeparting))
             {
                 var health = GetComponent<ThiefHealth>();
                 if (health == null || !health.IsAlive || health.IsBeingKnockedBack)

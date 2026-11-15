@@ -43,7 +43,7 @@ namespace CouchGuys.Gameplay.Enemies
         private readonly Dictionary<int, float> m_deliverySpawnTimes = new();
         private int m_spawningDeliveryId;
         private int SpawningTierIndex => m_deliveryManager.TryGetDelivery(m_spawningDeliveryId, out var job) ? job.TierIndex : -1;
-        public void RemoveDeliveryEnemiesServer(int id)
+        public void RemoveDeliveryEnemiesServer(int id, bool departNaturally = false)
         {
             m_deliverySpawnTimes.Remove(id);
             for (int i = m_activeThieves.Count - 1; i >= 0; i--)
@@ -51,6 +51,11 @@ namespace CouchGuys.Gameplay.Enemies
                 var thief = m_activeThieves[i];
                 if (thief != null && thief.TryGetComponent(out ThiefSpawnMember member) && member.DeliveryId == id)
                 {
+                    if (departNaturally && thief.IsSpawned && thief.TryGetComponent(out ThiefNavigator navigator))
+                    {
+                        navigator.BeginDepartureServer();
+                        continue;
+                    }
                     m_activeThieves.RemoveAt(i);
                     if (thief.IsSpawned) InstanceFinder.ServerManager.Despawn(thief);
                 }

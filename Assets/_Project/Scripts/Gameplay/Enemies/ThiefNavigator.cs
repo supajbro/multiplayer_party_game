@@ -12,7 +12,7 @@ namespace CouchGuys.Gameplay.Enemies
     [RequireComponent(typeof(NavMeshAgent))]
     [RequireComponent(typeof(ThiefAudioEmitter))]
     [DisallowMultipleComponent]
-    public sealed class ThiefNavigator : NetworkBehaviour, ICouchCarrierServer
+    public sealed partial class ThiefNavigator : NetworkBehaviour, ICouchCarrierServer
     {
         [SerializeField] private ThiefSettings m_settings;
         [SerializeField] private NavMeshAgent m_agent;
@@ -94,7 +94,7 @@ namespace CouchGuys.Gameplay.Enemies
         private CouchCarryController m_collisionIgnoredCouch;
 
         NetworkObject ICouchCarrierServer.CarrierNetworkObject => NetworkObject;
-        bool ICouchCarrierServer.IsCarrierAvailable => m_grappler == null && IsSpawned &&
+        bool ICouchCarrierServer.IsCarrierAvailable => m_grappler == null && IsSpawned && !IsDeparting &&
             (m_weapon == null || !m_weapon.IsRocketLauncher) &&
             (m_health == null || m_health.IsAlive);
 
@@ -134,6 +134,7 @@ namespace CouchGuys.Gameplay.Enemies
                 Mathf.Min(100f, baseChance + variation));
             m_retaliationTarget = null;
             m_retaliationUntil = 0f;
+            ResetDepartureServer();
             m_alerting.Value = false;
             m_alertEncounterChecked = false;
             m_alertUntil = 0f;
@@ -230,6 +231,8 @@ namespace CouchGuys.Gameplay.Enemies
 
             if (m_health != null && !m_health.IsAlive) return;
 
+            if (UpdateDepartureServer()) return;
+
             if (m_grappler != null)
             {
                 UpdateGrapplerObjective();
@@ -325,6 +328,7 @@ namespace CouchGuys.Gameplay.Enemies
         // Called by server-side damage handling, once per damaging hit (not per pellet).
         internal void ReactToAttackServer(PlayerHealth attacker)
         {
+            if (IsDeparting) return;
             if (m_grappler != null || attacker == null || !attacker.IsEnemyTargetable ||
                 (m_health != null && !m_health.IsAlive) || Random.value * 100f >= m_retaliationChance)
                 return;

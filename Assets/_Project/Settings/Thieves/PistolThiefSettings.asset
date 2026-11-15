@@ -83,3 +83,10 @@ MonoBehaviour:
   Animation:
     MovingThreshold: 0.08
     SpeedDamping: 0.08
+  Departure:
+    ChaseDuration: 5
+    LostSightDuration: 1.25
+    FrustrationDuration: 1
+    RetreatDistance: 25
+    DespawnDistance: 35
+    RetreatSpeedMultiplier: 1.25

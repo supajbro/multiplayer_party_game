@@ -208,7 +208,7 @@ namespace CouchGuys.Gameplay.Delivery
                     else Despawn(runtime.Recipient.NetworkObject);
                 }
             }
-            GetComponent<CouchGuys.Gameplay.Enemies.EnemySpawnManager>()?.RemoveDeliveryEnemiesServer(id);
+            GetComponent<CouchGuys.Gameplay.Enemies.EnemySpawnManager>()?.RemoveDeliveryEnemiesServer(id, success);
             GetComponent<CouchGuys.Gameplay.Traffic.TrafficManager>()?.RemoveDeliveryRogueCarsServer(id);
             if (job.Couch != null && job.Couch.IsSpawned)
             {
