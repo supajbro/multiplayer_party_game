@@ -5,6 +5,8 @@ using FishNet.Managing;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 namespace CouchGuys.UI
 {
@@ -13,22 +15,30 @@ namespace CouchGuys.UI
     {
         private const string GameplaySceneName = "SampleScene";
 
-        [SerializeField] private Button m_soloButton;
-        [SerializeField] private Button m_multiplayerButton;
+        [SerializeField, InspectorName("Host Game Button")] private Button m_soloButton;
+        [SerializeField, InspectorName("Join Game Button")] private Button m_multiplayerButton;
         [SerializeField] private Button m_settingsButton;
-        [SerializeField] private Sprite m_backgroundSprite;
+        [SerializeField] private Button m_customiseButton;
+        [SerializeField] private GameObject m_settingsPanel;
+        [SerializeField] private Slider m_volumeSlider;
+        [SerializeField] private Button m_settingsBackButton;
+        [SerializeField] private MultiplayerMenuController m_multiplayerMenu;
 
         private bool m_launching;
-        private MultiplayerMenuController m_multiplayerMenu;
 
         private void Awake()
         {
-            InstallStaticBackground();
             GameLaunchContext.EnterMainMenu();
             SteamLobbyDebugInterface.IsVisible = false;
-            m_multiplayerMenu = GetComponent<MultiplayerMenuController>();
-            if (m_multiplayerMenu == null) m_multiplayerMenu = gameObject.AddComponent<MultiplayerMenuController>();
-            m_multiplayerMenu.InitialiseMainButtons(m_soloButton, m_multiplayerButton, m_settingsButton);
+            if (m_multiplayerMenu == null) m_multiplayerMenu = GetComponent<MultiplayerMenuController>();
+            m_multiplayerMenu?.InitialiseMainButtons(m_soloButton, m_multiplayerButton, m_customiseButton, m_settingsButton);
+            if (m_settingsPanel != null) m_settingsPanel.SetActive(false);
+            if (m_volumeSlider != null)
+            {
+                AudioListener.volume = PlayerPrefs.GetFloat("MainMenu.MasterVolume", 1f);
+                m_volumeSlider.SetValueWithoutNotify(AudioListener.volume);
+                m_volumeSlider.onValueChanged.AddListener(SetVolume);
+            }
             BindButtons();
         }
 
@@ -43,26 +53,37 @@ namespace CouchGuys.UI
             }
         }
 
-        private void InstallStaticBackground()
+        private void Update()
         {
-            GameObject decorativeNeighbourhood = GameObject.Find("Decorative Neighbourhood");
-            if (decorativeNeighbourhood != null) decorativeNeighbourhood.SetActive(false);
-            if (m_backgroundSprite == null) return;
-
-            Canvas canvas = FindFirstObjectByType<Canvas>();
-            if (canvas == null || canvas.transform.Find("Concept Background") != null) return;
-            GameObject background = new GameObject("Concept Background", typeof(RectTransform), typeof(Image));
-            background.transform.SetParent(canvas.transform, false);
-            background.transform.SetAsFirstSibling();
-            RectTransform rect = background.GetComponent<RectTransform>();
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = rect.offsetMax = Vector2.zero;
-            Image image = background.GetComponent<Image>();
-            image.sprite = m_backgroundSprite;
-            image.preserveAspect = true;
-            image.raycastTarget = false;
+            if (m_settingsPanel != null && m_settingsPanel.activeSelf &&
+                ((Keyboard.current?.escapeKey.wasPressedThisFrame ?? false) ||
+                 (Gamepad.current?.buttonEast.wasPressedThisFrame ?? false))) CloseSettings();
         }
+
+        public void OpenSettings()
+        {
+            if (m_settingsPanel == null) return;
+            SetButtonsInteractable(false);
+            m_settingsPanel.SetActive(true);
+            EventSystem.current?.SetSelectedGameObject(m_volumeSlider != null ? m_volumeSlider.gameObject : m_settingsBackButton?.gameObject);
+        }
+
+        public void CloseSettings()
+        {
+            m_settingsPanel?.SetActive(false);
+            SetButtonsInteractable(true);
+            EventSystem.current?.SetSelectedGameObject(m_settingsButton?.gameObject);
+            PlayerPrefs.Save();
+        }
+
+        public void SetVolume(float value)
+        {
+            AudioListener.volume = Mathf.Clamp01(value);
+            PlayerPrefs.SetFloat("MainMenu.MasterVolume", AudioListener.volume);
+        }
+
+        public void StartHost() => m_multiplayerMenu?.OpenHost();
+        public void JoinGame() => m_multiplayerMenu?.OpenJoin();
 
         public void Initialise(Button soloButton, Button multiplayerButton, Button settingsButton)
         {
@@ -75,21 +96,25 @@ namespace CouchGuys.UI
 
         private void BindButtons()
         {
-            m_soloButton?.onClick.AddListener(StartSolo);
-            m_multiplayerButton?.onClick.AddListener(StartMultiplayer);
-            // Settings is deliberately presented but unconnected for this milestone.
+            m_soloButton?.onClick.AddListener(StartHost);
+            m_multiplayerButton?.onClick.AddListener(JoinGame);
+            m_settingsButton?.onClick.AddListener(OpenSettings);
+            m_settingsBackButton?.onClick.AddListener(CloseSettings);
         }
 
         private void OnDestroy()
         {
             UnbindButtons();
+            if (m_volumeSlider != null) m_volumeSlider.onValueChanged.RemoveListener(SetVolume);
             SceneManager.sceneLoaded -= OnSoloSceneLoaded;
         }
 
         private void UnbindButtons()
         {
-            m_soloButton?.onClick.RemoveListener(StartSolo);
-            m_multiplayerButton?.onClick.RemoveListener(StartMultiplayer);
+            m_soloButton?.onClick.RemoveListener(StartHost);
+            m_multiplayerButton?.onClick.RemoveListener(JoinGame);
+            m_settingsButton?.onClick.RemoveListener(OpenSettings);
+            m_settingsBackButton?.onClick.RemoveListener(CloseSettings);
         }
 
         public void StartSolo()
@@ -111,7 +136,7 @@ namespace CouchGuys.UI
         public void StartMultiplayer()
         {
             SteamLobbyDebugInterface.IsVisible = false;
-            m_multiplayerMenu.Open(m_soloButton, m_multiplayerButton, m_settingsButton);
+            m_multiplayerMenu?.Open(m_soloButton, m_multiplayerButton, m_customiseButton, m_settingsButton);
         }
 
         private void OnSoloSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -181,6 +206,7 @@ namespace CouchGuys.UI
             if (m_soloButton != null) m_soloButton.interactable = interactable;
             if (m_multiplayerButton != null) m_multiplayerButton.interactable = interactable;
             if (m_settingsButton != null) m_settingsButton.interactable = interactable;
+            if (m_customiseButton != null) m_customiseButton.interactable = interactable;
         }
     }
 }

@@ -153,6 +153,24 @@ namespace CouchGuys.Tests.Editor
         }
 
         [Test]
+        public void DispatcherCannotSelectShopTab()
+        {
+            var npc = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(DispatcherMenuAuthoring.NpcPath));
+            var ui = Object.Instantiate(AssetDatabase.LoadAssetAtPath<DispatcherMenuUI>(DispatcherMenuAuthoring.MenuPath));
+            try
+            {
+                var controller = npc.GetComponent<DispatcherMenuController>();
+                Set(controller, "m_ui", ui);
+                ui.ShowCategory(0);
+                controller.SelectCategory(1);
+                Assert.That(ui.SelectedCategory, Is.Zero);
+                Assert.That(Get<GameObject>(ui, "m_deliveriesPanel").activeSelf, Is.True);
+                Assert.That(Get<GameObject>(ui, "m_shopPanel").activeSelf, Is.False);
+            }
+            finally { Object.DestroyImmediate(npc); Object.DestroyImmediate(ui.gameObject); }
+        }
+
+        [Test]
         public void TabPropertiesAffectOnlyThisInstanceAndFaceSlotAcrossAllLods()
         {
             var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(DispatcherMenuAuthoring.NpcPath);

@@ -12,76 +12,115 @@ namespace CouchGuys.Tests.Editor
 {
     public sealed class PlayerRingKnockbackTests
     {
-        private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-        private static void Set(object target,string name,object value)=>target.GetType().GetField(name,Flags).SetValue(target,value);
-        private static void Sync<T>(PlayerHealth health,string name,T value)=>
-            ((SyncVar<T>)typeof(PlayerHealth).GetField(name,Flags).GetValue(health)).Value=value;
-        private static void Step(PlayerHealth health,float time)=>typeof(PlayerHealth).GetMethod("SimulateRingKnockback",Flags).Invoke(health,new object[]{time});
-        private static void Start(PlayerHealth health)=>typeof(PlayerHealth).GetMethod("StartRingKnockback",Flags).Invoke(health,new object[]{Vector3.right*24f});
-        private static Vector3 ReturnPosition(PlayerHealth health)=>((SyncVar<Vector3>)typeof(PlayerHealth).GetField("m_ringReturnPosition",Flags).GetValue(health)).Value;
+        private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.NonPublic;
+        private const string PlayerPath = "Assets/_Project/Prefabs/Player.prefab";
 
-        [TestCase(false)]
-        [TestCase(true)]
-        public void RingSlidesIndependentlyAndKeepsRecoveryDestinationTogether(bool wallInWay)
+        private static void Set(object target, string field, object value) =>
+            target.GetType().GetField(field, Flags).SetValue(target, value);
+
+        private static void Sync<T>(PlayerHealth health, string field, T value) =>
+            ((SyncVar<T>)typeof(PlayerHealth).GetField(field, Flags).GetValue(health)).Value = value;
+
+        private static void Call(object target, string method) =>
+            target.GetType().GetMethod(method, Flags).Invoke(target, null);
+
+        [Test]
+        public void DownedRingFollowsCurrentNetworkRoot()
         {
-            Vector3 origin=new Vector3(24000,0,24000);
-            var root=new GameObject("Ring recoil test");root.transform.position=origin;
-            var health=root.AddComponent<PlayerHealth>();
-            var floor=GameObject.CreatePrimitive(PrimitiveType.Cube);floor.transform.position=origin+Vector3.down*.5f;
-            floor.transform.localScale=new Vector3(20,1,20);
-            var wall=GameObject.CreatePrimitive(PrimitiveType.Cube);wall.transform.position=origin+new Vector3(1,1.5f,0);
-            wall.transform.localScale=new Vector3(.1f,3,4);wall.SetActive(wallInWay);
+            var root = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPath));
             try
             {
-                Sync(health,"m_knockedDown",true);Sync(health,"m_ringAnchor",origin+Vector3.up*.2f);Sync(health,"m_ringReturnPosition",origin);
-                Set(health,"m_ringKnockbackMaxDistance",wallInWay ? 3f : .4f);
-                Physics.SyncTransforms();Start(health);
-                root.transform.position+=new Vector3(-10,12,0); // The launched player goes elsewhere.
-                Vector3 player=root.transform.position;
-                for(int i=0;i<100;i++)Step(health,.02f);
-                Vector3 moved=health.RingAnchor-(origin+Vector3.up*.2f);
-                Assert.That(moved.x,Is.GreaterThan(.05f));
-                Assert.That(moved.x,Is.LessThanOrEqualTo(wallInWay ? .56f : .405f));
-                Assert.That((ReturnPosition(health)-origin-moved).magnitude,Is.LessThan(.005f));
-                Assert.That(root.transform.position,Is.EqualTo(player),"Ring motion must not drag the player.");
-                Vector3 stopped=health.RingAnchor;Step(health,.5f);
-                Assert.That(health.RingAnchor,Is.EqualTo(stopped),"Ring should settle instead of sliding forever.");
-                Sync(health,"m_returningToRing",true);Start(health);Step(health,.2f);
-                Assert.That(health.RingAnchor,Is.EqualTo(stopped),"Recovery destination must remain still while the player returns.");
+                var health = root.GetComponent<PlayerHealth>();
+                var hover = root.GetComponent<RobotHoverVFX>();
+                Call(hover, "Awake");
+                Sync(health, "m_knockedDown", true);
+                Call(hover, "AnimateHover");
+                Vector3 offset = root.transform.InverseTransformPoint(hover.RingWorldPosition);
+
+                root.transform.SetPositionAndRotation(new Vector3(12f, 4f, -8f), Quaternion.Euler(0f, 110f, 0f));
+                // The falling body rotates independently of the movement root.
+                root.transform.Find("Visual").localRotation = Quaternion.Euler(78f, 0f, 0f);
+                Call(hover, "AnimateHover");
+                Assert.That(Vector3.Distance(hover.RingWorldPosition, root.transform.TransformPoint(offset)),
+                    Is.LessThan(0.001f));
+
+                root.transform.position += new Vector3(-5f, -2f, 3f);
+                Call(hover, "AnimateHover");
+                Assert.That(Vector3.Distance(hover.RingWorldPosition, root.transform.TransformPoint(offset)),
+                    Is.LessThan(0.001f));
             }
-            finally{Object.DestroyImmediate(root);Object.DestroyImmediate(floor);Object.DestroyImmediate(wall);}
+            finally { Object.DestroyImmediate(root); }
         }
 
         [Test]
-        public void UnsupportedRingStopsRatherThanMovingRecoveryIntoMidair()
+        public void RecoveryKeepsCurrentBodyPosition()
         {
-            var root=new GameObject("Unsupported ring recoil");root.transform.position=new Vector3(24000,20,24000);
+            var root = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPath));
             try
             {
-                var health=root.AddComponent<PlayerHealth>();
-                Sync(health,"m_knockedDown",true);Sync(health,"m_ringAnchor",root.transform.position+Vector3.up*.2f);
-                Sync(health,"m_ringReturnPosition",root.transform.position);
-                Vector3 anchor=health.RingAnchor;Start(health);Step(health,.2f);
-                Assert.That(health.RingAnchor,Is.EqualTo(anchor));
+                var health = root.GetComponent<PlayerHealth>();
+                Sync(health, "m_knockedDown", true);
+                Sync(health, "m_returningToRing", true);
+                Set(health, "m_localRingRecovery", true);
+                Set(health, "m_ringRecoveryDuration", 100f);
+                Vector3 current = new(12f, 4f, -8f);
+                root.transform.position = current;
+                Call(health, "LateUpdate");
+                Assert.That(root.transform.position, Is.EqualTo(current));
+                current += Vector3.right * 3f;
+                root.transform.position = current;
+                Call(health, "LateUpdate");
+                Assert.That(root.transform.position, Is.EqualTo(current));
             }
-            finally{Object.DestroyImmediate(root);}
+            finally { Object.DestroyImmediate(root); }
+        }
+
+        [Test]
+        public void SavedSmokeIsLoopingBoundedAndClearedOnDisable()
+        {
+            var root = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPath));
+            try
+            {
+                var health = root.GetComponent<PlayerHealth>();
+                var smoke = (ParticleSystem)typeof(PlayerHealth).GetField("m_downedSmoke", Flags).GetValue(health);
+                Assert.That(smoke, Is.Not.Null);
+                Assert.That(smoke.transform.IsChildOf(root.transform), Is.True);
+                Assert.That(smoke.main.loop, Is.True);
+                Assert.That(smoke.main.playOnAwake, Is.False);
+                Assert.That(smoke.main.simulationSpace, Is.EqualTo(ParticleSystemSimulationSpace.Local));
+                Assert.That(smoke.main.maxParticles, Is.LessThanOrEqualTo(32));
+                Assert.That(smoke.emission.rateOverTime.constant, Is.GreaterThan(0f));
+                Assert.That(smoke.GetComponent<ParticleSystemRenderer>().sharedMaterial, Is.Not.Null);
+                smoke.Play();
+                smoke.Emit(3);
+                Call(health, "OnDisable");
+                Assert.That(smoke.isPlaying, Is.False);
+                Assert.That(smoke.particleCount, Is.Zero);
+            }
+            finally { Object.DestroyImmediate(root); }
         }
 
         [MenuItem("Couch Guys/Player/Test Ring Knockback %#&k")]
         public static void Run()
         {
-            if(EditorApplication.isPlayingOrWillChangePlaymode)throw new InvalidOperationException("Run the ring checks outside Play mode.");
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                throw new InvalidOperationException("Run the downed-player checks outside Play mode.");
             Directory.CreateDirectory("Temp/PlayerRingKnockback");
             try
             {
-                var tests=new PlayerRingKnockbackTests();
-                tests.RingSlidesIndependentlyAndKeepsRecoveryDestinationTogether(false);
-                tests.RingSlidesIndependentlyAndKeepsRecoveryDestinationTogether(true);
-                tests.UnsupportedRingStopsRatherThanMovingRecoveryIntoMidair();
-                File.WriteAllText("Temp/PlayerRingKnockback/results.txt","PASS: independent ring recoil; matching recovery destination; distance limit and damping; wall stop; no movement over unsupported ground or during player return.\n");
-                Debug.Log("Player ring knockback checks PASS.");
+                var tests = new PlayerRingKnockbackTests();
+                tests.DownedRingFollowsCurrentNetworkRoot();
+                tests.RecoveryKeepsCurrentBodyPosition();
+                tests.SavedSmokeIsLoopingBoundedAndClearedOnDisable();
+                File.WriteAllText("Temp/PlayerRingKnockback/results.txt",
+                    "PASS: downed ring follows moved and rotated root; recovery stays at current body; saved smoke loops locally, has bounded particles and clears on disable.\n");
+                Debug.Log("Downed-player checks PASS.");
             }
-            catch(Exception error){File.WriteAllText("Temp/PlayerRingKnockback/results.txt","FAIL: "+error);throw;}
+            catch (Exception error)
+            {
+                File.WriteAllText("Temp/PlayerRingKnockback/results.txt", "FAIL: " + error);
+                throw;
+            }
         }
     }
 }

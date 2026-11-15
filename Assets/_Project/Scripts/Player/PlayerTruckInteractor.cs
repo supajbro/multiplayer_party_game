@@ -107,7 +107,7 @@ namespace CouchGuys.Player
                         RequestHornServerRpc();
                     }
                 }
-                else if (current.IsHoverTruck && m_playerCamera != null && Time.unscaledTime >= m_nextInputSendTime)
+                else if (current.HasTurretSeat(m_currentSeatIndex.Value) && m_playerCamera != null && Time.unscaledTime >= m_nextInputSendTime)
                 {
                     m_nextInputSendTime = Time.unscaledTime + .05f;
                     Ray aim = m_playerCamera.ViewportPointToRay(new Vector3(.5f, .5f));
@@ -165,14 +165,14 @@ namespace CouchGuys.Player
             if (truck.IsHoverTruck)
             {
                 var carried = GetComponent<PlayerCouchCarrier>();
-                return carried != null && carried.IsCarrying ? "Press E to Load Nearest Free Dock" :
+                return carried != null && carried.IsCarrying ? "Bring couch close to a free dock to load automatically" :
                     truck.LoadedCouchCount > 0 ? "Press E to Unload Nearest Couch" : "Magnetic Docks Empty";
             }
             if (!truck.RearDoorsOpen) return "Press E to Open Doors";
             PlayerCouchCarrier carrier = GetComponent<PlayerCouchCarrier>();
             CouchGuys.Gameplay.Couch.CouchCarryController couch = carrier != null ? carrier.CarriedCouch : null;
             if (couch != null && truck.IsCouchInLoadingRange(couch))
-                return "Press E to Load Couch";
+                return "Hold couch near the truck to load automatically";
             if (couch == null && truck.LoadedCouchCount > 0) return "Press E to Unload Couch";
             return "Press E to Close Doors";
         }
@@ -371,7 +371,7 @@ namespace CouchGuys.Player
             m_input?.SetGameplaySuppressed(seated);
             if (seated)
             {
-                bool turretPassenger = truck.IsHoverTruck && m_currentSeatIndex.Value > 0;
+                bool turretPassenger = truck.HasTurretSeat(m_currentSeatIndex.Value);
                 var hover = truck.HoverSettings;
                 m_cameraController?.FollowVehicle(turretPassenger ? truck.GetSeatAnchor(m_currentSeatIndex.Value) : truck.CameraTarget,
                     turretPassenger ? hover.PassengerCameraDistance : truck.Settings.CameraDistance,

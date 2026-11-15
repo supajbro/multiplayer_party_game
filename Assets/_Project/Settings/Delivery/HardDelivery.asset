@@ -17,6 +17,7 @@ MonoBehaviour:
   m_description: Haul the couch to a mansion at the far end of the neighbourhood.
   m_icon: {fileID: 0}
   m_colour: {r: 0.82, g: 0.23, b: 0.27, a: 1}
+  m_couchVisualPrefabs: []
   m_purchasePrice: 2000
   m_reward: 14000
   m_baseDeliveryTime: 75
@@ -26,8 +27,8 @@ MonoBehaviour:
   m_uphillDistanceMultiplier: 2
   m_minSpawnInterval: 2
   m_maxSpawnInterval: 7.5
-  m_minThievesPerWave: 4
-  m_maxThievesPerWave: 8
+  m_minThievesPerWave: 3
+  m_maxThievesPerWave: 4
   m_grapplerThiefPrefab: {fileID: 3333041713970159889, guid: 4fb9ce0bcb16c2c48825f5fe3a94da76, type: 3}
   m_grapplerThiefChance: 0.25
   m_maxActiveGrapplerThieves: 2

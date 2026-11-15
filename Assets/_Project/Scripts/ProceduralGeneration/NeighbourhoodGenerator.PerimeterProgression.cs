@@ -19,6 +19,26 @@ namespace CouchGuys.ProceduralGeneration
 
         public float SummitTunnelExclusionHalfWidth => GetSummitTunnelExclusionHalfWidth();
 
+        private void CreateUphillExitRestriction()
+        {
+            if (!HasSummitExit) return;
+            var configuration = UphillExitRestrictionConfiguration.Load();
+            if (configuration == null || configuration.Prefab == null)
+            {
+                Debug.LogError("The uphill exit restriction prefab is missing.", this);
+                return;
+            }
+            int baseY = m_gridHeight * (m_blockHeight + 1);
+            Vector3 start = GridToWorld(LocalToGrid(0, baseY));
+            Vector3 summit = SummitExitPortal.WorldPosition;
+            start += Vector3.ProjectOnPlane(summit - start, Vector3.up).normalized * (m_roadTileSize * .5f);
+            var restriction = Instantiate(configuration.Prefab, m_generatedRoot);
+            restriction.name = "UphillExitRestriction";
+            restriction.Initialise(this, start, summit,
+                m_terrainSettings.RoadHalfWidth + Mathf.Max(m_terrainSettings.RoadShoulderWidth, m_landmarkRoads.EmbankmentBlendWidth),
+                m_terrainSettings.RoadHalfWidth);
+        }
+
         public TrafficRoadPortal SummitExitPortal
         {
             get

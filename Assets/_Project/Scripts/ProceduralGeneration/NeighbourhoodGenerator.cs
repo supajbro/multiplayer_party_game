@@ -701,6 +701,7 @@ namespace CouchGuys.ProceduralGeneration
         [ContextMenu("Clear Generated Neighbourhood")]
         public void Clear()
         {
+            UphillExitRestriction.RemoveGenerator(this);
             GeneratedNeighbourhoodRoot[] existingRoots =
                 GetComponentsInChildren<GeneratedNeighbourhoodRoot>(true);
             int ownedRootCount = 0;
@@ -1168,6 +1169,7 @@ namespace CouchGuys.ProceduralGeneration
 
         private void CreateNeighbourhoodBorder()
         {
+            CreateUphillExitRestriction();
             Rect playableBounds = CalculatePlayableLocalBounds();
             PlayableWorldBounds = CalculateWorldBounds(playableBounds);
             if (!m_borderSettings.Enabled)

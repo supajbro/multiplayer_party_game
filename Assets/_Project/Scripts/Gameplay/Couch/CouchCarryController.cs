@@ -44,6 +44,14 @@ namespace CouchGuys.Gameplay.Couch
         [SerializeField] private CouchCarrySettings m_settings;
         [SerializeField] private SledSettings m_sledSettings;
 
+        [Header("Automatic loading")]
+        [SerializeField, Min(0f)] private float m_autoLoadingDelay = .25f;
+        [SerializeField, Min(0f)] private float m_autoLoadingCooldown = 1.5f;
+        private NetworkBehaviour m_autoLoadingTarget;
+        private float m_autoLoadingReadyTime;
+        private float m_nextAutoLoadingScan;
+        private float m_autoLoadingBlockedUntil;
+
         // The designer controls live in CouchCarrySettings. The remaining
         // physical response is deliberately kept internal so each setting has one job.
         private const float CouchWeight = 35f;
@@ -384,6 +392,7 @@ namespace CouchGuys.Gameplay.Couch
                 return;
             }
             if (IsServerInitialized) UpdateCargoCollisionRecovery();
+            if (IsServerInitialized) UpdateAutomaticLoadingServer();
             if (!IsServerInitialized || IsLoaded || m_cargoTransition != null || m_rigidbody == null || m_rigidbody.isKinematic)
             {
                 return;
@@ -783,6 +792,52 @@ namespace CouchGuys.Gameplay.Couch
             occupant.ClearCarriedCouchServer(this, pointIndex);
         }
 
+        internal bool IsCarrierColliderServer(Collider hit)
+        {
+            foreach (var carrier in m_serverOccupants)
+                if (carrier != null && carrier.CarrierNetworkObject != null &&
+                    hit.transform.IsChildOf(carrier.CarrierNetworkObject.transform)) return true;
+            return false;
+        }
+
+        private void UpdateAutomaticLoadingServer()
+        {
+            if (!IsSpawned || IsSled || IsLoaded || !IsPickupAvailable || IsCargoTransitioning ||
+                !HasHumanCarrierServer() || Time.time < m_autoLoadingBlockedUntil)
+            {
+                m_autoLoadingTarget = null;
+                return;
+            }
+            if (Time.time < m_nextAutoLoadingScan) return;
+            m_nextAutoLoadingScan = Time.time + .1f;
+
+            NetworkBehaviour target = null;
+            foreach (var truck in TruckController.ActiveTrucks)
+                if (truck.TryAutoLoadCouchServer(this, false)) { target = truck; break; }
+            if (target == null)
+                foreach (var sled in SledController.ActiveSleds)
+                    if (sled.TryAutoLoadCouchServer(this, false)) { target = sled; break; }
+            if (target == null)
+                foreach (var board in MagneticHoverboardController.ActiveBoards)
+                    if (board.TryAutoLoadCouchServer(this, false)) { target = board; break; }
+
+            if (target != m_autoLoadingTarget)
+            {
+                m_autoLoadingTarget = target;
+                m_autoLoadingReadyTime = Time.time + m_autoLoadingDelay;
+            }
+            if (target == null || Time.time < m_autoLoadingReadyTime) return;
+            // Revalidate capacity and range at commit time. Only the server changes
+            // attachment and releases grips, using the existing replicated state.
+            switch (target)
+            {
+                case TruckController truck: truck.TryAutoLoadCouchServer(this, true); break;
+                case SledController sled: sled.TryAutoLoadCouchServer(this, true); break;
+                case MagneticHoverboardController board: board.TryAutoLoadCouchServer(this, true); break;
+            }
+            m_autoLoadingTarget = null;
+        }
+
         internal void ReleaseAllOccupantsServer()
         {
             for (int index = 0; index < MaximumCarryPoints; index++)
@@ -817,6 +872,7 @@ namespace CouchGuys.Gameplay.Couch
         internal void UnloadFromTruckServer(Vector3 position, Quaternion rotation, float duration)
         {
             if (!IsServerInitialized || !IsLoaded) return;
+            m_autoLoadingBlockedUntil = Time.time + duration + m_autoLoadingCooldown;
             AnimateUnloadObserversRpc(position, rotation, Mathf.Max(0.05f, duration));
             m_loadedTruck.Value = null;
             m_loadedCargoSlot.Value = -1;
@@ -1017,8 +1073,9 @@ namespace CouchGuys.Gameplay.Couch
         [Server]
         internal bool MountOnSledServer(SledController sled, Vector3 localPosition)
         {
-            if (!IsServerInitialized || IsSled || IsLoaded || !IsPickupAvailable || ActiveCarrierCount > 0 ||
+            if (!IsServerInitialized || IsSled || IsLoaded || !IsPickupAvailable ||
                 sled == null || sled.CouchAnchor == null || !sled.HasCargoSpace) return false;
+            ReleaseAllOccupantsServer();
             m_sledMountPosition.Value = localPosition;
             m_mountedSled.Value = sled.NetworkObject;
             ApplyLoadedStateImmediately();
@@ -1030,15 +1087,7 @@ namespace CouchGuys.Gameplay.Couch
         {
             if (!IsServerInitialized || !IsSpawned || IsSled || IsLoaded || !IsPickupAvailable ||
                 board == null || board.Couch != null || board.CouchAnchor == null) return false;
-            if(ActiveCarrierCount > 0)
-            {
-                if(loader == null || ActiveCarrierCount != 1 || loader.CarriedCouch != this) return false;
-                bool ownsGrip=false;
-                for(int i=0;i<MaximumCarryPoints;i++) if(m_serverOccupants[i] == loader)ownsGrip=true;
-                if(!ownsGrip)return false;
-                // The server validates the destination first; failed loading keeps the grip.
-                ReleaseAllOccupantsServer();
-            }
+            ReleaseAllOccupantsServer();
             m_hoverboardReleasePending = false;
             m_hoverboardTransition = 0f;
             m_mountedHoverboard.Value = board.NetworkObject;
@@ -1057,6 +1106,7 @@ namespace CouchGuys.Gameplay.Couch
         internal void ReleaseHoverboardServer(Vector3 position, Quaternion rotation)
         {
             if (!IsServerInitialized || m_mountedHoverboard.Value == null) return;
+            m_autoLoadingBlockedUntil = Time.time + m_autoLoadingCooldown;
             MagneticHoverboardController board = m_mountedHoverboard.Value.GetComponent<MagneticHoverboardController>();
             m_mountedHoverboard.Value = null;
             m_hoverboardTransition = 1f;
@@ -1079,6 +1129,7 @@ namespace CouchGuys.Gameplay.Couch
         internal void UnmountFromSledServer()
         {
             if (!IsServerInitialized || m_mountedSled.Value == null) return;
+            m_autoLoadingBlockedUntil = Time.time + m_autoLoadingCooldown;
             SledController sled = m_mountedSled.Value.GetComponent<SledController>();
             m_mountedSled.Value = null;
             ApplyLoadedStateImmediately();

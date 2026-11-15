@@ -4,6 +4,7 @@ using System.Globalization;
 using CouchGuys.Gameplay.Shop;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CouchGuys.UI
 {
@@ -16,9 +17,16 @@ namespace CouchGuys.UI
             [SerializeField] internal RectTransform m_rect;
             [SerializeField] internal TMP_Text m_name;
             [SerializeField] internal TMP_Text m_price;
+            [SerializeField] internal Image m_image;
 
             internal void Show(ShopItemDefinition item)
             {
+                if (m_image != null)
+                {
+                    m_image.sprite = item.Icon;
+                    m_image.preserveAspect = true;
+                    m_image.enabled = m_image.sprite != null;
+                }
                 m_name.text = item.DisplayName;
                 m_price.text = "$" + item.Price.ToString("N0", CultureInfo.InvariantCulture);
             }

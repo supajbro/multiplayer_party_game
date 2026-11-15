@@ -51,6 +51,9 @@ namespace CouchGuys.Gameplay.Vehicles
         public bool IsHoverTruck => m_hoverSettings != null && !IsGetawayTruck;
         public HoverTruckSettings HoverSettings => m_hoverSettings;
 
+        public bool HasTurretSeat(int seatIndex) =>
+            m_turretSettings != null && TurretReference(m_turretMuzzles, seatIndex) != null;
+
         public Transform GetTurretLeftGrip(int seatIndex) => TurretReference(m_turretLeftGrips, seatIndex);
         public Transform GetTurretRightGrip(int seatIndex) => TurretReference(m_turretRightGrips, seatIndex);
         public Transform GetTurretAuraTarget(int seatIndex) => TurretReference(m_turretAuraTargets, seatIndex);

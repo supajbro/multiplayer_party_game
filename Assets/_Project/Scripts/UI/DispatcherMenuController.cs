@@ -171,7 +171,7 @@ namespace CouchGuys.UI
             if (!(EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()))
             {
                 if (m_deliveriesCollider != null && m_deliveriesCollider.Raycast(ray, out _, 10f)) hovered = 0;
-                else if (m_shopCollider != null && m_shopCollider.Raycast(ray, out _, 10f)) hovered = 1;
+                else if (m_shopOnly && m_shopCollider != null && m_shopCollider.Raycast(ray, out _, 10f)) hovered = 1;
             }
             if (m_hovered != hovered) { m_hovered = hovered; UpdateButtonColors(); }
             if (hovered >= 0 && (Mouse.current?.leftButton.wasPressedThisFrame ?? false))
@@ -188,7 +188,7 @@ namespace CouchGuys.UI
         }
         public void SelectCategory(int category)
         {
-            if (m_ui == null || IsClosing || m_ui.IsConfirmingPurchase || (m_shopOnly && category != 1)) return;
+            if (m_ui == null || IsClosing || m_ui.IsConfirmingPurchase || category != (m_shopOnly ? 1 : 0)) return;
             m_ui.ShowCategory(category);
             UpdateButtonColors();
         }

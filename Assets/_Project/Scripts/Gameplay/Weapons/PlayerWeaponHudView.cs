@@ -27,6 +27,8 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] public PlayerStatusBar m_staminaBar;
         [SerializeField] public Image m_timerFill;
         [SerializeField] public GameObject m_timerPanel;
+        [SerializeField] public CouchGuys.Gameplay.Shop.ShopCatalogue m_itemCatalogue;
+        [SerializeField] public Image[] m_slotIcons;
         [SerializeField] public Image[] m_slotBackgrounds;
         [SerializeField] public Outline[] m_slotOutlines;
         [SerializeField] public GameObject m_ammoPanel;

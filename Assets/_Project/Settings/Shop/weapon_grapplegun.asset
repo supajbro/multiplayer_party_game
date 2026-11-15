@@ -17,5 +17,6 @@ MonoBehaviour:
   m_description: Hold fire to pull players, thieves, and couches toward you.
   m_price: 2000
   m_category: 1
-  m_icon: {fileID: 0}
+  m_icon: {fileID: 21300000, guid: 73b0e6aebf694044286f55b98dfe2ece, type: 3}
+  m_slotIcon: {fileID: 21300000, guid: 98ccaeadbc4d2db4097d08702a48debd, type: 3}
   m_purchaseBehaviour: {fileID: 11400000, guid: 2fe01804002c48ae884ef13dd209989d, type: 2}

@@ -11,6 +11,14 @@ namespace CouchGuys.Gameplay.Shop
 
         public IReadOnlyList<ShopItemDefinition> Items => m_items;
 
+        public ShopItemDefinition FindInventoryItem(int inventoryId)
+        {
+            if (inventoryId < 0 || m_items == null) return null;
+            foreach (var item in m_items)
+                if (item != null && item.InventoryId == inventoryId) return item;
+            return null;
+        }
+
         public ShopItemDefinition Find(string itemId)
         {
             if (string.IsNullOrWhiteSpace(itemId) || m_items == null) return null;

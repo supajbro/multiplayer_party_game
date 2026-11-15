@@ -9,6 +9,7 @@ namespace CouchGuys.Gameplay.Shop
     public sealed class WeaponPurchaseBehaviour : ShopPurchaseBehaviour
     {
         [SerializeField] private PlayerWeaponType m_weaponType;
+        public PlayerWeaponType WeaponType => m_weaponType;
         public override bool CanPurchase(DeliveryManager manager, DeliveryNPC npc, PlayerCouchCarrier player,
             out string unavailableReason)
         {

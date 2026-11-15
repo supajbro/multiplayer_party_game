@@ -21,6 +21,7 @@ namespace CouchGuys.Gameplay.Shop
         [SerializeField, Min(0)] private int m_price;
         [SerializeField] private ShopItemCategory m_category;
         [SerializeField] private Sprite m_icon;
+        [SerializeField] private Sprite m_slotIcon;
         [SerializeField] private ShopPurchaseBehaviour m_purchaseBehaviour;
 
         public string ItemId => m_itemId;
@@ -29,7 +30,17 @@ namespace CouchGuys.Gameplay.Shop
         private CouchGuys.Gameplay.Healing.HealingItemSettings HealingSettings => m_purchaseBehaviour as CouchGuys.Gameplay.Healing.HealingItemSettings;
         public int Price => HealingSettings != null ? HealingSettings.PurchasePrice : m_price;
         public ShopItemCategory Category => m_category;
-        public Sprite Icon => HealingSettings != null ? HealingSettings.Icon : m_icon;
+        public Sprite Icon => m_icon != null ? m_icon : HealingSettings != null ? HealingSettings.Icon : null;
+        public Sprite SlotIcon => m_slotIcon;
+        public int InventoryId
+        {
+            get
+            {
+                if (m_purchaseBehaviour is WeaponPurchaseBehaviour weapon) return (int)weapon.WeaponType;
+                if (HealingSettings == null) return -1;
+                return CouchGuys.Gameplay.Healing.HealingItemCatalogue.Load()?.IdOf(HealingSettings) ?? -1;
+            }
+        }
         public ShopPurchaseBehaviour PurchaseBehaviour => m_purchaseBehaviour;
 
         private void OnValidate()

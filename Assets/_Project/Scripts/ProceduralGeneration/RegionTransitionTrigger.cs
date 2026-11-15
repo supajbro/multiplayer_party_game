@@ -39,6 +39,7 @@ namespace CouchGuys.ProceduralGeneration
 
             TruckController truck = other.GetComponentInParent<TruckController>();
             if (truck == null || !truck.IsServerInitialized || truck.IsDestroyed ||
+                !UphillExitRestriction.AllowsExitVehicle(truck) ||
                 truck.Driver == null || !m_acceptedVehicles.Add(truck.GetInstanceID()))
             {
                 return;

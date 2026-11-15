@@ -151,8 +151,8 @@ namespace CouchGuys.Editor
             Check(manager.TryPurchaseShopItemServer(carrier, weapon.ItemId, 1), "Weapon purchase succeeds through existing authoritative fulfilment");
             Check(manager.CurrentCurrency == funds - weapon.Price, "Purchase charges the current catalogue price exactly once");
             Check(!manager.TryPurchaseShopItemServer(carrier, weapon.ItemId, 1) && manager.CurrentCurrency == funds - weapon.Price, "Duplicate purchase request cannot charge again");
-            var other = manager.ShopCatalogue.Items.First(i => i != null && i.Category != ShopItemCategory.Weapon);
-            Check(!manager.TryPurchaseShopItemServer(carrier, other.ItemId, 2), "Terminal rejects non-weapon purchases");
+            var other = manager.ShopCatalogue.Items.First(i => i != null && !DeliveryManager.IsShopItemAllowed(i, true));
+            Check(!manager.TryPurchaseShopItemServer(carrier, other.ItemId, 2), "Terminal rejects purchases outside weapons and healing items");
             Check(!manager.TryPurchaseDeliveryServer(carrier, 0), "Terminal cannot start dispatcher deliveries");
             terminal.Menu.CloseLocal(true, true);
             yield return null;

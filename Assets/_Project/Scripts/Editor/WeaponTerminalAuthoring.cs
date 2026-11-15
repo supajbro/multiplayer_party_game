@@ -242,8 +242,12 @@ namespace CouchGuys.Editor
             if (!data.FindProperty("m_shopOnly").boolValue) throw new Exception("Terminal must open shop only");
             var catalogue = AssetDatabase.LoadAssetAtPath<ShopCatalogue>(ShopAssetBuilder.CataloguePath);
             foreach (var item in catalogue.Items.Where(i => i != null))
-                if (CouchGuys.Gameplay.Delivery.DeliveryManager.IsShopItemAllowed(item, true) ==
+            {
+                bool weaponOrHealing = item.Category == ShopItemCategory.Weapon ||
+                    item.PurchaseBehaviour is CouchGuys.Gameplay.Healing.HealingItemSettings;
+                if (CouchGuys.Gameplay.Delivery.DeliveryManager.IsShopItemAllowed(item, true) != weaponOrHealing ||
                     CouchGuys.Gameplay.Delivery.DeliveryManager.IsShopItemAllowed(item, false)) throw new Exception("Shop filtering failed");
+            }
             var depot = AssetDatabase.LoadAssetAtPath<GameObject>(Depot02PrefabBuilder.PrefabPath);
             if (depot.GetComponentsInChildren<WeaponShopTerminal>(true).Length != 1) throw new Exception("Expected exactly one depot terminal");
             var placedTerminal = depot.GetComponentInChildren<WeaponShopTerminal>(true);
@@ -278,7 +282,7 @@ namespace CouchGuys.Editor
                 ui.ConfigureCamera(camera);
                 var catalogue = AssetDatabase.LoadAssetAtPath<ShopCatalogue>(ShopAssetBuilder.CataloguePath);
                 var category = instance.GetComponent<WeaponShopTerminal>().Category;
-                var options = catalogue.Items.Where(i => i != null && i.Category == category)
+                var options = catalogue.Items.Where(i => CouchGuys.Gameplay.Delivery.DeliveryManager.IsShopItemAllowed(i, true, category))
                     .Select(i => new DialogueShopOption(i.DisplayName, i.Description, "$" + i.Price.ToString("N0"), "", Color.cyan, true, "", () => { }, i.Icon,
                         category == ShopItemCategory.Vehicle ? "Vehicles" : "Weapons")).ToArray();
                 ui.Bind(new[] { new DialogueShopCategory("Deliveries", Array.Empty<DialogueShopOption>()), new DialogueShopCategory("Shop", options) }, 10000, category.ToString().ToUpperInvariant() + " SHOP | E / ESC to return");

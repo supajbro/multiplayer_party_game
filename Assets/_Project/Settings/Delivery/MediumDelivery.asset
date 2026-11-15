@@ -17,6 +17,7 @@ MonoBehaviour:
   m_description: A longer route through the middle streets and rolling hills.
   m_icon: {fileID: 0}
   m_colour: {r: 0.96, g: 0.62, b: 0.16, a: 1}
+  m_couchVisualPrefabs: []
   m_purchasePrice: 500
   m_reward: 5500
   m_baseDeliveryTime: 55
@@ -25,17 +26,17 @@ MonoBehaviour:
   m_maximumDeliveryTime: 450
   m_uphillDistanceMultiplier: 2
   m_minSpawnInterval: 2
-  m_maxSpawnInterval: 7.5
+  m_maxSpawnInterval: 10
   m_minThievesPerWave: 2
-  m_maxThievesPerWave: 5
+  m_maxThievesPerWave: 4
   m_grapplerThiefPrefab: {fileID: 3333041713970159889, guid: 4fb9ce0bcb16c2c48825f5fe3a94da76, type: 3}
   m_grapplerThiefChance: 0.15
   m_maxActiveGrapplerThieves: 1
   m_rocketThiefPrefab: {fileID: 0}
   m_rocketThiefChance: 0.2
   m_maxActiveRocketThieves: 2
-  m_rogueCarSettings: {fileID: 0}
-  m_rogueCarPrefab: {fileID: 0}
+  m_rogueCarSettings: {fileID: 11400000, guid: 164a87204ac13f44997fa358a8fdbc1a, type: 2}
+  m_rogueCarPrefab: {fileID: 4087385694241014534, guid: e8f0471caf8f46e6a9947cb30711b277, type: 3}
   m_minimumRouteDistance: 80
   m_maximumRouteDistance: 260
   m_minimumProgressionZone: 2

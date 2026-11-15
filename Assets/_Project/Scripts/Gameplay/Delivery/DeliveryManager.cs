@@ -295,7 +295,9 @@ namespace CouchGuys.Gameplay.Delivery
 
         public static bool IsShopItemAllowed(ShopItemDefinition item, bool dedicatedTerminal,
             ShopItemCategory category = ShopItemCategory.Weapon) =>
-            item != null && (dedicatedTerminal ? item.Category == category : item.Category != ShopItemCategory.Weapon);
+            item != null && dedicatedTerminal &&
+            (item.Category == category || (category == ShopItemCategory.Weapon &&
+                item.PurchaseBehaviour is CouchGuys.Gameplay.Healing.HealingItemSettings));
 
         [Server]
         public bool TryBeginWeaponTerminalServer(WeaponShopTerminal terminal, PlayerCouchCarrier player)
@@ -452,7 +454,8 @@ namespace CouchGuys.Gameplay.Delivery
             NetworkObject vehiclePrefab,
             DeliveryNPC npc,
             out string failureReason,
-            PlayerCouchCarrier player = null)
+            PlayerCouchCarrier player = null,
+            Vector3 spawnClearanceSize = default)
         {
             if (vehiclePrefab == null)
             {
@@ -460,7 +463,7 @@ namespace CouchGuys.Gameplay.Delivery
                 return false;
             }
 
-            bool found = TryFindVehicleSpawnPoseForPlayer(npc, player, out _, out _);
+            bool found = TryFindVehicleSpawnPoseForPlayer(npc, player, out _, out _, spawnClearanceSize);
             failureReason = found ? string.Empty : "No clear vehicle spawn location nearby";
             return found;
         }
@@ -470,9 +473,10 @@ namespace CouchGuys.Gameplay.Delivery
             NetworkObject vehiclePrefab,
             DeliveryNPC npc,
             out string failureReason,
-            PlayerCouchCarrier player = null)
+            PlayerCouchCarrier player = null,
+            Vector3 spawnClearanceSize = default)
         {
-            if (vehiclePrefab == null || !TryFindVehicleSpawnPoseForPlayer(npc, player, out Vector3 position, out Quaternion rotation))
+            if (vehiclePrefab == null || !TryFindVehicleSpawnPoseForPlayer(npc, player, out Vector3 position, out Quaternion rotation, spawnClearanceSize))
             {
                 failureReason = "No clear vehicle spawn location nearby";
                 return false;
@@ -497,7 +501,7 @@ namespace CouchGuys.Gameplay.Delivery
             out Quaternion rotation) => TryFindVehicleSpawnPoseForPlayer(npc, null, out position, out rotation);
 
         private bool TryFindVehicleSpawnPoseForPlayer(DeliveryNPC npc, PlayerCouchCarrier player,
-            out Vector3 position, out Quaternion rotation)
+            out Vector3 position, out Quaternion rotation, Vector3 spawnClearanceSize = default)
         {
             position = default;
             rotation = default;
@@ -517,7 +521,7 @@ namespace CouchGuys.Gameplay.Delivery
                     Quaternion depotHeading = m_depot.VehicleArrival != null
                         ? m_depot.VehicleArrival.rotation : marker.rotation;
                     if (TryValidateVehicleSpawnPose(marker.position, depotHeading, source,
-                            out position, out rotation))
+                            out position, out rotation, spawnClearanceSize))
                         return true;
                 }
                 return false;
@@ -541,7 +545,7 @@ namespace CouchGuys.Gameplay.Delivery
                 }
 
                 if (TryValidateVehicleSpawnPose(primary + offset, heading, source,
-                        out position, out rotation)) return true;
+                        out position, out rotation, spawnClearanceSize)) return true;
             }
 
             return false;
@@ -549,7 +553,7 @@ namespace CouchGuys.Gameplay.Delivery
 
         private bool TryValidateVehicleSpawnPose(Vector3 markerPosition,
             Quaternion markerRotation, Transform shopSource, out Vector3 position,
-            out Quaternion rotation)
+            out Quaternion rotation, Vector3 spawnClearanceSize = default)
         {
             position = default;
             rotation = default;
@@ -561,7 +565,8 @@ namespace CouchGuys.Gameplay.Delivery
             Quaternion heading = Quaternion.Euler(0f, markerRotation.eulerAngles.y, 0f);
             Quaternion candidateRotation = Quaternion.FromToRotation(Vector3.up, ground.normal) * heading;
             Vector3 candidatePosition = ground.point + ground.normal * m_vehicleGroundOffset;
-            Vector3 halfExtents = Vector3.Max(m_vehicleClearanceSize * 0.5f, Vector3.one * 0.1f);
+            Vector3 clearanceSize = Vector3.Max(m_vehicleClearanceSize, spawnClearanceSize);
+            Vector3 halfExtents = Vector3.Max(clearanceSize * 0.5f, Vector3.one * 0.1f);
             Vector3 centre = candidatePosition + candidateRotation * (Vector3.up * halfExtents.y);
             int hitCount = Physics.OverlapBoxNonAlloc(centre,
                 new Vector3(halfExtents.x, Mathf.Max(0.05f, halfExtents.y - 0.08f), halfExtents.z),

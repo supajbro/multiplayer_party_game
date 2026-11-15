@@ -10,6 +10,8 @@ namespace CouchGuys.Gameplay.Shop
     public sealed class VehiclePurchaseBehaviour : ShopPurchaseBehaviour
     {
         [SerializeField] private NetworkObject m_vehiclePrefab;
+        [SerializeField, Tooltip("Minimum clear space for this vehicle. Zero uses the shop's default clearance.")]
+        private Vector3 m_spawnClearanceSize;
 
         public NetworkObject VehiclePrefab => m_vehiclePrefab;
 
@@ -26,7 +28,7 @@ namespace CouchGuys.Gameplay.Shop
                 return false;
             }
 
-            if (!manager.CanSpawnPurchasedVehicleServer(m_vehiclePrefab, npc, out unavailableReason, player))
+            if (!manager.CanSpawnPurchasedVehicleServer(m_vehiclePrefab, npc, out unavailableReason, player, m_spawnClearanceSize))
                 return false;
 
             unavailableReason = string.Empty;
@@ -38,6 +40,6 @@ namespace CouchGuys.Gameplay.Shop
             DeliveryNPC npc,
             PlayerCouchCarrier player,
             out string failureReason) =>
-            manager.TrySpawnPurchasedVehicleServer(m_vehiclePrefab, npc, out failureReason, player);
+            manager.TrySpawnPurchasedVehicleServer(m_vehiclePrefab, npc, out failureReason, player, m_spawnClearanceSize);
     }
 }

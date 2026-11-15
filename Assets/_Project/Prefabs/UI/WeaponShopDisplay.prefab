@@ -240,7 +240,7 @@ GameObject:
   - component: {fileID: 1088837858236686086}
   - component: {fileID: 7130918508733332254}
   m_Layer: 0
-  m_Name: ImagePlaceholder
+  m_Name: ItemRender
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -287,7 +287,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.035, g: 0.12, b: 0.22, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -296,7 +296,7 @@ MonoBehaviour:
       m_Calls: []
   m_Sprite: {fileID: 0}
   m_Type: 0
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -316,7 +316,7 @@ GameObject:
   - component: {fileID: 1803324158900698755}
   - component: {fileID: 3303972945565816793}
   m_Layer: 0
-  m_Name: ImagePlaceholder
+  m_Name: ItemRender
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -363,7 +363,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.035, g: 0.12, b: 0.22, a: 1}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -372,7 +372,7 @@ MonoBehaviour:
       m_Calls: []
   m_Sprite: {fileID: 0}
   m_Type: 0
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -648,7 +648,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &5454391676655628196
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1134,7 +1134,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &6108267323731110729
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1446,10 +1446,12 @@ MonoBehaviour:
     m_rect: {fileID: 3690772991121809166}
     m_name: {fileID: 298269511269911398}
     m_price: {fileID: 5934109653971057637}
+    m_image: {fileID: 7130918508733332254}
   m_secondPanel:
     m_rect: {fileID: 4060885405675543359}
     m_name: {fileID: 3769722032887319966}
     m_price: {fileID: 4760902499293071891}
+    m_image: {fileID: 3303972945565816793}
 --- !u!1 &8226025534373946928
 GameObject:
   m_ObjectHideFlags: 0

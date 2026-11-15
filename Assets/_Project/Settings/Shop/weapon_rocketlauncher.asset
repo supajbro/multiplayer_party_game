@@ -17,5 +17,6 @@ MonoBehaviour:
   m_description: One rocket loaded, five spare. Watch the blast radius!
   m_price: 4000
   m_category: 1
-  m_icon: {fileID: 0}
+  m_icon: {fileID: 21300000, guid: ca1c2924c1b2cc4438aaf3fb35046ae8, type: 3}
+  m_slotIcon: {fileID: 21300000, guid: f047652791dfaff4193f10ef49c43e01, type: 3}
   m_purchaseBehaviour: {fileID: 11400000, guid: e2bb096a8e381ee4db0d76a5ca923a59, type: 2}

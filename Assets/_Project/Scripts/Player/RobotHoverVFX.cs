@@ -51,7 +51,6 @@ namespace CouchGuys.Player
         private float m_phase;
         private float m_ringMovementBlend;
         private bool m_ringDetached;
-        private Vector3 m_detachedRingPosition;
         private float m_groundAlpha;
         private float m_nextGroundCastTime;
         private int m_detailLevel = -1;
@@ -150,14 +149,9 @@ namespace CouchGuys.Player
             float frequency = m_settings.RingBobFrequency * Mathf.Lerp(1f, 1.18f, m_ringMovementBlend);
             float ringBob = Mathf.Sin(Time.time * frequency + m_phase + 1.17f) * amplitude;
             bool detached = m_health != null && m_health.IsKnockedDown;
-            if (detached)
-            {
-                if (!m_ringDetached) m_detachedRingPosition = m_health.RingAnchor;
-                m_detachedRingPosition = Vector3.MoveTowards(m_detachedRingPosition, m_health.RingAnchor, 15f * Time.deltaTime);
-            }
             m_ringDetached = detached;
-            Vector3 position = detached ? m_detachedRingPosition :
-                transform.TransformPoint(m_ringFollowLocalPosition) + Vector3.up * ringBob;
+            Vector3 position = transform.TransformPoint(m_ringFollowLocalPosition) +
+                Vector3.up * (detached ? 0f : ringBob);
             m_ringPivot.SetPositionAndRotation(position, Quaternion.identity);
             if (m_hoverRing != null) m_hoverRing.position = position;
         }

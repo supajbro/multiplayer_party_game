@@ -1,3 +1,4 @@
+using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Gameplay.Shop;
 using NUnit.Framework;
 using UnityEditor;
@@ -19,6 +20,26 @@ namespace CouchGuys.Tests.Editor
             Assert.That(catalogue.Find("van_good"), Is.Null);
             Assert.That(catalogue.Find("van_best"), Is.Null);
             Assert.That(catalogue.Find("sled"), Is.Null);
+        }
+
+        [TestCase("EmergencyDuctTape")]
+        [TestCase("ProbablyFineRepairSpray")]
+        [TestCase("PremiumRobotOil")]
+        public void HealingItemsAreAvailableAtWeaponTerminal(string itemId)
+        {
+            var catalogue = AssetDatabase.LoadAssetAtPath<ShopCatalogue>(CataloguePath);
+            var item = catalogue.Find(itemId);
+            Assert.That(item, Is.Not.Null);
+            Assert.That(DeliveryManager.IsShopItemAllowed(item, true), Is.True);
+            Assert.That(DeliveryManager.IsShopItemAllowed(item, true, ShopItemCategory.Vehicle), Is.False);
+        }
+
+        [Test]
+        public void DispatcherRejectsEveryShopItem()
+        {
+            var catalogue = AssetDatabase.LoadAssetAtPath<ShopCatalogue>(CataloguePath);
+            foreach (var item in catalogue.Items)
+                Assert.That(DeliveryManager.IsShopItemAllowed(item, false), Is.False, item.name);
         }
 
         private static void AssertItem(ShopCatalogue catalogue, string itemId, int price)

@@ -17,5 +17,6 @@ MonoBehaviour:
   m_description: Restores 50% of maximum health. Select slot and click to use.
   m_price: 400
   m_category: 2
-  m_icon: {fileID: 0}
+  m_icon: {fileID: 21300000, guid: 9eca6ad62c2b1da40b1937dd18b40d30, type: 3}
+  m_slotIcon: {fileID: 21300000, guid: df127140e8441284fb972d81d0554ddd, type: 3}
   m_purchaseBehaviour: {fileID: 11400000, guid: ca0a70b0e09bea34a8e1820f08b09d60, type: 2}

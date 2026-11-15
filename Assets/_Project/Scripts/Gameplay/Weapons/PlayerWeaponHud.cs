@@ -15,7 +15,6 @@ namespace CouchGuys.Gameplay.Weapons
     [DisallowMultipleComponent]
     public sealed class PlayerWeaponHud : MonoBehaviour
     {
-        private Text[] m_slotIcons;
         private static readonly Color Gold = new(1f, 0.66f, 0.08f, 1f);
         private static readonly Color Inactive = new(0.36f, 0.4f, 0.45f, 1f);
         private static readonly Color Yellow = new(1f, 0.7f, 0.08f, 1f);
@@ -74,9 +73,6 @@ namespace CouchGuys.Gameplay.Weapons
                     return;
                 }
                 m_view = Instantiate(m_hudPrefab);
-                m_slotIcons = new Text[m_view.m_slotBackgrounds.Length];
-                for (int slot = 0; slot < m_slotIcons.Length; slot++)
-                    m_slotIcons[slot] = m_view.m_slotBackgrounds[slot].transform.Find("Icon")?.GetComponent<Text>();
                 m_canvasRoot = m_view.gameObject;
                 BindEvents();
                 m_hudBuilt = true;
@@ -137,16 +133,16 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void RefreshWeapons()
         {
-            if (m_slotIcons != null)
+            if (m_view.m_slotIcons != null)
             {
-                for (int slot = 0; slot < m_slotIcons.Length; slot++)
+                for (int slot = 0; slot < m_view.m_slotIcons.Length; slot++)
                 {
-                    Text icon = m_slotIcons[slot];
+                    Image icon = m_view.m_slotIcons[slot];
                     if (icon == null) continue;
                     int index = m_weapons.GetInventoryWeaponIndex(slot);
-                    icon.text = index switch { 0 => "P", 1 => "AR", 2 => "SG", 3 => "G", 4 => "RL", 5 => "BAT", 6 => "10%", 7 => "50%", 8 => "100%", _ => "—" };
-                    icon.fontSize = index >= 5 ? 20 : index == 1 || index == 4 ? 25 : 34;
-                    icon.color = index >= 0 ? new Color(1f, 0.55f, 0.12f) : Inactive;
+                    var item = m_view.m_itemCatalogue != null ? m_view.m_itemCatalogue.FindInventoryItem(index) : null;
+                    icon.sprite = item != null ? item.SlotIcon : null;
+                    icon.enabled = icon.sprite != null;
                 }
             }
             m_view.PresentHotbar(m_weapons.SelectedHotbarSlot);

@@ -30,11 +30,6 @@ namespace CouchGuys.Player
         [Header("Knockdown")]
         [SerializeField, Min(0.1f)] private float m_knockdownDuration = 2.25f;
         [SerializeField, Min(0.1f)] private float m_ringRecoveryDuration = 0.45f;
-        [Header("Ring Knockback")]
-        [SerializeField, Range(0f, 1f)] private float m_ringKnockbackMultiplier = .45f;
-        [SerializeField, Min(.1f)] private float m_ringKnockbackDamping = 12f;
-        [SerializeField, Min(0f)] private float m_ringKnockbackMaxDistance = 3f;
-        [SerializeField, Min(.05f)] private float m_ringKnockbackRadius = .4f;
         [Header("Knockdown Motion")]
         [SerializeField, Min(0f)] private float m_upwardImpulse = 2.5f;
         [SerializeField, Range(10f, 90f)] private float m_fallAngle = 78f;
@@ -43,20 +38,20 @@ namespace CouchGuys.Player
         [SerializeField] private Transform m_visualRoot;
         [SerializeField] private ThirdPersonPlayerController m_playerController;
 
+        [Header("Downed Smoke")]
+        [SerializeField] private ParticleSystem m_downedSmoke;
+        [Tooltip("Body-space emitter position, before the world-space height is added.")]
+        [SerializeField] private Vector3 m_smokeBodyOffset = new(0f, 0.9f, 0f);
+        [SerializeField, Min(0f)] private float m_smokeHeight = 0.65f;
+
         private readonly SyncVar<float> m_currentHealth = new();
         private readonly SyncVar<bool> m_knockedDown = new();
         private readonly SyncVar<Vector3> m_knockdownDirection = new(Vector3.forward);
-        private readonly SyncVar<Vector3> m_ringAnchor = new();
-        private readonly SyncVar<Vector3> m_ringReturnPosition = new();
         private readonly SyncVar<bool> m_returningToRing = new();
-        private RobotHoverVFX m_hover;
         private DebugCouchBotController m_ringRecoveryBot;
         private bool m_localRingRecovery;
         private bool m_recoveryReported;
         private float m_ringRecoveryElapsed;
-        private Vector3 m_ringRecoveryStart;
-        private Vector3 m_ringKnockbackVelocity;
-        private float m_ringKnockbackRemainingDistance;
         private readonly SyncVar<int> m_aiTeammateIndex = new(-1);
 
         private readonly SyncVar<float> m_downedRemaining = new();
@@ -110,7 +105,6 @@ namespace CouchGuys.Player
         public bool IsEnemyTargetable => isActiveAndEnabled && IsAlive && !IsKnockedDown &&
             !IsReturningToRing && NetworkObject != null && NetworkObject.IsSpawned;
         public bool IsReturningToRing => m_returningToRing.Value;
-        public Vector3 RingAnchor => m_ringAnchor.Value;
         public bool IsAiTeammate => m_aiTeammateIndex.Value >= 0;
         public int AiTeammateIndex => m_aiTeammateIndex.Value;
         public Vector3 AimPoint
@@ -132,7 +126,6 @@ namespace CouchGuys.Player
             m_carrier = GetComponent<PlayerCouchCarrier>();
             m_truck = GetComponent<PlayerTruckInteractor>();
             m_faceExpression = GetComponent<RobotFaceExpressionController>();
-            m_hover = GetComponent<RobotHoverVFX>();
             m_ringRecoveryBot = GetComponent<DebugCouchBotController>();
             m_visualRoot ??= transform.Find("Visual");
             if (m_visualRoot != null)
@@ -178,11 +171,46 @@ namespace CouchGuys.Player
             ApplyKnockdownState(m_knockedDown.Value);
             OnReturningToRingChanged(false, m_returningToRing.Value, false);
             HealthChanged?.Invoke(m_currentHealth.Value, m_maxHealth);
+            UpdateDownedSmoke();
+        }
+
+        public override void OnStopClient()
+        {
+            StopDownedSmoke();
+            base.OnStopClient();
+        }
+
+        private void OnDisable() => StopDownedSmoke();
+
+        private void StopDownedSmoke()
+        {
+            if (m_downedSmoke != null)
+                m_downedSmoke.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        }
+
+        private void UpdateDownedSmoke()
+        {
+            if (m_downedSmoke == null) return;
+            bool emitting = IsClientInitialized && IsSpawned && IsDowned;
+            if (!emitting)
+            {
+                if (m_downedSmoke.isPlaying || m_downedSmoke.particleCount > 0) StopDownedSmoke();
+                return;
+            }
+
+            Transform body = m_visualRoot != null ? m_visualRoot : transform;
+            m_downedSmoke.transform.SetPositionAndRotation(
+                body.TransformPoint(m_smokeBodyOffset) + Vector3.up * m_smokeHeight,
+                Quaternion.Euler(-90f, 0f, 0f));
+            if (!m_downedSmoke.isPlaying)
+            {
+                m_downedSmoke.Play(true);
+                m_downedSmoke.Emit(1);
+            }
         }
 
         private void Update()
         {
-            if (IsServerInitialized) SimulateRingKnockback(Time.deltaTime);
             UpdateReviveInput();
             if (IsServerInitialized) UpdateReviveServer();
             if (IsServerInitialized && HasPendingRespawn && Time.time >= m_respawnAtServerTime &&
@@ -197,56 +225,6 @@ namespace CouchGuys.Player
             }
 
             UpdateKnockdownVisual();
-        }
-
-        private void StartRingKnockback(Vector3 impulse)
-        {
-            m_ringKnockbackVelocity = Vector3.ClampMagnitude(m_ringKnockbackVelocity +
-                Vector3.ProjectOnPlane(impulse, Vector3.up) * m_ringKnockbackMultiplier, 8f);
-            m_ringKnockbackRemainingDistance = m_ringKnockbackMaxDistance;
-        }
-
-        private void SimulateRingKnockback(float deltaTime)
-        {
-            if (!m_knockedDown.Value || m_returningToRing.Value ||
-                m_ringKnockbackVelocity.sqrMagnitude < .001f || m_ringKnockbackRemainingDistance <= 0f)
-            {
-                m_ringKnockbackVelocity = Vector3.zero;
-                return;
-            }
-            Vector3 movement = Vector3.ClampMagnitude(m_ringKnockbackVelocity * deltaTime, m_ringKnockbackRemainingDistance);
-            if (movement.sqrMagnitude < .000001f) return;
-            Vector3 start = m_ringReturnPosition.Value;
-            float distance = movement.magnitude;
-            Vector3 direction = movement / distance;
-            foreach (RaycastHit hit in Physics.SphereCastAll(start + Vector3.up * (m_ringKnockbackRadius + .1f),
-                         m_ringKnockbackRadius, direction, distance, ~0, QueryTriggerInteraction.Ignore))
-            {
-                if (hit.collider.transform.IsChildOf(transform) || hit.normal.y >= .65f) continue;
-                distance = Mathf.Min(distance, Mathf.Max(0f, hit.distance - .02f));
-            }
-            Vector3 candidate = start + direction * distance;
-            RaycastHit ground = default;
-            float closest = float.PositiveInfinity;
-            foreach (RaycastHit hit in Physics.RaycastAll(candidate + Vector3.up * .4f, Vector3.down,
-                         .8f, ~0, QueryTriggerInteraction.Ignore))
-            {
-                if (hit.collider.transform.IsChildOf(transform) || hit.normal.y < .65f || hit.distance >= closest) continue;
-                ground = hit; closest = hit.distance;
-            }
-            if (closest == float.PositiveInfinity || distance <= .001f)
-            {
-                m_ringKnockbackVelocity = Vector3.zero;
-                return;
-            }
-            Vector3 displacement = ground.point - start;
-            // Move the detached ring and its eventual recovery destination together.
-            // The airborne player's current transform never drives this motion.
-            m_ringAnchor.Value += displacement;
-            m_ringReturnPosition.Value += displacement;
-            m_ringKnockbackRemainingDistance -= distance;
-            m_ringKnockbackVelocity = Vector3.MoveTowards(m_ringKnockbackVelocity, Vector3.zero,
-                m_ringKnockbackDamping * deltaTime);
         }
 
         [Server]
@@ -270,12 +248,12 @@ namespace CouchGuys.Player
             m_localRingRecovery = true;
             m_recoveryReported = false;
             m_ringRecoveryElapsed = 0f;
-            m_ringRecoveryStart = transform.position;
             m_playerController?.SetExternalControlPaused(true);
         }
 
         private void LateUpdate()
         {
+            UpdateDownedSmoke();
             if (!m_localRingRecovery) return;
             if (!m_returningToRing.Value)
             {
@@ -285,8 +263,8 @@ namespace CouchGuys.Player
             }
             m_ringRecoveryElapsed += Time.deltaTime;
             float progress = Mathf.Clamp01(m_ringRecoveryElapsed / m_ringRecoveryDuration);
-            Vector3 position = Vector3.Lerp(m_ringRecoveryStart, m_ringReturnPosition.Value,
-                Mathf.SmoothStep(0f, 1f, progress));
+            // Recover at the movement authority's current position. NetworkTransform carries it to observers.
+            Vector3 position = transform.position;
             m_playerController?.Teleport(position, transform.rotation);
             if (IsServerInitialized && !Owner.IsValid)
                 m_ringRecoveryBot?.SetRingRecoveryPositionServer(position);
@@ -297,7 +275,7 @@ namespace CouchGuys.Player
         }
 
         // Completion comes from the movement owner so network latency cannot unlock
-        // controls before that owner reaches the ring. NetworkTransform carries the motion.
+        // controls before that owner's stand-up animation finishes.
         [ServerRpc]
         private void FinishRingRecoveryServerRpc() => FinishRingRecoveryServer();
 
@@ -519,11 +497,6 @@ namespace CouchGuys.Player
             impulse += Vector3.up * Mathf.Max(0f, explicitUpwardForce);
             if (severeHit)
             {
-                if (!m_knockedDown.Value)
-                {
-                    m_ringReturnPosition.Value = transform.position;
-                    m_ringAnchor.Value = m_hover != null ? m_hover.RingWorldPosition : transform.position;
-                }
                 m_returningToRing.Value = false;
                 impulse += Vector3.up * Mathf.Max(0f, m_upwardImpulse - explicitUpwardForce);
                 m_knockdownDirection.Value = horizontalDirection;
@@ -531,7 +504,6 @@ namespace CouchGuys.Player
                     ? float.PositiveInfinity
                     : Time.time + m_knockdownDuration;
                 m_knockedDown.Value = true;
-                StartRingKnockback(horizontalDirection * appliedForce);
                 if (died)
                 {
                     m_truck?.DetachDownedServer();
@@ -704,6 +676,7 @@ namespace CouchGuys.Player
         private void OnHealthChanged(float previous, float next, bool asServer)
         {
             HealthChanged?.Invoke(next, m_maxHealth);
+            UpdateDownedSmoke();
         }
 
         private void OnKnockedDownChanged(bool previous, bool next, bool asServer)
@@ -715,6 +688,7 @@ namespace CouchGuys.Player
         {
             m_playerController?.SetMovementLocked(knockedDown);
             KnockdownChanged?.Invoke(knockedDown);
+            UpdateDownedSmoke();
         }
 
         private void UpdateKnockdownVisual()

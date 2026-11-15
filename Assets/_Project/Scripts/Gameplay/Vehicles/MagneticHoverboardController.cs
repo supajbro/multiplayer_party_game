@@ -295,13 +295,23 @@ namespace CouchGuys.Gameplay.Vehicles
             CouchCarryController candidate = carried != null ? carried : FindAvailableCouch();
             reason="Bring an available couch to either side loading point";
             if(candidate == null || !IsCouchInLoadingRange(candidate))return false;
-            reason="Other carriers must let go first";
-            if(candidate.ActiveCarrierCount > (carried != null ? 1 : 0))return false;
             reason="Clear the platform and the path from the couch";
             if(!HasMagnetClearance(candidate,carried != null ? carrier : null))return false;
             reason="This couch is not available for loading";
             if(!candidate.MountOnHoverboardServer(this,carried != null ? carrier : null)) return false;
             m_couch.Value = candidate.NetworkObject;
+            return true;
+        }
+        internal bool TryAutoLoadCouchServer(CouchCarryController couch, bool mount)
+        {
+            if (!IsServerInitialized || !IsSpawned || !m_ready || IsDestroyed || m_settings == null ||
+                Driver != null || Couch != null || Speed > m_settings.MagnetMaximumSpeed ||
+                couch == null || !couch.IsSpawned || couch.IsSled || couch.IsLoaded ||
+                !couch.IsPickupAvailable || couch.IsCargoTransitioning || !IsCouchInLoadingRange(couch) ||
+                !HasMagnetClearance(couch)) return false;
+            if (!mount) return true;
+            if (!couch.MountOnHoverboardServer(this)) return false;
+            m_couch.Value = couch.NetworkObject;
             return true;
         }
         internal void ForgetCouchServer(CouchCarryController couch)
@@ -314,9 +324,11 @@ namespace CouchGuys.Gameplay.Vehicles
             Vector3 start=couch.transform.TransformPoint(bounds.center), end=m_couchAnchor.TransformPoint(bounds.center);
             foreach(RaycastHit hit in Physics.RaycastAll(start,(end-start).normalized,Vector3.Distance(start,end),~0,QueryTriggerInteraction.Ignore))
                 if(!hit.collider.transform.IsChildOf(transform) && !hit.collider.transform.IsChildOf(couch.transform) &&
+                    !couch.IsCarrierColliderServer(hit.collider) &&
                     (loader == null || !hit.collider.transform.IsChildOf(loader.transform))) return false;
             foreach(Collider hit in Physics.OverlapBox(end,Vector3.Scale(bounds.extents,couch.transform.lossyScale),m_couchAnchor.rotation,~0,QueryTriggerInteraction.Ignore))
-                if(!hit.transform.IsChildOf(transform) && !hit.transform.IsChildOf(couch.transform))return false;
+                if(!hit.transform.IsChildOf(transform) && !hit.transform.IsChildOf(couch.transform) &&
+                    !couch.IsCarrierColliderServer(hit))return false;
             return true;
         }
         private bool TryGetCouchExit(CouchCarryController couch, out Vector3 position, out Quaternion rotation)

@@ -12,6 +12,9 @@ namespace CouchGuys.Gameplay.Sled
     [DisallowMultipleComponent]
     public sealed class SledController : NetworkBehaviour
     {
+        public static readonly HashSet<SledController> ActiveSleds = new();
+        private void OnEnable() => ActiveSleds.Add(this);
+        private void OnDisable() => ActiveSleds.Remove(this);
         public const int MaximumGrabPoints = CouchCarryController.MaximumCarryPoints;
         [SerializeField] private CouchCarryController m_carryController;
         [SerializeField] private SledGrabPoint[] m_grabPoints = new SledGrabPoint[MaximumGrabPoints];
@@ -107,13 +110,25 @@ namespace CouchGuys.Gameplay.Sled
         }
 
         private bool TryLoadPlacedCouchServer(CouchCarryController couch) =>
-            IsWithinLoadingSurface(couch) && TryLoadCouchServer(couch);
+            couch != null && couch.ActiveCarrierCount == 0 && IsWithinLoadingSurface(couch) && TryLoadCouchServer(couch);
 
         [Server]
         internal bool TryLoadCouchServer(CouchCarryController couch)
         {
             if (!IsServerInitialized || !HasCargoSpace || Time.time < m_nextMountTime || couch == null) return false;
             return couch.MountOnSledServer(this, GetMountPosition(couch));
+        }
+
+        internal bool TryAutoLoadCouchServer(CouchCarryController couch, bool mount)
+        {
+            if (!IsServerInitialized || !IsSpawned || !HasCargoSpace || Time.time < m_nextMountTime ||
+                m_couchAnchor == null || couch == null || couch.IsSled || couch.IsLoaded ||
+                !couch.IsPickupAvailable || couch.IsCargoTransitioning) return false;
+            Vector3 loadingPoint = m_couchAnchor.position + transform.up * StackHeight;
+            Vector3 nearest = couch.transform.TransformPoint(couch.CargoBounds.ClosestPoint(
+                couch.transform.InverseTransformPoint(loadingPoint)));
+            if (Vector3.Distance(nearest, loadingPoint) > m_loadingInteractionDistance) return false;
+            return !mount || TryLoadCouchServer(couch);
         }
 
         internal Transform GetWeaponAnchor(int slot) => m_weaponAnchors != null && slot >= 0 &&

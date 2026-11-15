@@ -167,7 +167,7 @@ namespace CouchGuys.Gameplay.Weapons
                 m_healingQuantities.Add(0);
             }
             m_equippedIndex.Value = -1;
-            m_selectedHotbarSlot.Value = 3;
+            m_selectedHotbarSlot.Value = 0;
             m_switchCompleteAt = Time.time + m_switchDuration;
         }
 
@@ -210,13 +210,7 @@ namespace CouchGuys.Gameplay.Weapons
             int scroll = m_input.HotbarScrollDirection;
             if (selection < 0 && scroll != 0)
             {
-                for (int step = 1; step <= InventorySlotCount; step++)
-                {
-                    int slot = (currentSlot + scroll * step + InventorySlotCount) % InventorySlotCount;
-                    if (GetInventoryWeaponIndex(slot) < 0) continue;
-                    selection = slot;
-                    break;
-                }
+                selection = (currentSlot + scroll + InventorySlotCount) % InventorySlotCount;
             }
             if (selection >= 0 && selection != currentSlot)
             {

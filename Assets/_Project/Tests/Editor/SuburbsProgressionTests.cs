@@ -10,8 +10,6 @@ namespace CouchGuys.Tests.Editor
     {
         private const string RegionPath =
             "Assets/_Project/Settings/Regions/Region_Suburbs.asset";
-        private const string TruckPath =
-            "Assets/_Project/Settings/Vehicles/Truck.asset";
 
         [Test]
         public void Suburbs_EnablesHillyBoundaryAndSummitRoad()
@@ -41,22 +39,12 @@ namespace CouchGuys.Tests.Editor
         }
 
         [Test]
-        public void Truck_PreservesStarterClimbCapability()
+        public void SummitExitRequiresTheFlamecouch()
         {
-            RegionDefinition region = AssetDatabase.LoadAssetAtPath<RegionDefinition>(RegionPath);
-            TruckSettings light = AssetDatabase.LoadAssetAtPath<TruckSettings>(TruckPath);
-            Assert.That(region, Is.Not.Null);
-            Assert.That(light, Is.Not.Null);
-            Assert.That(light.DisplayName, Is.EqualTo("Truck"));
-            Assert.That(AssetDatabase.FindAssets("t:TruckSettings", new[] { "Assets/_Project/Settings/Vehicles" }),
-                Has.Length.EqualTo(1), "Only the retained truck configuration should remain.");
-
-            float gravityAlongSlope = Physics.gravity.magnitude * Mathf.Sin(
-                region.LandmarkRoads.MaximumSlope * Mathf.Deg2Rad);
-            float lightClimbAcceleration = light.Acceleration * light.UphillPowerMultiplier;
-
-            Assert.That(lightClimbAcceleration, Is.LessThan(gravityAlongSlope),
-                "The starter truck should naturally stall on the summit grade.");
+            var truck = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Vehicles/Truck.prefab");
+            var flame = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Vehicles/Flamecouch.prefab");
+            Assert.That(UphillExitRestriction.AllowsExitVehicle(truck.GetComponent<TruckController>()), Is.False);
+            Assert.That(UphillExitRestriction.AllowsExitVehicle(flame.GetComponent<TruckController>()), Is.True);
         }
     }
 }

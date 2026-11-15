@@ -566,7 +566,7 @@ namespace CouchGuys.Player
             {
                 var loadingSled = SledController.FindLoadingSled(transform.position + Vector3.up);
                 m_sledInteractionPrompt = loadingSled == null ? "Press E to release couch" :
-                    loadingSled.HasCargoSpace ? $"Press E to load couch | {loadingSled.CargoStatus}" : loadingSled.LoadingStatus;
+                    loadingSled.HasCargoSpace ? $"Bring couch close to load automatically | {loadingSled.CargoStatus}" : loadingSled.LoadingStatus;
                 return;
             }
             DepotController depot = FindFirstObjectByType<DepotController>();
@@ -757,9 +757,9 @@ namespace CouchGuys.Player
 
             List<DialogueShopCategory> categories = new()
             {
-                new DialogueShopCategory("Deliveries", deliveryOptions),
-                new DialogueShopCategory("Shop", shopOptions)
+                new DialogueShopCategory("Deliveries", deliveryOptions)
             };
+            if (weaponTerminal) categories.Add(new DialogueShopCategory("Shop", shopOptions));
 
             if (m_dispatcherMenu == null || m_dispatcherSession != sessionId)
             {
@@ -860,7 +860,7 @@ namespace CouchGuys.Player
             var sled = couch != null && !couch.IsSled
                 ? SledController.FindLoadingSled(transform.position + Vector3.up) : null;
             ReleaseCurrentCarryableServer();
-            // Only the final carrier's explicit release loads the couch. No forced releases.
+            // Preserve immediate loading when the final carrier explicitly drops onto a sled.
             if (sled != null && couch != null && couch.ActiveCarrierCount == 0)
             {
                 if (!sled.HasCargoSpace && Owner.IsValid)

@@ -495,6 +495,37 @@ namespace CouchGuys.Gameplay.Vehicles
             return true;
         }
 
+        internal bool TryAutoLoadCouchServer(CouchCarryController couch, bool mount)
+        {
+            if (!IsServerInitialized || !IsSpawned || IsGetawayTruck || IsDestroyed || m_settings == null ||
+                (!IsHoverTruck && (IsOccupied || !RearDoorsOpen ||
+                    Time.time < m_doorStateChangedServerTime + m_settings.DoorAnimationDuration * .8f)) ||
+                couch == null || couch.IsLoaded || !couch.IsPickupAvailable || couch.IsCargoTransitioning ||
+                !IsCouchInLoadingRange(couch)) return false;
+            int slot = -1;
+            float nearest = float.PositiveInfinity;
+            for (int index = 0; index < m_loadedCouches.Count; index++)
+            {
+                Transform point = GetCargoPoint(index);
+                if (m_loadedCouches[index] != null || point == null) continue;
+                float distance = (couch.transform.position - point.position).sqrMagnitude;
+                if (IsHoverTruck)
+                {
+                    Vector3 closest = couch.transform.TransformPoint(couch.CargoBounds.ClosestPoint(
+                        couch.transform.InverseTransformPoint(point.position)));
+                    if ((closest - point.position).sqrMagnitude > m_settings.CouchLoadingRange * m_settings.CouchLoadingRange) continue;
+                }
+                if (distance >= nearest) continue;
+                nearest = distance;
+                slot = index;
+            }
+            if (slot < 0) return false;
+            if (!mount) return true;
+            if (!couch.LoadIntoTruckServer(this, slot, m_settings.CouchLoadingDuration)) return false;
+            m_loadedCouches[slot] = couch.NetworkObject;
+            return true;
+        }
+
         internal void ForgetCouchServer(CouchCarryController couch)
         {
             if (!IsServerInitialized) return;

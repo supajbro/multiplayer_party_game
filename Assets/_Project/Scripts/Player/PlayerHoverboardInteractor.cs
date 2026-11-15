@@ -43,7 +43,7 @@ namespace CouchGuys.Player
                 if (IsMounted) return "Press E to Dismount Hoverboard";
                 if (!HasPriorityWorldInteraction()) return null;
                 return m_magnet ? m_nearby.Couch != null ? "Press E to Release Couch" :
-                    TryGetComponent(out PlayerCouchCarrier carrier) && carrier.IsCarrying ? "Press E to Load Couch" : "Press E to Attach Couch" : "Press E to Drive Hoverboard";
+                    TryGetComponent(out PlayerCouchCarrier carrier) && carrier.IsCarrying ? "Bring couch close to load automatically" : "Press E to Attach Couch" : "Press E to Drive Hoverboard";
             }
         }
         private void Awake()

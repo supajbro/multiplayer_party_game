@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 48b8b2096a154a978e753dcc1d692864, type: 3}
-  m_Name: RogueCarSettings
+  m_Name: RogueCarSettings_MediumDelivery
   m_EditorClassIdentifier: 
   Destruction:
     ExplosionLaunchForce: 19
@@ -37,6 +37,6 @@ MonoBehaviour:
   MinimumDamagingCollisionSpeed: 3.5
   InitialSpawnDelay: 5
   SpawnCheckInterval: 10
-  SpawnChance: 0.6
-  MaxActiveCars: 5
-  MaxSpawnsPerDelivery: 50
+  SpawnChance: 0.25
+  MaxActiveCars: 2
+  MaxSpawnsPerDelivery: 10

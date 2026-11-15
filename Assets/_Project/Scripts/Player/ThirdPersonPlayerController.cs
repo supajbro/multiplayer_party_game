@@ -1,5 +1,6 @@
 using CouchGuys.Input;
 using CouchGuys.Gameplay.Couch;
+using CouchGuys.ProceduralGeneration;
 using UnityEngine;
 
 namespace CouchGuys.Player
@@ -436,7 +437,7 @@ namespace CouchGuys.Player
             // Start collecting the normal for next frame before Move invokes
             // OnControllerColliderHit for this movement.
             m_groundNormal = Vector3.zero;
-            m_characterController.Move(displacement + attachmentCorrection);
+            MoveWithExitRestriction(displacement + attachmentCorrection);
         }
 
         private void UpdateLockedMovement()
@@ -446,7 +447,21 @@ namespace CouchGuys.Player
             m_groundNormal = Vector3.zero;
             Vector3 velocity = m_externalVelocity;
             velocity.y += m_verticalVelocity;
-            m_characterController.Move(velocity * Time.deltaTime);
+            MoveWithExitRestriction(velocity * Time.deltaTime);
+        }
+
+        private void MoveWithExitRestriction(Vector3 displacement)
+        {
+            if (UphillExitRestriction.ConstrainPlayer(transform, displacement, m_characterController.radius,
+                    Time.deltaTime, out Vector3 destination))
+            {
+                if (m_worldGrappleActive) SetWorldGrapple(false, default, null);
+                m_verticalVelocity = Mathf.Min(0f, m_verticalVelocity);
+                m_externalVelocity = Vector3.zero;
+                MovementIntent = Vector3.zero;
+                displacement = destination - transform.position;
+            }
+            m_characterController.Move(displacement);
         }
 
         private float CalculateUphillSpeedMultiplier(Vector3 movementDirection)

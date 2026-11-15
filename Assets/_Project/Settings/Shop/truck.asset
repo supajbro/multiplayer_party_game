@@ -15,7 +15,7 @@ MonoBehaviour:
   m_itemId: truck
   m_displayName: Hover Truck
   m_description: Four-seat hover truck with three passenger turrets and four magnetic couch docks.
-  m_price: 15000
+  m_price: 30000
   m_category: 0
   m_icon: {fileID: 0}
   m_purchaseBehaviour: {fileID: 11400000, guid: eb976704466748c48e09676bb69ac7fb, type: 2}
