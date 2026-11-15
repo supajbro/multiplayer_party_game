@@ -21,12 +21,12 @@ namespace CouchGuys.Gameplay.Shop
                 unavailableReason = "Sled is not configured";
                 return false;
             }
-            return manager.CanSpawnPurchasedVehicleServer(m_sledPrefab, npc, out unavailableReason);
+            return manager.CanSpawnPurchasedVehicleServer(m_sledPrefab, npc, out unavailableReason, player);
         }
 
         public override bool TryFulfil(
             DeliveryManager manager, DeliveryNPC npc, PlayerCouchCarrier player,
             out string failureReason) =>
-            manager.TrySpawnPurchasedVehicleServer(m_sledPrefab, npc, out failureReason);
+            manager.TrySpawnPurchasedVehicleServer(m_sledPrefab, npc, out failureReason, player);
     }
 }

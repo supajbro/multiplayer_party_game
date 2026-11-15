@@ -25,6 +25,7 @@ namespace CouchGuys.UI
         }
 
         [SerializeField] private ShopCatalogue m_catalogue;
+        [SerializeField] private ShopItemCategory m_category = ShopItemCategory.Weapon;
         [Tooltip("Seconds between the start of each slide, including transition time.")]
         [SerializeField, Min(0.1f)] private float m_scrollInterval = 5f;
         [SerializeField, Min(0f)] private float m_transitionDuration = 0.65f;
@@ -42,7 +43,7 @@ namespace CouchGuys.UI
         {
             if (m_viewport == null || !IsWired(m_firstPanel) || !IsWired(m_secondPanel))
             {
-                Debug.LogError("Weapon advertisement display has missing panel references.", this);
+                Debug.LogError("Shop advertisement display has missing panel references.", this);
                 enabled = false;
                 return;
             }
@@ -66,7 +67,7 @@ namespace CouchGuys.UI
             m_weapons.Clear();
             if (m_catalogue == null || m_catalogue.Items == null) return;
             foreach (var item in m_catalogue.Items)
-                if (item != null && item.Category == ShopItemCategory.Weapon &&
+                if (item != null && item.Category == m_category &&
                     item.PurchaseBehaviour != null && !m_weapons.Contains(item))
                     m_weapons.Add(item);
         }

@@ -26,7 +26,7 @@ namespace CouchGuys.Gameplay.Shop
                 return false;
             }
 
-            if (!manager.CanSpawnPurchasedVehicleServer(m_vehiclePrefab, npc, out unavailableReason))
+            if (!manager.CanSpawnPurchasedVehicleServer(m_vehiclePrefab, npc, out unavailableReason, player))
                 return false;
 
             unavailableReason = string.Empty;
@@ -38,6 +38,6 @@ namespace CouchGuys.Gameplay.Shop
             DeliveryNPC npc,
             PlayerCouchCarrier player,
             out string failureReason) =>
-            manager.TrySpawnPurchasedVehicleServer(m_vehiclePrefab, npc, out failureReason);
+            manager.TrySpawnPurchasedVehicleServer(m_vehiclePrefab, npc, out failureReason, player);
     }
 }

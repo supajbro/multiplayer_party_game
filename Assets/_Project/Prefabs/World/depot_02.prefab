@@ -5129,6 +5129,8 @@ Transform:
   - {fileID: 7008273086978750208}
   - {fileID: 226252770160595888}
   - {fileID: 5276285272076488520}
+  - {fileID: 1598882770875456201}
+  - {fileID: 3625019728735321574}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1890660436387168417
@@ -16106,6 +16108,178 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8974423372902327701, guid: c5a1aa6dc19b06441aa4324d00a7ad8d, type: 3}
   m_PrefabInstance: {fileID: 3869348533885790941}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &5093234802818408987
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 7458685624488558582}
+    m_Modifications:
+    - target: {fileID: 298269511269911398, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 497752681632221136, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4294957312
+      objectReference: {fileID: 0}
+    - target: {fileID: 497752681632221136, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 3027363276183945083, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 5809240521455171794, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 7.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5809240521455171794, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5809240521455171794, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -9.809999
+      objectReference: {fileID: 0}
+    - target: {fileID: 5809240521455171794, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5809240521455171794, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5809240521455171794, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5809240521455171794, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5809240521455171794, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5809240521455171794, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5809240521455171794, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5934109653971057637, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4280276223
+      objectReference: {fileID: 0}
+    - target: {fileID: 5934109653971057637, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 7386146925975026371, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_Name
+      value: VehicleShopDisplay
+      objectReference: {fileID: 0}
+    - target: {fileID: 8227661325136949069, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4294957312
+      objectReference: {fileID: 0}
+    - target: {fileID: 8227661325136949069, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+--- !u!4 &1598882770875456201 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5809240521455171794, guid: 646910b93e87b4340804a362561e7ee6, type: 3}
+  m_PrefabInstance: {fileID: 5093234802818408987}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &5675985506727581811
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 7458685624488558582}
+    m_Modifications:
+    - target: {fileID: 1101789018779599428, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+      propertyPath: m_Name
+      value: VehicleShopTerminal
+      objectReference: {fileID: 0}
+    - target: {fileID: 1413941059459039777, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4294967040
+      objectReference: {fileID: 0}
+    - target: {fileID: 1413941059459039777, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 1419894718108672400, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 5019077215346084808, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+      propertyPath: m_AdditionalShaderChannelsFlag
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 8974423372902327701, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 2.856039
+      objectReference: {fileID: 0}
+    - target: {fileID: 8974423372902327701, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.00000016270792
+      objectReference: {fileID: 0}
+    - target: {fileID: 8974423372902327701, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -2.3209844
+      objectReference: {fileID: 0}
+    - target: {fileID: 8974423372902327701, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 8974423372902327701, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8974423372902327701, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 8974423372902327701, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8974423372902327701, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8974423372902327701, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -90
+      objectReference: {fileID: 0}
+    - target: {fileID: 8974423372902327701, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+--- !u!4 &3625019728735321574 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8974423372902327701, guid: 7b7fb945f91bc7f40b1dc26237d05af0, type: 3}
+  m_PrefabInstance: {fileID: 5675985506727581811}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &6034083305391729506
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -16136,7 +16310,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5809240521455171794, guid: 498e8e3613877994b9883626db754e03, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.9875021
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 5809240521455171794, guid: 498e8e3613877994b9883626db754e03, type: 3}
       propertyPath: m_LocalPosition.z

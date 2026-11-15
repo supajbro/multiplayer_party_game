@@ -293,8 +293,9 @@ namespace CouchGuys.Gameplay.Delivery
             session.Npc != null && session.Npc.isActiveAndEnabled &&
             session.Npc.InteractionDistanceSquared(position) <= m_dialogueMaximumDistance * m_dialogueMaximumDistance;
 
-        public static bool IsShopItemAllowed(ShopItemDefinition item, bool weaponTerminal) =>
-            item != null && (item.Category == ShopItemCategory.Weapon) == weaponTerminal;
+        public static bool IsShopItemAllowed(ShopItemDefinition item, bool dedicatedTerminal,
+            ShopItemCategory category = ShopItemCategory.Weapon) =>
+            item != null && (dedicatedTerminal ? item.Category == category : item.Category != ShopItemCategory.Weapon);
 
         [Server]
         public bool TryBeginWeaponTerminalServer(WeaponShopTerminal terminal, PlayerCouchCarrier player)
@@ -412,7 +413,7 @@ namespace CouchGuys.Gameplay.Delivery
             }
 
             ShopItemDefinition item = m_shopCatalogue != null ? m_shopCatalogue.Find(itemId) : null;
-            if (!IsShopItemAllowed(item, session.Terminal != null) || item.PurchaseBehaviour == null)
+            if (!IsShopItemAllowed(item, session.Terminal != null, session.Terminal != null ? session.Terminal.Category : ShopItemCategory.Weapon) || item.PurchaseBehaviour == null)
             {
                 SendDialogueState(player, "That item is not available.", true);
                 return false;
@@ -450,15 +451,16 @@ namespace CouchGuys.Gameplay.Delivery
         public bool CanSpawnPurchasedVehicleServer(
             NetworkObject vehiclePrefab,
             DeliveryNPC npc,
-            out string failureReason)
+            out string failureReason,
+            PlayerCouchCarrier player = null)
         {
-            if (vehiclePrefab == null || npc == null)
+            if (vehiclePrefab == null)
             {
                 failureReason = "Vehicle is not configured";
                 return false;
             }
 
-            bool found = TryFindVehicleSpawnPose(npc, out _, out _);
+            bool found = TryFindVehicleSpawnPoseForPlayer(npc, player, out _, out _);
             failureReason = found ? string.Empty : "No clear vehicle spawn location nearby";
             return found;
         }
@@ -467,9 +469,10 @@ namespace CouchGuys.Gameplay.Delivery
         public bool TrySpawnPurchasedVehicleServer(
             NetworkObject vehiclePrefab,
             DeliveryNPC npc,
-            out string failureReason)
+            out string failureReason,
+            PlayerCouchCarrier player = null)
         {
-            if (vehiclePrefab == null || !TryFindVehicleSpawnPose(npc, out Vector3 position, out Quaternion rotation))
+            if (vehiclePrefab == null || !TryFindVehicleSpawnPoseForPlayer(npc, player, out Vector3 position, out Quaternion rotation))
             {
                 failureReason = "No clear vehicle spawn location nearby";
                 return false;
@@ -491,30 +494,40 @@ namespace CouchGuys.Gameplay.Delivery
         private bool TryFindVehicleSpawnPose(
             DeliveryNPC npc,
             out Vector3 position,
-            out Quaternion rotation)
+            out Quaternion rotation) => TryFindVehicleSpawnPoseForPlayer(npc, null, out position, out rotation);
+
+        private bool TryFindVehicleSpawnPoseForPlayer(DeliveryNPC npc, PlayerCouchCarrier player,
+            out Vector3 position, out Quaternion rotation)
         {
             position = default;
             rotation = default;
-            if (npc == null) return false;
+            WeaponShopTerminal terminal = null;
+            if (npc == null && player != null && m_dialogues.TryGetValue(player, out var session) &&
+                session.Terminal != null && session.Terminal.Category == ShopItemCategory.Vehicle)
+                terminal = session.Terminal;
+            if (npc == null && terminal == null) return false;
+            Transform source = npc != null ? npc.transform : terminal.transform;
 
             ResolveDepot();
+            if (terminal != null) m_depot = terminal.GetComponentInParent<DepotController>() ?? m_depot;
             if (m_depot != null)
             {
                 foreach (Transform marker in m_depot.EnumerateVehicleSpawnMarkers())
                 {
                     Quaternion depotHeading = m_depot.VehicleArrival != null
                         ? m_depot.VehicleArrival.rotation : marker.rotation;
-                    if (TryValidateVehicleSpawnPose(marker.position, depotHeading, npc,
+                    if (TryValidateVehicleSpawnPose(marker.position, depotHeading, source,
                             out position, out rotation))
                         return true;
                 }
                 return false;
             }
 
-            Vector3 primary = npc.VehicleSpawnPosition;
-            Vector3 right = Vector3.ProjectOnPlane(npc.transform.right, Vector3.up).normalized;
-            Vector3 forward = Vector3.ProjectOnPlane(npc.transform.forward, Vector3.up).normalized;
-            Quaternion heading = Quaternion.Euler(0f, npc.VehicleSpawnRotation.eulerAngles.y, 0f);
+            Vector3 primary = npc != null ? npc.VehicleSpawnPosition : terminal.VehicleSpawnPosition;
+            Vector3 right = Vector3.ProjectOnPlane(source.right, Vector3.up).normalized;
+            Vector3 forward = Vector3.ProjectOnPlane(source.forward, Vector3.up).normalized;
+            Quaternion spawnRotation = npc != null ? npc.VehicleSpawnRotation : terminal.VehicleSpawnRotation;
+            Quaternion heading = Quaternion.Euler(0f, spawnRotation.eulerAngles.y, 0f);
             int attempts = Mathf.Max(1, m_vehicleSpawnAttempts);
             for (int index = 0; index < attempts; index++)
             {
@@ -527,7 +540,7 @@ namespace CouchGuys.Gameplay.Delivery
                              (ring * m_vehicleSpawnSearchStep);
                 }
 
-                if (TryValidateVehicleSpawnPose(primary + offset, heading, npc,
+                if (TryValidateVehicleSpawnPose(primary + offset, heading, source,
                         out position, out rotation)) return true;
             }
 
@@ -535,13 +548,13 @@ namespace CouchGuys.Gameplay.Delivery
         }
 
         private bool TryValidateVehicleSpawnPose(Vector3 markerPosition,
-            Quaternion markerRotation, DeliveryNPC npc, out Vector3 position,
+            Quaternion markerRotation, Transform shopSource, out Vector3 position,
             out Quaternion rotation)
         {
             position = default;
             rotation = default;
             Vector3 probeOrigin = markerPosition + Vector3.up * m_vehicleGroundProbeHeight;
-            if (!TryFindVehicleGround(probeOrigin, npc, out RaycastHit ground) ||
+            if (!TryFindVehicleGround(probeOrigin, shopSource, out RaycastHit ground) ||
                 Vector3.Angle(ground.normal, Vector3.up) > m_vehicleMaximumSlope)
                 return false;
 
@@ -570,7 +583,7 @@ namespace CouchGuys.Gameplay.Delivery
 
         private bool TryFindVehicleGround(
             Vector3 probeOrigin,
-            DeliveryNPC npc,
+            Transform shopSource,
             out RaycastHit ground)
         {
             // The saved depot floor is authoritative for indoor spawn markers.
@@ -588,7 +601,7 @@ namespace CouchGuys.Gameplay.Delivery
             for (int index = 0; index < hits.Length; index++)
             {
                 Collider collider = hits[index].collider;
-                if (collider == null || collider.transform.IsChildOf(npc.transform) ||
+                if (collider == null || collider.transform.IsChildOf(shopSource) ||
                     collider.GetComponentInParent<TruckController>() != null ||
                     collider.GetComponentInParent<MagneticHoverboardController>() != null ||
                     collider.GetComponentInParent<PlayerCouchCarrier>() != null)
@@ -831,7 +844,7 @@ namespace CouchGuys.Gameplay.Delivery
             for (int index = 0; index < shopCount; index++)
             {
                 ShopItemDefinition item = m_shopCatalogue.Items[index];
-                if (!IsShopItemAllowed(item, session.Terminal != null)) shopReasons[index] = "Available at the other shop";
+                if (!IsShopItemAllowed(item, session.Terminal != null, session.Terminal != null ? session.Terminal.Category : ShopItemCategory.Weapon)) shopReasons[index] = "Available at the other shop";
                 else if (item.PurchaseBehaviour == null) shopReasons[index] = "Purchase behaviour is missing";
                 else if (m_currency.Value < item.Price)
                     shopReasons[index] = $"Need ${item.Price - m_currency.Value:N0} more";

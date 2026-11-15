@@ -22,6 +22,7 @@ namespace CouchGuys.UI
         [Tooltip("Use the shop panel only, for a dedicated purchasing terminal.")]
         [SerializeField] private bool m_shopOnly;
         [SerializeField] private GameObject m_idleScreen;
+        [SerializeField] private string m_defaultNotice;
         [Tooltip("Hide the owning player's visuals locally while using this screen; restore them after the camera returns.")]
         [SerializeField] private bool m_hideLocalPlayerWhileOpen;
         [Header("Existing Screen and Physical Buttons (all LODs)")]
@@ -99,7 +100,7 @@ namespace CouchGuys.UI
             m_ui = Instantiate(m_menuPrefab, m_screenCanvasAnchor, false);
             if (m_idleScreen != null) m_idleScreen.SetActive(false);
             m_ui.ConfigureCamera(m_camera);
-            m_ui.Bind(categories, funds, notice);
+            m_ui.Bind(categories, funds, string.IsNullOrWhiteSpace(notice) ? m_defaultNotice : notice);
             m_ui.ShowCategory(m_shopOnly ? 1 : 0);
             m_ui.SetInteractive(false);
             var ownSystem = m_ui.GetComponentInChildren<EventSystem>(true);

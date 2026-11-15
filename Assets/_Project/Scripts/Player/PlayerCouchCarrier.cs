@@ -695,6 +695,8 @@ namespace CouchGuys.Player
             if (!IsOwner) return;
             if (sessionId <= m_closedDispatcherSession || (m_dispatcherMenu != null && m_dispatcherMenu.IsClosing)) return;
             DeliveryManager manager = FindFirstObjectByType<DeliveryManager>();
+            var shopTerminal = weaponTerminal ? WeaponShopTerminal.Resolve(dispatcherPosition) : null;
+            var shopCategory = shopTerminal != null ? shopTerminal.Category : ShopItemCategory.Weapon;
             List<DialogueShopOption> deliveryOptions = new();
             bool[] available = { easyAvailable, mediumAvailable, hardAvailable };
             string[] reasons = { easyReason, mediumReason, hardReason };
@@ -721,7 +723,7 @@ namespace CouchGuys.Player
             for (int index = 0; index < shopCount; index++)
             {
                 ShopItemDefinition item = manager.GetShopItem(index);
-                if (!DeliveryManager.IsShopItemAllowed(item, weaponTerminal)) continue;
+                if (!DeliveryManager.IsShopItemAllowed(item, weaponTerminal, shopCategory)) continue;
                 string capturedItemId = item.ItemId;
                 bool itemAvailable = shopAvailable != null && index < shopAvailable.Length &&
                                      shopAvailable[index];

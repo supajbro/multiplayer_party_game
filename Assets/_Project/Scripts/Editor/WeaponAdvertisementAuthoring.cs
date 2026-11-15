@@ -193,6 +193,7 @@ namespace CouchGuys.Editor
             try
             {
                 var newItem = new SerializedObject(added);
+                newItem.FindProperty("m_itemId").stringValue = "validation_added_shop_item";
                 newItem.FindProperty("m_displayName").stringValue = "Validation Added Weapon";
                 newItem.FindProperty("m_price").intValue = 12345;
                 newItem.ApplyModifiedPropertiesWithoutUndo();

@@ -255,12 +255,14 @@ namespace CouchGuys.Editor
             File.WriteAllText("Temp/WeaponTerminalValidation.txt", "PASS: saved editable terminal/menu prefabs, wired camera focus and shop-only UI, exclusive weapon filtering, exactly one terminal in depot_02.\n");
         }
 
-        public static void Preview()
+        public static void Preview() => PreviewTerminal(PrefabPath, "WeaponTerminal");
+
+        public static void PreviewTerminal(string prefabPath, string outputName)
         {
             var scene = EditorSceneManager.NewPreviewScene();
             try
             {
-                var instance = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath), scene);
+                var instance = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath), scene);
                 var data = new SerializedObject(instance.GetComponent<DispatcherMenuController>());
                 var focus = (Transform)data.FindProperty("m_cameraFocusPoint").objectReferenceValue;
                 var cameraObject = new GameObject("PreviewCamera", typeof(Camera));
@@ -269,17 +271,19 @@ namespace CouchGuys.Editor
                 camera.transform.SetPositionAndRotation(focus.position, focus.rotation);
                 camera.fieldOfView = 48f; camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = Color.gray * .15f;
                 var target = new RenderTexture(1200, 900, 24); camera.targetTexture = target;
-                SaveRender(camera, "Temp/WeaponTerminalIdle.png");
+                SaveRender(camera, "Temp/" + outputName + "Idle.png");
                 var anchor = (Transform)data.FindProperty("m_screenCanvasAnchor").objectReferenceValue;
                 ((GameObject)data.FindProperty("m_idleScreen").objectReferenceValue).SetActive(false);
-                var ui = Object.Instantiate(AssetDatabase.LoadAssetAtPath<DispatcherMenuUI>(MenuPath), anchor, false);
+                var ui = Object.Instantiate((DispatcherMenuUI)data.FindProperty("m_menuPrefab").objectReferenceValue, anchor, false);
                 ui.ConfigureCamera(camera);
                 var catalogue = AssetDatabase.LoadAssetAtPath<ShopCatalogue>(ShopAssetBuilder.CataloguePath);
-                var options = catalogue.Items.Where(i => i != null && i.Category == ShopItemCategory.Weapon)
-                    .Select(i => new DialogueShopOption(i.DisplayName, i.Description, "$" + i.Price.ToString("N0"), "", Color.cyan, true, "", () => { }, i.Icon, "Weapons")).ToArray();
-                ui.Bind(new[] { new DialogueShopCategory("Deliveries", Array.Empty<DialogueShopOption>()), new DialogueShopCategory("Weapons", options) }, 10000, "WEAPON SHOP | E / ESC to return");
+                var category = instance.GetComponent<WeaponShopTerminal>().Category;
+                var options = catalogue.Items.Where(i => i != null && i.Category == category)
+                    .Select(i => new DialogueShopOption(i.DisplayName, i.Description, "$" + i.Price.ToString("N0"), "", Color.cyan, true, "", () => { }, i.Icon,
+                        category == ShopItemCategory.Vehicle ? "Vehicles" : "Weapons")).ToArray();
+                ui.Bind(new[] { new DialogueShopCategory("Deliveries", Array.Empty<DialogueShopOption>()), new DialogueShopCategory("Shop", options) }, 10000, category.ToString().ToUpperInvariant() + " SHOP | E / ESC to return");
                 ui.ShowCategory(1);
-                SaveRender(camera, "Temp/WeaponTerminalMenu.png");
+                SaveRender(camera, "Temp/" + outputName + "Menu.png");
                 camera.targetTexture = null; Object.DestroyImmediate(target);
             }
             finally { EditorSceneManager.ClosePreviewScene(scene); }

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace CouchGuys.Gameplay.Shop
 {
-    /// <summary>Local prop marker; requests use the player's existing network object.</summary>
+    /// <summary>Shared category-filtered shop marker. Requests use the player's existing network object.</summary>
     [DisallowMultipleComponent, RequireComponent(typeof(DispatcherMenuController))]
     public sealed class WeaponShopTerminal : MonoBehaviour
     {
@@ -12,6 +12,13 @@ namespace CouchGuys.Gameplay.Shop
         [SerializeField] private Transform m_interactionPoint;
         [SerializeField, Min(.1f)] private float m_interactionRange = 1.8f;
         [SerializeField] private string m_prompt = "Press E to browse weapons";
+        [SerializeField] private ShopItemCategory m_category = ShopItemCategory.Weapon;
+        [Tooltip("Optional fallback vehicle spawn marker. A containing depot uses its existing garage markers first.")]
+        [SerializeField] private Transform m_vehicleSpawnPoint;
+        public ShopItemCategory Category => m_category;
+        public Vector3 VehicleSpawnPosition => m_vehicleSpawnPoint != null
+            ? m_vehicleSpawnPoint.position : transform.TransformPoint(new Vector3(6f, 0f, 1.5f));
+        public Quaternion VehicleSpawnRotation => m_vehicleSpawnPoint != null ? m_vehicleSpawnPoint.rotation : transform.rotation;
         public DispatcherMenuController Menu => GetComponent<DispatcherMenuController>();
         public string Prompt => m_prompt;
         public Vector3 InteractionPosition => m_interactionPoint != null ? m_interactionPoint.position : transform.position;
