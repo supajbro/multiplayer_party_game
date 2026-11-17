@@ -1,0 +1,32 @@
+{
+  "objects": [
+    "Main_Sled_Body",
+    "Left_Runner",
+    "Right_Runner",
+    "Magnetic_Dock_Front_Left",
+    "Magnetic_Dock_Front_Right",
+    "Magnetic_Dock_Rear_Left",
+    "Magnetic_Dock_Rear_Right",
+    "Grab_Handle_Front_Left",
+    "Grab_Handle_Rear_Left",
+    "Grab_Handle_Front_Right",
+    "Grab_Handle_Rear_Right",
+    "Front_Tow_Hook_Left",
+    "Front_Tow_Hook_Right"
+  ],
+  "triangles": 19748,
+  "vertices": 10922,
+  "materials": 8,
+  "dock_dimensions_m": [
+    2.42,
+    1.58
+  ],
+  "body_dimensions_m": [
+    5.878000259399414,
+    4.383000373840332,
+    0.8449999690055847
+  ],
+  "forward_blender": "-Y",
+  "source": "ComfyUI Pixal3D lower-shell base simplified and assembled in Blender",
+  "comfyui_job": "4424511a-2d7b-4686-9649-abec7c367465"
+}

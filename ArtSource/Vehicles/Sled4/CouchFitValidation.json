@@ -1,0 +1,46 @@
+[
+  {
+    "model": "Couch/couch_03.fbx",
+    "footprint_m": [
+      2.2772250175476074,
+      0.9109740257263184
+    ],
+    "dock_center_m": [
+      -1.28,
+      -0.88
+    ]
+  },
+  {
+    "model": "Couch/Easy/easy_couch_01.fbx",
+    "footprint_m": [
+      2.119999885559082,
+      0.9913182258605957
+    ],
+    "dock_center_m": [
+      1.28,
+      -0.88
+    ]
+  },
+  {
+    "model": "Couch/couch_01.fbx",
+    "footprint_m": [
+      2.1566357612609863,
+      0.8888746500015259
+    ],
+    "dock_center_m": [
+      -1.28,
+      0.88
+    ]
+  },
+  {
+    "model": "Couch/couch_02.fbx",
+    "footprint_m": [
+      1.5566956996917725,
+      0.857486367225647
+    ],
+    "dock_center_m": [
+      1.28,
+      0.88
+    ]
+  }
+]

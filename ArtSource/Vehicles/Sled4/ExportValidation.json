@@ -1,0 +1,168 @@
+{
+  "mesh_count": 13,
+  "meshes": {
+    "Front_Tow_Hook_Left": {
+      "triangles": 276,
+      "degenerate_faces": 0,
+      "loose_vertices": 0,
+      "uv_layers": 1,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "Front_Tow_Hook_Right": {
+      "triangles": 276,
+      "degenerate_faces": 0,
+      "loose_vertices": 0,
+      "uv_layers": 1,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "Grab_Handle_Front_Left": {
+      "triangles": 1188,
+      "degenerate_faces": 0,
+      "loose_vertices": 0,
+      "uv_layers": 1,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "Grab_Handle_Front_Right": {
+      "triangles": 1188,
+      "degenerate_faces": 0,
+      "loose_vertices": 0,
+      "uv_layers": 1,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "Grab_Handle_Rear_Left": {
+      "triangles": 1188,
+      "degenerate_faces": 0,
+      "loose_vertices": 0,
+      "uv_layers": 1,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "Grab_Handle_Rear_Right": {
+      "triangles": 1188,
+      "degenerate_faces": 0,
+      "loose_vertices": 0,
+      "uv_layers": 1,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "Left_Runner": {
+      "triangles": 516,
+      "degenerate_faces": 0,
+      "loose_vertices": 0,
+      "uv_layers": 1,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "Magnetic_Dock_Front_Left": {
+      "triangles": 2430,
+      "degenerate_faces": 0,
+      "loose_vertices": 0,
+      "uv_layers": 1,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "Magnetic_Dock_Front_Right": {
+      "triangles": 2430,
+      "degenerate_faces": 0,
+      "loose_vertices": 0,
+      "uv_layers": 1,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "Magnetic_Dock_Rear_Left": {
+      "triangles": 2430,
+      "degenerate_faces": 0,
+      "loose_vertices": 0,
+      "uv_layers": 1,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "Magnetic_Dock_Rear_Right": {
+      "triangles": 2430,
+      "degenerate_faces": 0,
+      "loose_vertices": 0,
+      "uv_layers": 1,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "Main_Sled_Body": {
+      "triangles": 3692,
+      "degenerate_faces": 0,
+      "loose_vertices": 0,
+      "uv_layers": 1,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "Right_Runner": {
+      "triangles": 516,
+      "degenerate_faces": 0,
+      "loose_vertices": 0,
+      "uv_layers": 1,
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ]
+    }
+  },
+  "triangles": 19748,
+  "dimensions_m": [
+    5.878,
+    4.642,
+    1.6669
+  ],
+  "clear_couch_envelope_m": [
+    2.32,
+    1.2
+  ],
+  "sampled_max_couch_footprint_m": [
+    2.2772,
+    0.9913
+  ],
+  "footprint_margin_m": [
+    0.0428,
+    0.2087
+  ],
+  "comfyui_status": "Completed local Pixal3D image-to-3D; lower shell simplified in Blender",
+  "unity_editor_import_verified": false
+}

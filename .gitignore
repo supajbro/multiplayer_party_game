@@ -28,6 +28,7 @@
 
 # Local game screenshots (including standalone builds placed in the repository).
 Screenshots/
+/[Cc]aptures/
 
 # Uncomment this line if you wish to ignore the asset store tools plugin
 # /[Aa]ssets/AssetStoreTools*

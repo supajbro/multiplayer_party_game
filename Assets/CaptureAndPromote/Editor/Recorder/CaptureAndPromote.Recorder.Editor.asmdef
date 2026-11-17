@@ -1,0 +1,7 @@
+{
+  "name": "CaptureAndPromote.Recorder.Editor",
+  "references": ["CaptureAndPromote.Editor", "Unity.Recorder.Editor"],
+  "includePlatforms": ["Editor"],
+  "defineConstraints": ["CAPTURE_PROMOTE_RECORDER"],
+  "versionDefines": [{"name": "com.unity.recorder", "expression": "[5.1.0,6.0.0)", "define": "CAPTURE_PROMOTE_RECORDER"}]
+}

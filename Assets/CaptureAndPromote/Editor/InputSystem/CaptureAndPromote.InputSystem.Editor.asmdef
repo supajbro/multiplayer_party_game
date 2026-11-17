@@ -1,0 +1,7 @@
+{
+  "name": "CaptureAndPromote.InputSystem.Editor",
+  "references": ["CaptureAndPromote.Editor", "Unity.InputSystem"],
+  "includePlatforms": ["Editor"],
+  "defineConstraints": ["CAPTURE_PROMOTE_INPUT_SYSTEM"],
+  "versionDefines": [{"name": "com.unity.inputsystem", "expression": "1.0.0", "define": "CAPTURE_PROMOTE_INPUT_SYSTEM"}]
+}

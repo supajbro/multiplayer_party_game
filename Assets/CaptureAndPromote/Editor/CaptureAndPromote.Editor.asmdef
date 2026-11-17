@@ -1,0 +1,6 @@
+{
+  "name": "CaptureAndPromote.Editor",
+  "rootNamespace": "CaptureAndPromote",
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}

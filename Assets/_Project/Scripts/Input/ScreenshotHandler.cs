@@ -13,6 +13,11 @@ namespace CouchGuys.Input
     {
         private DateTime m_lastTimestamp;
 
+#if UNITY_EDITOR
+        // Assigned by the project Editor integration when Capture & Promote is available.
+        public static Func<bool> EditorOwnsScreenshotHotkey;
+#endif
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Initialize()
         {
@@ -25,6 +30,9 @@ namespace CouchGuys.Input
 
         private void Update()
         {
+#if UNITY_EDITOR
+            if (EditorOwnsScreenshotHotkey?.Invoke() == true) return;
+#endif
             if (Keyboard.current?.f12Key.wasPressedThisFrame ?? false)
                 StartCoroutine(Capture());
         }
