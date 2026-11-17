@@ -148,7 +148,7 @@ namespace CouchGuys.Editor
             Check(lockedUntil>Time.time,"Initial bat launch did not lock movement input.");
             Log("PASS: owning-player launch impulse delivered through the existing FishNet TargetRpc/movement motor.");
 
-            var car=Spawn<TrafficVehicleController>("Assets/_Project/Resources/Traffic/TrafficCar.prefab",new Vector3(20,.05f,0));
+            var car=Spawn<TrafficVehicleController>("Assets/_Project/Prefabs/Vehicles/TrafficCar.prefab",new Vector3(20,.05f,0));
             var truck=Spawn<TruckController>("Assets/_Project/Prefabs/Vehicles/Truck.prefab",new Vector3(30,.05f,0));
             Call(shooter,"ApplyBatHitServer",car,Vector3.forward,car.transform.position);
             Call(shooter,"ApplyBatHitServer",truck,Vector3.forward,truck.transform.position);

@@ -11,6 +11,7 @@ namespace CouchGuys.Gameplay.Traffic
     [CreateAssetMenu(fileName = "TrafficSettings", menuName = "Couch Guys/Traffic/Traffic Settings")]
     public sealed class TrafficSettings : ScriptableObject
     {
+        [SerializeField] private GameObject m_carPrefab;
         [SerializeField] private TrafficDrivingSide m_drivingSide = TrafficDrivingSide.AustralianLeft;
         [SerializeField, Min(0)] private int m_maximumActiveVehicles = 8;
         [SerializeField, Min(0.25f)] private float m_spawnInterval = 5f;
@@ -19,6 +20,7 @@ namespace CouchGuys.Gameplay.Traffic
         [SerializeField, Min(1f)] private float m_minimumVehicleSpawnDistance = 14f;
         [SerializeField, Range(0.12f, 0.35f)] private float m_laneOffsetFraction = 0.22f;
 
+        public GameObject CarPrefab => m_carPrefab;
         public TrafficDrivingSide DrivingSide => m_drivingSide;
         public int MaximumActiveVehicles => m_maximumActiveVehicles;
         public float SpawnInterval => m_spawnInterval;

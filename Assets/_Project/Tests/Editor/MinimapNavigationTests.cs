@@ -5,6 +5,7 @@ using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Gameplay.Sled;
 using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Player;
+using CouchGuys.ProceduralGeneration;
 using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using NUnit.Framework;
@@ -53,6 +54,123 @@ namespace CouchGuys.Tests.Editor
             for (int i = m_objects.Count - 1; i >= 0; i--)
                 if (m_objects[i] != null) Object.DestroyImmediate(m_objects[i]);
             m_objects.Clear();
+        }
+
+        [Test]
+        public void StaticBakeConnectsRoadTilesAndLeavesMiscellaneousPropsAsGrass()
+        {
+            var map = Map();
+            var generator = Create<NeighbourhoodGenerator>();
+            Set(map, "m_generator", generator);
+            Set(map, "m_mapBounds", new Bounds(Vector3.zero, new Vector3(40, 1, 40)));
+            Set(map, "m_textureResolution", 256);
+            var roads = (List<GeneratedRoad>)generator.GeneratedRoads;
+            for (int i = 0; i < 2; i++)
+            {
+                var road = Create<GeneratedRoad>();
+                road.transform.position = new Vector3(i * 10, 0, 0);
+                road.Initialise(GridCoordinate.Zero, RoadConnections.East | RoadConnections.West);
+                roads.Add(road);
+            }
+            var prop = new GameObject("Landmark_Statue");
+            m_objects.Add(prop);
+            prop.transform.SetParent(generator.transform);
+            prop.transform.position = new Vector3(0, 0, 15);
+            Call(map, "BuildStaticTexture");
+            Texture2D raster = Get<Texture2D>(map, "m_mapTexture");
+            var rt = RenderTexture.GetTemporary(256, 256, 0, RenderTextureFormat.ARGB32);
+            var oldActive = RenderTexture.active;
+            var copy = new Texture2D(256, 256);
+            try
+            {
+                Graphics.Blit(raster, rt);
+                RenderTexture.active = rt;
+                copy.ReadPixels(new Rect(0, 0, 256, 256), 0, 0);
+                copy.Apply();
+                Color seam = copy.GetPixel(Mathf.RoundToInt(25f / 40 * 255), Mathf.RoundToInt(22f / 40 * 255));
+                Color asphalt = copy.GetPixel(Mathf.RoundToInt(20f / 40 * 255), Mathf.RoundToInt(22f / 40 * 255));
+                Assert.That(Vector4.Distance(seam, asphalt), Is.LessThan(0.02f), "No grass/sidewalk seam between connected tiles.");
+                Color grass = copy.GetPixel(128, Mathf.RoundToInt(35f / 40 * 255));
+                Assert.That(grass.g, Is.GreaterThan(grass.r * 1.4f));
+                Assert.That(grass.g, Is.GreaterThan(grass.b * 1.4f));
+            }
+            finally
+            {
+                RenderTexture.active = oldActive;
+                RenderTexture.ReleaseTemporary(rt);
+                Object.DestroyImmediate(copy);
+                Object.DestroyImmediate(raster);
+                Set(map, "m_mapTexture", null);
+            }
+        }
+
+        [Test]
+        public void SavedArtworkIsSmallTransparentReadableAndWiredOnEveryHouse()
+        {
+            var player = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Player.prefab");
+            var map = player.GetComponent<NeighbourhoodMap>();
+            Assert.That(Get<MinimapPlayerMarker>(map, "m_playerMarkerPrefab"), Is.Not.Null);
+            var textures = new HashSet<Texture2D>();
+            foreach (string name in new[] { "House_01", "House_02", "House_03", "medium_house_02", "small_house_02" })
+            {
+                var house = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/_Project/Prefabs/Houses/{name}.prefab");
+                var texture = house.GetComponent<GeneratedProperty>().MinimapHouseIcon;
+                Assert.That(texture, Is.Not.Null, name);
+                Assert.That(texture.width, Is.InRange(128, 256));
+                Assert.That(texture.height, Is.InRange(128, 256));
+                Assert.That(texture.isReadable, Is.True);
+                var pixels = texture.GetPixels32(); // Actual imported compression must support the static CPU bake.
+                Assert.That(System.Array.Exists(pixels, c => c.a == 0), Is.True);
+                Assert.That(System.Array.Exists(pixels, c => c.a > 200), Is.True);
+                textures.Add(texture);
+            }
+            Assert.That(textures.Count, Is.EqualTo(3));
+        }
+
+        [Test]
+        public void HeadingRotatesOnlyTriangleAndPreservesPlayerTint()
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/UI/MinimapPlayerMarker.prefab");
+            var marker = Object.Instantiate(prefab).GetComponent<MinimapPlayerMarker>();
+            m_objects.Add(marker.gameObject);
+            Image head = Get<Image>(marker, "m_head");
+            Image direction = Get<Image>(marker, "m_direction");
+            marker.SetAppearance(Color.magenta, -90f);
+            Assert.That(head.color, Is.EqualTo(Color.magenta));
+            Assert.That(direction.color, Is.EqualTo(Color.magenta));
+            Assert.That(Quaternion.Angle(head.transform.localRotation, Quaternion.identity), Is.LessThan(0.01f));
+            Assert.That(Quaternion.Angle(direction.transform.localRotation, Quaternion.Euler(0, 0, -90)), Is.LessThan(0.01f));
+            Assert.That(head.sprite, Is.Not.Null);
+            Assert.That(direction.sprite, Is.Not.Null);
+        }
+
+        [TestCase(0f)]
+        [TestCase(90f)]
+        [TestCase(180f)]
+        [TestCase(270f)]
+        public void HouseFrontFollowsWorldRotationAndTransparentPixelsPreserveGrass(float yaw)
+        {
+            var map = Map();
+            Set(map, "m_mapBounds", new Bounds(Vector3.zero, new Vector3(20, 1, 20)));
+            var house = new GameObject("House");
+            m_objects.Add(house);
+            house.transform.rotation = Quaternion.Euler(0, yaw, 0);
+            var icon = new Texture2D(3, 3);
+            try
+            {
+                var source = new Color32[9];
+                source[1] = new Color32(255, 0, 0, 255); // Bottom/front of sprite.
+                var pixels = new Color32[101 * 101];
+                System.Array.Fill(pixels, new Color32(0, 100, 0, 255));
+                Call(map, "DrawHouseIcon", pixels, 101, Vector3.zero, house.transform,
+                    new Vector2(10, 10), icon, source);
+                Vector3 front = house.transform.forward * 3.6f;
+                int x = Mathf.RoundToInt((front.x + 10) * 5);
+                int y = Mathf.RoundToInt((front.z + 10) * 5);
+                Assert.That(pixels[y * 101 + x].r, Is.EqualTo(255));
+                Assert.That(pixels[50 * 101 + 50].g, Is.EqualTo(100));
+            }
+            finally { Object.DestroyImmediate(icon); }
         }
 
         [Test]

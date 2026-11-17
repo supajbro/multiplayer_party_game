@@ -1519,6 +1519,7 @@ MonoBehaviour:
   m_drivewayAnchor: {fileID: 3789234606361277328}
   m_gridFootprint: {x: 2, y: 2}
   m_visualRoot: {fileID: 6773189407449066877}
+  m_minimapHouseIcon: {fileID: 2800000, guid: 4fab41e1ce653c247936d0523b1f4678, type: 3}
   m_fitVisualToFootprint: 1
   m_zone: 0
   m_roadElevation: 0

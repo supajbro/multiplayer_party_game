@@ -89,6 +89,7 @@ MonoBehaviour:
   - I HAVE CAMERAS, IDIOT!
   - DO I LOOK LIKE A PUNCHING BAG?
   - YOU'RE LUCKY I'M ON WHEELS!
+  m_displayName: Simo' The Dispatcher
   m_deliveryManager: {fileID: 0}
   m_couchSpawnOffset: {x: 0, y: 0.5, z: 2.5}
   m_vehicleSpawnOffset: {x: 6, y: 0, z: 1.5}

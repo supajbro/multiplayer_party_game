@@ -3942,6 +3942,10 @@ MonoBehaviour:
   m_deliveryTimerTemplate: {fileID: 980000001}
   m_deliveryTimerSpacing: 4
   m_deliveryTimerBottomMargin: 204
+  m_currencyAnimationDuration: 0.5
+  m_currencyPulseScale: 1.1
+  m_currencyIncreaseColour: {r: 0.2, g: 1, b: 0.3, a: 1}
+  m_currencyDecreaseColour: {r: 1, g: 0.25, b: 0.2, a: 1}
   m_timerFillColour: {r: 0.05, g: 0.9, b: 1, a: 1}
   m_timerCountdownColour: {r: 1, g: 0.7, b: 0.08, a: 1}
   m_timerWarningThreshold: 0.3

@@ -15,6 +15,8 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField] private Transform m_drivewayAnchor;
         [SerializeField] private Vector2Int m_gridFootprint = Vector2Int.one;
         [SerializeField] private Transform m_visualRoot;
+        [Tooltip("Transparent house art for the cached minimap. Front entrance faces the bottom of the texture.")]
+        [SerializeField] private Texture2D m_minimapHouseIcon;
         [SerializeField] private bool m_fitVisualToFootprint;
         [SerializeField] private GridCoordinate m_anchorCoordinate;
         [SerializeField] private GridCoordinate m_roadCoordinate;
@@ -38,6 +40,7 @@ namespace CouchGuys.ProceduralGeneration
         public Transform DrivewayAnchor => m_drivewayAnchor;
         public Vector2Int GridFootprint => m_gridFootprint;
         public Transform VisualRoot => m_visualRoot;
+        public Texture2D MinimapHouseIcon => m_minimapHouseIcon;
         public bool FitVisualToFootprint => m_fitVisualToFootprint;
         public GridCoordinate AnchorCoordinate => m_anchorCoordinate;
         public GridCoordinate RoadCoordinate => m_roadCoordinate;

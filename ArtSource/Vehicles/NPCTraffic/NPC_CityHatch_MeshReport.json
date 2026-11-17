@@ -1,0 +1,24 @@
+{
+  "name": "NPC_CityHatch",
+  "triangles": 9998,
+  "vertices": 4953,
+  "paint_faces": 3475,
+  "size": [
+    2.212373733520508,
+    3.700000047683716,
+    2.0557873249053955
+  ],
+  "yaw": 0.6821795143877798,
+  "paint_color": [
+    0.094,
+    0.565,
+    1
+  ],
+  "materials": [
+    "NPC_CityHatch_Details",
+    "NPC_CityHatch_BodyPaint"
+  ],
+  "nonmanifold_edges": 0,
+  "boundary_edges": 0,
+  "loose_vertices": 0
+}

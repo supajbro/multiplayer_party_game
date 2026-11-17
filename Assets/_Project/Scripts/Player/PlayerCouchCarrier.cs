@@ -582,7 +582,12 @@ namespace CouchGuys.Player
                 m_sledInteractionPrompt = $"Press E to pick up {rackPickup.DisplayName} | {rackPickup.MountedSled.CargoStatus}";
                 return;
             }
-            FindNearestInteraction(out CouchCarryPoint carryPoint, out _, out _, out _, out _);
+            FindNearestInteraction(out CouchCarryPoint carryPoint, out _, out DeliveryNPC npc, out _, out _);
+            if (npc != null)
+            {
+                m_sledInteractionPrompt = $"Press E to talk to {npc.DisplayName}";
+                return;
+            }
             if (carryPoint != null && !carryPoint.Couch.IsSled &&
                 (!TryGetComponent(out PlayerStamina stamina) || stamina.CanAttachToCouch))
             {

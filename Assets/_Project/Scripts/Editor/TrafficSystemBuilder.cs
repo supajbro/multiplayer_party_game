@@ -14,21 +14,11 @@ namespace CouchGuys.Editor
         private const string SettingsDirectory = "Assets/_Project/Resources/Traffic";
         private const string TrafficSettingsPath = SettingsDirectory + "/TrafficSettings.asset";
         private const string CarSettingsPath = SettingsDirectory + "/CarSettings.asset";
-        private const string PrefabPath = SettingsDirectory + "/TrafficCar.prefab";
-        private const string VisualPrefabDirectory = SettingsDirectory + "/CarModels";
+        private const string PrefabPath = "Assets/_Project/Prefabs/Vehicles/TrafficCar.prefab";
+        private const string VisualPrefabDirectory = "Assets/_Project/Prefabs/Vehicles/NPCTraffic";
         private const string BodyMaterialPath = SettingsDirectory + "/TrafficCarBody.mat";
         private const string TrimMaterialPath = SettingsDirectory + "/TrafficCarTrim.mat";
         private const string SpawnablesPath = "Assets/_Project/Settings/NetworkSpawnablePrefabs.asset";
-
-        [InitializeOnLoadMethod]
-        private static void BuildMissingAssetsAfterImport()
-        {
-            GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
-            if (AssetDatabase.LoadAssetAtPath<GameObject>(VehicleAssetUpgrade.HatchbackPath) != null &&
-                (prefab == null || prefab.GetComponentInChildren<TrafficWheelAnimator>(true) == null ||
-                    prefab.GetComponentsInChildren<LODGroup>(true).Length != 1))
-                EditorApplication.delayCall += BuildTrafficSystem;
-        }
 
         [MenuItem("Couch Guys/Traffic/Build Traffic System")]
         public static void BuildTrafficSystem()
@@ -38,6 +28,7 @@ namespace CouchGuys.Editor
             CarSettings carSettings = LoadOrCreate<CarSettings>(CarSettingsPath);
             GameObject[] visualPrefabs = BuildVisualPrefabs();
             NetworkObject prefab = BuildCarPrefab(carSettings, visualPrefabs);
+            SetReference(trafficSettings, "m_carPrefab", prefab.gameObject);
             RegisterPrefab(prefab);
             EditorUtility.SetDirty(trafficSettings);
             EditorUtility.SetDirty(carSettings);
@@ -141,7 +132,10 @@ namespace CouchGuys.Editor
         private static GameObject[] BuildVisualPrefabs()
         {
             EnsureVisualDirectory();
-            return new[] { VehicleAssetUpgrade.BuildTrafficVisual() };
+            return new[] { "NPC_CityHatch", "NPC_FamilySUV", "NPC_UtilityPickup", "NPC_SportCoupe" }
+                .Select(name => AssetDatabase.LoadAssetAtPath<GameObject>($"{VisualPrefabDirectory}/{name}.prefab")
+                    ?? throw new UnityException($"Missing saved traffic visual: {name}"))
+                .ToArray();
         }
 
         private static void CreatePlaceholderVisual(
@@ -258,7 +252,7 @@ namespace CouchGuys.Editor
         {
             EnsureDirectory();
             if (!AssetDatabase.IsValidFolder(VisualPrefabDirectory))
-                AssetDatabase.CreateFolder(SettingsDirectory, "CarModels");
+                AssetDatabase.CreateFolder("Assets/_Project/Prefabs/Vehicles", "NPCTraffic");
         }
     }
 }

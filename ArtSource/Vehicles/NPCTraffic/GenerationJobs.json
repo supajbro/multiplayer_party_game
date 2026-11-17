@@ -1,0 +1,12 @@
+{
+  "workflow_source": "ArtSource/Vehicles/Flamecouch/Pixal3DWorkflow.json",
+  "generator": "Existing local ComfyUI Pixal3D INT8 workflow",
+  "reference": "ConceptSheet.png",
+  "target_triangles": 10000,
+  "jobs": {
+    "NPC_CityHatch": "1897760a-bd97-443d-8de2-f5e97c2058a9",
+    "NPC_FamilySUV": "cc6a8ac6-3a77-45b1-bda6-a14626abfcdd",
+    "NPC_UtilityPickup": "21cd6c87-bf4c-4633-8b8a-da00a72596db",
+    "NPC_SportCoupe": "5180bceb-25d7-4a28-806e-4dcb8ea04a94"
+  }
+}

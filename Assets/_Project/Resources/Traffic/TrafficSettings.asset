@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 60ea827203d2415c9ea4f63aa3e8e401, type: 3}
   m_Name: TrafficSettings
   m_EditorClassIdentifier: 
+  m_carPrefab: {fileID: 4713296498847513284, guid: a94d73f5c64db8943bab651301620ed2, type: 3}
   m_drivingSide: 0
   m_maximumActiveVehicles: 100
   m_spawnInterval: 1

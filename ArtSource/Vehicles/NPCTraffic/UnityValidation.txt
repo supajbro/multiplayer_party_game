@@ -1,0 +1,4 @@
+NPC_CityHatch: PASS; triangles=9998; bounds=(2.212, 2.056, 3.700); ground=0; separate body paint and textures resolved
+NPC_FamilySUV: PASS; triangles=9996; bounds=(2.690, 2.510, 4.500); ground=0; separate body paint and textures resolved
+NPC_UtilityPickup: PASS; triangles=8664; bounds=(2.892, 2.896, 4.900); ground=0; separate body paint and textures resolved
+NPC_SportCoupe: PASS; triangles=10000; bounds=(2.533, 2.176, 4.300); ground=0; separate body paint and textures resolved

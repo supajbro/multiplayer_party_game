@@ -13,7 +13,7 @@ namespace CouchGuys.Editor
     public static class RogueCarPrefabBuilder
     {
         public const string PrefabPath = "Assets/_Project/Prefabs/Enemies/RogueCar.prefab";
-        private const string SourcePath = "Assets/_Project/Resources/Traffic/TrafficCar.prefab";
+        private const string SourcePath = "Assets/_Project/Prefabs/Vehicles/TrafficCar.prefab";
         private const string SettingsPath = "Assets/_Project/Settings/Delivery/RogueCarSettings.asset";
         private const string HardTierPath = "Assets/_Project/Settings/Delivery/HardDelivery.asset";
         private const string SpawnablesPath = "Assets/_Project/Settings/NetworkSpawnablePrefabs.asset";

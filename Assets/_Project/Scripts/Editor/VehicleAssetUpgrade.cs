@@ -41,13 +41,9 @@ namespace CouchGuys.Editor
                 }
                 finally { PrefabUtility.UnloadPrefabContents(contents); }
             }
-            GameObject traffic = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Resources/Traffic/TrafficCar.prefab");
-            if (traffic == null || traffic.GetComponentInChildren<TrafficWheelAnimator>(true) == null ||
-                traffic.GetComponentsInChildren<LODGroup>(true).Length != 1)
-                TrafficSystemBuilder.BuildTrafficSystem();
             ShopAssetBuilder.EnsureDefaultCatalogue();
             AssetDatabase.SaveAssets();
-            Debug.Log("Truck door/seat migration and single hatchback traffic integration complete.");
+            Debug.Log("Truck door/seat migration complete.");
         }
 
         public static void UpgradeTruckRoot(GameObject root)

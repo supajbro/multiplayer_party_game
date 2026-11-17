@@ -26,7 +26,7 @@ namespace CouchGuys.Tests.Editor
         public void HardDeliveryUsesDedicatedRegisteredRoguePrefab()
         {
             var hard = AssetDatabase.LoadAssetAtPath<DeliveryTierConfig>("Assets/_Project/Settings/Delivery/HardDelivery.asset");
-            var traffic = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Resources/Traffic/TrafficCar.prefab");
+            var traffic = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Vehicles/TrafficCar.prefab");
             Assert.That(hard.RogueCarSettings, Is.Not.Null);
             NetworkObject rogue = hard.RogueCarPrefab;
             Assert.That(rogue, Is.Not.Null);
@@ -48,7 +48,7 @@ namespace CouchGuys.Tests.Editor
         public void RoguePrefabUsesDedicatedModelAndThreeLods()
         {
             var rogue = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Enemies/RogueCar.prefab");
-            var traffic = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Resources/Traffic/TrafficCar.prefab");
+            var traffic = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Vehicles/TrafficCar.prefab");
             var visual = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Vehicles/RogueCarVisual.prefab");
             Assert.That(visual, Is.Not.Null);
             var controller = new SerializedObject(rogue.GetComponent<TrafficVehicleController>());

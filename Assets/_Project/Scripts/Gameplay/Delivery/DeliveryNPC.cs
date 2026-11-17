@@ -8,6 +8,7 @@ namespace CouchGuys.Gameplay.Delivery
     [DisallowMultipleComponent]
     public sealed partial class DeliveryNPC : MonoBehaviour
     {
+        [SerializeField] private string m_displayName = "Simo' The Dispatcher";
         [SerializeField] private DeliveryManager m_deliveryManager;
         [SerializeField] private Vector3 m_couchSpawnOffset = new Vector3(0f, 0.5f, 2.5f);
         [SerializeField, Tooltip("Primary local-space location used for purchased vehicles.")]
@@ -16,6 +17,8 @@ namespace CouchGuys.Gameplay.Delivery
         [SerializeField] private Transform m_vehicleSpawnPoint;
         internal DeliveryManager Manager => m_deliveryManager;
         private DepotController m_depot;
+
+        public string DisplayName => m_displayName;
 
         public float InteractionDistanceSquared(Vector3 playerPosition)
         {

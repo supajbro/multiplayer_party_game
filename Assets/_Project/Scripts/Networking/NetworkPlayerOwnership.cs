@@ -4,6 +4,8 @@ using CouchGuys.Input;
 using CouchGuys.Player;
 using FishNet.Connection;
 using FishNet.Object;
+using FishNet.Object.Synchronizing;
+using Steamworks;
 using UnityEngine;
 
 namespace CouchGuys.Networking
@@ -16,6 +18,12 @@ namespace CouchGuys.Networking
     {
         public static event Action<NetworkPlayerOwnership> ServerPlayerStarted;
         public static event Action<NetworkPlayerOwnership> ServerPlayerStopped;
+        public static NetworkPlayerOwnership LocalPlayer { get; private set; }
+
+        // Identity belongs to this owned network object, never to a lobby index or object name.
+        // SyncVar state is included when a late observer receives the player spawn.
+        private readonly SyncVar<string> m_displayName = new(string.Empty);
+        public string DisplayName => m_displayName.Value;
 
         [Header("Local-only Components")]
         [SerializeField] private PlayerInputReader m_input;
@@ -150,6 +158,31 @@ namespace CouchGuys.Networking
             SetCameraRigDetached(IsOwner);
             SetLocalControl(IsOwner);
             ApplyIdentityColour();
+            PublishLocalDisplayName();
+        }
+
+        private void PublishLocalDisplayName()
+        {
+            if (!IsOwner) return;
+            string displayName = SteamClientBootstrap.IsInitialised
+                ? SteamFriends.GetPersonaName()
+                : $"Player {OwnerId + 1}";
+            SetDisplayNameServerRpc(displayName);
+        }
+
+        [ServerRpc]
+        private void SetDisplayNameServerRpc(string displayName)
+        {
+            // FishNet requires ownership for this RPC. Bound presentation data once at entry;
+            // rich text is disabled on the view so Steam names cannot inject formatting.
+            if (string.IsNullOrWhiteSpace(displayName)) return;
+            displayName = displayName.Replace('\n', ' ').Replace('\r', ' ').Replace('\t', ' ').Trim();
+            if (displayName.Length > 128)
+            {
+                int length = char.IsHighSurrogate(displayName[127]) ? 127 : 128;
+                displayName = displayName.Substring(0, length);
+            }
+            m_displayName.Value = displayName;
         }
 
         public override void OnStopClient()
@@ -161,6 +194,7 @@ namespace CouchGuys.Networking
 
         private void OnDestroy()
         {
+            if (LocalPlayer == this) LocalPlayer = null;
             // A detached camera is no longer a child of the network Player, so it must be
             // explicitly cleaned up if the Player is destroyed without OnStopClient.
             if (m_cameraRigDetached && m_cameraRig != null)
@@ -220,6 +254,8 @@ namespace CouchGuys.Networking
 
         private void SetLocalControl(bool isLocalOwner)
         {
+            if (isLocalOwner) LocalPlayer = this;
+            else if (LocalPlayer == this) LocalPlayer = null;
             if (m_input != null)
             {
                 m_input.enabled = isLocalOwner;

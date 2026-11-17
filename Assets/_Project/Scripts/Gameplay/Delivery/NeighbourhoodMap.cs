@@ -23,6 +23,13 @@ namespace CouchGuys.Gameplay.Delivery
         [SerializeField, Range(128, 1024)] private int m_textureResolution = 512;
         [SerializeField, Min(0.05f)] private float m_actorRefreshInterval = 0.5f;
 
+        [Header("Minimap Artwork")]
+        [SerializeField] private MinimapPlayerMarker m_playerMarkerPrefab;
+        [SerializeField] private Texture2D m_defaultHouseIcon;
+        [SerializeField, Min(0f)] private float m_sidewalkWidth = 1.5f;
+        [SerializeField, Min(0.05f)] private float m_curbWidth = 0.25f;
+        [SerializeField, Range(0.5f, 1.2f)] private float m_houseIconFill = 0.95f;
+
         [Header("Navigation")]
         [SerializeField] private RectTransform m_deliveryMarkerPrefab;
         [SerializeField] private InputAction m_cycleDestination = new("Cycle Delivery Destination",
@@ -34,11 +41,11 @@ namespace CouchGuys.Gameplay.Delivery
         private PlayerTruckInteractor m_truckInteractor;
         private PlayerHoverboardInteractor m_hoverboardInteractor;
 
-        private static readonly Color32 Grass = new(74, 160, 82, 255);
-        private static readonly Color32 Park = new(91, 190, 96, 255);
-        private static readonly Color32 Road = new(91, 102, 113, 255);
-        private static readonly Color32 RoadEdge = new(196, 188, 151, 255);
-        private static readonly Color32 House = new(229, 157, 93, 255);
+        private static readonly Color32 Grass = new(89, 153, 65, 255);
+        private static readonly Color32 Road = new(49, 55, 68, 255);
+        private static readonly Color32 RoadEdge = new(223, 214, 191, 255);
+        private static readonly Color32 Curb = new(170, 173, 166, 255);
+        private static readonly Color32 Lane = new(242, 239, 220, 255);
         private static readonly Color32 Landmark = new(72, 177, 204, 255);
         private static readonly Color32 Depot = new(247, 206, 83, 255);
 
@@ -48,6 +55,9 @@ namespace CouchGuys.Gameplay.Delivery
             public RectTransform ExpandedRect;
             public Text Label;
             public Text ExpandedLabel;
+            public MinimapPlayerMarker Visual;
+            public MinimapPlayerMarker ExpandedVisual;
+            public Color Colour;
         }
 
         private readonly Dictionary<PlayerHealth, ActorMarker> m_actorMarkers = new();
@@ -73,7 +83,6 @@ namespace CouchGuys.Gameplay.Delivery
         private Text m_distanceText;
         private Texture2D m_mapTexture;
         private Sprite m_arrowSprite;
-        private Sprite m_aiSprite;
         private Sprite m_waypointSprite;
         private Bounds m_mapBounds;
         private float m_markerRadius;
@@ -149,6 +158,7 @@ namespace CouchGuys.Gameplay.Delivery
                 {
                     entry.Value.ExpandedRect = Instantiate(entry.Value.Rect, m_expandedMarkers, false);
                     entry.Value.ExpandedRect.GetComponent<Image>().raycastTarget = false;
+                    entry.Value.ExpandedVisual = entry.Value.ExpandedRect.GetComponent<MinimapPlayerMarker>();
                 }
                 RectTransform marker = entry.Value.ExpandedRect;
                 if (marker == null) continue;
@@ -156,8 +166,10 @@ namespace CouchGuys.Gameplay.Delivery
                 if (!marker.gameObject.activeSelf) continue;
                 marker.anchoredPosition = ExpandedPosition(actor.transform.position, scale);
                 Vector3 forward = actor.transform.forward;
-                marker.localRotation = Quaternion.Euler(0f, 0f,
-                    -Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg);
+                float heading = -Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg;
+                if (entry.Value.ExpandedVisual != null)
+                    entry.Value.ExpandedVisual.SetAppearance(entry.Value.Colour, heading);
+                else marker.localRotation = Quaternion.Euler(0f, 0f, heading);
             }
 
             if (m_expandedWaypoint == null)
@@ -205,7 +217,8 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void BuildMinimap()
         {
-            if (m_hud == null || m_hud.View == null || m_hud.View.m_minimapRoot == null) return;
+            if (m_hud == null || m_hud.View == null || m_hud.View.m_minimapRoot == null ||
+                m_playerMarkerPrefab == null) return;
             RectTransform root = m_hud.View.m_minimapRoot;
             m_canvasRoot = root.gameObject;
             m_mapBounds = m_generator.GeneratedWorldBounds;
@@ -221,8 +234,12 @@ namespace CouchGuys.Gameplay.Delivery
             Canvas.ForceUpdateCanvases();
             m_markerRadius = Mathf.Min(m_markerLayer.rect.width, m_markerLayer.rect.height) * 0.5f;
             Image local = m_markerLayer.Find("LocalPlayer").GetComponent<Image>();
-            local.sprite = m_arrowSprite;
-            m_actorMarkers[m_localHealth] = new ActorMarker { Rect = local.rectTransform };
+            local.enabled = false;
+            var localVisual = Instantiate(m_playerMarkerPrefab, m_markerLayer, false);
+            m_actorMarkers[m_localHealth] = new ActorMarker
+            {
+                Rect = (RectTransform)localVisual.transform, Visual = localVisual, Colour = local.color
+            };
             m_waypointImage = m_markerLayer.Find("DeliveryWaypoint").GetComponent<Image>();
             m_waypointImage.sprite = m_waypointSprite;
             m_waypointRect = m_waypointImage.rectTransform;
@@ -248,21 +265,23 @@ namespace CouchGuys.Gameplay.Delivery
             int resolution = Mathf.Clamp(m_textureResolution, 128, 1024);
             Color32[] pixels = new Color32[resolution * resolution];
             Array.Fill(pixels, Grass);
-            Transform[] generatedTransforms = m_generator.GetComponentsInChildren<Transform>(true);
-            DrawNamedLandmarks(pixels, resolution, generatedTransforms, true);
-
             IReadOnlyList<GeneratedRoad> roads = m_generator.GeneratedRoads;
+            // Union all sidewalk/curb outlines before asphalt: adjacent tiles have no seams.
+            for (int pass = 0; pass < 3; pass++)
             for (int i = 0; i < roads.Count; i++)
             {
                 GeneratedRoad road = roads[i];
                 if (road == null) continue;
                 DrawRect(pixels, resolution, road.transform.position, road.transform.right,
-                    road.transform.forward, Vector2.one * m_generator.TileSize * 0.9f, RoadEdge);
-                DrawRect(pixels, resolution, road.transform.position, road.transform.right,
-                    road.transform.forward, Vector2.one * m_generator.TileSize * 0.72f, Road);
+                    road.transform.forward, Vector2.one * (m_generator.TileSize +
+                        (pass == 0 ? m_sidewalkWidth * 2f : pass == 1 ? m_curbWidth * 2f : 0f)),
+                    pass == 0 ? RoadEdge : pass == 1 ? Curb : Road);
             }
+            for (int i = 0; i < roads.Count; i++)
+                if (roads[i] != null) DrawRoadDetails(pixels, resolution, roads[i]);
 
             IReadOnlyList<GeneratedProperty> properties = m_generator.GeneratedProperties;
+            var iconPixels = new Dictionary<Texture2D, Color32[]>();
             for (int i = 0; i < properties.Count; i++)
             {
                 GeneratedProperty property = properties[i];
@@ -270,9 +289,29 @@ namespace CouchGuys.Gameplay.Delivery
                 Vector2 size = new(property.GridFootprint.x * m_generator.TileSize * 0.66f,
                     property.GridFootprint.y * m_generator.TileSize * 0.66f);
                 GeneratedLot lot = property.GetComponent<GeneratedLot>();
-                Color32 colour = lot != null && lot.LotType != LotType.Residential ? Landmark : House;
-                DrawRect(pixels, resolution, property.transform.position, property.transform.right,
-                    property.transform.forward, size, colour);
+                if (lot != null && lot.LotType != LotType.Residential)
+                {
+                    DrawRect(pixels, resolution, property.transform.position, property.transform.right,
+                        property.transform.forward, size, Landmark);
+                    continue;
+                }
+                Vector3 driveway = property.DrivewayEnd - property.DrivewayStart;
+                driveway.y = 0f;
+                if (driveway.sqrMagnitude > 0.01f && property.ReservedDrivewayWidth > 0f)
+                    DrawRect(pixels, resolution, (property.DrivewayStart + property.DrivewayEnd) * 0.5f,
+                        Vector3.Cross(Vector3.up, driveway.normalized), driveway.normalized,
+                        new Vector2(property.ReservedDrivewayWidth, driveway.magnitude), RoadEdge);
+                Texture2D icon = property.MinimapHouseIcon != null ? property.MinimapHouseIcon : m_defaultHouseIcon;
+                if (icon == null) continue;
+                if (!iconPixels.TryGetValue(icon, out var source))
+                {
+                    source = icon.GetPixels32();
+                    iconPixels.Add(icon, source);
+                }
+                Vector3 centre = property.VisualRoot != null ? property.VisualRoot.position : property.transform.position;
+                size = new Vector2(property.GridFootprint.x, property.GridFootprint.y) *
+                    (m_generator.TileSize * m_houseIconFill);
+                DrawHouseIcon(pixels, resolution, centre, property.transform, size, icon, source);
             }
 
             StartingArea start = m_generator.GeneratedStartingArea;
@@ -283,7 +322,6 @@ namespace CouchGuys.Gameplay.Delivery
                 DrawRect(pixels, resolution, start.transform.position, start.transform.right,
                     start.transform.forward, size, Depot);
             }
-            DrawNamedLandmarks(pixels, resolution, generatedTransforms, false);
 
             m_mapTexture = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false)
             {
@@ -295,28 +333,66 @@ namespace CouchGuys.Gameplay.Delivery
             m_mapTexture.Apply(false, true);
         }
 
-        private void DrawNamedLandmarks(
-            Color32[] pixels,
-            int resolution,
-            Transform[] items,
-            bool parksOnly)
+        private void DrawRoadDetails(Color32[] pixels, int resolution, GeneratedRoad road)
         {
-            for (int i = 0; i < items.Length; i++)
+            float tile = m_generator.TileSize;
+            // Two texels survive bilinear downsampling to the compact HUD.
+            float lineWidth = Mathf.Max(0.35f, Mathf.Max(m_mapBounds.size.x, m_mapBounds.size.z) / resolution * 2f);
+            for (int side = 0; side < 4; side++)
             {
-                Transform item = items[i];
-                string itemName = item.name;
-                bool isPark = itemName.StartsWith("Park_", StringComparison.OrdinalIgnoreCase);
-                if (parksOnly != isPark) continue;
-                bool isLandmark = itemName.StartsWith("Landmark_", StringComparison.OrdinalIgnoreCase) ||
-                    itemName.IndexOf("Fountain", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    itemName.IndexOf("Gazebo", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                    itemName.IndexOf("Statue", StringComparison.OrdinalIgnoreCase) >= 0;
-                if (!isPark && !isLandmark) continue;
-                EnvironmentPlacementMetadata metadata = item.GetComponent<EnvironmentPlacementMetadata>();
-                Vector2 size = metadata != null ? metadata.Footprint :
-                    Vector2.one * m_generator.TileSize * (isPark ? 2.5f : 0.7f);
-                DrawRect(pixels, resolution, item.position, item.right, item.forward,
-                    size, isPark ? Park : Landmark);
+                Vector3 outward = side == 0 ? road.transform.forward : side == 1 ? road.transform.right :
+                    side == 2 ? -road.transform.forward : -road.transform.right;
+                Vector3 tangent = Vector3.Cross(Vector3.up, outward);
+                bool connected = ((int)road.Connections & (1 << side)) != 0;
+                if (connected)
+                {
+                    for (int dash = 0; dash < 2; dash++)
+                        DrawRect(pixels, resolution, road.transform.position + outward * tile * (0.22f + dash * 0.23f),
+                            tangent, outward, new Vector2(lineWidth, tile * 0.12f), Lane);
+                }
+                else if (m_sidewalkWidth > 0f)
+                {
+                    for (int joint = -1; joint <= 1; joint++)
+                        DrawRect(pixels, resolution, road.transform.position +
+                            outward * (tile * 0.5f + m_sidewalkWidth * 0.5f + m_curbWidth) + tangent * joint * tile / 3f,
+                            tangent, outward, new Vector2(lineWidth * 0.65f, Mathf.Max(0f, m_sidewalkWidth - m_curbWidth)), Curb);
+                }
+            }
+        }
+
+        private void DrawHouseIcon(Color32[] pixels, int resolution, Vector3 centre, Transform house,
+            Vector2 size, Texture2D icon, Color32[] source)
+        {
+            // Authored front is +Z; generated artwork has its front at the bottom.
+            Vector2 right = new(-house.right.x, -house.right.z);
+            Vector2 forward = new(-house.forward.x, -house.forward.z);
+            right.Normalize();
+            forward.Normalize();
+            Vector2 half = size * 0.5f;
+            float extentX = Mathf.Abs(right.x) * half.x + Mathf.Abs(forward.x) * half.y;
+            float extentZ = Mathf.Abs(right.y) * half.x + Mathf.Abs(forward.y) * half.y;
+            int minX = WorldToPixel(centre.x - extentX, m_mapBounds.min.x, m_mapBounds.size.x, resolution);
+            int maxX = WorldToPixel(centre.x + extentX, m_mapBounds.min.x, m_mapBounds.size.x, resolution);
+            int minY = WorldToPixel(centre.z - extentZ, m_mapBounds.min.z, m_mapBounds.size.z, resolution);
+            int maxY = WorldToPixel(centre.z + extentZ, m_mapBounds.min.z, m_mapBounds.size.z, resolution);
+            for (int y = minY; y <= maxY; y++)
+            for (int x = minX; x <= maxX; x++)
+            {
+                Vector2 offset = new(PixelToWorld(x, m_mapBounds.min.x, m_mapBounds.size.x, resolution) - centre.x,
+                    PixelToWorld(y, m_mapBounds.min.z, m_mapBounds.size.z, resolution) - centre.z);
+                float u = Vector2.Dot(offset, right) / size.x + 0.5f;
+                float v = Vector2.Dot(offset, forward) / size.y + 0.5f;
+                if (u < 0f || u > 1f || v < 0f || v > 1f) continue;
+                int sx = Mathf.Clamp(Mathf.RoundToInt(u * (icon.width - 1)), 0, icon.width - 1);
+                int sy = Mathf.Clamp(Mathf.RoundToInt(v * (icon.height - 1)), 0, icon.height - 1);
+                Color32 sample = source[sy * icon.width + sx];
+                if (sample.a == 0) continue;
+                int index = y * resolution + x;
+                Color32 background = pixels[index];
+                int a = sample.a;
+                pixels[index] = new Color32((byte)((sample.r * a + background.r * (255 - a)) / 255),
+                    (byte)((sample.g * a + background.g * (255 - a)) / 255),
+                    (byte)((sample.b * a + background.b * (255 - a)) / 255), 255);
             }
         }
 
@@ -360,8 +436,6 @@ namespace CouchGuys.Gameplay.Delivery
         {
             m_arrowSprite = ProceduralSprite("Player Arrow", 64, (x, y) =>
                 y > -0.9f && y < 0.95f && Mathf.Abs(x) < (0.95f - y) * 0.48f + 0.08f);
-            m_aiSprite = ProceduralSprite("AI Diamond", 64, (x, y) =>
-                Mathf.Abs(x) + Mathf.Abs(y * 0.78f) < 0.85f);
             m_waypointSprite = ProceduralSprite("Waypoint Ring", 64, (x, y) =>
             {
                 float radius = Mathf.Sqrt(x * x + y * y);
@@ -396,12 +470,12 @@ namespace CouchGuys.Gameplay.Delivery
                 if (actor == null || !actor.isActiveAndEnabled || actor == m_localHealth ||
                     m_actorMarkers.ContainsKey(actor)) continue;
                 bool ai = actor.IsAiTeammate;
-                UnityEngine.UI.Image image = Image(ai ? "AI Teammate" : "Player Teammate", m_markerLayer,
-                    ai ? new Color(0.35f, 1f, 0.42f, 1f) : new Color(0.25f, 0.58f, 1f, 1f),
-                    ai ? m_aiSprite : m_arrowSprite);
-                image.rectTransform.anchorMin = image.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-                image.rectTransform.sizeDelta = ai ? new Vector2(17f, 17f) : new Vector2(18f, 22f);
-                m_actorMarkers.Add(actor, new ActorMarker { Rect = image.rectTransform });
+                Color colour = ai ? new Color(0.35f, 1f, 0.42f, 1f) : new Color(0.25f, 0.58f, 1f, 1f);
+                var visual = Instantiate(m_playerMarkerPrefab, m_markerLayer, false);
+                m_actorMarkers.Add(actor, new ActorMarker
+                {
+                    Rect = (RectTransform)visual.transform, Visual = visual, Colour = colour
+                });
             }
 
             m_removedActors.Clear();
@@ -442,8 +516,9 @@ namespace CouchGuys.Gameplay.Delivery
                 if (!visible || !actor.IsAlive) continue;
                 marker.anchoredPosition = offset / m_visibleRadiusMetres * m_markerRadius;
                 Vector3 forward = actor.transform.forward;
-                marker.localRotation = Quaternion.Euler(0f, 0f,
-                    -Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg);
+                float heading = -Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg;
+                if (entry.Value.Visual != null) entry.Value.Visual.SetAppearance(entry.Value.Colour, heading);
+                else marker.localRotation = Quaternion.Euler(0f, 0f, heading);
             }
         }
 
@@ -681,7 +756,8 @@ namespace CouchGuys.Gameplay.Delivery
             m_primaryDeliveryId = -1;
             foreach (var marker in m_actorMarkers)
             {
-                if (marker.Key != m_localHealth && marker.Value.Rect != null) Destroy(marker.Value.Rect.gameObject);
+                if ((marker.Key != m_localHealth || marker.Value.Visual != null) && marker.Value.Rect != null)
+                    Destroy(marker.Value.Rect.gameObject);
                 if (marker.Value.ExpandedRect != null) Destroy(marker.Value.ExpandedRect.gameObject);
             }
             if (m_expandedWaypoint != null) Destroy(m_expandedWaypoint.gameObject);
@@ -706,7 +782,6 @@ namespace CouchGuys.Gameplay.Delivery
             m_cachedDestinationProperty = null;
             DestroyTexture(ref m_mapTexture);
             DestroySprite(ref m_arrowSprite);
-            DestroySprite(ref m_aiSprite);
             DestroySprite(ref m_waypointSprite);
         }
 
@@ -742,17 +817,6 @@ namespace CouchGuys.Gameplay.Delivery
         {
             if (texture != null) Destroy(texture);
             texture = null;
-        }
-
-        private static UnityEngine.UI.Image Image(string name, Transform parent, Color colour, Sprite sprite)
-        {
-            GameObject go = new(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
-            go.transform.SetParent(parent, false);
-            UnityEngine.UI.Image image = go.GetComponent<UnityEngine.UI.Image>();
-            image.color = colour;
-            image.sprite = sprite;
-            image.raycastTarget = false;
-            return image;
         }
 
     }

@@ -43,7 +43,7 @@ namespace CouchGuys.Gameplay.Delivery
         [SerializeField, Min(0f)] private float m_vehicleGroundOffset = 0.12f;
 
         [Header("Delivery Completion")]
-        [SerializeField, Min(0.25f)] private float m_collectionRadius = 2.5f;
+        [SerializeField, Min(0.25f)] private float m_collectionRadius = 5f;
         [SerializeField, Min(0.25f)] private float m_vehicleDeliveryRadius = 5f;
 
         [Header("Debug/Test Teleport")]

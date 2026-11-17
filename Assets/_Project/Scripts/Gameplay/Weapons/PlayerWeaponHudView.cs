@@ -38,6 +38,61 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField, Min(0f)] public float m_deliveryTimerSpacing = 4f;
         [SerializeField, Min(0f)] public float m_deliveryTimerBottomMargin = 204f;
 
+        [Header("Currency feedback")]
+        [Tooltip("Seconds to count to a new balance. Zero applies it immediately.")]
+        [SerializeField, Min(0f)] private float m_currencyAnimationDuration = 0.5f;
+        [Tooltip("Peak text scale relative to its authored scale.")]
+        [SerializeField, Range(1f, 1.3f)] private float m_currencyPulseScale = 1.1f;
+        [SerializeField] private Color m_currencyIncreaseColour = new(0.2f, 1f, 0.3f, 1f);
+        [SerializeField] private Color m_currencyDecreaseColour = new(1f, 0.25f, 0.2f, 1f);
+        private bool m_currencyInitialized;
+        private int m_currencyTarget;
+        private double m_currencyFrom, m_currencyDisplay;
+        private float m_currencyElapsed;
+        private Color m_currencyBaseColour;
+        private Vector3 m_currencyBaseScale;
+
+        public void PresentCurrency(int amount, float deltaTime)
+        {
+            if (m_currencyText == null) return;
+            if (!m_currencyInitialized)
+            {
+                // Show the initial balance without treating HUD creation as a gain.
+                m_currencyInitialized = true;
+                m_currencyBaseColour = m_currencyText.color;
+                m_currencyBaseScale = m_currencyText.rectTransform.localScale;
+                m_currencyFrom = m_currencyDisplay = m_currencyTarget = amount;
+                m_currencyElapsed = m_currencyAnimationDuration;
+                m_currencyText.text = $"$ {amount:N0}";
+                return;
+            }
+
+            if (amount != m_currencyTarget)
+            {
+                m_currencyFrom = m_currencyDisplay;
+                m_currencyTarget = amount;
+                m_currencyElapsed = 0f;
+            }
+            else if (m_currencyElapsed >= m_currencyAnimationDuration) return;
+
+            m_currencyElapsed += Mathf.Max(0f, deltaTime);
+            float t = m_currencyAnimationDuration > 0f
+                ? Mathf.Clamp01(m_currencyElapsed / m_currencyAnimationDuration) : 1f;
+            float eased = Mathf.SmoothStep(0f, 1f, t);
+            m_currencyDisplay = m_currencyFrom + (m_currencyTarget - m_currencyFrom) * eased;
+            int displayed = (int)System.Math.Round(m_currencyDisplay, System.MidpointRounding.AwayFromZero);
+            string label = $"$ {displayed:N0}";
+            if (m_currencyText.text != label) m_currencyText.text = label;
+
+            bool changing = t < 1f && m_currencyFrom != m_currencyTarget;
+            Color colour = m_currencyTarget > m_currencyFrom ? m_currencyIncreaseColour : m_currencyDecreaseColour;
+            colour.a = m_currencyBaseColour.a;
+            m_currencyText.color = changing ? colour : m_currencyBaseColour;
+            float pulse = changing ? Mathf.Sin(t * Mathf.PI) : 0f;
+            m_currencyText.rectTransform.localScale = m_currencyBaseScale *
+                Mathf.Lerp(1f, m_currencyPulseScale, pulse);
+        }
+
         [Header("Delivery timer")]
         [SerializeField] private Color m_timerFillColour = new(0.05f, 0.9f, 1f, 1f);
         [SerializeField] private Color m_timerCountdownColour = new(1f, 0.7f, 0.08f, 1f);

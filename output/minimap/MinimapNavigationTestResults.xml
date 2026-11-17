@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="14" result="Passed" total="14" passed="14" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.573952">
+  <test-suite type="TestSuite" id="1378" name="multiplayer_game" fullname="multiplayer_game" runstate="Runnable" testcasecount="288" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.573952" total="14" passed="14" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1366" name="Assembly-CSharp-Editor.dll" fullname="C:/Users/Jaden/Documents/MyUnityProjects/multiplayer_party_game/Library/ScriptAssemblies/Assembly-CSharp-Editor.dll" runstate="Runnable" testcasecount="288" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.563021" total="14" passed="14" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="47196" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1367" name="CouchGuys" fullname="CouchGuys" runstate="Runnable" testcasecount="288" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.558882" total="14" passed="14" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1368" name="Tests" fullname="CouchGuys.Tests" runstate="Runnable" testcasecount="288" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.555670" total="14" passed="14" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1369" name="Editor" fullname="CouchGuys.Tests.Editor" runstate="Runnable" testcasecount="288" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.552465" total="14" passed="14" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestFixture" id="1177" name="MinimapNavigationTests" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" testcasecount="14" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.550993" total="14" passed="14" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="ParameterizedMethod" id="1190" name="AttachmentRequiresLocalOccupancyAndUpdatesOnUnload" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.AttachmentRequiresLocalOccupancyAndUpdatesOnUnload" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" testcasecount="3" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.005593" total="3" passed="3" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1187" name="AttachmentRequiresLocalOccupancyAndUpdatesOnUnload(&quot;truck&quot;)" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.AttachmentRequiresLocalOccupancyAndUpdatesOnUnload(&quot;truck&quot;)" methodname="AttachmentRequiresLocalOccupancyAndUpdatesOnUnload" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="1096650924" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.001532" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1188" name="AttachmentRequiresLocalOccupancyAndUpdatesOnUnload(&quot;sled&quot;)" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.AttachmentRequiresLocalOccupancyAndUpdatesOnUnload(&quot;sled&quot;)" methodname="AttachmentRequiresLocalOccupancyAndUpdatesOnUnload" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="817446287" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.001398" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1189" name="AttachmentRequiresLocalOccupancyAndUpdatesOnUnload(&quot;hoverboard&quot;)" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.AttachmentRequiresLocalOccupancyAndUpdatesOnUnload(&quot;hoverboard&quot;)" methodname="AttachmentRequiresLocalOccupancyAndUpdatesOnUnload" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="408815690" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.001340" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1193" name="CollinearDestinationsKeepDistinctNumbersInsideMinimap" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.CollinearDestinationsKeepDistinctNumbersInsideMinimap" methodname="CollinearDestinationsKeepDistinctNumbersInsideMinimap" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="103788504" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.000592" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1180" name="HeadingRotatesOnlyTriangleAndPreservesPlayerTint" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.HeadingRotatesOnlyTriangleAndPreservesPlayerTint" methodname="HeadingRotatesOnlyTriangleAndPreservesPlayerTint" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="762101107" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.000518" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-suite type="ParameterizedMethod" id="1185" name="HouseFrontFollowsWorldRotationAndTransparentPixelsPreserveGrass" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.HouseFrontFollowsWorldRotationAndTransparentPixelsPreserveGrass" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.016007" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1181" name="HouseFrontFollowsWorldRotationAndTransparentPixelsPreserveGrass(0.0f)" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.HouseFrontFollowsWorldRotationAndTransparentPixelsPreserveGrass(0.0f)" methodname="HouseFrontFollowsWorldRotationAndTransparentPixelsPreserveGrass" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="811989822" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.001802" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1182" name="HouseFrontFollowsWorldRotationAndTransparentPixelsPreserveGrass(90.0f)" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.HouseFrontFollowsWorldRotationAndTransparentPixelsPreserveGrass(90.0f)" methodname="HouseFrontFollowsWorldRotationAndTransparentPixelsPreserveGrass" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="753838082" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.001589" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1183" name="HouseFrontFollowsWorldRotationAndTransparentPixelsPreserveGrass(180.0f)" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.HouseFrontFollowsWorldRotationAndTransparentPixelsPreserveGrass(180.0f)" methodname="HouseFrontFollowsWorldRotationAndTransparentPixelsPreserveGrass" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="484080012" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.001487" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1184" name="HouseFrontFollowsWorldRotationAndTransparentPixelsPreserveGrass(270.0f)" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.HouseFrontFollowsWorldRotationAndTransparentPixelsPreserveGrass(270.0f)" methodname="HouseFrontFollowsWorldRotationAndTransparentPixelsPreserveGrass" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="1541673762" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.001453" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-case id="1186" name="PickupDropAndDespawnUseReplicatedCarryState" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.PickupDropAndDespawnUseReplicatedCarryState" methodname="PickupDropAndDespawnUseReplicatedCarryState" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="400271761" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.000848" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1191" name="PrimaryDefaultsToEarliestRetainsChoiceCyclesAndRecoversAfterRemoval" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.PrimaryDefaultsToEarliestRetainsChoiceCyclesAndRecoversAfterRemoval" methodname="PrimaryDefaultsToEarliestRetainsChoiceCyclesAndRecoversAfterRemoval" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="1406500907" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.001288" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1179" name="SavedArtworkIsSmallTransparentReadableAndWiredOnEveryHouse" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.SavedArtworkIsSmallTransparentReadableAndWiredOnEveryHouse" methodname="SavedArtworkIsSmallTransparentReadableAndWiredOnEveryHouse" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="750408030" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.510445" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1192" name="SavedMarkerIsWiredAndPrimaryUsesOnlyExistingNavigationIndicator" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.SavedMarkerIsWiredAndPrimaryUsesOnlyExistingNavigationIndicator" methodname="SavedMarkerIsWiredAndPrimaryUsesOnlyExistingNavigationIndicator" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="1786979582" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.001124" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+              </test-case>
+              <test-case id="1178" name="StaticBakeConnectsRoadTilesAndLeavesMiscellaneousPropsAsGrass" fullname="CouchGuys.Tests.Editor.MinimapNavigationTests.StaticBakeConnectsRoadTilesAndLeavesMiscellaneousPropsAsGrass" methodname="StaticBakeConnectsRoadTilesAndLeavesMiscellaneousPropsAsGrass" classname="CouchGuys.Tests.Editor.MinimapNavigationTests" runstate="Runnable" seed="146689525" result="Passed" start-time="2026-11-15 08:54:59Z" end-time="2026-11-15 08:54:59Z" duration="0.011336" asserts="0">
+                <properties>
+                  <property name="retryIteration" value="0" />
+                  <property name="repeatIteration" value="0" />
+                </properties>
+                <output><![CDATA[Saving results to: C:/Users/Jaden/AppData/LocalLow/DefaultCompany/multiplayer_game\TestResults.xml
+]]></output>
+              </test-case>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

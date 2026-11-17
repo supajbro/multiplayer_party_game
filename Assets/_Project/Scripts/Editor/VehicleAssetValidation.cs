@@ -41,23 +41,20 @@ namespace CouchGuys.Editor
                 Check(Vector3.Distance(first.position, new Vector3(0f, 1.3125f, -3.87f)) < .02f, "Shutter import axes incorrect");
                 ValidateShutterAndExit(prefab);
             }
-            GameObject car = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Resources/Traffic/TrafficCar.prefab");
+            GameObject car = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Vehicles/TrafficCar.prefab");
             TrafficVehicleController controller = car.GetComponent<TrafficVehicleController>();
-            Check(controller.VisualVariantCount == 1, "Traffic must use a single model");
-            LODGroup group = car.GetComponentInChildren<LODGroup>(true);
-            Check(car.GetComponentsInChildren<LODGroup>(true).Length == 1, "Duplicate imported traffic LOD groups");
-            Check(group != null && group.GetLODs().Length == 3, "Traffic LODs missing");
-            long previous = long.MaxValue;
-            foreach (LOD lod in group.GetLODs())
+            Check(controller.VisualVariantCount == 4, "Traffic must expose the four saved NPC car visuals");
+            SerializedObject trafficSo = new(controller);
+            SerializedProperty variants = trafficSo.FindProperty("m_visualVariants");
+            Check(variants.arraySize == 4, "Saved traffic variants missing");
+            for (int index = 0; index < variants.arraySize; index++)
             {
-                long tris = lod.renderers.Sum(r => (long)r.GetComponent<MeshFilter>().sharedMesh.triangles.Length / 3);
-                Check(tris < previous, "LODs do not reduce geometry"); previous = tris;
-                Debug.Log($"VEHICLE_AUDIT LOD transition={lod.screenRelativeTransitionHeight} triangles={tris}");
+                GameObject visual = variants.GetArrayElementAtIndex(index).objectReferenceValue as GameObject;
+                Check(visual != null && visual.GetComponentsInChildren<MeshFilter>(true).Length > 0,
+                    "Traffic variant mesh missing");
+                Check(visual.GetComponentsInChildren<Renderer>(true).All(renderer =>
+                    renderer.sharedMaterials.All(material => material != null)), "Traffic material missing");
             }
-            SerializedObject wheels = new(car.GetComponentInChildren<TrafficWheelAnimator>(true));
-            Check(wheels.FindProperty("m_frontWheels").arraySize == 6 && wheels.FindProperty("m_rearWheels").arraySize == 6, "Wheels missing across LODs");
-            Material glass = AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Resources/Traffic/Hatchback_Glass.mat");
-            Check(glass != null && glass.GetFloat("_Surface") == 1f && glass.GetColor("_BaseColor").a < .5f, "Glass is opaque");
             ShopCatalogue shop = AssetDatabase.LoadAssetAtPath<ShopCatalogue>(ShopAssetBuilder.CataloguePath);
             Check(shop.Items.Count(i => i != null && i.PurchaseBehaviour is VehiclePurchaseBehaviour purchase &&
                 purchase.VehiclePrefab != null && purchase.VehiclePrefab.GetComponent<TruckController>() != null) == 1, "Extra trucks remain purchasable");
@@ -65,7 +62,7 @@ namespace CouchGuys.Editor
                 shop.Find("truck").Price == 250, "Legacy purchase ID/price compatibility");
             AssetDatabase.SaveAssets();
             Directory.CreateDirectory("Logs");
-            File.WriteAllText("Logs/vehicle-validation-passed.txt", "Vehicle prefab, door alignment, original seat anchors, shutter axes, traffic LODs/wheels/glass and shop checks passed.");
+            File.WriteAllText("Logs/vehicle-validation-passed.txt", "Vehicle prefab, door alignment, original seat anchors, shutter axes, four saved traffic visuals and shop checks passed.");
             Debug.Log("VEHICLE_VALIDATION_PASSED");
         }
 

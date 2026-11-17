@@ -1,0 +1,24 @@
+{
+  "name": "NPC_FamilySUV",
+  "triangles": 9996,
+  "vertices": 4915,
+  "paint_faces": 1853,
+  "size": [
+    2.689973831176758,
+    4.500000476837158,
+    2.509979248046875
+  ],
+  "yaw": 0.7062525396600703,
+  "paint_color": [
+    1,
+    0.58,
+    0.035
+  ],
+  "materials": [
+    "NPC_FamilySUV_Details",
+    "NPC_FamilySUV_BodyPaint"
+  ],
+  "nonmanifold_edges": 0,
+  "boundary_edges": 0,
+  "loose_vertices": 0
+}

@@ -35,6 +35,7 @@ GameObject:
   - component: {fileID: 2733646546476411137}
   - component: {fileID: 8122471884558885471}
   - component: {fileID: 8886201300000000002}
+  - component: {fileID: 8886201600000000001}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -801,7 +802,29 @@ MonoBehaviour:
   m_visibleRadiusMetres: 65
   m_textureResolution: 512
   m_actorRefreshInterval: 0.5
+  m_playerMarkerPrefab: {fileID: 4903427795271201567, guid: f13f74b5c6913e843864c5f110feb588, type: 3}
+  m_defaultHouseIcon: {fileID: 2800000, guid: 8e25f1a772c7e4d4599d2260d3d25653, type: 3}
+  m_sidewalkWidth: 1.5
+  m_curbWidth: 0.25
+  m_houseIconFill: 0.95
   m_deliveryMarkerPrefab: {fileID: 101, guid: 8cd2766a89a242a49a0253b04bd2281c, type: 3}
+  m_cycleDestination:
+    m_Name: Cycle Delivery Destination
+    m_Type: 1
+    m_ExpectedControlType: 
+    m_Id: 02eab2dd-b508-4c2f-b8f0-e52568ea6a9b
+    m_Processors: 
+    m_Interactions: 
+    m_SingletonActionBindings:
+    - m_Name: 
+      m_Id: 7de34b04-98ad-4bb7-a7d0-545a8182d054
+      m_Path: <Keyboard>/n
+      m_Interactions: 
+      m_Processors: 
+      m_Groups: 
+      m_Action: Cycle Delivery Destination
+      m_Flags: 0
+    m_Flags: 0
   m_secondaryDestinationScale: 0.65
 --- !u!114 &7168290924105605430
 MonoBehaviour:
@@ -909,7 +932,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ca693c4139fe8024ea0f22e3461b705b, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.PlayerHoverboardInteractor
   _componentIndexCache: 8
   _addedNetworkObject: {fileID: 4753475039817145927}
@@ -12464,7 +12487,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 77029d70c2b942ba9e1a4bd15b8bd599, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Vehicles.HoverAudioEmitter
   m_source: {fileID: 8886201300000000001}
   m_networkObject: {fileID: 4753475039817145927}
@@ -12481,7 +12504,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83b7284cbea94428b9c5effd25cd408c, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.MagneticCarryAura
   m_carrier: {fileID: 6842772898105403012}
   m_animation: {fileID: 7262616249922094815}
@@ -17324,3 +17347,26 @@ ParticleSystemRenderer:
   m_MeshWeighting1: 1
   m_MeshWeighting2: 1
   m_MeshWeighting3: 1
+--- !u!114 &8886201600000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf03161f727f419ebc668154a3fafb89, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.PlayerNametag
+  m_identity: {fileID: 5385180417060675768}
+  m_visualRoot: {fileID: 200001}
+  m_head: {fileID: 0}
+  m_nametagPrefab: {fileID: 224000, guid: 68dc3523afcf44e79f84143caa3676e4, type: 3}
+  m_heightOffset: 0.65
+  m_fontSize: 18
+  m_maximumVisibilityDistance: 25
+  m_obstructionLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_occlusionInterval: 0.1

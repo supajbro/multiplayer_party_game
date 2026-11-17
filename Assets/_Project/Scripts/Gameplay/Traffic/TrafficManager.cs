@@ -13,7 +13,6 @@ namespace CouchGuys.Gameplay.Traffic
     public sealed partial class TrafficManager : MonoBehaviour
     {
         private const string TrafficSettingsResource = "Traffic/TrafficSettings";
-        private const string CarPrefabResource = "Traffic/TrafficCar";
         private readonly List<NetworkObject> m_activeVehicles = new List<NetworkObject>(12);
         private readonly Collider[] m_spawnHits = new Collider[32];
         private readonly TrafficLaneGraph m_laneGraph = new TrafficLaneGraph();
@@ -36,7 +35,7 @@ namespace CouchGuys.Gameplay.Traffic
             m_settings ??= Resources.Load<TrafficSettings>(TrafficSettingsResource);
             if (m_carPrefab == null)
             {
-                GameObject prefab = Resources.Load<GameObject>(CarPrefabResource);
+                GameObject prefab = m_settings != null ? m_settings.CarPrefab : null;
                 if (prefab != null) m_carPrefab = prefab.GetComponent<NetworkObject>();
             }
         }

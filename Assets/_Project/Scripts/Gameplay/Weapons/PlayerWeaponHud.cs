@@ -96,6 +96,7 @@ namespace CouchGuys.Gameplay.Weapons
                 RefreshDeliveryAndCurrency();
                 m_nextSlowRefresh = Time.unscaledTime + 0.25f;
             }
+            m_view.PresentCurrency(m_delivery != null ? m_delivery.CurrentCurrency : 0, Time.unscaledDeltaTime);
         }
 
         private void BindEvents()
@@ -152,7 +153,6 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void RefreshDeliveryAndCurrency()
         {
-            m_view.m_currencyText.text = $"$ {(m_delivery != null ? m_delivery.CurrentCurrency : 0):N0}";
             int completed = m_chapter != null ? m_chapter.CompletedDeliveryCount : 0;
             DeliveryDestination destination = m_delivery != null ? m_delivery.GetDestinationForCouch(m_carrier != null ? m_carrier.CarriedCouch : null) : null;
             if (destination != null)

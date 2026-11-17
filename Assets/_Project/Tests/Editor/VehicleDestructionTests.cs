@@ -17,7 +17,7 @@ namespace CouchGuys.Tests.Editor
         [TestCase("Assets/_Project/Prefabs/Vehicles/Truck.prefab")]
         [TestCase("Assets/_Project/Prefabs/Vehicles/ThiefGetawayTruck.prefab")]
         [TestCase("Assets/_Project/Prefabs/Vehicles/MagneticHoverboard.prefab")]
-        [TestCase("Assets/_Project/Resources/Traffic/TrafficCar.prefab")]
+        [TestCase("Assets/_Project/Prefabs/Vehicles/TrafficCar.prefab")]
         [TestCase("Assets/_Project/Prefabs/Enemies/RogueCar.prefab")]
         public void WreckUsesExistingEffectAndServerTransform(string path)
         {

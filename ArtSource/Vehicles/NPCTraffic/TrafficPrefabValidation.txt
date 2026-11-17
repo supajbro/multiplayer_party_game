@@ -1,0 +1,6 @@
+NPC_CityHatch: saved visual; uniform model scale=0.9040065
+NPC_FamilySUV: saved visual; uniform model scale=0.7435017
+NPC_UtilityPickup: saved visual; uniform model scale=0.6914539
+NPC_SportCoupe: saved visual; uniform model scale=0.7897097
+TrafficCar: PASS; 4 selectable variants; exactly one active for every index; renderer cache follows selection; existing Rigidbody, colliders and FishNet hash preserved (17490988875734601259).
+TrafficSettings: PASS; serialized prefab reference resolves outside Resources.
