@@ -681,6 +681,7 @@ namespace CouchGuys.Player
 
         private void OnKnockedDownChanged(bool previous, bool next, bool asServer)
         {
+            if (next && !previous) CouchGuys.Integrations.CaptureAndPromoteEvents.Report("Player knocked down", "Player");
             ApplyKnockdownState(next);
         }
 

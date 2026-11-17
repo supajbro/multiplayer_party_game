@@ -177,6 +177,7 @@ namespace CouchGuys.Gameplay.Couch
         public float MovementSpeedMultiplier => m_sledSettings != null ? m_sledSettings.MovementSpeedMultiplier : 1f;
         public float StaminaDrainMultiplier => m_sledSettings != null ? m_sledSettings.StaminaDrainMultiplier : 1f;
         internal SledController MountedSled => m_mountedSled.Value != null ? m_mountedSled.Value.GetComponent<SledController>() : null;
+        internal Vector3 SledMountPosition => m_sledMountPosition.Value;
         public bool IsLoaded => m_loadedTruck.Value != null || m_mountedSled.Value != null || m_mountedHoverboard.Value != null;
         internal NetworkObject MountedHoverboardObject => m_mountedHoverboard.Value;
         public NetworkObject LoadedTruckObject => m_loadedTruck.Value;

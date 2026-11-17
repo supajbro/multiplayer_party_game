@@ -1,0 +1,6 @@
+Four-couch sled prefab validation
+Front_Left dock=(-1.280, 0.930, 0.880) grip=(-2.590, 1.580, 1.350)
+Front_Right dock=(1.280, 0.930, 0.880) grip=(2.590, 1.580, 1.350)
+Rear_Left dock=(-1.280, 0.930, -0.880) grip=(-2.590, 1.580, -1.350)
+Rear_Right dock=(1.280, 0.930, -0.880) grip=(2.590, 1.580, -1.350)
+PASS: model hierarchy, pad/grip alignment, four slots, shared materials and cargo validation.

@@ -1,6 +1,7 @@
 {
   "name": "CaptureAndPromote.Editor",
   "rootNamespace": "CaptureAndPromote",
+  "references": ["CaptureAndPromote.Runtime"],
   "includePlatforms": ["Editor"],
   "autoReferenced": true
 }

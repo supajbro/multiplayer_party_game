@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Linq;
 using CouchGuys.Gameplay.Couch;
 using CouchGuys.Gameplay.Sled;
 using CouchGuys.Gameplay.Weapons;
@@ -85,7 +86,7 @@ namespace CouchGuys.Tests.Editor
         }
 
         [Test]
-        public void ReplicatedStackPosesPreserveIdentityAndCanBeRemovedIndependently()
+        public void ReplicatedDockPosesPreserveIdentityAndCanBeRemovedIndependently()
         {
             GameObject sledObject = Object.Instantiate(Prefab("Vehicles/Sled"));
             GameObject firstObject = Object.Instantiate(Prefab("Couch"));
@@ -103,10 +104,11 @@ namespace CouchGuys.Tests.Editor
                 Vector3 secondPose = (Vector3)Call(sled, "GetMountPosition", second);
                 MountReplica(second, sled, secondPose);
                 var bounds = (Bounds)typeof(CouchCarryController).GetField("m_cargoBounds", Private).GetValue(first);
-                Assert.That(secondPose.y - firstPose.y, Is.EqualTo(bounds.size.y * first.transform.localScale.y).Within(.001f));
+                Assert.That(secondPose.y, Is.EqualTo(firstPose.y).Within(.001f));
+                Assert.That(Vector2.Distance(new Vector2(firstPose.x, firstPose.z), new Vector2(secondPose.x, secondPose.z)), Is.GreaterThan(1f));
                 Assert.That(sled.MountedCouchCount, Is.EqualTo(2));
                 Assert.That(first.IsPickupAvailable || second.IsPickupAvailable, Is.False, "Cargo cannot steal the handle interaction.");
-                Assert.That(first.GetComponentInChildren<Collider>().enabled, Is.True, "Cargo must support another couch being placed on it.");
+                Assert.That(first.GetComponentInChildren<Collider>().enabled, Is.True);
                 sled.transform.SetPositionAndRotation(new Vector3(3, 0, 4), Quaternion.Euler(0, 70, 0));
                 Assert.That(Vector3.Distance(second.transform.position, sled.CouchAnchor.TransformPoint(secondPose)), Is.LessThan(.001f));
                 Value(first, "m_mountedSled", (NetworkObject)null);
@@ -129,6 +131,7 @@ namespace CouchGuys.Tests.Editor
             var sledObject = Object.Instantiate(Prefab("Vehicles/Sled"));
             var firstObject = Object.Instantiate(Prefab("Couch"));
             var secondObject = Object.Instantiate(Prefab("Couch"));
+            var thirdObject = Object.Instantiate(Prefab("Couch"));
             var weaponObject = Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(
                 "Assets/_Project/Resources/WeaponPickups/Pistol.prefab"));
             try
@@ -139,13 +142,18 @@ namespace CouchGuys.Tests.Editor
                 var first = firstObject.GetComponent<CouchCarryController>();
                 var second = secondObject.GetComponent<CouchCarryController>();
                 Call(first, "Awake"); Call(second, "Awake");
-                Assert.That(sled.MaximumCargoItems, Is.EqualTo(3));
+                Assert.That(sled.MaximumCargoItems, Is.EqualTo(4));
                 MountReplica(first, sled, (Vector3)Call(sled, "GetMountPosition", first));
                 MountReplica(second, sled, (Vector3)Call(sled, "GetMountPosition", second));
                 var attachment = new SledPickupAttachment { Sled = sled.NetworkObject, Slot = 1 };
                 Value(weapon, "m_sledAttachment", attachment);
                 Call(weapon, "ApplySledAttachment", false);
                 Assert.That(sled.CargoCount, Is.EqualTo(3));
+                Assert.That(sled.HasCargoSpace, Is.True);
+                var third = thirdObject.GetComponent<CouchCarryController>();
+                Call(third, "Awake");
+                MountReplica(third, sled, (Vector3)Call(sled, "GetMountPosition", third));
+                Assert.That(sled.CargoCount, Is.EqualTo(4));
                 Assert.That(sled.HasCargoSpace, Is.False);
                 Assert.That(weapon.transform.parent.name, Is.EqualTo("WeaponRack2"));
                 Assert.That(weapon.GetComponent<Rigidbody>().isKinematic, Is.True);
@@ -158,14 +166,15 @@ namespace CouchGuys.Tests.Editor
                 Call(weapon, "ApplySledAttachment", true);
                 Assert.That(weapon.transform.parent, Is.Null);
                 Assert.That(Vector3.Distance(weapon.transform.position, release), Is.LessThan(.001f));
-                Assert.That(sled.CargoCount, Is.EqualTo(2));
+                Assert.That(sled.CargoCount, Is.EqualTo(3));
                 Assert.That(sled.HasCargoSpace, Is.True);
-                Assert.That(sled.MountedCouchCount, Is.EqualTo(2));
+                Assert.That(sled.MountedCouchCount, Is.EqualTo(3));
             }
             finally
             {
                 Object.DestroyImmediate(weaponObject); Object.DestroyImmediate(firstObject);
                 Object.DestroyImmediate(secondObject); Object.DestroyImmediate(sledObject);
+                Object.DestroyImmediate(thirdObject);
             }
         }
 
@@ -184,14 +193,17 @@ namespace CouchGuys.Tests.Editor
                 var sled = sledObject.GetComponent<SledController>();
                 var first = firstObject.GetComponent<CouchCarryController>();
                 var top = topObject.GetComponent<CouchCarryController>();
+                // Menu validation can run with a populated scene open. Keep the
+                // placement fixture clear of that scene's ground and props.
+                sled.transform.position = Vector3.up * 1000f;
                 Call(first, "Awake"); Call(top, "Awake");
                 Value(first, "m_deliveryId", 41); Value(top, "m_deliveryId", 42);
                 MountReplica(first, sled, (Vector3)Call(sled, "GetMountPosition", first));
                 MountReplica(top, sled, (Vector3)Call(sled, "GetMountPosition", top));
                 sled.transform.rotation = Quaternion.Euler(tilt, 35f, 0f);
-                floor.transform.position = Vector3.down * .5f;
+                floor.transform.position = sled.transform.position + Vector3.down * .5f;
                 floor.transform.localScale = new Vector3(30f, 1f, 30f);
-                Vector3 destination = sled.transform.TransformPoint(new Vector3(0f, 0f, 2.4f));
+                Vector3 destination = sled.transform.TransformPoint(new SerializedObject(sled).FindProperty("m_unloadOffset").vector3Value);
                 player.transform.position = destination;
                 obstacle.SetActive(false);
                 Physics.SyncTransforms();
@@ -269,7 +281,10 @@ namespace CouchGuys.Tests.Editor
                     Assert.That(typeof(WeaponPickup).GetField("m_reserve", Private).GetValue(weapon), Is.EqualTo(19));
                 }
                 Assert.That(sled.CargoCount, Is.EqualTo(3));
-                Assert.That(sled.HasCargoSpace, Is.False);
+                Assert.That(sled.HasCargoSpace, Is.True, "Three weapons leave one of the four shared cargo slots free.");
+                // Edit-mode instances have not entered a player lifecycle. Invoke
+                // the destruction callback explicitly, as we do Awake above.
+                Call(weapons[1].GetComponent<WeaponPickup>(), "OnDestroy");
                 Object.DestroyImmediate(weapons[1]);
                 Assert.That(sled.CargoCount, Is.EqualTo(2));
                 Assert.That(sled.HasCargoSpace, Is.True);
@@ -287,13 +302,70 @@ namespace CouchGuys.Tests.Editor
             var tests = new SledPhysicsTests();
             tests.SledUsesTheSameControllerAndFourPointsWithDoubleCouchSpeeds();
             tests.SledMultipliersAreIndependentAndRegularCouchesKeepDefaults();
-            tests.ReplicatedStackPosesPreserveIdentityAndCanBeRemovedIndependently();
+            tests.RaisedSledHandlesAreReachableWithOffsetPlayerCapsule();
+            tests.ReplicatedDockPosesPreserveIdentityAndCanBeRemovedIndependently();
+            tests.FourDockOccupancySurvivesRemovalAndReplicatedArrivalOrder();
             tests.MixedCargoSharesCapacityAndWeaponReplicaDetachesCleanly();
             tests.CouchLoadingAcceptsOffCentrePlacementButRejectsGroundAndDistantItems();
             tests.ThreeWeaponRacksRemainDistinctAndPreservePickupAmmo();
             tests.UnloadPlacementIgnoresPlayerAndStackButRejectsRealObstacles(0f);
             tests.UnloadPlacementIgnoresPlayerAndStackButRejectsRealObstacles(12f);
-            Debug.Log("PASS: eight sled cargo validation checks.");
+            Debug.Log("PASS: ten sled cargo validation checks.");
+        }
+
+        [Test]
+        public void FourDockOccupancySurvivesRemovalAndReplicatedArrivalOrder()
+        {
+            var sledObject = Object.Instantiate(Prefab("Vehicles/Sled"));
+            var replicaObject = Object.Instantiate(Prefab("Vehicles/Sled"));
+            var couches = new GameObject[4];
+            var replicas = new GameObject[4];
+            try
+            {
+                var sled = sledObject.GetComponent<SledController>();
+                var replica = replicaObject.GetComponent<SledController>();
+                Vector3[] poses = new Vector3[4];
+                for (int i=0;i<4;i++)
+                {
+                    couches[i]=Object.Instantiate(Prefab("Couch"));
+                    var couch=couches[i].GetComponent<CouchCarryController>();
+                    Call(couch,"Awake");
+                    poses[i]=(Vector3)Call(sled,"GetMountPosition",couch);
+                    MountReplica(couch,sled,poses[i]);
+                    Assert.That(sled.MountedCouchCount,Is.EqualTo(i+1));
+                    var cargoBounds=(Bounds)typeof(CouchCarryController).GetField("m_cargoBounds",Private).GetValue(couch);
+                    var bottom= sled.CouchAnchor.InverseTransformPoint(couch.transform.TransformPoint(
+                        new Vector3(cargoBounds.center.x,cargoBounds.min.y,cargoBounds.center.z)));
+                    Assert.That(bottom.y,Is.EqualTo(0f).Within(.001f));
+                    Assert.That(poses.Take(i).Any(p=>(p-poses[i]).sqrMagnitude<.01f),Is.False);
+                }
+                Assert.That(sled.HasCargoSpace,Is.False);
+                Assert.That((int)Call(sled,"FindAvailableDock",couches[0].GetComponent<CouchCarryController>(),false),Is.EqualTo(-1));
+                for(int i=3;i>=0;i--)
+                {
+                    replicas[i]=Object.Instantiate(Prefab("Couch"));
+                    var couch=replicas[i].GetComponent<CouchCarryController>();Call(couch,"Awake");
+                    MountReplica(couch,replica,poses[i]);
+                }
+                for(int i=0;i<4;i++)Assert.That(replica.IsCouchDockOccupied(i),Is.True);
+                var removed=couches[1].GetComponent<CouchCarryController>();
+                Value(removed,"m_mountedSled",(NetworkObject)null);Call(removed,"ApplyLoadedStateImmediately");
+                Assert.That(sled.HasCargoSpace,Is.True);
+                for(int i=0;i<4;i++)
+                    if(i!=1)Assert.That(Vector3.Distance(couches[i].transform.localPosition,poses[i]),Is.LessThan(.001f));
+                Assert.That(Vector3.Distance((Vector3)Call(sled,"GetMountPosition",removed),poses[1]),Is.LessThan(.001f));
+                removed.transform.localScale *= 2f;
+                Assert.That((int)Call(sled,"FindAvailableDock",removed,false),Is.EqualTo(-1),"An oversized couch must not clip into dock clamps.");
+                removed.transform.localScale *= .5f;
+                MountReplica(removed,sled,poses[1]);
+                Assert.That(sled.HasCargoSpace,Is.False);
+            }
+            finally
+            {
+                foreach(var o in couches)if(o!=null)Object.DestroyImmediate(o);
+                foreach(var o in replicas)if(o!=null)Object.DestroyImmediate(o);
+                Object.DestroyImmediate(sledObject);Object.DestroyImmediate(replicaObject);
+            }
         }
 
         private static void MountReplica(CouchCarryController couch, SledController sled, Vector3 pose)

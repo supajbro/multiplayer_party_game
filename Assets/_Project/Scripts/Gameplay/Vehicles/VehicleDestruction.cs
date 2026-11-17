@@ -60,6 +60,7 @@ namespace CouchGuys.Gameplay.Vehicles
         [ObserversRpc]
         private void ExplodeObserversRpc(Vector3 position)
         {
+            CouchGuys.Integrations.CaptureAndPromoteEvents.Report("Vehicle explosion", "Explosion");
             GetComponent<VehicleAudioEmitter>()?.StopLocal();
             if (m_explosion != null)
                 RocketExplosionVfx.Play(m_explosion, position + Vector3.up, position, m_explosionRadius);

@@ -14,10 +14,13 @@ namespace CaptureAndPromote
         private RecorderController controller;
         private RecorderControllerSettings controllerSettings;
         private MovieRecorderSettings movie;
+        private CaptureClockSettings clock;
+        private UnityEditor.Recorder.Recorder movieRecorder;
+        public long RecordedFrames { get; private set; }
         public string OutputPath { get; private set; }
 
         static RecorderCapture() => CaptureService.VideoFactory = () => new RecorderCapture();
-        public bool IsRecording => controller != null && controller.IsRecording();
+        public bool IsRecording => controller != null && controller.IsRecording() && movieRecorder != null && movieRecorder.Recording;
 
         public void Start(CaptureSettings settings, string outputBasePath)
         {
@@ -51,10 +54,18 @@ namespace CaptureAndPromote
             if (settings.recordAudio && !audioSupported)
                 Debug.LogWarning("[Capture & Promote] Recorder audio requires Mono or Stereo speaker mode. Recording video without audio.");
             controllerSettings.AddRecorderSettings(movie);
+            clock = ScriptableObject.CreateInstance<CaptureClockSettings>();
+            clock.hideFlags = HideFlags.HideAndDontSave;
+            clock.name = "Capture & Promote Frame Clock";
+            clock.OutputFile = outputBasePath + "_clock";
+            clock.FrameRecorded = frames => RecordedFrames = frames;
+            controllerSettings.AddRecorderSettings(clock);
             controller = new RecorderController(controllerSettings);
             controller.PrepareRecording();
             if (!controller.StartRecording())
                 throw new InvalidOperationException("Unity Recorder could not start. See the Console for encoder or audio errors.");
+            foreach (var recorder in Resources.FindObjectsOfTypeAll<UnityEditor.Recorder.Recorder>())
+                if (recorder.Recording && !(recorder is CaptureClockRecorder)) movieRecorder = recorder;
         }
 
         public void Stop() => controller?.StopRecording();
@@ -66,9 +77,12 @@ namespace CaptureAndPromote
             {
                 if (movie != null) UnityEngine.Object.DestroyImmediate(movie);
                 if (controllerSettings != null) UnityEngine.Object.DestroyImmediate(controllerSettings);
+                if (clock != null) UnityEngine.Object.DestroyImmediate(clock);
                 movie = null;
                 controllerSettings = null;
                 controller = null;
+                clock = null;
+                movieRecorder = null;
             }
         }
     }

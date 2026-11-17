@@ -19,6 +19,9 @@ namespace CouchGuys.Gameplay.Sled
         [SerializeField] private CouchCarryController m_carryController;
         [SerializeField] private SledGrabPoint[] m_grabPoints = new SledGrabPoint[MaximumGrabPoints];
         [SerializeField] private Transform m_couchAnchor;
+        [SerializeField] private Transform[] m_couchDocks = new Transform[4];
+        [SerializeField, Tooltip("Clear half-width/depth inside each dock's frame and clamps.")]
+        private Vector2 m_dockHalfExtents = new(1.16f, .60f);
         [SerializeField] private Transform m_unloadPoint;
         [SerializeField] private Vector3 m_unloadOffset = new(0f, 0f, 2.4f);
         [SerializeField] private SledSettings m_settings;
@@ -42,12 +45,55 @@ namespace CouchGuys.Gameplay.Sled
         public int ActiveCarrierCount => CarryController.ActiveCarrierCount;
         public int MountedCouchCount => m_cargo.Count;
         public int CargoCount => m_cargo.Count + m_weapons.Count;
-        public int MaximumCargoItems => m_settings != null ? m_settings.MaximumCargoItems : 3;
+        public int MaximumCargoItems => m_settings != null ? m_settings.MaximumCargoItems : 4;
+        public int CouchDockCount => m_couchDocks != null ? m_couchDocks.Length : 0;
+        public Transform GetCouchDock(int index) => index >= 0 && index < CouchDockCount ? m_couchDocks[index] : null;
+        private Vector3 DockPosition(int index) => m_couchAnchor.InverseTransformPoint(GetCouchDock(index).position);
+        private static Vector3 CouchOriginOffset(CouchCarryController couch) => Vector3.Scale(
+            new Vector3(-couch.CargoBounds.center.x, -couch.CargoBounds.min.y, -couch.CargoBounds.center.z), couch.transform.localScale);
+
+        public bool IsCouchDockOccupied(int index)
+        {
+            if (m_couchAnchor == null || GetCouchDock(index) == null) return true;
+            Vector3 dock = DockPosition(index);
+            foreach (var couch in m_cargo)
+                if (couch != null && (couch.SledMountPosition - CouchOriginOffset(couch) - dock).sqrMagnitude < .01f)
+                    return true;
+            return false;
+        }
+
+        private int FindAvailableDock(CouchCarryController couch, bool requireOnSurface = false)
+        {
+            if (couch == null || m_couchAnchor == null) return -1;
+            Vector3 size = Vector3.Scale(couch.CargoBounds.size, couch.transform.localScale);
+            if (Mathf.Abs(size.x) > 2f * m_dockHalfExtents.x || Mathf.Abs(size.z) > 2f * m_dockHalfExtents.y) return -1;
+            if (requireOnSurface && Vector3.Dot(couch.transform.up, transform.up) <= .5f) return -1;
+            Vector3 centre = m_couchAnchor.InverseTransformPoint(couch.transform.TransformPoint(couch.CargoBounds.center));
+            float halfHeight = Mathf.Abs(size.y) * .5f;
+            int nearest = -1;
+            float distance = float.PositiveInfinity;
+            for (int i = 0; i < CouchDockCount; i++)
+            {
+                if (IsCouchDockOccupied(i)) continue;
+                Vector3 delta = centre - DockPosition(i);
+                if (requireOnSurface && (Mathf.Abs(delta.x) > m_dockHalfExtents.x ||
+                    Mathf.Abs(delta.z) > m_dockHalfExtents.y || Mathf.Abs(delta.y - halfHeight) > m_loadingHeightTolerance)) continue;
+                float candidate = delta.sqrMagnitude;
+                if (candidate >= distance) continue;
+                distance = candidate;
+                nearest = i;
+            }
+            return nearest;
+        }
         public bool HasCargoSpace => CargoCount < MaximumCargoItems;
         public string CargoStatus => $"Cargo: {CargoCount}/{MaximumCargoItems}";
         public string LoadingStatus => HasCargoSpace ? CargoStatus : $"Sled full ({CargoCount}/{MaximumCargoItems})";
-        public bool CanLoadFrom(Vector3 position) => m_couchAnchor != null &&
-            Vector3.Distance(position, m_couchAnchor.position) <= m_loadingInteractionDistance;
+        public bool CanLoadFrom(Vector3 position)
+        {
+            for (int i = 0; i < CouchDockCount; i++)
+                if (GetCouchDock(i) != null && Vector3.Distance(position, GetCouchDock(i).position) <= m_loadingInteractionDistance) return true;
+            return false;
+        }
 
         public static SledController FindLoadingSled(Vector3 position)
         {
@@ -77,8 +123,7 @@ namespace CouchGuys.Gameplay.Sled
             if (!IsServerInitialized || !HasCargoSpace || Time.time < m_nextLoadingScan ||
                 Time.time < m_nextMountTime || m_couchAnchor == null) return;
             m_nextLoadingScan = Time.time + .15f;
-            // Contact callbacks stop being reliable once lower cargo becomes kinematic.
-            Vector3 centre = m_couchAnchor.position + transform.up * StackHeight;
+            Vector3 centre = m_couchAnchor.position;
             int count = Physics.OverlapBoxNonAlloc(centre,
                 new Vector3(m_loadingHalfExtents.x, m_loadingHeightTolerance + .5f, m_loadingHalfExtents.y),
                 m_loadingHits, transform.rotation, ~0, QueryTriggerInteraction.Ignore);
@@ -99,15 +144,7 @@ namespace CouchGuys.Gameplay.Sled
                 TryLoadPlacedCouchServer(couch);
         }
 
-        internal bool IsWithinLoadingSurface(CouchCarryController couch)
-        {
-            if (couch == null || m_couchAnchor == null) return false;
-            Vector3 centre = m_couchAnchor.InverseTransformPoint(couch.transform.TransformPoint(couch.CargoBounds.center));
-            float halfHeight = couch.CargoBounds.extents.y * couch.transform.lossyScale.y / m_couchAnchor.lossyScale.y;
-            return Mathf.Abs(centre.x) <= m_loadingHalfExtents.x && Mathf.Abs(centre.z) <= m_loadingHalfExtents.y &&
-                Mathf.Abs(centre.y - halfHeight - StackHeight) <= m_loadingHeightTolerance &&
-                Vector3.Dot(couch.transform.up, transform.up) > .5f;
-        }
+        internal bool IsWithinLoadingSurface(CouchCarryController couch) => FindAvailableDock(couch, true) >= 0;
 
         private bool TryLoadPlacedCouchServer(CouchCarryController couch) =>
             couch != null && couch.ActiveCarrierCount == 0 && IsWithinLoadingSurface(couch) && TryLoadCouchServer(couch);
@@ -116,7 +153,8 @@ namespace CouchGuys.Gameplay.Sled
         internal bool TryLoadCouchServer(CouchCarryController couch)
         {
             if (!IsServerInitialized || !HasCargoSpace || Time.time < m_nextMountTime || couch == null) return false;
-            return couch.MountOnSledServer(this, GetMountPosition(couch));
+            int dock = FindAvailableDock(couch);
+            return dock >= 0 && couch.MountOnSledServer(this, DockPosition(dock) + CouchOriginOffset(couch));
         }
 
         internal bool TryAutoLoadCouchServer(CouchCarryController couch, bool mount)
@@ -124,7 +162,9 @@ namespace CouchGuys.Gameplay.Sled
             if (!IsServerInitialized || !IsSpawned || !HasCargoSpace || Time.time < m_nextMountTime ||
                 m_couchAnchor == null || couch == null || couch.IsSled || couch.IsLoaded ||
                 !couch.IsPickupAvailable || couch.IsCargoTransitioning) return false;
-            Vector3 loadingPoint = m_couchAnchor.position + transform.up * StackHeight;
+            int dock = FindAvailableDock(couch);
+            if (dock < 0) return false;
+            Vector3 loadingPoint = GetCouchDock(dock).position;
             Vector3 nearest = couch.transform.TransformPoint(couch.CargoBounds.ClosestPoint(
                 couch.transform.InverseTransformPoint(loadingPoint)));
             if (Vector3.Distance(nearest, loadingPoint) > m_loadingInteractionDistance) return false;
@@ -161,20 +201,11 @@ namespace CouchGuys.Gameplay.Sled
             m_nextMountTime = Time.time + 1f;
         }
 
-        private float StackHeight
+        internal Vector3 GetMountPosition(CouchCarryController couch)
         {
-            get
-            {
-                float height = 0f;
-                foreach (var couch in m_cargo)
-                    if (couch != null) height += couch.CargoBounds.size.y * couch.transform.localScale.y;
-                return height;
-            }
+            int dock = FindAvailableDock(couch);
+            return dock >= 0 ? DockPosition(dock) + CouchOriginOffset(couch) : Vector3.zero;
         }
-
-        internal Vector3 GetMountPosition(CouchCarryController couch) =>
-            Vector3.up * StackHeight + Vector3.Scale(new Vector3(-couch.CargoBounds.center.x,
-                -couch.CargoBounds.min.y, -couch.CargoBounds.center.z), couch.transform.localScale);
 
         // Called on every peer from the couch's replicated attachment state.
         internal void RegisterMountedCouch(CouchCarryController couch)
@@ -189,15 +220,8 @@ namespace CouchGuys.Gameplay.Sled
             IgnoreCargoCollisions(couch.gameObject, false);
             m_cargo.Remove(couch);
             m_nextMountTime = Time.time + 1f;
-            if (!IsServerInitialized) return;
-            float height = 0f;
-            foreach (var remaining in m_cargo)
-            {
-                if (remaining == null) continue;
-                remaining.SetSledMountPositionServer(Vector3.up * height + Vector3.Scale(
-                    new Vector3(-remaining.CargoBounds.center.x, -remaining.CargoBounds.min.y, -remaining.CargoBounds.center.z), remaining.transform.localScale));
-                height += remaining.CargoBounds.size.y * remaining.transform.localScale.y;
-            }
+            // Each couch keeps its dock when another is removed. Its local pose is
+            // already replicated by CouchCarryController, including for late joiners.
         }
 
         private void IgnoreCargoCollisions(GameObject couch, bool ignored)
@@ -269,7 +293,7 @@ namespace CouchGuys.Gameplay.Sled
 
         public override void OnStopServer()
         {
-            // Remove from the top so remaining cargo never gets reordered while despawning.
+            // Remove in reverse registration order while despawning.
             while (m_cargo.Count > 0)
             {
                 var couch = m_cargo[m_cargo.Count - 1];

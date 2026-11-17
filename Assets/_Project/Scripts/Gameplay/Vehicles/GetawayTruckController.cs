@@ -214,7 +214,12 @@ namespace CouchGuys.Gameplay.Vehicles
             ChooseExit(false);
         }
 
-        internal void NotifyCouchStolenServer() { m_stolen = true; m_nextDecision = 0f; }
+        internal void NotifyCouchStolenServer()
+        {
+            if (!m_stolen) CouchGuys.Integrations.CaptureAndPromoteEvents.Report("Couch stolen", "Theft");
+            m_stolen = true;
+            m_nextDecision = 0f;
+        }
 
         [Server]
         internal void RepelCarServer(TrafficVehicleController car, float impactSpeed)

@@ -18,6 +18,9 @@ namespace CaptureAndPromote
         public bool recordAudio = true;
         public string screenshotDirectory = "Captures/Screenshots";
         public string videoDirectory = "Captures/Videos";
+        public bool automaticHighlights = true;
+        public float eventCooldownSeconds = 1f;
+        public int maximumAutomaticHighlights = 10000;
 
         public void SaveSettings() => Save(true);
 

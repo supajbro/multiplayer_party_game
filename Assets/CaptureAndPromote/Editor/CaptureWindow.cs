@@ -7,6 +7,9 @@ namespace CaptureAndPromote
     public sealed class CaptureWindow : EditorWindow
     {
         private Vector2 scroll;
+        private int tab;
+        private CaptureLibraryView library;
+        private readonly HighlightTimeline liveTimeline = new HighlightTimeline();
 
         [MenuItem("Tools/Capture & Promote")]
         public static void Open() => GetWindow<CaptureWindow>("Capture & Promote");
@@ -15,15 +18,44 @@ namespace CaptureAndPromote
         {
             minSize = new Vector2(390, 560);
             CaptureService.Changed += Repaint;
+            library = new CaptureLibraryView(Repaint);
         }
 
-        private void OnDisable() => CaptureService.Changed -= Repaint;
-        private void OnInspectorUpdate() { if (CaptureService.IsRecording) Repaint(); }
+        private void OnDisable()
+        {
+            CaptureService.Changed -= Repaint;
+            library?.Dispose();
+        }
+        private void OnInspectorUpdate()
+        {
+            if (CaptureService.IsRecording || EditorApplication.timeSinceStartup < CaptureService.HighlightConfirmationUntil + .5)
+                Repaint();
+        }
 
         private void OnGUI()
         {
             scroll = EditorGUILayout.BeginScrollView(scroll);
             GUILayout.Space(12);
+            tab = GUILayout.Toolbar(tab, new[] { "Capture", "Capture Library" });
+            if (EditorApplication.timeSinceStartup < CaptureService.HighlightConfirmationUntil)
+                EditorGUILayout.HelpBox(CaptureService.HighlightConfirmation, MessageType.Info);
+            if (tab == 1)
+            {
+                if (CaptureService.IsRecording)
+                {
+                    using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
+                    {
+                        Color original = GUI.color;
+                        GUI.color = new Color(1f, .4f, .35f);
+                        GUILayout.Label("RECORDING  " + TimeSpan.FromSeconds(CaptureService.ElapsedSeconds).ToString(@"hh\:mm\:ss"), EditorStyles.boldLabel);
+                        GUI.color = original;
+                        if (GUILayout.Button("Stop", GUILayout.Width(60))) CaptureService.StopRecording();
+                    }
+                }
+                library.Draw();
+                EditorGUILayout.EndScrollView();
+                return;
+            }
             GUILayout.Label("Capture & Promote", new GUIStyle(EditorStyles.boldLabel) { fontSize = 20 });
             GUILayout.Space(12);
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
@@ -43,10 +75,14 @@ namespace CaptureAndPromote
                         if (GUILayout.Button(CaptureService.IsRecording ? "Stop Recording" : "Start Recording", GUILayout.Height(32)))
                             CaptureService.ToggleRecording();
                     }
+                    using (new EditorGUI.DisabledScope(!CaptureService.IsRecording))
+                        if (GUILayout.Button("Bookmark Highlight (F10)")) CaptureService.Bookmark();
                 }
-                GUILayout.Label("F12 captures a PNG. F9 starts or stops recording.", EditorStyles.wordWrappedMiniLabel);
+                GUILayout.Label("F12 captures a PNG. F9 toggles recording. F10 bookmarks a moment.", EditorStyles.wordWrappedMiniLabel);
                 GUILayout.Label("Shortcuts work during Play Mode. Rebind in Edit > Shortcuts.", EditorStyles.wordWrappedMiniLabel);
             }
+            if (CaptureService.ActiveMetadata != null)
+                liveTimeline.Draw(CaptureService.ActiveVideoPath, CaptureService.ActiveMetadata);
             if (!EditorApplication.isPlaying)
                 EditorGUILayout.HelpBox("Enter Play Mode to capture gameplay.", MessageType.Info);
             if (!CaptureService.RecorderAvailable)
@@ -78,6 +114,11 @@ namespace CaptureAndPromote
                 settings.screenshotDirectory = EditorGUILayout.TextField("Screenshots", settings.screenshotDirectory);
                 settings.videoDirectory = EditorGUILayout.TextField("Videos", settings.videoDirectory);
             }
+            GUILayout.Space(10);
+            GUILayout.Label("Automatic highlights", EditorStyles.boldLabel);
+            settings.automaticHighlights = EditorGUILayout.Toggle("Accept gameplay events", settings.automaticHighlights);
+            settings.eventCooldownSeconds = Mathf.Max(0, EditorGUILayout.FloatField("Same event cooldown (s)", settings.eventCooldownSeconds));
+            settings.maximumAutomaticHighlights = Mathf.Max(0, EditorGUILayout.IntField("Automatic marker limit", settings.maximumAutomaticHighlights));
             GUILayout.Label("Paths are relative to the project or absolute. Choose folders outside Assets. Custom folders need their own version-control ignore rule.", EditorStyles.wordWrappedMiniLabel);
             if (EditorGUI.EndChangeCheck()) settings.SaveSettings();
             GUILayout.Space(8);

@@ -1,0 +1,5 @@
+{
+  "name": "CaptureAndPromote.Runtime",
+  "rootNamespace": "CaptureAndPromote",
+  "autoReferenced": true
+}

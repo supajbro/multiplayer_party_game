@@ -221,6 +221,7 @@ namespace CouchGuys.Gameplay.Delivery
             if (success)
             {
                 m_lastReward.Value = job.Reward;
+                CouchGuys.Integrations.CaptureAndPromoteEvents.Report("Couch delivered", "Delivery");
                 m_currency.Value += job.Reward;
                 if (m_chapterManager != null && !m_chapterManager.ChapterCompleted)
                     m_chapterManager.CompleteCurrentStageServer(m_chapterManager.CurrentStageIndex);

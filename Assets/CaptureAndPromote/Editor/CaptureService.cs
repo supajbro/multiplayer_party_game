@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -9,6 +10,7 @@ namespace CaptureAndPromote
     {
         bool IsRecording { get; }
         string OutputPath { get; }
+        long RecordedFrames { get; }
         void Start(CaptureSettings settings, string outputBasePath);
         void Stop();
     }
@@ -23,6 +25,16 @@ namespace CaptureAndPromote
         public static string Status { get; private set; } = "Ready";
         public static bool HasError { get; private set; }
         public static event Action Changed;
+        public static RecordingMetadata ActiveMetadata { get; private set; }
+        public static string ActiveVideoPath => video == null ? null : videoPath;
+        public static double MediaSeconds => video == null ? 0 : video.RecordedFrames / ActiveMetadata.frameRate;
+        public static string HighlightConfirmation { get; private set; }
+        public static double HighlightConfirmationUntil { get; private set; }
+        private static readonly Dictionary<(string, string), double> lastEvents = new Dictionary<(string, string), double>();
+        private static bool metadataDirty;
+        private static double nextMetadataSave;
+        private static int automaticCount;
+        private static int mainThread;
         private static IVideoCapture video;
         private static double startedAt;
         private static double elapsed;
@@ -38,6 +50,7 @@ namespace CaptureAndPromote
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
             AssemblyReloadEvents.beforeAssemblyReload += StopRecording;
             EditorApplication.quitting += StopRecording;
+            mainThread = System.Threading.Thread.CurrentThread.ManagedThreadId;
             string interrupted = SessionState.GetString(ActivePathKey, "");
             if (!string.IsNullOrEmpty(interrupted))
             {
@@ -102,25 +115,40 @@ namespace CaptureAndPromote
                 video.Start(settings, videoPath);
                 videoPath = video.OutputPath;
                 SessionState.SetString(ActivePathKey, videoPath);
+                ActiveMetadata = new RecordingMetadata
+                {
+                    recordingFilename = Path.GetFileName(videoPath),
+                    startedAtUtc = DateTime.UtcNow.ToString("O"),
+                    width = settings.videoWidth, height = settings.videoHeight, frameRate = settings.videoFps
+                };
+                ActiveMetadata.Save(videoPath);
+                lastEvents.Clear();
+                automaticCount = 0;
+                nextMetadataSave = EditorApplication.timeSinceStartup + 2;
+                CaptureHighlight.Receiver = OnGameplayHighlight;
                 elapsed = 0;
                 SetStatus("Recording Game view");
             }
             catch (Exception exception)
             {
-                StopRecording();
+                StopRecording("interrupted");
                 SetStatus("Recording failed. " + exception.Message, true);
             }
         }
 
-        public static void StopRecording()
+        public static void StopRecording() => StopRecording("complete");
+
+        private static void StopRecording(string completionState)
         {
             if (video == null || stopping) return;
             stopping = true;
+            CaptureHighlight.Receiver = null;
             elapsed = EditorApplication.timeSinceStartup - startedAt;
             var current = video;
             try
             {
                 current.Stop();
+                FinishMetadata(completionState, current.RecordedFrames);
                 if (!File.Exists(videoPath) || new FileInfo(videoPath).Length == 0)
                     throw new IOException("Recorder did not produce a non-empty video file.");
                 SetStatus("Recording finalised at " + videoPath);
@@ -128,6 +156,8 @@ namespace CaptureAndPromote
             }
             catch (Exception exception)
             {
+                try { FinishMetadata("interrupted", current.RecordedFrames); }
+                catch (Exception metadataException) { Debug.LogException(metadataException); }
                 SetStatus("Recording could not be finalised. Keep files at " + videoPath + ". " + exception.Message, true);
             }
             finally
@@ -135,6 +165,8 @@ namespace CaptureAndPromote
                 try { current.Dispose(); }
                 catch (Exception exception) { Debug.LogException(exception); }
                 video = null;
+                ActiveMetadata = null;
+                lastEvents.Clear();
                 stopping = false;
                 Changed?.Invoke();
             }
@@ -151,15 +183,32 @@ namespace CaptureAndPromote
             {
                 try
                 {
+                    if (ActiveMetadata != null)
+                    {
+                        long count = video.RecordedFrames;
+                        if (count != ActiveMetadata.frameCount)
+                        {
+                            if (ActiveMetadata.frameCount == 0) ActiveMetadata.startedAtUtc = DateTime.UtcNow.ToString("O");
+                            ActiveMetadata.frameCount = count;
+                            ActiveMetadata.durationSeconds = count / ActiveMetadata.frameRate;
+                            metadataDirty = true;
+                        }
+                        if (metadataDirty && EditorApplication.timeSinceStartup >= nextMetadataSave)
+                        {
+                            nextMetadataSave = EditorApplication.timeSinceStartup + 2;
+                            try { ActiveMetadata.Save(videoPath); metadataDirty = false; }
+                            catch (Exception exception) { SetStatus("Metadata checkpoint failed. " + exception.Message, true); }
+                        }
+                    }
                     if (!video.IsRecording)
                     {
-                        StopRecording();
+                        StopRecording("interrupted");
                         SetStatus("Recorder stopped unexpectedly. Check the Console and output files.", true);
                     }
                 }
                 catch (Exception exception)
                 {
-                    StopRecording();
+                    StopRecording("interrupted");
                     SetStatus("Recorder failed. " + exception.Message, true);
                 }
             }
@@ -191,6 +240,62 @@ namespace CaptureAndPromote
             if (error) Debug.LogError("[Capture & Promote] " + message);
             else Debug.Log("[Capture & Promote] " + message);
             Changed?.Invoke();
+        }
+
+        public static bool IsActiveMedia(string path) => video != null &&
+            string.Equals(Path.GetFullPath(path), videoPath, Application.platform == RuntimePlatform.WindowsEditor
+                ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal);
+
+        public static void Bookmark()
+        {
+            if (video == null || ActiveMetadata == null || stopping) return;
+            AddHighlight("Highlight " + (ActiveMetadata.highlights.Count + 1), HighlightPriority.Medium, "Manual", "", "manual");
+        }
+
+        private static void OnGameplayHighlight(string label, HighlightPriority priority, string category, string description)
+        {
+            if (System.Threading.Thread.CurrentThread.ManagedThreadId != mainThread || video == null ||
+                ActiveMetadata == null || stopping || !CaptureSettings.instance.automaticHighlights || string.IsNullOrWhiteSpace(label)) return;
+            var settings = CaptureSettings.instance;
+            if (automaticCount >= Math.Max(0, settings.maximumAutomaticHighlights)) return;
+            double now = MediaSeconds;
+            var key = (category ?? "Gameplay", label);
+            if (lastEvents.TryGetValue(key, out double last) && now - last < Math.Max(0, settings.eventCooldownSeconds)) return;
+            lastEvents[key] = now;
+            automaticCount++;
+            AddHighlight(label, priority, category, description, "event");
+        }
+
+        private static void AddHighlight(string label, HighlightPriority priority, string category, string description, string source)
+        {
+            ActiveMetadata.highlights.Add(new HighlightMarker
+            {
+                timestampSeconds = MediaSeconds, frame = video.RecordedFrames,
+                label = label, priority = priority.ToString(), category = category ?? "Gameplay",
+                description = description ?? "", source = source
+            });
+            metadataDirty = true;
+            HighlightConfirmation = "Bookmarked " + label + " at " + MediaSeconds.ToString("F3") + "s";
+            HighlightConfirmationUntil = EditorApplication.timeSinceStartup + 3;
+            Changed?.Invoke();
+        }
+
+        public static void SaveMetadata(string path, RecordingMetadata data)
+        {
+            if (IsActiveMedia(path)) metadataDirty = true;
+            else data.Save(path);
+            Changed?.Invoke();
+        }
+
+        private static void FinishMetadata(string state, long frames)
+        {
+            if (ActiveMetadata == null) return;
+            ActiveMetadata.frameCount = frames;
+            ActiveMetadata.durationSeconds = frames / ActiveMetadata.frameRate;
+            ActiveMetadata.endedAtUtc = DateTime.UtcNow.ToString("O");
+            ActiveMetadata.state = state;
+            ActiveMetadata.Save(videoPath);
+            metadataDirty = false;
         }
     }
 }
