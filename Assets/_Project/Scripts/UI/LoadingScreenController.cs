@@ -56,9 +56,14 @@ namespace CouchGuys.UI
         [SerializeField] private Text m_status;
         [SerializeField] private Text m_tip;
         [SerializeField] private Image m_fill;
-        [SerializeField] private Text m_progressPercent;
-        [SerializeField] private RectTransform m_spinner;
         [SerializeField] private Button m_returnButton;
+        [SerializeField, Min(1f)] private float m_tipInterval = 7f;
+        private Material m_fillMaterial;
+        private int m_tipIndex;
+        private float m_nextTipTime;
+        private static readonly int ProgressId = Shader.PropertyToID("_Progress");
+        private static readonly int BarSizeId = Shader.PropertyToID("_BarSize");
+        private static readonly int AnimationTimeId = Shader.PropertyToID("_AnimationTime");
         private float m_displayedProgress;
         private float m_visualProgress;
         private bool m_tracking;
@@ -91,23 +96,42 @@ namespace CouchGuys.UI
             if (s_instance != null && s_instance != this) { Destroy(gameObject); return; }
             s_instance = this;
             DontDestroyOnLoad(gameObject);
-            m_tip.text = Tips[Random.Range(0, Tips.Length)];
+            m_tipIndex = Random.Range(0, Tips.Length);
+            ShowTip();
+            if (m_fill != null && m_fill.material != null)
+            {
+                m_fillMaterial = new Material(m_fill.material);
+                m_fill.material = m_fillMaterial;
+            }
             m_returnButton.onClick.AddListener(ReturnToMenu);
         }
 
         private void OnDestroy()
         {
+            if (m_fillMaterial != null) Destroy(m_fillMaterial);
             if (s_instance == this) s_instance = null;
+        }
+
+        private void ShowTip()
+        {
+            m_tip.text = Tips[m_tipIndex].Replace("Tip:", "<color=#FFC52F><b>Tip:</b></color>");
+            m_nextTipTime = Time.unscaledTime + m_tipInterval;
         }
 
         private void Update()
         {
-            if (m_spinner != null) m_spinner.Rotate(0f, 0f, -150f * Time.unscaledDeltaTime);
-            m_visualProgress = Mathf.MoveTowards(m_visualProgress, m_displayedProgress, Time.unscaledDeltaTime * 0.8f);
-            if (m_fill != null)
+            if (Time.unscaledTime >= m_nextTipTime)
             {
-                m_fill.rectTransform.sizeDelta = new Vector2(808f * m_visualProgress, 30f);
-                m_progressPercent.text = $"{Mathf.RoundToInt(m_visualProgress * 100f)}%";
+                m_tipIndex = (m_tipIndex + 1) % Tips.Length;
+                ShowTip();
+            }
+            m_visualProgress = Mathf.MoveTowards(m_visualProgress, m_displayedProgress, Time.unscaledDeltaTime * 0.8f);
+            if (m_fillMaterial != null)
+            {
+                Rect rect = m_fill.rectTransform.rect;
+                m_fillMaterial.SetFloat(ProgressId, Mathf.Clamp01(m_visualProgress));
+                m_fillMaterial.SetVector(BarSizeId, new Vector4(rect.width, rect.height, 0f, 0f));
+                m_fillMaterial.SetFloat(AnimationTimeId, Time.unscaledTime);
             }
         }
 

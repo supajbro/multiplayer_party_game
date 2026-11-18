@@ -110,18 +110,28 @@ def discover_twitch(cfg, store):
 
 def discover_youtube(cfg, store):
     key = os.getenv("YOUTUBE_API_KEY")
+    # Existing youtube.readonly consent can search public videos too; no separate
+    # API key is needed after channel connection.
+    client = None
     if not key:
-        raise ValueError("Set YOUTUBE_API_KEY")
+        from .youtube import service
+        client = service(cfg)
+
+    def listing(resource, **params):
+        if client is not None:
+            return getattr(client, resource)().list(**params).execute()
+        return get_json(f"https://www.googleapis.com/youtube/v3/{resource}",
+                        params={"key": key, **params})
+
+    found = 0
     start = (datetime.now(timezone.utc) - timedelta(days=cfg.lookback_days)).isoformat()
     for query in cfg.youtube_queries:
-        result = get_json("https://www.googleapis.com/youtube/v3/search", params={
-            "key": key, "part": "snippet", "q": query, "type": "video", "maxResults": 25,
-            "publishedAfter": start, "order": "relevance"})
+        result = listing("search", part="snippet", q=query, type="video", maxResults=25,
+                         publishedAfter=start, order="relevance")
         ids = [x["id"]["videoId"] for x in result.get("items", [])]
         if not ids:
             continue
-        details = get_json("https://www.googleapis.com/youtube/v3/videos", params={
-            "key": key, "part": "snippet,statistics,contentDetails,status", "id": ",".join(ids)})
+        details = listing("videos", part="snippet,statistics,contentDetails,status", id=",".join(ids))
         for video in details.get("items", []):
             stats = video.get("statistics", {})
             views = int(stats.get("viewCount", 0))
@@ -132,13 +142,15 @@ def discover_youtube(cfg, store):
             video["engagement_score"] = math.log1p(views) + min(likes / max(views, 1), .2) * 10
             # Duration is metadata, not a reliable Shorts classifier.
             store.discover("youtube:" + video["id"], "youtube", video)
+            found += 1
+    store.event("youtube", f"Stored {found} candidate matches; reuse permission remains unverified")
 
 
 def discover(cfg, store):
     enabled = []
     if os.getenv("TWITCH_CLIENT_ID"):
         enabled.append(("twitch", discover_twitch))
-    if os.getenv("YOUTUBE_API_KEY"):
+    if os.getenv("YOUTUBE_API_KEY") or cfg.oauth_token.is_file():
         enabled.append(("youtube", discover_youtube))
     for name, fn in enabled:
         try:

@@ -79,7 +79,7 @@ Permission checks run again before analysis, rendering, upload and publication; 
 
 Edit `.env` locally. Never paste secrets into chat or commit them.
 
-**YouTube:** create a project in [Google Cloud Console](https://console.cloud.google.com/), enable **YouTube Data API v3**, and create an API key restricted to this API. Set `YOUTUBE_API_KEY`. Queries, freshness and view threshold are configurable. Search uses two queries by default, followed by video details/statistics; inspect your project's current quota before increasing frequency. Short durations are collected, but the Data API does not provide a dependable `isShort` flag. Category/title metadata cannot prove GTA VI identity.
+**YouTube:** discovery automatically uses your saved channel OAuth authorisation when no API key is configured. You can also create an API key restricted to **YouTube Data API v3** and set `YOUTUBE_API_KEY` to search without channel sign-in. Queries, freshness and view threshold are configurable. Search uses two queries by default, followed by video details/statistics; inspect your project's current quota before increasing frequency. Short durations are collected, but the Data API does not provide a dependable `isShort` flag. Category/title metadata cannot prove GTA VI identity.
 
 **Twitch:** register an application in the [Twitch developer console](https://dev.twitch.tv/console/apps), then set `TWITCH_CLIENT_ID` and `TWITCH_CLIENT_SECRET`. The app obtains a client-credentials token for discovery. An exact configured game-category match is required; absent categories skip cleanly. Clips are filtered by views and recent publication. Engagement scores are stored for inspection; AI selection prioritizes comedy rather than raw popularity.
 
@@ -166,6 +166,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\register-task.ps1 
 Runs daily at PC-local time (Australia/Brisbane on this PC), as the logged-in user, without administrator privileges or stored password. Missed starts run when available. PC must be awake and you must be logged in. Overlapping scheduler instances are ignored; an OS file lock also guards manual runs. The runner starts Ollama hidden if needed, uses absolute Python/config paths, and returns a nonzero exit code on failure. No task is enabled by installation alone.
 
 ## Tests and evaluation
+
+For a watchable local production demo with three original animated driving mishaps, real Piper narration and the actual production renderer:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\make_demo.py
+```
+
+The result is `data/demo-tests/TIMESTAMP/productions/original-driving-demo/short.mp4`. It is visibly labelled as original animation, not GTA gameplay. Synthetic sources, a deliberately authored script and an isolated SQLite database exercise rendering/recovery without contaminating the real footage pool. It never uploads and does not test discovery, automatic moment selection or humour accuracy.
 
 ```powershell
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v

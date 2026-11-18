@@ -5,6 +5,7 @@
             "name": "Player",
             "id": "354a5aaf-62c5-4374-84e6-9322df46fa7e",
             "actions": [
+                {"name":"Emote","type":"Button","id":"abe0e091-50ae-4947-8af0-049a770cbf86","expectedControlType":"Button","processors":"","interactions":"","initialStateCheck":false},
                 {
                     "name": "Move",
                     "type": "Value",
@@ -106,6 +107,7 @@
                 }
             ],
             "bindings": [
+                {"name":"","id":"eba6dc5d-188e-473b-8481-c3c14958c929","path":"<Keyboard>/b","interactions":"","processors":"","groups":"Keyboard&Mouse","action":"Emote","isComposite":false,"isPartOfComposite":false},
                 {
                     "name": "WASD",
                     "id": "90ae6c58-1577-4ccb-ad72-0ccffc836092",

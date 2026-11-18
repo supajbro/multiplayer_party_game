@@ -32,6 +32,8 @@ namespace CouchGuys.Input
         private InputAction m_teleportToDeliveryAction;
         private InputActionAsset m_runtimeInputActions;
         private bool m_gameplaySuppressed;
+        private bool m_emoteWheelOpen;
+        private InputAction m_emoteAction;
         private int m_consumedInteractFrame = -1;
 
         // Consumers claim a press only after selecting their interaction. Reading intent
@@ -43,7 +45,23 @@ namespace CouchGuys.Input
             return true;
         }
         public bool GameplaySuppressionRequested => m_gameplaySuppressed;
-        private bool GameplaySuppressed => m_gameplaySuppressed || MenuBlocked;
+        private bool GameplaySuppressed => m_gameplaySuppressed || MenuBlocked || m_emoteWheelOpen;
+        public bool CanOpenEmoteWheel => isActiveAndEnabled && !GameplaySuppressed && Time.timeScale > 0f;
+        public bool CanContinueEmoteWheel => isActiveAndEnabled && !m_gameplaySuppressed && !MenuBlocked && Time.timeScale > 0f;
+        public bool EmotePressedThisFrame => m_emoteAction?.WasPressedThisFrame() ?? false;
+        public bool EmoteHeld => m_emoteAction?.IsPressed() ?? false;
+        public void SetEmoteWheelOpen(bool open) => m_emoteWheelOpen = open;
+        public bool EmoteInterruptedByInput => (m_moveAction?.ReadValue<Vector2>().sqrMagnitude ?? 0f) > .01f ||
+            (m_jumpAction?.IsPressed() ?? false) || (m_shootAction?.IsPressed() ?? false) ||
+            (m_interactAction?.IsPressed() ?? false) || (m_reloadAction?.WasPressedThisFrame() ?? false) ||
+            (Keyboard.current?.escapeKey.wasPressedThisFrame ?? false) ||
+            (Keyboard.current?.qKey.wasPressedThisFrame ?? false) ||
+            (Keyboard.current?.mKey.wasPressedThisFrame ?? false) ||
+            (Keyboard.current?.digit1Key.wasPressedThisFrame ?? false) ||
+            (Keyboard.current?.digit2Key.wasPressedThisFrame ?? false) ||
+            (Keyboard.current?.digit3Key.wasPressedThisFrame ?? false) ||
+            (Keyboard.current?.digit4Key.wasPressedThisFrame ?? false) ||
+            (Keyboard.current?.digit5Key.wasPressedThisFrame ?? false);
         private bool MenuBlocked => CouchGuys.UI.LoadingScreenController.BlocksGameplayInput ||
             CouchGuys.Networking.GameplaySessionController.BlocksLocalInput ||
             CouchGuys.Networking.PlayerDebugMenu.IsOpen || CouchGuys.UI.DispatcherMenuController.IsLocalInteractionActive;
@@ -100,7 +118,7 @@ namespace CouchGuys.Input
             !GameplaySuppressed && (m_teleportToDeliveryAction?.WasPressedThisFrame() ?? false);
         public bool TestResourcesPressedThisFrame =>
             !GameplaySuppressed && (Keyboard.current?.lKey.wasPressedThisFrame ?? false);
-        public bool CanNavigateDeliveries => isActiveAndEnabled && !MenuBlocked;
+        public bool CanNavigateDeliveries => isActiveAndEnabled && !MenuBlocked && !m_emoteWheelOpen;
         public bool CanShowMap => isActiveAndEnabled && !GameplaySuppressed;
         public bool MapPressedThisFrame => CanShowMap && (Keyboard.current?.mKey.wasPressedThisFrame ?? false);
 
@@ -160,6 +178,7 @@ namespace CouchGuys.Input
             m_assaultRifleAction = m_playerMap.FindAction("Equip Assault Rifle", true);
             m_shotgunAction = m_playerMap.FindAction("Equip Shotgun", true);
             m_teleportToDeliveryAction = m_playerMap.FindAction("Teleport To Delivery", true);
+            m_emoteAction = m_playerMap.FindAction("Emote", true);
         }
 
 #if UNITY_EDITOR

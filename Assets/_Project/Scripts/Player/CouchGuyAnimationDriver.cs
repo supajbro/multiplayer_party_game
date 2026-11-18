@@ -204,6 +204,7 @@ namespace CouchGuys.Player
         /// <summary>Plays the authored hit reaction without affecting gameplay state.</summary>
         public void PlayHitReaction()
         {
+            GetComponent<PlayerEmoteController>()?.RequestInterrupt();
             m_animator?.SetTrigger(HitHash);
         }
 
@@ -269,6 +270,7 @@ namespace CouchGuys.Player
 
         public void PlayWeaponShot(PlayerWeaponType weapon)
         {
+            GetComponent<PlayerEmoteController>()?.RequestInterrupt();
             m_recoilWeapon = weapon;
             m_weaponAimUntil = Time.time + (weapon == PlayerWeaponType.Shotgun ? 0.55f :
                 weapon == PlayerWeaponType.AssaultRifle ? 0.22f : 0.34f);

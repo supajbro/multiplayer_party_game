@@ -28,6 +28,7 @@ namespace CouchGuys.Gameplay.Weapons
         [ServerRpc]
         private void RequestPunchServerRpc()
         {
+            GetComponent<PlayerEmoteController>()?.InterruptServer();
             // Advance first so requests arriving on recovery boundaries see the current state.
             UpdatePunchServer();
             if (!CanPunchServer || Time.time < m_nextServerPunchTime) return;

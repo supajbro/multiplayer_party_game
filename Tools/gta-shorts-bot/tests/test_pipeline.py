@@ -110,6 +110,28 @@ class UploadTests(unittest.TestCase):
                     youtube.upload(cfg, store, "p")
             store.db.close()
 
+    def test_upload_uses_the_edits_game_tags_and_format_note(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg, store = self._rendered_job(Path(tmp))
+            row = store.db.execute("SELECT manifest FROM productions WHERE id='p'").fetchone()
+            manifest = json.loads(row[0])
+            manifest.update(tags=["Fortnite", "Fortnite memes", "Shorts"],
+                            production_note="Caption-led meme edit. #Fortnite #Shorts")
+            store.db.execute("UPDATE productions SET manifest=? WHERE id='p'", (json.dumps(manifest),))
+            store.db.commit()
+            client = MagicMock()
+            client.videos().insert().next_chunk.return_value = (None, {"id": "remote-id"})
+            with patch("shorts.youtube.service", return_value=client), \
+                 patch("shorts.youtube.channel_id", return_value="fixture"), \
+                 patch("shorts.youtube.media.quality_check"), \
+                 patch("googleapiclient.http.MediaFileUpload"):
+                youtube.upload(cfg, store, "p")
+                snippet = client.videos().insert.call_args.kwargs["body"]["snippet"]
+                self.assertEqual(snippet["tags"], ["Fortnite", "Fortnite memes", "Shorts"])
+                self.assertIn("Caption-led meme edit", snippet["description"])
+                self.assertNotIn("comedy narration", snippet["description"])
+            store.db.close()
+
     def test_wrong_channel_cannot_start_remote_insert(self):
         with tempfile.TemporaryDirectory() as tmp:
             cfg, store = self._rendered_job(Path(tmp))
@@ -138,6 +160,41 @@ class UploadTests(unittest.TestCase):
     def test_publication_requires_explicit_testing_flags(self):
         with self.assertRaises(ValueError):
             Settings(auto_publish=True)
+
+
+class YouTubeDiscoveryTests(unittest.TestCase):
+    def test_oauth_discovers_metadata_without_granting_reuse_rights(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg = Settings(data_dir=Path(tmp), youtube_queries=["GTA 6 fails"])
+            store = Store(cfg)
+            client = MagicMock()
+            client.search().list().execute.return_value = {"items": [{"id": {"videoId": "fixture"}}]}
+            client.videos().list().execute.return_value = {"items": [
+                {"id": "fixture", "snippet": {"title": "Candidate", "channelTitle": "Creator"},
+                 "statistics": {"viewCount": "500", "likeCount": "20"}}]}
+            with patch.dict(os.environ, {"YOUTUBE_API_KEY": ""}), \
+                 patch("shorts.youtube.service", return_value=client), \
+                 patch("shorts.discovery.get_json") as public_request:
+                discovery.discover_youtube(cfg, store)
+                public_request.assert_not_called()
+            row = store.db.execute("SELECT * FROM sources WHERE id='youtube:fixture'").fetchone()
+            self.assertIsNotNone(row)
+            self.assertIsNone(row["rights"])
+            self.assertIsNone(row["path"])
+            self.assertEqual(json.loads(row["metadata"])["url"], "https://www.youtube.com/watch?v=fixture")
+            store.db.close()
+
+    def test_api_key_discovery_still_works_without_oauth(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            cfg = Settings(data_dir=Path(tmp), youtube_queries=["GTA 6 fails"])
+            store = Store(cfg)
+            with patch.dict(os.environ, {"YOUTUBE_API_KEY": "fixture-key"}), \
+                 patch("shorts.youtube.service") as oauth, \
+                 patch("shorts.discovery.get_json", return_value={"items": []}) as public_request:
+                discovery.discover_youtube(cfg, store)
+                oauth.assert_not_called()
+                self.assertEqual(public_request.call_args.kwargs["params"]["key"], "fixture-key")
+            store.db.close()
 
 
 class TwitchAuthTests(unittest.TestCase):

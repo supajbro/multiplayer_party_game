@@ -47,7 +47,7 @@ namespace CouchGuys.Tests.Editor
         }
 
         [Test]
-        public void SledUsesTheSameControllerAndFourPointsWithDoubleCouchSpeeds()
+        public void SledUsesFourPointsWithSlowerSpeedAndMinimalStaminaDrain()
         {
             var sledPrefab = Prefab("Vehicles/Sled");
             var sled = sledPrefab.GetComponent<CouchCarryController>();
@@ -56,7 +56,7 @@ namespace CouchGuys.Tests.Editor
             Assert.That(sledPrefab.GetComponentsInChildren<CouchCarryPoint>().Length, Is.EqualTo(4));
             Assert.That(sled.IsSled, Is.True);
             Assert.That(couch.IsSled, Is.False);
-            Assert.That(sled.StaminaDrainMultiplier, Is.EqualTo(.35f));
+            Assert.That(sled.StaminaDrainMultiplier, Is.EqualTo(.05f));
             Assert.That(couch.StaminaDrainMultiplier, Is.EqualTo(1f));
             var network = new SerializedObject(sledPrefab.GetComponent<NetworkObject>());
             var behaviours = network.FindProperty("NetworkBehaviours");
@@ -65,7 +65,7 @@ namespace CouchGuys.Tests.Editor
             Assert.That(registered, Is.True);
             for (int count = 1; count <= 4; count++)
             {
-                Assert.That((float)Call(sled, "GetConfiguredMoveSpeed", count), Is.EqualTo(2f * (float)Call(couch, "GetConfiguredMoveSpeed", count)));
+                Assert.That((float)Call(sled, "GetConfiguredMoveSpeed", count), Is.EqualTo(.85f * (float)Call(couch, "GetConfiguredMoveSpeed", count)));
                 Assert.That(sled.GetPoint(count - 1).transform, Is.SameAs(sledPrefab.GetComponent<SledController>().GetPoint(count - 1).transform));
             }
         }
@@ -300,7 +300,7 @@ namespace CouchGuys.Tests.Editor
         public static void RunCargoValidation()
         {
             var tests = new SledPhysicsTests();
-            tests.SledUsesTheSameControllerAndFourPointsWithDoubleCouchSpeeds();
+            tests.SledUsesFourPointsWithSlowerSpeedAndMinimalStaminaDrain();
             tests.SledMultipliersAreIndependentAndRegularCouchesKeepDefaults();
             tests.RaisedSledHandlesAreReachableWithOffsetPlayerCapsule();
             tests.ReplicatedDockPosesPreserveIdentityAndCanBeRemovedIndependently();

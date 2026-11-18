@@ -275,7 +275,7 @@ namespace CouchGuys.CameraSystem
             }
             if (m_vehicleTarget != null)
             {
-                UpdateVehicleCamera();
+                UpdateVehicleCamera(Time.deltaTime);
                 ResolveCameraVisualOverlap();
                 return;
             }
@@ -418,7 +418,7 @@ namespace CouchGuys.CameraSystem
             m_pitch = Mathf.DeltaAngle(0f, rotation.eulerAngles.x);
         }
 
-        private void UpdateVehicleCamera()
+        private void UpdateVehicleCamera(float deltaTime)
         {
             Vector2 lookInput = m_input != null ? m_input.VehicleLook : Vector2.zero;
             m_yaw += lookInput.x * m_vehicleLookSensitivity;
@@ -439,14 +439,13 @@ namespace CouchGuys.CameraSystem
             for (int index = 0; index < hitCount; index++)
             {
                 Transform hit = m_collisionHits[index].transform;
-                if (hit != null && (hit.IsChildOf(m_vehicleTarget.root) ||
-                    (m_playerRoot != null && hit.IsChildOf(m_playerRoot)))) continue;
+                if (hit != null && (hit.IsChildOf(m_vehicleTarget.root) || IsPlayerCollider(hit))) continue;
                 clearDistance = Mathf.Min(clearDistance, m_collisionHits[index].distance);
             }
 
             Vector3 desiredPosition = pivot + direction * Mathf.Max(0f, clearDistance - m_collisionPadding);
-            float positionBlend = 1f - Mathf.Exp(-m_vehicleFollowSmoothing * Time.deltaTime);
-            float rotationBlend = 1f - Mathf.Exp(-m_vehicleRotationSmoothing * Time.deltaTime);
+            float positionBlend = 1f - Mathf.Exp(-m_vehicleFollowSmoothing * deltaTime);
+            float rotationBlend = 1f - Mathf.Exp(-m_vehicleRotationSmoothing * deltaTime);
             transform.position = Vector3.Lerp(transform.position, desiredPosition, positionBlend);
             transform.rotation = Quaternion.Slerp(transform.rotation, desiredRotation, rotationBlend);
         }
@@ -565,7 +564,11 @@ namespace CouchGuys.CameraSystem
 
         private bool IsPlayerCollider(Transform colliderTransform)
         {
-            return m_playerRoot != null && colliderTransform.IsChildOf(m_playerRoot);
+            // Every human player and AI teammate has PlayerHealth, including remote
+            // players whose local movement/controller components are disabled.
+            // Their bodies must not compress the boom or lift the orbit pivot.
+            return (m_playerRoot != null && colliderTransform.IsChildOf(m_playerRoot)) ||
+                colliderTransform.GetComponentInParent<PlayerHealth>(true) != null;
         }
 
         private Vector3 ResolveCollisionPosition(Vector3 pivot, Vector3 desiredPosition)

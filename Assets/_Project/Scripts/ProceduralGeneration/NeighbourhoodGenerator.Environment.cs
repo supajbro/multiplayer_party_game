@@ -687,6 +687,14 @@ namespace CouchGuys.ProceduralGeneration
 
         private bool CanPlaceEnvironmentFootprint(OrientedFootprint candidate)
         {
+            // Roads may enter the depot at cell zero, but roadside props must leave
+            // that entrance and the rest of the starting area unobstructed.
+            if (GeneratedStartingArea != null)
+            {
+                if (FootprintsOverlap(candidate, CreateCellFootprint(GridCoordinate.Zero, 0f), 0f)) return false;
+                foreach (GridCoordinate cell in m_startingAreaCells)
+                    if (FootprintsOverlap(candidate, CreateCellFootprint(cell, 0f), 0f)) return false;
+            }
             for (int i = 0; i < m_environmentFootprints.Count; i++)
                 if (FootprintsOverlap(candidate, m_environmentFootprints[i], 0f)) return false;
             for (int i = 0; i < m_reservedDrivewayFootprints.Count; i++)

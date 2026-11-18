@@ -18,7 +18,7 @@ MonoBehaviour:
     RotationalTorque: 11
     DestroyedVehicleLifetime: 10
   m_maximumHealth: 1000
-  m_maximumDrivingSpeed: 40
+  m_maximumDrivingSpeed: 25
   m_acceleration: 12
   m_brakingStrength: 4
   m_playerBrakingStrength: 18

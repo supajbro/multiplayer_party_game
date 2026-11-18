@@ -26,6 +26,7 @@ namespace CouchGuys.Gameplay.Weapons
         [ServerRpc]
         private void RequestBatSwingServerRpc()
         {
+            GetComponent<PlayerEmoteController>()?.InterruptServer();
             TryBeginBatSwingServer();
         }
 

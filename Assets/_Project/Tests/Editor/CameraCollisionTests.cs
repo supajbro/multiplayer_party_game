@@ -106,6 +106,64 @@ namespace CouchGuys.Tests.Editor
             Assert.That(Vector3.Distance(result, Origin + new Vector3(0.65f, 0f, -4.5f)), Is.LessThan(0.002f));
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void MovingTeammate_DoesNotLiftPivotOrCompressCamera(bool childCollider)
+        {
+            Transform teammate = CreateTeammateCollider(childCollider);
+            Vector3 desired = Origin + new Vector3(.65f, 0f, -4.5f);
+            foreach (Vector3 position in new[] { Origin, Origin + Vector3.back * 2f, desired, Origin + Vector3.right * 5f })
+            {
+                teammate.position = position;
+                Physics.SyncTransforms();
+                Assert.That(Invoke("GetClearCollisionPivot", Origin), Is.EqualTo(Origin));
+                Assert.That(Vector3.Distance(Invoke("ResolveCollisionPosition", Origin, desired), desired), Is.LessThan(.002f));
+                Vector3 smoothed = Invoke("SmoothCollisionPosition", Origin, desired, 1f / 60f);
+                Assert.That(Vector3.Distance(smoothed, desired), Is.LessThan(.002f));
+            }
+
+            CreateBox(Origin + Vector3.back * 3f, Vector3.one);
+            Physics.SyncTransforms();
+            Assert.That(Vector3.Distance(Invoke("ResolveCollisionPosition", Origin, desired), Origin), Is.LessThan(3f),
+                "World geometry must still obstruct the camera after filtering teammates.");
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void VehicleCamera_IgnoresTeammateButStillStopsAtWall(bool childCollider)
+        {
+            Transform teammate = CreateTeammateCollider(childCollider);
+            teammate.position = Origin + Vector3.back * 2f;
+            Transform target = Create("Vehicle target", Origin).transform;
+            m_camera.FollowVehicle(target, 4.5f, 0f, .12f, -35f, 65f, 100000f, 100000f, .2f);
+            typeof(ThirdPersonCameraController).GetField("m_pitch", Private).SetValue(m_camera, 0f);
+            Physics.SyncTransforms();
+            var update = typeof(ThirdPersonCameraController).GetMethod("UpdateVehicleCamera", Private);
+            update.Invoke(m_camera, new object[] { 1f / 60f });
+            Assert.That(Vector3.Distance(m_camera.transform.position, Origin + Vector3.back * 4.4f), Is.LessThan(.002f));
+
+            CreateBox(Origin + Vector3.back * 3f, Vector3.one);
+            Physics.SyncTransforms();
+            update.Invoke(m_camera, new object[] { 1f / 60f });
+            Assert.That(Vector3.Distance(m_camera.transform.position, Origin), Is.InRange(2.19f, 2.21f));
+        }
+
+        private Transform CreateTeammateCollider(bool childCollider)
+        {
+            GameObject root = Create("Other player or AI teammate", Origin);
+            root.AddComponent<CouchGuys.Player.PlayerHealth>();
+            GameObject body = root;
+            if (childCollider)
+            {
+                body = new GameObject("Child body collider");
+                body.transform.SetParent(root.transform, false);
+            }
+            CharacterController capsule = body.AddComponent<CharacterController>();
+            capsule.height = 2f;
+            capsule.radius = .6f;
+            return root.transform;
+        }
+
         [Test]
         public void HeldCouch_AnimatedVisualOutsideCollider_BlocksSmoothedCamera()
         {

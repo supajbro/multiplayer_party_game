@@ -16,6 +16,57 @@ namespace CouchGuys.Tests.Editor
     {
         static Transform Find(GameObject root,string name)=>root.GetComponentsInChildren<Transform>(true).Single(t=>t.name==name);
         static GameObject Create()=>Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(CouchGuys.Editor.Depot02PrefabBuilder.PrefabPath));
+
+        [TestCase(0f)]
+        [TestCase(90f)]
+        [TestCase(180f)]
+        [TestCase(270f)]
+        public void StreetlightsCannotOverlapDepotOrItsRoadEntrance(float yaw)
+        {
+            var region = AssetDatabase.LoadAssetAtPath<RegionDefinition>("Assets/_Project/Settings/Regions/Region_Suburbs.asset");
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.NewPreviewScene();
+            var host = new GameObject("DepotStreetlightClearanceTest");
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(host, scene);
+            host.transform.SetPositionAndRotation(new Vector3(31, 4, -82), Quaternion.Euler(0, yaw, 0));
+            try
+            {
+                var generator = host.AddComponent<NeighbourhoodGenerator>();
+                var type = typeof(NeighbourhoodGenerator);
+                const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+                object Call(string name, params object[] args) => type.GetMethod(name, flags).Invoke(generator, args);
+                Call("ApplyRegionConfiguration", region);
+                Call("CreateGeneratedHierarchy");
+                var area = (StartingArea)Call("CreateStartingArea");
+                type.GetProperty("GeneratedStartingArea").SetValue(generator, area);
+                type.GetField("m_gridOrigin", flags).SetValue(generator, area.RoadConnection.position);
+                Call("ReserveStartingArea", area);
+
+                var cells = new HashSet<GridCoordinate>((HashSet<GridCoordinate>)type.GetField("m_startingAreaCells", flags).GetValue(generator));
+                Assert.That(cells.Count, Is.GreaterThan(0));
+                cells.Add(GridCoordinate.Zero);
+                var footprintType = type.GetNestedType("OrientedFootprint", BindingFlags.NonPublic);
+                bool CanPlace(Vector3 position) => (bool)Call("CanPlaceEnvironmentFootprint",
+                    Activator.CreateInstance(footprintType, new object[] {
+                        new Vector2(position.x, position.z), Vector2.right, Vector2.up, Vector2.one }));
+                float tileSize = (float)type.GetField("m_roadTileSize", flags).GetValue(generator);
+                foreach (var cell in cells)
+                {
+                    var centre = generator.GridToWorld(cell);
+                    Assert.That(CanPlace(centre), Is.False, $"Depot cell {cell}, yaw {yaw}");
+                }
+                var entrance = generator.GridToWorld(GridCoordinate.Zero);
+                Assert.That(CanPlace(entrance + Vector3.right * (tileSize * .5f + .5f)), Is.False,
+                    "Reject a prop whose centre is outside the entrance but whose footprint overlaps it.");
+                Assert.That(CanPlace(entrance + Vector3.right * (tileSize * 100f)), Is.True,
+                    "Ordinary roadside space must remain available.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+                UnityEditor.SceneManagement.EditorSceneManager.ClosePreviewScene(scene);
+            }
+        }
+
         [TestCase(22884574,0f)]
         [TestCase(22884574,90f)]
         [TestCase(22884574,180f)]

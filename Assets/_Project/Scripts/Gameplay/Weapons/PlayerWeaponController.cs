@@ -118,6 +118,8 @@ namespace CouchGuys.Gameplay.Weapons
             }
         }
         public bool HasEquippedWeapon => ValidIndex(m_equippedIndex.Value);
+        public bool EmoteIncompatibleAction => IsReloading || m_grappleAttached.Value || m_punchStage != 0 ||
+            m_batSwinging || Time.time < m_switchCompleteAt;
         public bool CanHandleWeaponServer => IsServerInitialized && m_health != null && m_health.IsAlive &&
             !(TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.IsMounted) &&
             !m_health.IsKnockedDown && !(m_couchCarrier != null && m_couchCarrier.IsCarrying) &&
@@ -557,6 +559,7 @@ namespace CouchGuys.Gameplay.Weapons
         [ServerRpc]
         private void RequestFireServerRpc(Vector3 aimOrigin, Vector3 aimDirection)
         {
+            GetComponent<PlayerEmoteController>()?.InterruptServer();
             if (TryFireServer(aimOrigin, aimDirection) || !Owner.IsValid)
                 return;
 

@@ -75,6 +75,8 @@ namespace CouchGuys.Player
         private bool m_ready;
 
         public RobotFaceExpression CurrentExpression => m_toExpression;
+        private RobotFaceExpression? m_emoteExpression;
+        public void SetEmoteExpression(RobotFaceExpression? expression) => m_emoteExpression = expression;
 
         private void Awake()
         {
@@ -132,6 +134,7 @@ namespace CouchGuys.Player
             if (now < m_punchUntil) return RobotFaceExpression.Focused;
             if (now < m_angryUntil) return RobotFaceExpression.Angry;
             if (m_carrier != null && m_carrier.IsCarrying) return RobotFaceExpression.Focused;
+            if (m_emoteExpression.HasValue) return m_emoteExpression.Value;
             return now < m_happyUntil ? RobotFaceExpression.Happy : RobotFaceExpression.Normal;
         }
 

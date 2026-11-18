@@ -68,11 +68,12 @@ def upload(cfg, store, production_id):
     store.db.commit()
     script = manifest["script"]
     description = (script["description"] + "\n\n" + "\n".join(manifest["credits"]) +
-                   f"\n\nProduction: {production_id}\nOriginal locally generated comedy narration. #Shorts")
+                   f"\n\nProduction: {production_id}\n" +
+                   manifest.get("production_note", "Original locally generated comedy narration. #Shorts"))
     try:
         request = client.videos().insert(part="snippet,status", body={
             "snippet": {"title": script["title"], "description": description[:5000],
-                        "categoryId": "20", "tags": ["GTA 6", "gaming", "Shorts"]},
+                        "categoryId": "20", "tags": manifest.get("tags", ["GTA 6", "gaming", "Shorts"])},
             "status": {"privacyStatus": "private", "selfDeclaredMadeForKids": False,
                        "containsSyntheticMedia": cfg.contains_synthetic_media}},
             media_body=MediaFileUpload(str(output), mimetype="video/mp4", chunksize=8*1024*1024,
