@@ -41,7 +41,8 @@ namespace CouchGuys.Player
         private void LateUpdate()
         {
             var couch = m_carrier != null && m_carrier.IsSpawned ? m_carrier.CarriedCouch : null;
-            var point = couch != null && !couch.IsSled && !couch.IsLoaded
+            // Sled grips use the same replicated carry attachment on owners and observers.
+            var point = couch != null && !couch.IsLoaded
                 ? couch.GetPoint(m_carrier.CarriedPointIndex) : null;
             Transform target = point != null ? point.transform : null;
             var truck = m_truckInteractor != null ? m_truckInteractor.CurrentTruck : null;
