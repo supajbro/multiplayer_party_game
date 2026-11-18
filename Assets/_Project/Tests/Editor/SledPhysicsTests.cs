@@ -368,6 +368,49 @@ namespace CouchGuys.Tests.Editor
             }
         }
 
+        [Test]
+        public void AutomaticLoadingNearOccupiedDockUsesAnotherFreeDock()
+        {
+            var sledObject = Object.Instantiate(Prefab("Vehicles/Sled"));
+            var occupiedObject = Object.Instantiate(Prefab("Couch"));
+            var incomingObject = Object.Instantiate(Prefab("Couch"));
+            try
+            {
+                var sled = sledObject.GetComponent<SledController>();
+                var occupied = occupiedObject.GetComponent<CouchCarryController>();
+                var incoming = incomingObject.GetComponent<CouchCarryController>();
+                Call(occupied, "Awake");
+                Call(incoming, "Awake");
+                // Separate the free docks so only the occupied approach is in range.
+                for (int i = 1; i < sled.CouchDockCount; i++)
+                    sled.GetCouchDock(i).position += Vector3.right * (20f * i);
+                occupied.transform.position = sled.GetCouchDock(0).position;
+                MountReplica(occupied, sled, (Vector3)Call(sled, "GetMountPosition", occupied));
+                Assert.That(sled.IsCouchDockOccupied(0), Is.True);
+                var bounds = (Bounds)typeof(CouchCarryController).GetField("m_cargoBounds", Private).GetValue(incoming);
+                incoming.transform.position = sled.GetCouchDock(0).position - bounds.center;
+
+                Assert.That((bool)Call(sled, "IsWithinAutoLoadingRange", incoming), Is.True);
+                int destination = (int)Call(sled, "FindAvailableDock", incoming, false);
+                Assert.That(destination, Is.GreaterThan(0));
+                Assert.That(Vector3.Distance(incoming.transform.position, sled.GetCouchDock(destination).position), Is.GreaterThan(10f));
+                // Apply the existing replicated mount state and verify the chosen dock.
+                MountReplica(incoming, sled, (Vector3)Call(sled, "GetMountPosition", incoming));
+                Assert.That(sled.IsCouchDockOccupied(destination), Is.True);
+                Assert.That(sled.MountedCouchCount, Is.EqualTo(2));
+
+                incoming.transform.SetParent(null, true);
+                incoming.transform.position = Vector3.one * 1000f;
+                Assert.That((bool)Call(sled, "IsWithinAutoLoadingRange", incoming), Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(incomingObject);
+                Object.DestroyImmediate(occupiedObject);
+                Object.DestroyImmediate(sledObject);
+            }
+        }
+
         private static void MountReplica(CouchCarryController couch, SledController sled, Vector3 pose)
         {
             Value(couch, "m_sledMountPosition", pose);

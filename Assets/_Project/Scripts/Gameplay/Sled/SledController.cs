@@ -162,13 +162,22 @@ namespace CouchGuys.Gameplay.Sled
             if (!IsServerInitialized || !IsSpawned || !HasCargoSpace || Time.time < m_nextMountTime ||
                 m_couchAnchor == null || couch == null || couch.IsSled || couch.IsLoaded ||
                 !couch.IsPickupAvailable || couch.IsCargoTransitioning) return false;
-            int dock = FindAvailableDock(couch);
-            if (dock < 0) return false;
-            Vector3 loadingPoint = GetCouchDock(dock).position;
-            Vector3 nearest = couch.transform.TransformPoint(couch.CargoBounds.ClosestPoint(
-                couch.transform.InverseTransformPoint(loadingPoint)));
-            if (Vector3.Distance(nearest, loadingPoint) > m_loadingInteractionDistance) return false;
+            if (FindAvailableDock(couch) < 0 || !IsWithinAutoLoadingRange(couch)) return false;
             return !mount || TryLoadCouchServer(couch);
+        }
+
+        private bool IsWithinAutoLoadingRange(CouchCarryController couch)
+        {
+            // An occupied dock is still a loading approach; select the free destination separately.
+            for (int i = 0; i < CouchDockCount; i++)
+            {
+                Transform dock = GetCouchDock(i);
+                if (dock == null) continue;
+                Vector3 nearest = couch.transform.TransformPoint(couch.CargoBounds.ClosestPoint(
+                    couch.transform.InverseTransformPoint(dock.position)));
+                if (Vector3.Distance(nearest, dock.position) <= m_loadingInteractionDistance) return true;
+            }
+            return false;
         }
 
         internal Transform GetWeaponAnchor(int slot) => m_weaponAnchors != null && slot >= 0 &&
