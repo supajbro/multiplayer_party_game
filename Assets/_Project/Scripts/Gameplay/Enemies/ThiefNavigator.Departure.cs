@@ -26,7 +26,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         public bool IsDeparting => m_departurePhase.Value != DeparturePhase.None;
         public bool IsFrustrated => m_departurePhase.Value == DeparturePhase.Frustration;
-        public bool CanAttack => !IsDeparting || m_departurePhase.Value == DeparturePhase.Chase;
+        public bool CanAttack => !IsCarrying && (!IsDeparting || m_departurePhase.Value == DeparturePhase.Chase);
         public float FrustrationDuration => Mathf.Max(0.1f, Departure.FrustrationDuration);
 
         private void ResetDepartureServer()

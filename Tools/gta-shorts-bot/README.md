@@ -8,6 +8,50 @@ No paid AI services. API accounts, local disk, bandwidth and electricity are sti
 
 The application and setup scripts are implemented. This is an initial implementation requiring calibration with your footage, not an established unattended production service. See `VALIDATION.md` for actual test results and limits. OAuth consent, source permissions, real gameplay evaluation, and review of initial private uploads remain account/content setup steps. Uploading and public publishing are disabled by default.
 
+## Meme edits and handover for future agents
+
+The user's preferred short format is a real gameplay moment with original meme
+captions, playful licensed music, well-timed cuts and occasional zooms/replays.
+Use no narrator and no permanent credit/logo footer. Preserve attribution in the
+accompanying description and sidecar file, unless a source's terms require visible
+credit. Write the joke around observed events; never present an imagined example,
+AI-generated scene, GTA V mod, or trailer as actual GTA VI player footage.
+
+The automatic daily pipeline below still produces narrated three-source GTA VI
+videos. It has NOT been converted to this single-moment meme format. Use a separate
+reviewed edit for meme requests; do not switch on the scheduler or auto-publishing.
+
+- `scripts/remix_fortnite_memes.py` reproduces the reviewed Fortnite meme edit from
+  the local Noc footage and Kevin MacLeod music. Its timestamps and captions are
+  specific to that recording, not a general GTA VI template.
+- `scripts/upload_fortnite_test.py` is an idempotent uploader for ONE existing
+  Fortnite cut. Do not repurpose or run it to upload a new video.
+- `scripts/make_gta6_meme_draft.py` renders a local Kai Cenat garage/customisation
+  draft from `data/gta6-meme-test/kai-driving-review.mp4` (VOD offset 4680 seconds).
+  Run it from this bot directory with `.venv/Scripts/python.exe
+  scripts/make_gta6_meme_draft.py`. It uses the retained licensed music under
+  `data/fortnite-test/music/` and writes a timestamped draft folder. It never
+  imports into the production queue, uploads, or grants source permissions.
+
+The Kai draft is **not cleared for publication or commercial use**. The public
+campaign invites clipping, but its full rules/reference files require sign-in and
+remain unreviewed. Inspect `credits-and-review-status.txt` and `manifest.json` in
+the output folder. Review the source authority, full campaign conditions, source
+audio/music and current publisher policy before any upload. Do not turn permission
+flags on merely to pass validation. Rockstar's published fan-video policy describes
+non-commercial use; a streamer campaign does not grant Rockstar's rights.
+
+For each new edit: establish a usable source and keep evidence; inspect frames and
+transcribe speech; choose a self-contained setup/payoff; author source-specific
+captions/timestamps; render a fresh output; inspect the crop, captions and audio;
+save source hashes, edit timing, credits and review status. The daily pipeline's
+30–45 second QC is specific to that format: a separate 15–30 second meme draft
+should have its own duration checks without weakening the production validator.
+Local assets, configuration and credentials may be ignored by Git and absent in a
+fresh checkout. Never claim a video exists or rights are established just because
+this section describes the workflow. Upload privately only when requested and
+rights checks pass; public release requires the user's instruction.
+
 ## Hardware and model choice
 
 Detected 11 November 2026: Intel i7-10700K, RTX 3060 Ti (8192 MiB VRAM), 31.9 GiB usable RAM. Initial storage: C: 201.8 GiB free; D: 1192.8 GiB free, before installations. Use `doctor` for current figures.

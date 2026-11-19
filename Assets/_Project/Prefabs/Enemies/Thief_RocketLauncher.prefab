@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 944067661141093412}
   - component: {fileID: 9180050972297400796}
   - component: {fileID: 8793089043523341837}
+  - component: {fileID: 6098551954861901183}
   m_Layer: 0
   m_Name: Thief_RocketLauncher
   m_TagString: Untagged
@@ -240,6 +241,8 @@ MonoBehaviour:
   _networkObjectCache: {fileID: 681364413288839071}
   m_settings: {fileID: 11400000, guid: d2a55d6e0c4a0e74686e6454ef1f466f, type: 2}
   m_muzzle: {fileID: 7202876021588026852}
+  m_heldWeaponRenderers:
+  - {fileID: 2626960474999487202}
   m_rocketWeapon:
     m_type: 4
     m_displayName: Rocket Launcher
@@ -1710,3 +1713,26 @@ CharacterJoint:
   m_EnablePreprocessing: 1
   m_MassScale: 1
   m_ConnectedMassScale: 1
+--- !u!114 &6098551954861901183
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4280269212087817757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83b7284cbea94428b9c5effd25cd408c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.MagneticCarryAura
+  m_carrier: {fileID: 0}
+  m_animation: {fileID: 0}
+  m_thief: {fileID: 3809826975680670715}
+  m_auraPrefab: {fileID: 15874004329490329, guid: fb06f42f6b771f244aaac9e894949e4b, type: 3}
+  m_handClearance: 0.22
+  m_movementLean: 4
+--- !u!137 &2626960474999487202 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7737977740128452130, guid: b2b48c8835b34a1e8f0fddd81130adf0, type: 3}
+  m_PrefabInstance: {fileID: 3524621532571007804}
+  m_PrefabAsset: {fileID: 0}

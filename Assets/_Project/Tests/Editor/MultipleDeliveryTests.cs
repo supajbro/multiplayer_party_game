@@ -229,6 +229,8 @@ namespace CouchGuys.Tests.Editor
                 var timers = Get<Dictionary<int, DeliveryTimerHudView>>(hud, "m_deliveryTimers");
                 var original = timers.ToDictionary(pair => pair.Key, pair => pair.Value);
                 Assert.That(timers.Count, Is.EqualTo(5));
+                Assert.That(view.m_deliveryCount.text, Is.EqualTo("5"));
+                Assert.That(view.m_deliveryEmptyState.activeSelf, Is.False);
                 Assert.That(view.m_deliveryTimerTemplate.gameObject.activeSelf, Is.False);
                 Assert.That(view.GetComponentsInChildren<DeliveryTimerHudView>(true).Length, Is.EqualTo(6));
                 int[] order = { 2, 4, 3, 1, 5 };
@@ -242,8 +244,11 @@ namespace CouchGuys.Tests.Editor
                     else
                         Assert.That(rect.anchoredPosition.y + rect.rect.height * rect.localScale.y,
                             Is.LessThanOrEqualTo(previous.anchoredPosition.y));
-                    Assert.That(height + rect.anchoredPosition.y - rect.rect.height * rect.localScale.y,
-                        Is.GreaterThanOrEqualTo(view.m_deliveryTimerBottomMargin));
+                    Assert.That(rect.parent, Is.EqualTo(view.m_deliveryTimerContent));
+                    Assert.That(-rect.anchoredPosition.y + rect.rect.height * rect.localScale.y,
+                        Is.LessThanOrEqualTo(view.m_deliveryTimerContent.rect.height + 0.01f));
+                    Assert.That(rect.rect.width * rect.localScale.x,
+                        Is.LessThanOrEqualTo(view.m_deliveryTimerContent.rect.width + 0.01f));
                     previous = rect;
                 }
                 Call(hud, "SyncDeliveryTimers");

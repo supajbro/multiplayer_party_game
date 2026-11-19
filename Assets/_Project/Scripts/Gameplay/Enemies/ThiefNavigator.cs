@@ -70,6 +70,12 @@ namespace CouchGuys.Gameplay.Enemies
         private DeliveryManager m_deliveryManager;
         private CouchCarryController m_carriedCouch;
         private int m_carriedPointIndex = -1;
+        private readonly SyncVar<NetworkObject> m_carryAttachment = new();
+        private readonly SyncVar<int> m_carryAttachmentPoint = new(-1);
+        public bool IsCarrying => m_carryAttachment.Value != null;
+        public CouchCarryController CarriedCouch => m_carryAttachment.Value != null
+            ? m_carryAttachment.Value.GetComponent<CouchCarryController>() : null;
+        public int CarriedPointIndex => m_carryAttachmentPoint.Value;
         private NavMeshPath m_path;
         private Vector3 m_lastTargetPosition;
         private Vector3 m_destination;
@@ -845,6 +851,7 @@ namespace CouchGuys.Gameplay.Enemies
             {
                 m_carriedCouch = null;
                 m_carriedPointIndex = -1;
+                ClearCarryAttachmentServer();
                 m_carryIntent = Vector3.zero;
                 SetConstrainedCarryMovement(false);
                 UpdateCarriedCouchCollision(null);
@@ -866,6 +873,8 @@ namespace CouchGuys.Gameplay.Enemies
             m_deliveryManager?.GetGetawayForCouch(GetActiveCouch())?.NotifyCouchStolenServer();
             m_carriedCouch = couch;
             m_carriedPointIndex = pointIndex;
+            m_carryAttachmentPoint.Value = pointIndex;
+            m_carryAttachment.Value = couch.NetworkObject;
             m_carryIntent = Vector3.zero;
             m_hasDestination = false;
             m_nextPathTime = 0f;
@@ -882,9 +891,16 @@ namespace CouchGuys.Gameplay.Enemies
             if (m_carriedCouch != couch || m_carriedPointIndex != pointIndex) return;
             m_carriedCouch = null;
             m_carriedPointIndex = -1;
+            ClearCarryAttachmentServer();
             m_carryIntent = Vector3.zero;
             SetConstrainedCarryMovement(false);
             UpdateCarriedCouchCollision(null);
+        }
+
+        private void ClearCarryAttachmentServer()
+        {
+            m_carryAttachment.Value = null;
+            m_carryAttachmentPoint.Value = -1;
         }
 
         private void UpdateCarriedCouchCollision(CouchCarryController couch)

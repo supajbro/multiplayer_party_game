@@ -14,6 +14,8 @@ namespace CouchGuys.Gameplay.Enemies
     {
         [SerializeField] private ThiefSettings m_settings;
         [SerializeField] private Transform m_muzzle;
+        [Tooltip("All held weapon renderers. Hidden on every client while attached to a couch or sled.")]
+        [SerializeField] private Renderer[] m_heldWeaponRenderers = System.Array.Empty<Renderer>();
         [Header("Rocket Launcher")]
         [SerializeField] private WeaponDefinition m_rocketWeapon;
         [SerializeField, Min(.1f)] private float m_rocketTargetInterval = .25f;
@@ -102,6 +104,13 @@ namespace CouchGuys.Gameplay.Enemies
             m_aimDirection = transform.forward;
             Shader shader = Shader.Find("Sprites/Default");
             if (shader != null) m_tracerMaterial = new Material(shader);
+        }
+
+        private void LateUpdate()
+        {
+            bool visible = m_navigator == null || !m_navigator.IsCarrying;
+            foreach (var renderer in m_heldWeaponRenderers)
+                if (renderer != null) renderer.forceRenderingOff = !visible;
         }
 
         private void OnDestroy()

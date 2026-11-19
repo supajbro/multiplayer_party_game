@@ -237,8 +237,20 @@ namespace CouchGuys.Gameplay.Weapons
 
         }
 
+        private bool m_modelsHiddenForCarry;
+
+        private void UpdateCarryModelVisibility()
+        {
+            bool carrying = m_couchCarrier != null && m_couchCarrier.IsCarrying;
+            if (carrying == m_modelsHiddenForCarry) return;
+            m_modelsHiddenForCarry = carrying;
+            SetModelVisibility(m_equippedIndex.Value);
+        }
+
         private void LateUpdate()
         {
+            // Runs for owners and observers, using the replicated carry attachment.
+            UpdateCarryModelVisibility();
             UpdateGrappleInput();
             UpdateGrappleVisual();
             TryRequestFireFromCurrentCamera();
@@ -1055,6 +1067,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void SetModelVisibility(int equippedIndex)
         {
+            if (m_couchCarrier != null && m_couchCarrier.IsCarrying) equippedIndex = -1;
             if (m_healingModels != null)
                 for (int i = 0; i < m_healingModels.Length; i++)
                     if (m_healingModels[i] != null)

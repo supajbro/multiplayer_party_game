@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 2487758398986249954}
   - component: {fileID: 2765408819408653509}
   - component: {fileID: 4131775180735103772}
+  - component: {fileID: 5180421766730549177}
   m_Layer: 0
   m_Name: Thief_Shotgun
   m_TagString: Untagged
@@ -240,6 +241,8 @@ MonoBehaviour:
   _networkObjectCache: {fileID: 4702605854175706486}
   m_settings: {fileID: 11400000, guid: 178fcde07daf4c69af79749a0fc01d6d, type: 2}
   m_muzzle: {fileID: 5993034505354974336}
+  m_heldWeaponRenderers:
+  - {fileID: 1028143002525341718}
 --- !u!114 &2765408819408653509
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1585,3 +1588,26 @@ CharacterJoint:
   m_EnablePreprocessing: 1
   m_MassScale: 1
   m_ConnectedMassScale: 1
+--- !u!114 &5180421766730549177
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3721535447601552465}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83b7284cbea94428b9c5effd25cd408c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.MagneticCarryAura
+  m_carrier: {fileID: 0}
+  m_animation: {fileID: 0}
+  m_thief: {fileID: 3187178056114871217}
+  m_auraPrefab: {fileID: 15874004329490329, guid: fb06f42f6b771f244aaac9e894949e4b, type: 3}
+  m_handClearance: 0.22
+  m_movementLean: 4
+--- !u!137 &1028143002525341718 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7737977740128452130, guid: b2b48c8835b34a1e8f0fddd81130adf0, type: 3}
+  m_PrefabInstance: {fileID: 1934749739430975944}
+  m_PrefabAsset: {fileID: 0}

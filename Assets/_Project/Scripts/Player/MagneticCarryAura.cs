@@ -1,4 +1,5 @@
 using UnityEngine;
+using CouchGuys.Gameplay.Enemies;
 
 namespace CouchGuys.Player
 {
@@ -9,6 +10,7 @@ namespace CouchGuys.Player
     {
         [SerializeField] private PlayerCouchCarrier m_carrier;
         [SerializeField] private CouchGuyAnimationDriver m_animation;
+        [SerializeField] private ThiefNavigator m_thief;
         [SerializeField] private MagneticCarryEffect m_auraPrefab;
         [SerializeField, Min(0.05f)] private float m_handClearance = .22f;
         [SerializeField, Range(0f, 10f)] private float m_movementLean = 4f;
@@ -23,27 +25,30 @@ namespace CouchGuys.Player
         {
             m_carrier ??= GetComponent<PlayerCouchCarrier>();
             m_animation ??= GetComponent<CouchGuyAnimationDriver>();
+            m_thief ??= GetComponent<ThiefNavigator>();
             m_truckInteractor = GetComponent<PlayerTruckInteractor>();
             m_previousPosition = transform.position;
-            if (m_animation == null || m_animation.Animator == null) return;
-            Transform rig = Find(m_animation.Animator.transform, "CouchGuy_Rig");
-            if (rig == null) return;
-            m_torso = Find(rig, "Torso");
+            var animator = m_animation != null ? m_animation.Animator : GetComponentInChildren<Animator>(true);
+            if (animator == null) return;
+            Transform rig = Find(animator.transform, "CouchGuy_Rig") ?? animator.transform;
+            m_torso = Find(rig, "Torso") ?? Find(rig, "mixamorig:Spine2") ?? Find(rig, "Chest");
             for (int i = 0; i < 2; i++)
             {
                 string side = i == 0 ? "L" : "R";
-                m_upper[i] = Find(rig, "UpperArm_" + side);
-                m_lower[i] = Find(rig, "LowerArm_" + side);
-                m_hands[i] = Find(rig, "Hand_" + side);
+                string mixamoSide = i == 0 ? "Left" : "Right";
+                m_upper[i] = Find(rig, "UpperArm_" + side) ?? Find(rig, "mixamorig:" + mixamoSide + "Arm") ?? Find(rig, "UpperArm." + side);
+                m_lower[i] = Find(rig, "LowerArm_" + side) ?? Find(rig, "mixamorig:" + mixamoSide + "ForeArm") ?? Find(rig, "LowerArm." + side);
+                m_hands[i] = Find(rig, "Hand_" + side) ?? Find(rig, "mixamorig:" + mixamoSide + "Hand") ?? Find(rig, "Hand." + side);
             }
         }
 
         private void LateUpdate()
         {
             var couch = m_carrier != null && m_carrier.IsSpawned ? m_carrier.CarriedCouch : null;
+            if (m_thief != null && m_thief.IsSpawned) couch = m_thief.CarriedCouch;
             // Sled grips use the same replicated carry attachment on owners and observers.
             var point = couch != null && !couch.IsLoaded
-                ? couch.GetPoint(m_carrier.CarriedPointIndex) : null;
+                ? couch.GetPoint(m_thief != null ? m_thief.CarriedPointIndex : m_carrier.CarriedPointIndex) : null;
             Transform target = point != null ? point.transform : null;
             var truck = m_truckInteractor != null ? m_truckInteractor.CurrentTruck : null;
             bool usingTurret = truck != null && !m_truckInteractor.IsDriver;

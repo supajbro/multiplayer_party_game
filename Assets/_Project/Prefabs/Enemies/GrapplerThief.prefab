@@ -169,6 +169,7 @@ GameObject:
   - component: {fileID: 1138404182855938568}
   - component: {fileID: 4975959866961543332}
   - component: {fileID: 8220062250896181608}
+  - component: {fileID: 2334660481690712964}
   m_Layer: 0
   m_Name: GrapplerThief
   m_TagString: Untagged
@@ -1824,3 +1825,21 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 401, guid: 20e58c28bd3444a9841eea921ba60e64, type: 3}
   m_PrefabInstance: {fileID: 6454715258947589522}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2334660481690712964
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3224752670529808980}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83b7284cbea94428b9c5effd25cd408c, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.MagneticCarryAura
+  m_carrier: {fileID: 0}
+  m_animation: {fileID: 0}
+  m_thief: {fileID: 491616455736946668}
+  m_auraPrefab: {fileID: 15874004329490329, guid: fb06f42f6b771f244aaac9e894949e4b, type: 3}
+  m_handClearance: 0.22
+  m_movementLean: 4

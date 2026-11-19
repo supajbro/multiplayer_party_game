@@ -35,6 +35,14 @@ namespace CouchGuys.Gameplay.Weapons
 
         [SerializeField] public Sprite m_deliveryCouchSprite;
         [SerializeField] public DeliveryTimerHudView m_deliveryTimerTemplate;
+        [Tooltip("Content area inside the saved deliveries frame.")]
+        [SerializeField] public RectTransform m_deliveryTimerContent;
+        [SerializeField] public RectTransform m_deliveryTimerFrame;
+        [Tooltip("Space above and below delivery entries, in canvas units.")]
+        [SerializeField] public Vector2 m_deliveryTimerVerticalPadding = new(50f, 20f);
+        [SerializeField, Min(0f)] public float m_deliveryTimerEmptyHeight = 54f;
+        [SerializeField] public TMP_Text m_deliveryCount;
+        [SerializeField] public GameObject m_deliveryEmptyState;
         [SerializeField, Min(0f)] public float m_deliveryTimerSpacing = 4f;
         [SerializeField, Min(0f)] public float m_deliveryTimerBottomMargin = 204f;
 

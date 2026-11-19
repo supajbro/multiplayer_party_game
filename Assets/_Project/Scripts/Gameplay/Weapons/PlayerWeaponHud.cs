@@ -218,6 +218,10 @@ namespace CouchGuys.Gameplay.Weapons
                 }
             foreach (int id in m_removedTimers) m_deliveryTimers.Remove(id);
             m_sortedDeliveries.Sort((a, b) => a.TierIndex != b.TierIndex ? a.TierIndex.CompareTo(b.TierIndex) : a.Id.CompareTo(b.Id));
+            if (m_view.m_deliveryCount != null)
+                m_view.m_deliveryCount.text = m_sortedDeliveries.Count.ToString();
+            if (m_view.m_deliveryEmptyState != null)
+                m_view.m_deliveryEmptyState.SetActive(m_sortedDeliveries.Count == 0);
             m_timerLayoutDirty = true;
         }
 
@@ -227,8 +231,27 @@ namespace CouchGuys.Gameplay.Weapons
             var template = (RectTransform)m_view.m_deliveryTimerTemplate.transform;
             m_timerCanvasSize = ((RectTransform)m_view.transform).rect.size;
             float stride = template.rect.height * Mathf.Abs(template.localScale.y) + m_view.m_deliveryTimerSpacing;
+            if (m_view.m_deliveryTimerFrame != null && m_view.m_deliveryTimerContent != null)
+            {
+                // Resize only the saved panel; the delivery rows retain their existing presentation.
+                var frame = m_view.m_deliveryTimerFrame;
+                Vector2 padding = m_view.m_deliveryTimerVerticalPadding;
+                float widthScale = Mathf.Min(1f, m_view.m_deliveryTimerContent.rect.width /
+                    Mathf.Max(1f, template.rect.width * Mathf.Abs(template.localScale.x)));
+                float rowsHeight = Mathf.Max(0f, m_sortedDeliveries.Count * stride - m_view.m_deliveryTimerSpacing) * widthScale;
+                float desiredHeight = m_sortedDeliveries.Count == 0 ? m_view.m_deliveryTimerEmptyHeight : rowsHeight;
+                float maxHeight = Mathf.Max(1f, m_timerCanvasSize.y + frame.anchoredPosition.y -
+                    m_view.m_deliveryTimerBottomMargin - padding.x - padding.y);
+                float contentHeight = Mathf.Min(desiredHeight, maxHeight);
+                m_view.m_deliveryTimerContent.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, contentHeight);
+                frame.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, padding.x + contentHeight + padding.y);
+            }
             float available = Mathf.Max(1f, m_timerCanvasSize.y + template.anchoredPosition.y - m_view.m_deliveryTimerBottomMargin);
-            float scale = Mathf.Min(1f, available / Mathf.Max(1f, m_sortedDeliveries.Count * stride));
+            if (m_view.m_deliveryTimerContent != null)
+                available = Mathf.Max(1f, m_view.m_deliveryTimerContent.rect.height + template.anchoredPosition.y);
+            float scale = Mathf.Min(1f, available / Mathf.Max(1f, m_sortedDeliveries.Count * stride - m_view.m_deliveryTimerSpacing));
+            if (m_view.m_deliveryTimerContent != null)
+                scale = Mathf.Min(scale, m_view.m_deliveryTimerContent.rect.width / Mathf.Max(1f, template.rect.width * Mathf.Abs(template.localScale.x)));
             for (int i = 0; i < m_sortedDeliveries.Count; i++)
             {
                 if (!m_deliveryTimers.TryGetValue(m_sortedDeliveries[i].Id, out var timer)) continue;
