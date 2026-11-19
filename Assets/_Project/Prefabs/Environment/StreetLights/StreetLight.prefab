@@ -196,6 +196,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.ProceduralGeneration.StreetlightPlaceholder
   m_light: {fileID: 8597782474792073698}
   m_minimumTruckSpeed: 1
+  m_minimumSledSpeed: 0.1
   m_truckCollisionDamageMultiplier: 0.1
 --- !u!65 &900000000000000001
 BoxCollider:

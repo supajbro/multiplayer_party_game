@@ -79,6 +79,28 @@ namespace CouchGuys.Gameplay.Weapons
             Destroy(source.gameObject, profile.ExplosionClip.length + .1f);
         }
 
+        // The server supplies one seed per successful grab so every listener hears the same variation.
+        public static void PlayCarryGrab(Vector3 worldPosition, int seed)
+        {
+            var settings = Resources.Load<WeaponAudioSettings>(WeaponAudioSettings.ResourcesPath);
+            var profile = settings != null ? settings.GetProfile(PlayerWeaponType.GrappleGun) : null;
+            AudioClip[] clips = profile?.Gunshots;
+            if (settings == null || settings.VoicePrefab == null || clips == null || clips.Length == 0) return;
+
+            var random = new System.Random(seed);
+            AudioClip clip = clips[random.Next(clips.Length)];
+            if (clip == null) return;
+
+            AudioSource source = Instantiate(settings.VoicePrefab, worldPosition, Quaternion.identity);
+            source.name = "CarryGrabVoice";
+            Configure(source, profile, worldPosition);
+            source.spatialBlend = 1f;
+            source.dopplerLevel = 0f;
+            source.pitch = Mathf.Lerp(profile.MinimumPitch, profile.MaximumPitch, (float)random.NextDouble());
+            source.PlayOneShot(clip, profile.GunshotVolume);
+            Destroy(source.gameObject, clip.length / Mathf.Max(.01f, source.pitch) + .1f);
+        }
+
         public void PlayShot(PlayerWeaponType weaponType, Vector3 worldPosition, Transform spatialOrigin = null)
         {
             WeaponAudioSettings.Profile profile = GetProfile(weaponType);

@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Collections;
 using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Gameplay.Sled;
+using CouchGuys.Gameplay.Weapons;
 
 namespace CouchGuys.Gameplay.Couch
 {
@@ -85,7 +86,6 @@ namespace CouchGuys.Gameplay.Couch
         private const float MaximumStepUpSpeed = 2.4f;
         private const float FreeMaximumSpeed = 22f;
         private const float MaximumImpactReactionSpeed = 16f;
-        private const float ImpactTorqueMultiplier = 0.22f;
         private const float VisualPositionFrequency = 7f;
         private const float VisualRotationFrequency = 5f;
         private const bool ShowForceGizmos = false;
@@ -700,7 +700,15 @@ namespace CouchGuys.Gameplay.Couch
             m_serverOccupants[pointIndex] = carrier;
             SetOccupantObjectId(pointIndex, carrier.CarrierNetworkObject.ObjectId);
             carrier.SetCarriedCouchServer(this, pointIndex);
+            PlayGrabSoundObserversRpc(carrier.CarrierNetworkObject.transform.position, Random.Range(0, int.MaxValue));
             return true;
+        }
+
+        // Unbuffered event: owners and nearby observers hear it once; late joiners do not replay old grabs.
+        [ObserversRpc]
+        private void PlayGrabSoundObserversRpc(Vector3 emitterPosition, int seed)
+        {
+            WeaponAudioEmitter.PlayCarryGrab(emitterPosition, seed);
         }
 
         /// <summary>Temporarily hands authoritative motion to the depot conveyor.</summary>
@@ -1711,13 +1719,8 @@ namespace CouchGuys.Gameplay.Couch
             }
 
             ContactPoint contact = collision.GetContact(0);
-            Vector3 lever = contact.point - m_rigidbody.worldCenterOfMass;
-            Vector3 impactDirection = collision.relativeVelocity.sqrMagnitude > 0.001f
-                ? collision.relativeVelocity.normalized
-                : -contact.normal;
-            Vector3 torque = Vector3.Cross(lever, impactDirection) *
-                             (impactSpeed * ImpactTorqueMultiplier);
-            m_rigidbody.AddTorque(torque, ForceMode.VelocityChange);
+            // Let the collision solver dissipate impact energy. Adding spin here
+            // can keep feeding energy into successive landings.
             PlayImpactReactionObserversRpc(impactSpeed, contact.normal);
         }
 
@@ -1765,7 +1768,7 @@ namespace CouchGuys.Gameplay.Couch
             {
                 dynamicFriction = 0.18f,
                 staticFriction = 0.22f,
-                bounciness = 0.16f,
+                bounciness = IsSled ? 0f : 0.16f,
                 frictionCombine = PhysicsMaterialCombine.Minimum,
                 bounceCombine = PhysicsMaterialCombine.Maximum
             };
@@ -1793,10 +1796,14 @@ namespace CouchGuys.Gameplay.Couch
 
             m_rigidbody.mass = CouchWeight;
             m_rigidbody.maxAngularVelocity = MaximumAngularVelocity;
-            // Preserve positional/designer constraints but allow the couch to lean,
-            // tip and tumble. Carry-time torque provides soft stability instead.
-            m_rigidbody.constraints &= ~(RigidbodyConstraints.FreezeRotationX |
-                                         RigidbodyConstraints.FreezeRotationZ);
+            // Sleds may turn but must never tip, including when unoccupied.
+            // Ordinary couches retain their physical lean and tumble.
+            RigidbodyConstraints tiltConstraints = RigidbodyConstraints.FreezeRotationX |
+                                                   RigidbodyConstraints.FreezeRotationZ;
+            if (IsSled)
+                m_rigidbody.constraints |= tiltConstraints;
+            else
+                m_rigidbody.constraints &= ~tiltConstraints;
         }
 
         private void ApplyRuntimePhysicsConfiguration()

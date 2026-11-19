@@ -1,5 +1,6 @@
 using UnityEngine;
 using CouchGuys.Gameplay.Vehicles;
+using CouchGuys.Gameplay.Sled;
 
 namespace CouchGuys.ProceduralGeneration
 {
@@ -9,6 +10,8 @@ namespace CouchGuys.ProceduralGeneration
     {
         [SerializeField] private Light m_light;
         [SerializeField, Min(0.1f)] private float m_minimumTruckSpeed = 1f;
+        [SerializeField, Min(0.1f), Tooltip("Minimum sled impact speed needed to knock over the pole.")]
+        private float m_minimumSledSpeed = 0.1f;
         [SerializeField, Min(0f), Tooltip("Multiplier on the truck's final obstacle collision damage when hitting this pole. 0 disables damage; 1 uses normal damage.")]
         private float m_truckCollisionDamageMultiplier = 0.2f;
         private Rigidbody m_body;
@@ -25,16 +28,19 @@ namespace CouchGuys.ProceduralGeneration
         {
             if (IsKnockedDown || collision.rigidbody == null) return;
             TruckController truck = collision.rigidbody.GetComponent<TruckController>();
-            // Trucks simulate on the server. Clients only receive the resulting light poses.
-            if (truck == null || !truck.IsServerInitialized ||
-                collision.relativeVelocity.sqrMagnitude < m_minimumTruckSpeed * m_minimumTruckSpeed) return;
+            SledController sled = collision.rigidbody.GetComponent<SledController>();
+            // Vehicles simulate on the server. Clients only receive the resulting light poses.
+            bool serverImpact = truck != null ? truck.IsServerInitialized :
+                sled != null && sled.IsServerInitialized;
+            float minimumSpeed = truck != null ? m_minimumTruckSpeed : m_minimumSledSpeed;
+            if (!serverImpact || collision.relativeVelocity.sqrMagnitude < minimumSpeed * minimumSpeed) return;
 
             IsKnockedDown = true;
             m_body.isKinematic = false;
             Vector3 velocity = collision.rigidbody.linearVelocity;
-            // The solver may already have stopped the truck against the anchored pole.
-            if (velocity.sqrMagnitude < m_minimumTruckSpeed * m_minimumTruckSpeed)
-                velocity = Vector3.ProjectOnPlane(transform.position - truck.transform.position,
+            // The solver may already have stopped the vehicle against the anchored pole.
+            if (velocity.sqrMagnitude < minimumSpeed * minimumSpeed)
+                velocity = Vector3.ProjectOnPlane(transform.position - collision.rigidbody.position,
                     Vector3.up).normalized * collision.relativeVelocity.magnitude;
             Vector3 point = collision.GetContact(0).point;
             m_body.AddForceAtPosition(velocity * m_body.mass, point, ForceMode.Impulse);
