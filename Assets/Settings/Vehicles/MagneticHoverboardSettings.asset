@@ -17,10 +17,10 @@ MonoBehaviour:
     RandomHorizontalForce: 14
     RotationalTorque: 15
     DestroyedVehicleLifetime: 10
-  MaximumForwardSpeed: 25
+  MaximumForwardSpeed: 15
   ReverseSpeed: 8
-  LoadedSpeed: 25
-  Acceleration: 12
+  LoadedSpeed: 15
+  Acceleration: 10
   Deceleration: 5
   BrakingStrength: 16
   TurningSpeed: 100

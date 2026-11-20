@@ -8,11 +8,13 @@ namespace CouchGuys.UI
     {
         [SerializeField] private AudioClip m_clip;
         [SerializeField, Range(0f, 1f)] private float m_volume = 0.5f;
+        [SerializeField, Min(0.01f)] private float m_fadeInDuration = 2f;
         [SerializeField, Min(0.01f)] private float m_fadeDuration = 2f;
 
         private static MainMenuMusic s_instance;
         private AudioSource m_source;
         private Coroutine m_fade;
+        private bool m_fadingOut;
 
         private void Awake()
         {
@@ -31,21 +33,43 @@ namespace CouchGuys.UI
             m_source.clip = m_clip;
             m_source.loop = true;
             m_source.spatialBlend = 0f;
+            m_source.volume = 0f;
             Resume();
         }
 
         private void Resume()
         {
             if (m_fade != null) StopCoroutine(m_fade);
-            m_fade = null;
+            m_fadingOut = false;
+            if (!m_source.isPlaying)
+            {
+                m_source.volume = 0f;
+                m_source.Play();
+            }
+            m_fade = StartCoroutine(FadeIn());
+        }
+
+        private IEnumerator FadeIn()
+        {
+            float startVolume = m_source.volume;
+            float duration = Mathf.Max(0.01f, m_fadeInDuration);
+            for (float elapsed = 0f; elapsed < duration; elapsed += Time.unscaledDeltaTime)
+            {
+                m_source.volume = Mathf.Lerp(startVolume, m_volume, Mathf.SmoothStep(0f, 1f, elapsed / duration));
+                yield return null;
+            }
             m_source.volume = m_volume;
-            if (!m_source.isPlaying) m_source.Play();
+            m_fade = null;
         }
 
         public static void FadeOutForGameplay()
         {
-            if (s_instance != null && s_instance.m_fade == null)
+            if (s_instance != null && !s_instance.m_fadingOut)
+            {
+                if (s_instance.m_fade != null) s_instance.StopCoroutine(s_instance.m_fade);
+                s_instance.m_fadingOut = true;
                 s_instance.m_fade = s_instance.StartCoroutine(s_instance.FadeOut());
+            }
         }
 
         private IEnumerator FadeOut()

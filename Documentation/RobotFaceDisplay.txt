@@ -1,0 +1,105 @@
+ROBOT CRT FACE DISPLAY
+
+Setup
+The saved Player prefab already uses the existing RobotFaceExpressionController,
+which now inherits the reusable RobotFaceDisplay component. Do not add a second
+face component. Its Display Settings reference points to
+Assets/_Project/Resources/RobotFaceDisplaySettings.asset.
+
+Enter Play mode normally. The controller resolves only the existing FaceDisplay
+rectangle and temporarily suppresses FaceGraphic_L/R with forceRenderingOff.
+No objects, meshes, transforms, rig data, animations or network behaviours are
+created or replaced. A standalone RobotFaceDisplay can also drive an existing
+screen through SetExpression; the player adapter supplies gameplay integration.
+
+Tune cyan, brightness, scanline intensity, pixel density, animation speed,
+glitch intensity, glass curvature, static, blink timing, transitions and the
+low-health threshold on the settings asset. Shared settings affect every robot.
+Duplicate the settings asset and assign it for a specific character variant.
+The material and atlas are reusable saved assets in Art/RobotFace.
+The optional menu Couch Guys > Art > Configure Robot Digital Face saves the
+existing screen renderer/settings reference explicitly. It never builds a
+hierarchy or modifies the original materials. Nothing auto-authors on reload.
+
+Screen mapping
+The FBX front face occupies U .38040865-.61959136 and V .7526041-.99739573.
+Its UV island is rotated, so Rotate Screen UV is enabled. Existing UVs remain
+unchanged. For another rectangular screen, assign its renderer and material
+slot, set the settings UV rectangle (x,y,width,height), and adjust rotation.
+Only the named legacy eye renderers or explicitly assigned Legacy Graphics
+are suppressed. The bezel and all other head surfaces retain their materials.
+
+Gameplay and multiplayer
+The existing FishNet PlayerHealth SyncVars provide persistent health/downed
+state and the replicated revive lease, including initial state for late joiners.
+The existing damage/weapon/punch observer RPCs still call NotifyDamage,
+NotifyShot and NotifyPunch. No new networking component, SyncVar, RPC, texture
+replication or frame replication is added. Existing emote definitions and their
+replicated ID/start tick continue to select faces on all observers. Existing
+serialized enum values 0-4 are unchanged; new values are appended.
+
+Priority: unassisted downed (X eyes), active revive or successful-recovery boot
+(heart), damage reaction (surprised), low health (drooping eyes), emote, then
+existing punch/shoot/carry reactions or happy idle. An active revive lease
+changes a downed target's presentation to the heart; it does not alter gameplay
+health or allow movement. Cancellation returns to X eyes. Completion/respawn
+plays a short local boot wipe. Happy emotes gain star accents; other legacy
+emote expressions retain their enum mapping. Excited, Confused and Celebrating
+can be selected in existing EmoteDefinition assets through the Inspector.
+AI teammates use the same player health/observer paths.
+
+Blinking, LED grid, scanlines, heart/accent pulses, damage glitch, shutdown
+collapse, boot wipe and low-health flickering are local cosmetic animation.
+Their phases may differ between observers. No gameplay random stream is used.
+There are no per-frame texture allocations, material instances, extra meshes,
+cameras, render textures, or runtime hierarchy construction. The shader reads
+one packed atlas twice while transitioning. Its halo is preblurred in the atlas,
+so it stays visible without requiring a Bloom volume. Scanline/grid contrast
+fades at distance to reduce shimmer. The shader is URP only.
+
+Revert
+Disable RobotFaceExpressionController (or uncheck Use CRT before enabling it).
+On disable it restores the captured original screen material, material-slot
+property block, and both legacy eye renderer states. The original
+RobotDigitalFace shader/material and all source model assets are retained.
+The component's Restore Original Display context menu also restores the live
+instance. Re-enable the component to bind CRT again. It never overwrites the
+original material asset or saves runtime substitutions into the prefab.
+
+Expression assets
+Art/RobotFace/RobotFaceExpressions.png is a 5x2 atlas; rows are authored top to
+bottom: Happy, Excited, Surprised, Focused, Confused; then Damaged, Downed,
+Reviving, Angry, Celebrating. R stores primary graphics, G animated accents,
+B preblurred glow. Do not enable sRGB or compression on the data atlas.
+RobotFaceExpressions_Preview.png is an artist-facing contact sheet only.
+Tools/generate_robot_face_atlas.py (Python 3 + Pillow) regenerates both images
+explicitly, offline. It is never called by Unity or at runtime. Edit or replace
+the saved atlas normally; importing or entering Play does not regenerate it.
+
+Validation
+Couch Guys > Art > Validate CRT Display runs the included Editor checks and
+writes Temp/RobotCRTValidation.txt and Temp/RobotCRTExpressions.png. It checks
+priority, stable expression IDs, ten expression tiles, shader compilation,
+visible cyan graphics on the actual saved character screen, unchanged hierarchy,
+shared material binding, and restoration of material/property block/eye states.
+The only camera/render textures used by the tests are temporary Editor previews.
+The test also accepts an explicit Temp/RobotCRTValidation.request marker.
+Run a host/client smoke test for damage, revive cancellation/completion, AI,
+and late joining in the game's normal session to validate transport behavior.
+
+Changed files
+Scripts/Player/RobotFaceDisplay.cs: reusable local display, binding/restoration,
+property blocks and cosmetic timing.
+Scripts/Player/RobotFaceDisplaySettings.cs and Resources/RobotFaceDisplaySettings.asset:
+shared Inspector settings and saved material reference.
+Shaders/RobotCRTDisplay.shader and Art/RobotFace/*: URP display, shared material,
+packed ten-expression atlas and preview (with Unity metadata).
+Scripts/Player/RobotFaceExpressionController.cs: existing public gameplay hooks,
+stable enum extended with the remaining expressions, health/emote priority.
+Scripts/Player/PlayerHealth.cs: read-only IsBeingRevived view of existing SyncVar.
+Scripts/Editor/RobotFacePrefabSetup.cs: explicit setup only; removed prior
+InitializeOnLoad auto-edit behavior.
+Prefabs/Player.prefab: serialized CRT settings on its existing component only.
+Tests/Editor/RobotFaceDisplayTests.cs: focused Editor validation and preview.
+Tools/generate_robot_face_atlas.py: explicit offline expression authoring.
+Documentation/RobotFaceDisplay.txt: setup, tuning, networking, revert and files.

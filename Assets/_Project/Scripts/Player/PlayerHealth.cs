@@ -94,6 +94,8 @@ namespace CouchGuys.Player
         public float MaximumHealth => m_maxHealth;
         public bool IsAlive => m_currentHealth.Value > 0f;
         public bool IsDowned => !IsAlive && m_knockedDown.Value;
+        /// <summary>Presentation reads the existing replicated revive lease; no extra traffic.</summary>
+        public bool IsBeingRevived => IsDowned && m_reviver.Value != null;
         public bool HasPendingRespawn => IsDowned && !IsAiTeammate;
         public float DownedRemaining => m_downedRemaining.Value;
         public bool CanRevive => IsSpawned && IsAlive && !IsKnockedDown &&

@@ -4,131 +4,32 @@ using UnityEngine;
 
 namespace CouchGuys.Editor
 {
-    /// <summary>Resolves the imported FBX face slot and bakes the reference into Player.prefab.</summary>
+    /// <summary>Explicit opt-in authoring only. Never modifies assets on reload/import.</summary>
     public static class RobotFacePrefabSetup
     {
-        private const string PlayerPrefabPath = "Assets/_Project/Prefabs/Player.prefab";
-        private const string FaceMaterialPath = "Assets/_Project/Resources/RobotDigitalFace.mat";
-
-        [InitializeOnLoadMethod]
-        private static void ConfigureMissingPrefabReference()
-        {
-            // A few project builders also use delayCall and can throw before later
-            // callbacks run. Use a one-shot editor update so face setup is isolated.
-            EditorApplication.update -= ConfigureOnNextEditorUpdate;
-            EditorApplication.update += ConfigureOnNextEditorUpdate;
-        }
-
-        private static void ConfigureOnNextEditorUpdate()
-        {
-            EditorApplication.update -= ConfigureOnNextEditorUpdate;
-            try
-            {
-                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
-                RobotFaceExpressionController controller =
-                    prefab != null ? prefab.GetComponent<RobotFaceExpressionController>() : null;
-                if (controller == null) return;
-
-                SerializedObject serializedController = new(controller);
-                if (serializedController.FindProperty("m_faceRenderer").objectReferenceValue == null)
-                    ConfigurePlayerPrefab();
-            }
-            catch (System.Exception exception)
-            {
-                Debug.LogException(exception);
-            }
-        }
-
         [MenuItem("Couch Guys/Art/Configure Robot Digital Face %#9")]
         public static void ConfigurePlayerPrefab()
         {
-            Material faceMaterial = AssetDatabase.LoadAssetAtPath<Material>(FaceMaterialPath);
-            if (faceMaterial == null)
-                throw new UnityException($"Robot face material is missing at {FaceMaterialPath}.");
-
-            GameObject root = PrefabUtility.LoadPrefabContents(PlayerPrefabPath);
+            const string path = "Assets/_Project/Prefabs/Player.prefab";
+            var settings = AssetDatabase.LoadAssetAtPath<RobotFaceDisplaySettings>(
+                "Assets/_Project/Resources/RobotFaceDisplaySettings.asset");
+            if (settings == null) throw new UnityException("RobotFaceDisplaySettings is missing.");
+            GameObject root = PrefabUtility.LoadPrefabContents(path);
             try
             {
-                RobotFaceExpressionController controller =
-                    root.GetComponent<RobotFaceExpressionController>() ??
-                    root.AddComponent<RobotFaceExpressionController>();
-                if (!TryFindFaceSlot(root, out Renderer faceRenderer, out int materialIndex))
-                    throw new UnityException("Could not find a face, screen, display, or visor renderer in Player.prefab.");
-
-                Material[] materials = faceRenderer.sharedMaterials;
-                materials[materialIndex] = faceMaterial;
-                faceRenderer.sharedMaterials = materials;
-
-                SerializedObject serializedController = new(controller);
-                serializedController.FindProperty("m_faceRenderer").objectReferenceValue = faceRenderer;
-                serializedController.FindProperty("m_materialIndex").intValue = materialIndex;
-                serializedController.FindProperty("m_faceMaterial").objectReferenceValue = faceMaterial;
-                serializedController.ApplyModifiedPropertiesWithoutUndo();
-
-                PrefabUtility.SaveAsPrefabAsset(root, PlayerPrefabPath);
-                Debug.Log(
-                    $"Configured robot digital face on renderer '{GetPath(faceRenderer.transform, root.transform)}', " +
-                    $"material slot {materialIndex} ('{faceRenderer.sharedMaterials[materialIndex].name}').");
+                var controller = root.GetComponent<RobotFaceExpressionController>();
+                if (controller == null) throw new UnityException("Existing robot expression controller is missing.");
+                Renderer screen = System.Array.Find(root.GetComponentsInChildren<Renderer>(true), r => r.name == "FaceDisplay");
+                if (screen == null) throw new UnityException("Existing FaceDisplay mesh is missing.");
+                var serialized = new SerializedObject(controller);
+                serialized.FindProperty("m_faceRenderer").objectReferenceValue = screen;
+                serialized.FindProperty("m_materialIndex").intValue = 0;
+                serialized.FindProperty("m_displaySettings").objectReferenceValue = settings;
+                serialized.ApplyModifiedPropertiesWithoutUndo();
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+                Debug.Log("Saved CRT settings and existing screen reference. Original materials and hierarchy preserved.");
             }
-            finally
-            {
-                PrefabUtility.UnloadPrefabContents(root);
-            }
-        }
-
-        internal static bool TryFindFaceSlot(
-            GameObject root,
-            out Renderer bestRenderer,
-            out int bestMaterialIndex)
-        {
-            bestRenderer = null;
-            bestMaterialIndex = 0;
-            int bestScore = int.MinValue;
-            Renderer[] renderers = root.GetComponentsInChildren<Renderer>(true);
-            for (int rendererIndex = 0; rendererIndex < renderers.Length; rendererIndex++)
-            {
-                Renderer candidate = renderers[rendererIndex];
-                if (candidate is ParticleSystemRenderer) continue;
-
-                int rendererScore = NameScore(candidate.name);
-                Material[] materials = candidate.sharedMaterials;
-                for (int materialIndex = 0; materialIndex < materials.Length; materialIndex++)
-                {
-                    int score = rendererScore + NameScore(materials[materialIndex]?.name);
-                    if (score <= bestScore) continue;
-                    bestScore = score;
-                    bestRenderer = candidate;
-                    bestMaterialIndex = materialIndex;
-                }
-            }
-
-            if (bestScore > 0) return true;
-            bestRenderer = null;
-            return false;
-        }
-
-        private static int NameScore(string value)
-        {
-            if (string.IsNullOrEmpty(value)) return 0;
-            string lower = value.ToLowerInvariant();
-            int score = 0;
-            if (lower == "face") score += 100;
-            if (lower.Contains("face")) score += 45;
-            if (lower.Contains("screen")) score += 35;
-            if (lower.Contains("display")) score += 30;
-            if (lower.Contains("visor")) score += 20;
-            return score;
-        }
-
-        private static string GetPath(Transform target, Transform root)
-        {
-            string path = target.name;
-            while (target.parent != null && target.parent != root)
-            {
-                target = target.parent;
-                path = target.name + "/" + path;
-            }
-            return root.name + "/" + path;
+            finally { PrefabUtility.UnloadPrefabContents(root); }
         }
     }
 }
