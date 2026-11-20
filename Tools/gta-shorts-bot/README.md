@@ -26,6 +26,15 @@ reviewed edit for meme requests; do not switch on the scheduler or auto-publishi
   specific to that recording, not a general GTA VI template.
 - `scripts/upload_fortnite_test.py` is an idempotent uploader for ONE existing
   Fortnite cut. Do not repurpose or run it to upload a new video.
+- `scripts/make_gta6_pickup_meme.py` renders the separate 22.3-second budget-taxi
+  preview from `data/gta6-meme-test/kai-street-review.mp4` (VOD offset 4920).
+  It uses fresh footage outside the already uploaded garage edit, licensed Kevin
+  MacLeod music, source-specific captions and a labelled slow replay. It never
+  uploads or enters the daily queue. The output folder retains current campaign
+  rules, source metadata, licence evidence, hashes, transcript and technical QC.
+  `scripts/scout_street_meme.py` reproduces evidence retrieval and inspection of
+  that local excerpt; it does not acquire the media itself.
+  See `data/gta6-meme-test/latest-pickup-preview.txt` for the latest local preview.
 - `scripts/make_gta6_meme_draft.py` renders a local Kai Cenat garage/customisation
   draft from `data/gta6-meme-test/kai-driving-review.mp4` (VOD offset 4680 seconds).
   Run it from this bot directory with `.venv/Scripts/python.exe
@@ -40,6 +49,18 @@ the output folder. Review the source authority, full campaign conditions, source
 audio/music and current publisher policy before any upload. Do not turn permission
 flags on merely to pass validation. Rockstar's published fan-video policy describes
 non-commercial use; a streamer campaign does not grant Rockstar's rights.
+
+Later local records supersede the original campaign-review status above: the
+garage draft `garage-draft-20261119-191606` was already uploaded privately (see its
+upload state; do not upload it again). Its retained signed-in review records campaign
+membership. Current full campaign rules were fetched successfully for the pickup
+preview and retained under its `evidence/` folder. They permit the named marathon's
+clips on Shorts, require Kai's presence/name and #KaiCenat, and prohibit logos and
+false negative narratives. Publisher commercial permission remains unestablished;
+the latest publisher-policy fetch timed out and is recorded without claiming success.
+The new pickup preview has no upload authorization. Daily scheduling, uploads and
+auto-publication remain disabled. The local player was launched for review; UI
+playback confirmation failed because the computer-use helper was busy.
 
 For each new edit: establish a usable source and keep evidence; inspect frames and
 transcribe speech; choose a self-contained setup/payoff; author source-specific

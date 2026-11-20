@@ -1,0 +1,3 @@
+PASS: 21 spawn-rule cases across Easy/Medium/Hard; final filtering, minimum group size, max one, regular-only replacement, probability zero/one.
+PASS: original Character01 mesh/materials/controller, shared health/ragdoll, bone attachment, three speaker LODs, no attack components, no music, both FishNet prefab lists.
+Easy wave counts are unchanged (currently 1..1), so no speaker can appear on Easy until the existing wave settings allow two members.

@@ -1,3 +1,4 @@
+using CouchGuys.Gameplay.Depot;
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Weapons;
 using CouchGuys.Gameplay.Delivery;
@@ -141,6 +142,7 @@ namespace CouchGuys.Gameplay.Enemies
         public void SetTruckTargetServer(TruckController truck)
         {
             if (!IsServerInitialized || IsRocketLauncher) return;
+            if (truck != null && DepotSafeZone.Contains(truck.transform.position)) truck = null;
             if (m_targetTruck != truck)
             {
                 SetTargetServer(null);
@@ -153,7 +155,7 @@ namespace CouchGuys.Gameplay.Enemies
         private void Update()
         {
             if (!IsServerInitialized) return;
-            if (m_navigator != null && !m_navigator.CanAttack)
+            if (DepotSafeZone.Contains(transform.position) || (m_navigator != null && !m_navigator.CanAttack))
             {
                 SetCombatTarget(null);
                 return;
@@ -175,7 +177,7 @@ namespace CouchGuys.Gameplay.Enemies
                     SetCombatTarget(FindClosestCouchEnemy(couch.transform.position));
                 }
             }
-            if (m_targetTruck != null ? m_targetTruck.IsDestroyed : m_target == null || !m_target.IsEnemyTargetable)
+            if (m_targetTruck != null ? m_targetTruck.IsDestroyed || DepotSafeZone.Contains(m_targetTruck.transform.position) : m_target == null || !m_target.IsEnemyTargetable)
             {
                 if (m_targetTruck == null) SetCombatTarget(null);
                 EndRifleBurstServer();
@@ -234,7 +236,7 @@ namespace CouchGuys.Gameplay.Enemies
         {
             Vector3 origin = GetMuzzlePosition();
             Vector3 offset = TargetAimPoint - origin;
-            if (offset.sqrMagnitude > m_range * m_range ||
+            if (DepotSafeZone.Intersects(origin, TargetAimPoint) || offset.sqrMagnitude > m_range * m_range ||
                 Vector3.Angle(m_aimDirection, desired) > m_requiredAimAngle) return false;
             int count = Physics.RaycastNonAlloc(origin, desired, m_hits, m_range, m_hitMask, QueryTriggerInteraction.Ignore);
             SortHits(count);
@@ -284,6 +286,7 @@ namespace CouchGuys.Gameplay.Enemies
                     if (!CouchGuys.Gameplay.Pedestrians.PedestrianController.IsBulletHit(hit.collider) ||
                         hit.collider.transform.root == transform.root) continue;
                     end = hit.point;
+                    if (DepotSafeZone.Intersects(origin, hit.point)) break;
                     var dispatcher = hit.collider.GetComponentInParent<DeliveryNPC>();
                     if (dispatcher != null)
                     {

@@ -8,6 +8,8 @@ namespace CouchGuys.Gameplay.Enemies
     public sealed class ThiefSpawnMember : MonoBehaviour
     {
         public int DeliveryId { get; private set; }
+        public System.Collections.Generic.IReadOnlyList<NetworkObject> GroupMembers { get; private set; }
+        public void AssignGroup(System.Collections.Generic.IReadOnlyList<NetworkObject> members) => GroupMembers = members;
         public void AssignDelivery(int id) => DeliveryId = id;
         private EnemySpawnManager m_manager;
         private NetworkObject m_networkObject;

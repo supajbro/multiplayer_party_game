@@ -1,3 +1,4 @@
+using CouchGuys.Gameplay.Depot;
 using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Gameplay.Weapons;
 using CouchGuys.Player;
@@ -151,6 +152,7 @@ namespace CouchGuys.Gameplay.Enemies
         public bool HasLineOfSight(PlayerHealth player)
         {
             if (player == null || m_muzzle == null || m_settings == null) return false;
+            if (DepotSafeZone.Intersects(m_muzzle.position, player.AimPoint)) return false;
             Vector3 offset = player.AimPoint - m_muzzle.position;
             return offset.sqrMagnitude <= m_settings.GrappleRange * m_settings.GrappleRange &&
                 Trace(m_muzzle.position, offset.normalized, offset.magnitude + 0.25f, out RaycastHit hit) &&
@@ -159,6 +161,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         public bool HasSightFrom(Vector3 origin, PlayerHealth target)
         {
+            if (DepotSafeZone.Intersects(origin, target.AimPoint)) return false;
             Vector3 offset = target.AimPoint - origin;
             return Trace(origin, offset.normalized, offset.magnitude + 0.25f, out RaycastHit hit) &&
                 hit.collider.GetComponentInParent<PlayerHealth>() == target;

@@ -682,6 +682,8 @@ namespace CouchGuys.Gameplay.Couch
 
         internal bool TryGrabPointServer(ICouchCarrierServer carrier, int pointIndex)
         {
+            if (carrier is CouchGuys.Gameplay.Enemies.ThiefNavigator &&
+                CouchGuys.Gameplay.Depot.DepotSafeZone.Contains(transform.position)) return false;
             if (!IsServerInitialized || !IsPickupAvailable || m_loadedTruck.Value != null || carrier == null || !carrier.IsCarrierAvailable ||
                 !IsValidPointIndex(pointIndex) || GetPoint(pointIndex) == null || IsPointOccupied(pointIndex))
             {

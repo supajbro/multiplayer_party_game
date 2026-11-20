@@ -1,3 +1,4 @@
+using CouchGuys.Gameplay.Depot;
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Couch;
 using CouchGuys.Gameplay.Delivery;
@@ -66,6 +67,7 @@ namespace CouchGuys.Gameplay.Enemies
         private PlayerHealth m_closestPlayer;
         private EnemyWeapon m_weapon;
         private GrapplerThief m_grappler;
+        private SpeakerThief m_speaker;
         private ThiefHealth m_health;
         private DeliveryManager m_deliveryManager;
         private CouchCarryController m_carriedCouch;
@@ -100,7 +102,7 @@ namespace CouchGuys.Gameplay.Enemies
         private CouchCarryController m_collisionIgnoredCouch;
 
         NetworkObject ICouchCarrierServer.CarrierNetworkObject => NetworkObject;
-        bool ICouchCarrierServer.IsCarrierAvailable => m_grappler == null && IsSpawned && !IsDeparting &&
+        bool ICouchCarrierServer.IsCarrierAvailable => !DepotSafeZone.Contains(transform.position) && m_grappler == null && m_speaker == null && IsSpawned && !IsDeparting &&
             (m_weapon == null || !m_weapon.IsRocketLauncher) &&
             (m_health == null || m_health.IsAlive);
 
@@ -109,6 +111,7 @@ namespace CouchGuys.Gameplay.Enemies
             m_agent ??= GetComponent<NavMeshAgent>();
             m_weapon ??= GetComponent<EnemyWeapon>();
             m_grappler = GetComponent<GrapplerThief>();
+            m_speaker = GetComponent<SpeakerThief>();
             m_health ??= GetComponent<ThiefHealth>();
             m_audio = GetComponent<ThiefAudioEmitter>();
             m_carrierCollider = GetComponent<Collider>();
@@ -148,6 +151,7 @@ namespace CouchGuys.Gameplay.Enemies
             m_deliveryManager = FindFirstObjectByType<DeliveryManager>();
             if (m_agent != null)
             {
+                m_agent.areaMask &= DepotSafeZone.ThiefAreaMask;
                 m_agent.enabled = true;
                 m_agent.avoidancePriority = 30 + (m_memberIndex * 13) % 50;
             }
@@ -236,6 +240,34 @@ namespace CouchGuys.Gameplay.Enemies
             }
 
             if (m_health != null && !m_health.IsAlive) return;
+
+            if (DepotSafeZone.Contains(transform.position))
+            {
+                ReleaseCarriedCouchServer();
+                m_weapon?.SetTargetServer(null);
+                m_grappler?.StopForDepartureServer();
+                if (DepotSafeZone.TryGetExterior(transform.position, 1.5f, out var exterior) &&
+                    NavMesh.SamplePosition(exterior, out var outside, 8f, m_agent.areaMask) && !DepotSafeZone.Contains(outside.position))
+                {
+                    if (m_agent.enabled && m_agent.isOnNavMesh) m_agent.Warp(outside.position);
+                    else transform.position = outside.position;
+                    m_hasDestination = false;
+                    m_nextPathTime = 0f;
+                }
+                return;
+            }
+
+            if (m_speaker != null)
+            {
+                if (!UpdateDepartureServer()) m_speaker.FollowGroupServer();
+                return;
+            }
+
+            var activeCouch = GetActiveCouch();
+            bool protectedObjective = (m_target != null && DepotSafeZone.Contains(m_target.transform.position)) ||
+                (activeCouch != null && DepotSafeZone.Contains(activeCouch.transform.position));
+            if (!IsDeparting && protectedObjective && GetClosestLivingTarget() == null &&
+                GetTheftCarryTarget(activeCouch) == null) BeginDepartureServer();
 
             if (UpdateDepartureServer()) return;
 
@@ -334,7 +366,7 @@ namespace CouchGuys.Gameplay.Enemies
         // Called by server-side damage handling, once per damaging hit (not per pellet).
         internal void ReactToAttackServer(PlayerHealth attacker)
         {
-            if (IsDeparting) return;
+            if (IsDeparting || m_speaker != null) return;
             if (m_grappler != null || attacker == null || !attacker.IsEnemyTargetable ||
                 (m_health != null && !m_health.IsAlive) || Random.value * 100f >= m_retaliationChance)
                 return;
@@ -465,10 +497,12 @@ namespace CouchGuys.Gameplay.Enemies
 
         // Keep the job attached to its couch, but use the sled's grips and speed.
         private static CouchCarryController GetTheftCarryTarget(CouchCarryController couch) =>
-            couch != null && couch.MountedSled != null ? couch.MountedSled.CarryController : couch;
+            couch == null || DepotSafeZone.Contains(couch.transform.position) ? null :
+            couch.MountedSled != null ? couch.MountedSled.CarryController : couch;
 
         private void UpdateStealObjective(CouchCarryController couch)
         {
+            if (DepotSafeZone.Contains(couch.transform.position)) return;
             if (couch.IsLoaded) return;
             if (couch.ThiefCarrierCountServer() >= MaximumThiefCouchCarriers)
             {
@@ -813,8 +847,15 @@ namespace CouchGuys.Gameplay.Enemies
             return true;
         }
 
-        private bool HasPath(Vector3 destination) =>
-            m_agent.CalculatePath(destination, m_path) && m_path.status == NavMeshPathStatus.PathComplete;
+        private bool HasPath(Vector3 destination)
+        {
+            if (DepotSafeZone.Contains(destination) || !m_agent.CalculatePath(destination, m_path) ||
+                m_path.status != NavMeshPathStatus.PathComplete) return false;
+            var corners = m_path.corners;
+            for (int i = 1; i < corners.Length; i++)
+                if (DepotSafeZone.Intersects(corners[i - 1], corners[i])) return false;
+            return true;
+        }
 
         private PlayerHealth FindNearestLivingTarget()
         {

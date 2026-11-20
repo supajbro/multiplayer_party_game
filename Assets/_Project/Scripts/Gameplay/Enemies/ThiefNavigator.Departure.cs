@@ -1,3 +1,4 @@
+using CouchGuys.Gameplay.Depot;
 using System.Collections.Generic;
 using CouchGuys.Player;
 using FishNet.Connection;
@@ -26,7 +27,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         public bool IsDeparting => m_departurePhase.Value != DeparturePhase.None;
         public bool IsFrustrated => m_departurePhase.Value == DeparturePhase.Frustration;
-        public bool CanAttack => !IsCarrying && (!IsDeparting || m_departurePhase.Value == DeparturePhase.Chase);
+        public bool CanAttack => m_speaker == null && !DepotSafeZone.Contains(transform.position) && !IsCarrying && (!IsDeparting || m_departurePhase.Value == DeparturePhase.Chase);
         public float FrustrationDuration => Mathf.Max(0.1f, Departure.FrustrationDuration);
 
         private void ResetDepartureServer()

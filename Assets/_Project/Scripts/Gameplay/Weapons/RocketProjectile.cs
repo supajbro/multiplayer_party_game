@@ -1,3 +1,4 @@
+using CouchGuys.Gameplay.Depot;
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Enemies;
 using CouchGuys.Gameplay.Delivery;
@@ -72,6 +73,13 @@ namespace CouchGuys.Gameplay.Weapons
         private void FixedUpdate()
         {
             if (!IsServerInitialized || m_weapon == null || m_exploded) return;
+            if (DepotSafeZone.Contains(transform.position) || DepotSafeZone.Intersects(
+                    transform.position, transform.position + m_velocity * Time.fixedDeltaTime) ||
+                (m_firstStep && DepotSafeZone.Intersects(m_launchOrigin, transform.position)))
+            {
+                Despawn(NetworkObject);
+                return;
+            }
             if (m_firstStep)
             {
                 m_firstStep = false;
@@ -140,7 +148,7 @@ namespace CouchGuys.Gameplay.Weapons
             if (direct != null) m_distances[direct] = 0f;
             foreach (var entry in m_distances)
             {
-                if (entry.Key == null) continue;
+                if (entry.Key == null || DepotSafeZone.Intersects(position, entry.Key.transform.position)) continue;
                 float damage = DamageAtDistance(m_weapon.ExplosionDamage, m_weapon.ExplosionRadius, entry.Value);
                 if (entry.Key == direct) damage += m_weapon.DamagePerPellet;
                 if (damage <= 0f) continue;

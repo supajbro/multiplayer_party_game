@@ -33,7 +33,7 @@ namespace CouchGuys.Gameplay.Weapons
         private bool TryBeginBatSwingServer()
         {
             int index = (int)PlayerWeaponType.BaseballBat;
-            if (!CanHandleWeaponServer || m_equippedIndex.Value != index ||
+            if (!CanHandleWeaponServer || !IsCombatAllowed || m_equippedIndex.Value != index ||
                 GetInventoryWeaponIndex(SelectedHotbarSlot) != index || m_baseballBatAssets == null ||
                 m_batSwinging || Time.time < m_nextServerFireTime[index] ||
                 m_reloadingIndex >= 0 || Time.time < m_switchCompleteAt) return false;
@@ -51,7 +51,7 @@ namespace CouchGuys.Gameplay.Weapons
         private void UpdateBatSwingServer()
         {
             if (!IsServerInitialized || !m_batSwinging) return;
-            if (!CanHandleWeaponServer || m_equippedIndex.Value != (int)PlayerWeaponType.BaseballBat ||
+            if (!CanHandleWeaponServer || !IsCombatAllowed || m_equippedIndex.Value != (int)PlayerWeaponType.BaseballBat ||
                 SelectedHotbarSlot != m_batSlot)
             {
                 m_batSwinging = false;
@@ -114,6 +114,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void ApplyBatHitServer(Component target, Vector3 away, Vector3 point)
         {
+            if (CouchGuys.Gameplay.Depot.DepotSafeZone.Intersects(transform.position, target.transform.position)) return;
             BaseballBatAssets settings = m_baseballBatAssets;
             switch (target)
             {

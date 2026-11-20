@@ -1,3 +1,4 @@
+using CouchGuys.Gameplay.Depot;
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Couch;
 using CouchGuys.Gameplay.Enemies;
@@ -285,8 +286,9 @@ namespace CouchGuys.Gameplay.Weapons
         {
             if (target == null || !target.IsSpawned || !target.gameObject.activeInHierarchy) return false;
             if (target.TryGetComponent(out PlayerHealth player))
-                return player.IsAlive && !(target.TryGetComponent(out PlayerTruckInteractor truck) && truck.CurrentTruck != null);
-            if (target.TryGetComponent(out ThiefHealth thief)) return thief.IsAlive;
+                return player.IsAlive && !DepotSafeZone.Intersects(transform.position, player.transform.position) && !(target.TryGetComponent(out PlayerTruckInteractor truck) && truck.CurrentTruck != null);
+            if (target.TryGetComponent(out ThiefHealth thief)) return thief.IsAlive &&
+                !DepotSafeZone.Intersects(transform.position, thief.transform.position);
             if (target.TryGetComponent(out CouchCarryController couch))
                 return couch.IsPickupAvailable && !couch.IsLoaded && couch.CouchRigidbody != null && !couch.CouchRigidbody.isKinematic;
             if (target.TryGetComponent(out PedestrianController pedestrian)) return pedestrian.IsAlive;

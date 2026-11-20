@@ -1,0 +1,5 @@
+START: existing Character01 variant, host and separate late-joining client
+PASS: registered prefab received by host and independent late client; identical shoulder attachment, silent prop, server-only navigation
+PASS: group following/catch-up and replicated navigation; no weapon or attack capability
+PASS: shared health, damage, death and ragdoll replicate to the independent client
+PASS: shared death despawn removes the variant and its attached speaker on the client

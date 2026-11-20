@@ -29,6 +29,8 @@ MonoBehaviour:
   m_maxSpawnInterval: 10
   m_minThievesPerWave: 2
   m_maxThievesPerWave: 4
+  m_speakerThiefPrefab: {fileID: 7146838636689158685, guid: 15151a54d77680441b1604405073a0e7, type: 3}
+  m_speakerThiefChance: 0.15
   m_grapplerThiefPrefab: {fileID: 3333041713970159889, guid: 4fb9ce0bcb16c2c48825f5fe3a94da76, type: 3}
   m_grapplerThiefChance: 0.15
   m_maxActiveGrapplerThieves: 1

@@ -1,3 +1,4 @@
+using CouchGuys.Gameplay.Depot;
 using System;
 using System.Collections.Generic;
 using CouchGuys.Networking;
@@ -103,7 +104,7 @@ namespace CouchGuys.Player
         public bool HasReviveInteraction => FindReviveTarget() != null;
         public bool IsKnockedDown => m_knockedDown.Value;
         public bool IsEnemyTargetable => isActiveAndEnabled && IsAlive && !IsKnockedDown &&
-            !IsReturningToRing && NetworkObject != null && NetworkObject.IsSpawned;
+            !IsReturningToRing && !DepotSafeZone.Contains(transform.position) && NetworkObject != null && NetworkObject.IsSpawned;
         public bool IsReturningToRing => m_returningToRing.Value;
         public bool IsAiTeammate => m_aiTeammateIndex.Value >= 0;
         public int AiTeammateIndex => m_aiTeammateIndex.Value;
@@ -410,6 +411,7 @@ namespace CouchGuys.Player
         [Server]
         public void ApplyDamageServer(float damage, Vector3 impactDirection, float knockbackForce)
         {
+            if (DepotSafeZone.Contains(transform.position)) return;
             ApplyDamageInternal(damage, impactDirection, knockbackForce, false);
         }
 
@@ -427,12 +429,14 @@ namespace CouchGuys.Player
         [Server]
         public void ApplyExplosionDamageServer(float damage, Vector3 direction, float force, float lift)
         {
+            if (DepotSafeZone.Contains(transform.position)) return;
             ApplyDamageInternal(damage, direction, force, true, lift, false, true, true);
         }
 
         [Server]
         public void ApplyBatImpactServer(float damage, Vector3 direction, float force, float lift)
         {
+            if (DepotSafeZone.Contains(transform.position)) return;
             ApplyDamageInternal(damage, direction, force, true, lift, true, true, true, true);
         }
 

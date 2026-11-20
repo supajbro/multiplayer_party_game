@@ -61,6 +61,14 @@ namespace CouchGuys.Gameplay.Delivery
         [SerializeField, Min(1)] private int m_minThievesPerWave = 1;
         [SerializeField, Min(1)] private int m_maxThievesPerWave = 2;
 
+        [Header("Speaker Thief (all difficulties; replaces one regular thief)")]
+        [SerializeField] private NetworkObject m_speakerThiefPrefab;
+        [SerializeField, Range(0f, 1f)] private float m_speakerThiefChance = .15f;
+        public NetworkObject SpeakerThiefPrefab => m_speakerThiefPrefab;
+        public float SpeakerThiefChance => Mathf.Clamp01(m_speakerThiefChance);
+        public bool ShouldReplaceWithSpeakerThief(int finalGroupSize, float roll) =>
+            finalGroupSize >= 2 && m_speakerThiefPrefab != null && roll < SpeakerThiefChance;
+
         [Header("Grappler Thief replacements")]
         [SerializeField] private NetworkObject m_grapplerThiefPrefab;
         [SerializeField, Range(0f, 1f)] private float m_grapplerThiefChance;

@@ -1,3 +1,4 @@
+using CouchGuys.Gameplay.Depot;
 using System.Collections.Generic;
 using CouchGuys.Networking;
 using CouchGuys.Player;
@@ -225,10 +226,13 @@ namespace CouchGuys.Gameplay.Enemies
                 return;
             }
 
-            int spawnedCount = 0;
+            if (!target.TryGetComponent(out PlayerHealth targetHealth) || !targetHealth.IsAlive) return;
+            // Keep filtering ahead of support selection, including invalid prefabs.
+            var group = new List<NetworkObject>(m_groupPositions.Count);
+            int plannedRockets = 0, plannedGrapplers = 0;
             for (int index = 0; index < m_groupPositions.Count; index++)
             {
-                NetworkObject selectedPrefab = SelectEnemyPrefab();
+                NetworkObject selectedPrefab = SelectEnemyPrefab(plannedRockets, plannedGrapplers);
                 if (selectedPrefab == null)
                 {
                     break;
@@ -246,6 +250,40 @@ namespace CouchGuys.Gameplay.Enemies
                     break;
                 }
 
+                if (thief.GetComponent<ThiefNavigator>() == null || thief.GetComponent<ThiefHealth>() == null)
+                {
+                    Destroy(thief.gameObject);
+                    continue;
+                }
+                group.Add(thief);
+                if (thief.TryGetComponent(out EnemyWeapon plannedWeapon) && plannedWeapon.IsRocketLauncher) plannedRockets++;
+                if (thief.GetComponent<GrapplerThief>() != null) plannedGrapplers++;
+            }
+
+            DeliveryTierConfig tier = m_deliveryManager.GetTierConfig(SpawningTierIndex);
+            int replacement = SpeakerThief.SelectReplacement(group, tier, Random.value, Random.Range(0, int.MaxValue));
+            if (replacement >= 0)
+            {
+                // Commit this slot last: at least one companion must actually be spawned.
+                NetworkObject reserved = group[replacement];
+                group.RemoveAt(replacement);group.Add(reserved);
+                replacement = group.Count - 1;
+            }
+            int spawnedCount = 0;
+            for (int index = 0; index < group.Count; index++)
+            {
+                NetworkObject thief = group[index];
+                if (index == replacement && HasLivingGroupCompanion(group))
+                {
+                    NetworkObject speaker = Instantiate(tier.SpeakerThiefPrefab, thief.transform.position, thief.transform.rotation);
+                    if (speaker.GetComponent<SpeakerThief>() != null && speaker.GetComponent<NavMeshAgent>() != null &&
+                        speaker.GetComponent<ThiefNavigator>() != null && speaker.GetComponent<ThiefHealth>() != null &&
+                        speaker.GetComponent<EnemyWeapon>() == null && speaker.GetComponent<GrapplerThief>() == null)
+                    {
+                        Destroy(thief.gameObject);thief = speaker;group[index] = thief;
+                    }
+                    else Destroy(speaker.gameObject); // Preserve the regular slot if misconfigured.
+                }
                 ThiefSpawnMember member = thief.GetComponent<ThiefSpawnMember>();
                 if (member == null)
                 {
@@ -254,11 +292,7 @@ namespace CouchGuys.Gameplay.Enemies
 
                 member.Register(this, thief);
                 member.AssignDelivery(m_spawningDeliveryId);
-                if (!target.TryGetComponent(out PlayerHealth targetHealth))
-                {
-                    Destroy(thief.gameObject);
-                    continue;
-                }
+                member.AssignGroup(group);
 
                 float preferredRange = 1.25f;
                 if (thief.TryGetComponent(out EnemyWeapon weapon))
@@ -269,11 +303,12 @@ namespace CouchGuys.Gameplay.Enemies
 
                 if (thief.TryGetComponent(out ThiefNavigator navigator))
                 {
-                    navigator.ConfigureTacticalSlotServer(index, m_groupPositions.Count);
-                    navigator.SetTargetServer(targetHealth, preferredRange);
+                    navigator.ConfigureTacticalSlotServer(index, group.Count);
+                    if (thief.GetComponent<SpeakerThief>() == null) navigator.SetTargetServer(targetHealth, preferredRange);
                 }
 
                 InstanceFinder.ServerManager.Spawn(thief);
+                if (!thief.IsSpawned) { group[index] = null;Destroy(thief.gameObject);continue; }
                 m_activeThieves.Add(thief);
                 spawnedCount++;
             }
@@ -285,6 +320,14 @@ namespace CouchGuys.Gameplay.Enemies
                 m_lastSpawnGroupSize = spawnedCount;
                 m_hasLastSpawn = true;
             }
+        }
+
+        private static bool HasLivingGroupCompanion(IReadOnlyList<NetworkObject> group)
+        {
+            foreach (NetworkObject member in group)
+                if (member != null && member.IsSpawned && member.GetComponent<SpeakerThief>() == null &&
+                    member.TryGetComponent(out ThiefHealth health) && health.IsAlive) return true;
+            return false;
         }
 
         private bool TryGetCurrentSpawnRange(out int minimum, out int maximum)
@@ -311,7 +354,7 @@ namespace CouchGuys.Gameplay.Enemies
             for (int index = m_players.Count - 1; index >= 0; index--)
             {
                 NetworkPlayerOwnership player = m_players[index];
-                if (!IsValidPlayer(player))
+                if (!IsValidPlayer(player) || DepotSafeZone.Contains(player.transform.position))
                 {
                     if (player == null)
                     {
@@ -332,7 +375,7 @@ namespace CouchGuys.Gameplay.Enemies
             for (int index = 0; index < m_players.Count; index++)
             {
                 NetworkPlayerOwnership player = m_players[index];
-                if (!IsValidPlayer(player))
+                if (!IsValidPlayer(player) || DepotSafeZone.Contains(player.transform.position))
                 {
                     continue;
                 }
@@ -364,7 +407,7 @@ namespace CouchGuys.Gameplay.Enemies
                 if (!IsInsideWorld(candidate) ||
                     Random.value > m_generator.GetEnemySpawnOpportunity(candidate) ||
                     !NavMesh.SamplePosition(candidate, out NavMeshHit hit, m_navMeshSampleRadius, NavMesh.AllAreas) ||
-                    !IsInsideWorld(hit.position) ||
+                    !IsInsideWorld(hit.position) || DepotSafeZone.Contains(hit.position) ||
                     !IsWithinSpawnRange(hit.position, targetPosition) ||
                     !IsFarEnoughFromPlayers(hit.position) ||
                     !CanReachTarget(hit.position, targetPosition))
@@ -387,7 +430,7 @@ namespace CouchGuys.Gameplay.Enemies
                 Vector2 offset = Random.insideUnitCircle * m_groupSpread;
                 Vector3 candidate = origin + new Vector3(offset.x, 0f, offset.y);
                 if (NavMesh.SamplePosition(candidate, out NavMeshHit hit, m_navMeshSampleRadius, NavMesh.AllAreas) &&
-                    IsInsideWorld(hit.position) && IsFarEnoughFromPlayers(hit.position))
+                    IsInsideWorld(hit.position) && !DepotSafeZone.Contains(hit.position) && IsFarEnoughFromPlayers(hit.position))
                 {
                     position = hit.position;
                     return true;
@@ -491,7 +534,7 @@ namespace CouchGuys.Gameplay.Enemies
 
             for (int index = 0; index < m_enemyPrefabs.Length; index++)
             {
-                if (m_enemyPrefabs[index] != null)
+                if (m_enemyPrefabs[index] != null && m_enemyPrefabs[index].GetComponent<SpeakerThief>() == null)
                 {
                     return true;
                 }
@@ -500,13 +543,13 @@ namespace CouchGuys.Gameplay.Enemies
             return false;
         }
 
-        private NetworkObject SelectEnemyPrefab()
+        private NetworkObject SelectEnemyPrefab(int plannedRockets = 0, int plannedGrapplers = 0)
         {
             DeliveryTierConfig tier = m_deliveryManager != null
                 ? m_deliveryManager.GetTierConfig(SpawningTierIndex) : null;
-            if (tier != null && tier.ShouldReplaceWithRocketThief(CountActiveRocketThieves(), Random.value))
+            if (tier != null && tier.ShouldReplaceWithRocketThief(CountActiveRocketThieves() + plannedRockets, Random.value))
                 return tier.RocketThiefPrefab;
-            if (tier != null && tier.ShouldReplaceWithGrappler(CountActiveGrapplers(), Random.value))
+            if (tier != null && tier.ShouldReplaceWithGrappler(CountActiveGrapplers() + plannedGrapplers, Random.value))
                 return tier.GrapplerThiefPrefab;
 
             if (!HasEnemyPrefabs())
@@ -518,8 +561,7 @@ namespace CouchGuys.Gameplay.Enemies
             for (int offset = 0; offset < m_enemyPrefabs.Length; offset++)
             {
                 NetworkObject candidate = m_enemyPrefabs[(startIndex + offset) % m_enemyPrefabs.Length];
-                if (candidate != null && candidate.GetComponent<GrapplerThief>() == null &&
-                    !(candidate.TryGetComponent(out EnemyWeapon weapon) && weapon.IsRocketLauncher))
+                if (SpeakerThief.IsRegular(candidate))
                 {
                     return candidate;
                 }
