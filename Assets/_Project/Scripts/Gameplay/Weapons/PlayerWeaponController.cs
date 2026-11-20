@@ -1,4 +1,3 @@
-using CouchGuys.Gameplay.Depot;
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Healing;
 using CouchGuys.Gameplay.Sled;
@@ -121,7 +120,6 @@ namespace CouchGuys.Gameplay.Weapons
         public bool HasEquippedWeapon => ValidIndex(m_equippedIndex.Value);
         public bool EmoteIncompatibleAction => IsReloading || m_grappleAttached.Value || m_punchStage != 0 ||
             m_batSwinging || Time.time < m_switchCompleteAt;
-        private bool IsCombatAllowed => !DepotSafeZone.Contains(transform.position);
         public bool CanHandleWeaponServer => IsServerInitialized && m_health != null && m_health.IsAlive &&
             !(TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.IsMounted) &&
             !m_health.IsKnockedDown && !(m_couchCarrier != null && m_couchCarrier.IsCarrying) &&
@@ -280,7 +278,6 @@ namespace CouchGuys.Gameplay.Weapons
                 if (m_input.ShootPressedThisFrame) GetComponent<HealingItem>()?.RequestUseServerRpc();
                 return;
             }
-            if (!IsCombatAllowed) return;
             if (!HasEquippedWeapon && m_input.ShootPressedThisFrame && Time.time >= m_nextLocalRequestTime &&
                 !(m_couchCarrier != null && m_couchCarrier.IsCarrying))
             {
@@ -641,7 +638,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         private bool TryFireServer(Vector3 aimOrigin, Vector3 aimDirection)
         {
-            if (!IsCombatAllowed || (TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.IsMounted)) return false;
+            if (TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.IsMounted) return false;
             if (!IsServerInitialized)
             {
                 return false;
@@ -761,7 +758,6 @@ namespace CouchGuys.Gameplay.Weapons
                 ends[pellet] = nearest.point;
                 normals[pellet] = nearest.normal;
                 surfaces[pellet] = (byte)ClassifySurface(nearest.collider);
-                if (DepotSafeZone.Intersects(origin, nearest.point)) continue;
                 float damage = weapon.DamageAtDistance(nearest.distance);
                 var dispatcher = nearest.collider.GetComponentInParent<DeliveryNPC>();
                 if (dispatcher != null)

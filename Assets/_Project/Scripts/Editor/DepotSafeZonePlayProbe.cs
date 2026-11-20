@@ -53,7 +53,7 @@ namespace CouchGuys.Editor
         private static void Finish(int code)
         {
             EditorApplication.update -= Tick; s_probe = null;
-            if (s_network != null) { s_network.ClientManager.StopConnection(); s_network.ServerManager.StopConnection(true); }
+            if (s_network != null) { s_network.ClientManager?.StopConnection(); s_network.ServerManager?.StopConnection(true); }
             EditorApplication.Exit(code);
         }
         private static void Check(bool value, string message)
@@ -99,16 +99,23 @@ namespace CouchGuys.Editor
             Check(EnemyWeapon.FindClosestCouchEnemy(player.transform.position) == null && GrapplerThief.FindTarget(player.transform.position) == null,
                 "Rocket and grapple targeting exclude protected players");
             var inventory = player.GetComponent<PlayerWeaponController>();
-            Check(inventory.CanHandleWeaponServer && inventory.AcquireWeaponServer(PlayerWeaponType.Pistol), "Shopping/inventory remains usable inside");
+            while (Time.time < (float)typeof(PlayerWeaponController).GetField("m_switchCompleteAt", Flags).GetValue(inventory)) yield return null;
+            Check((bool)typeof(PlayerWeaponController).GetProperty("CanPunchServer", Flags).GetValue(inventory), "Server allows punching inside");
+            Check(inventory.AcquireWeaponServer(PlayerWeaponType.BaseballBat), "Player can equip bat inside");
             typeof(PlayerWeaponController).GetField("m_switchCompleteAt", Flags).SetValue(inventory, 0f);
-            Check(!(bool)Call(inventory, "TryFireServer", player.AimPoint, Vector3.right), "Server rejects firing from inside");
+            Check((bool)Call(inventory, "TryBeginBatSwingServer"), "Server allows bat swings inside");
+            typeof(PlayerWeaponController).GetField("m_batSwinging", Flags).SetValue(inventory, false);
+            Check(inventory.CanHandleWeaponServer && inventory.AcquireWeaponServer(PlayerWeaponType.Pistol), "Shopping/inventory remains usable inside");
+            Call(inventory, "EquipInventorySlotServer", 1); // The bat occupies the first slot; equip the newly acquired pistol.
+            typeof(PlayerWeaponController).GetField("m_switchCompleteAt", Flags).SetValue(inventory, 0f);
+            Check((bool)Call(inventory, "TryFireServer", player.AimPoint, Vector3.right), "Server allows firing from inside");
             var thief = Spawn<ThiefNavigator>("Assets/_Project/Prefabs/Enemies/Thief_Pistol.prefab", new Vector3(18, .05f, 0));
             thief.GetComponent<EnemyWeapon>().enabled = false;
             yield return null;
             Check((thief.GetComponent<UnityEngine.AI.NavMeshAgent>().areaMask & (1 << DepotSafeZone.NavigationArea)) == 0, "Spawned thief excludes safe navigation area");
             thief.SetTargetServer(player, 1);
             Check(thief.GetComponent<EnemyWeapon>().Target == null, "Thief weapon does not acquire protected player");
-            Check(!(bool)Call(inventory, "IsValidGrappleTarget", thief.NetworkObject), "Player cannot grapple thieves through boundary");
+            Check((bool)Call(inventory, "IsValidGrappleTarget", thief.NetworkObject), "Player can grapple thieves from inside");
             var couch = Spawn<CouchCarryController>("Assets/_Project/Prefabs/Couch.prefab", new Vector3(14, .1f, 2));
             yield return null;
             var grab = typeof(CouchCarryController).GetMethod("TryGrabPointServer", Flags, null, new[] { typeof(ICouchCarrierServer), typeof(int) }, null);
@@ -119,6 +126,8 @@ namespace CouchGuys.Editor
             Check(player.IsEnemyTargetable, "Targetability resumes outside");
             player.ApplyDamageServer(1, Vector3.zero, 0);
             Check(player.CurrentHealth < hp, "Damage resumes outside");
+            float nextShot = ((float[])typeof(PlayerWeaponController).GetField("m_nextServerFireTime", Flags).GetValue(inventory))[(int)PlayerWeaponType.Pistol];
+            while (Time.time < nextShot) yield return null;
             Check((bool)Call(inventory, "TryFireServer", player.AimPoint, Vector3.right), "Server allows ordinary firing outside");
             thief.SetTargetServer(player, 1);
             player.transform.position = protectedPosition;

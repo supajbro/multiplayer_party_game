@@ -26,6 +26,7 @@ namespace CouchGuys.Gameplay.Weapons
         private float m_expiresAt;
         private bool m_firstStep = true;
         private bool m_exploded;
+        private bool m_isEnemyProjectile;
         private readonly Dictionary<Component, float> m_distances = new();
 
         public override void OnStartClient()
@@ -48,6 +49,7 @@ namespace CouchGuys.Gameplay.Weapons
         public void InitializeServer(PlayerWeaponController owner, PlayerHealth shooter,
             WeaponDefinition weapon, LayerMask mask)
         {
+            m_isEnemyProjectile = false;
             m_weaponOwner = owner;
             m_shooter = shooter;
             m_ignoredShooterRoot = shooter != null ? shooter.transform : null;
@@ -61,6 +63,7 @@ namespace CouchGuys.Gameplay.Weapons
         public void InitializeEnemyServer(ThiefHealth shooter, WeaponDefinition weapon, LayerMask mask)
         {
             InitializeServer(null, null, weapon, mask);
+            m_isEnemyProjectile = true;
             m_ignoredShooterRoot = shooter.transform;
             m_launchOrigin = shooter.transform.position + Vector3.up * .9f;
         }
@@ -91,9 +94,10 @@ namespace CouchGuys.Gameplay.Weapons
         private void FixedUpdate()
         {
             if (!IsServerInitialized || m_weapon == null || m_exploded) return;
-            if (DepotSafeZone.Contains(transform.position) || DepotSafeZone.Intersects(
+            // The depot blocks hostile rockets, while players may fire their weapons normally.
+            if (m_isEnemyProjectile && (DepotSafeZone.Contains(transform.position) || DepotSafeZone.Intersects(
                     transform.position, transform.position + m_velocity * Time.fixedDeltaTime) ||
-                (m_firstStep && DepotSafeZone.Intersects(m_launchOrigin, transform.position)))
+                (m_firstStep && DepotSafeZone.Intersects(m_launchOrigin, transform.position))))
             {
                 Despawn(NetworkObject);
                 return;
@@ -166,7 +170,7 @@ namespace CouchGuys.Gameplay.Weapons
             if (direct != null) m_distances[direct] = 0f;
             foreach (var entry in m_distances)
             {
-                if (entry.Key == null || DepotSafeZone.Intersects(position, entry.Key.transform.position)) continue;
+                if (entry.Key == null || (m_isEnemyProjectile && DepotSafeZone.Intersects(position, entry.Key.transform.position))) continue;
                 float damage = DamageAtDistance(m_weapon.ExplosionDamage, m_weapon.ExplosionRadius, entry.Value);
                 if (entry.Key == direct) damage += m_weapon.DamagePerPellet;
                 if (damage <= 0f) continue;

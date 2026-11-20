@@ -22,7 +22,7 @@ namespace CouchGuys.Gameplay.Weapons
         private bool m_crossQueued;
         private bool m_punchImpactApplied;
 
-        private bool CanPunchServer => CanHandleWeaponServer && IsCombatAllowed && m_equippedIndex.Value < 0 &&
+        private bool CanPunchServer => CanHandleWeaponServer && m_equippedIndex.Value < 0 &&
             EquippedHealingItem == null && Time.time >= m_switchCompleteAt;
 
         [ServerRpc]
@@ -111,7 +111,7 @@ namespace CouchGuys.Gameplay.Weapons
                 distance = offset.magnitude;
                 point = candidate;
             }
-            if (nearest == null || CouchGuys.Gameplay.Depot.DepotSafeZone.Intersects(transform.position, nearest.transform.position)) return;
+            if (nearest == null) return;
             float damage = m_punchDamage * (cross ? m_crossDamageMultiplier : 1f);
             float force = m_punchKnockback * (cross ? m_crossKnockbackMultiplier : 1f);
             Vector3 direction = transform.forward;

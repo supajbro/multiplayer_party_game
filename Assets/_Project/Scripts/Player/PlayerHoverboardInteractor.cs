@@ -174,13 +174,14 @@ namespace CouchGuys.Player
             m_applied=false;
             SetDriverHitbox(null);
             m_controller.SetExternalControlPaused(false);
-            // Health owns the capsule while knocked down / ragdolled.
-            bool healthy=!TryGetComponent(out PlayerHealth h) || h.IsAlive && !h.IsKnockedDown;
-            m_capsule.enabled=healthy;
+            // Downed players use the on-foot capsule for knockback too. Health locks
+            // movement, but never re-enables a capsule disabled by dismounting.
+            // Restore it regardless of health/board SyncVar arrival order.
+            m_capsule.enabled=true;
             m_networkTransform.SetSynchronizePosition(true); m_networkTransform.SetSynchronizeRotation(true);
             GetComponent<CouchGuyAnimationDriver>()?.SetVehicleSeated(false,false);
             GetComponent<CouchGuyAnimationDriver>()?.SetHoverboardGrips(null,null);
-            if (TryGetComponent(out RobotHoverVFX vfx)) vfx.enabled=healthy;
+            if (TryGetComponent(out RobotHoverVFX vfx)) vfx.enabled=true;
             if (IsOwner) { m_input.SetGameplaySuppressed(false); m_camera.FollowPlayer(); }
         }
         private void LateUpdate()

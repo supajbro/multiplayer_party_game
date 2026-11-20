@@ -1,11 +1,10 @@
 using System.Collections.Generic;
-using CouchGuys.Player;
 using Unity.AI.Navigation;
 using UnityEngine;
 
 namespace CouchGuys.Gameplay.Depot
 {
-    /// <summary>Prefab-authored boundary shared by server combat and navigation, and local presentation.</summary>
+    /// <summary>Prefab-authored boundary shared by server combat and navigation.</summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(NavMeshModifierVolume))]
     public sealed class DepotSafeZone : MonoBehaviour
@@ -15,7 +14,6 @@ namespace CouchGuys.Gameplay.Depot
         private static readonly List<DepotSafeZone> Zones = new();
         [Tooltip("Edit the centre and size on this volume to adjust both protection and navigation together.")]
         [SerializeField] private NavMeshModifierVolume m_boundary;
-        [SerializeField] private GameObject m_localIndicator;
         private Bounds LocalBounds
         {
             get
@@ -29,7 +27,6 @@ namespace CouchGuys.Gameplay.Depot
         private void OnDisable()
         {
             Zones.Remove(this);
-            if (m_localIndicator != null) m_localIndicator.SetActive(false);
         }
 
         public static bool Contains(Vector3 position)
@@ -73,16 +70,6 @@ namespace CouchGuys.Gameplay.Depot
                 exterior = zone.transform.TransformPoint(local);
             }
             return exterior != position;
-        }
-
-        private void Update()
-        {
-            if (m_localIndicator == null) return;
-            bool inside = false;
-            foreach (var player in PlayerHealth.Instances)
-                if (player != null && player.IsOwner && player.IsSpawned &&
-                    LocalBounds.Contains(transform.InverseTransformPoint(player.transform.position))) { inside = true; break; }
-            if (m_localIndicator.activeSelf != inside) m_localIndicator.SetActive(inside);
         }
 
         private void OnDrawGizmosSelected()

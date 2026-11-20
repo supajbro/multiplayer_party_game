@@ -6,7 +6,6 @@ using Unity.AI.Navigation;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
-using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
 namespace CouchGuys.Editor
@@ -96,26 +95,8 @@ namespace CouchGuys.Editor
                 signText.color = new Color(.3f, 1, .55f); signText.alignment = TextAlignmentOptions.Center;
                 signText.rectTransform.sizeDelta = new Vector2(3, 1.2f);
 
-                var canvasObject = new GameObject("Local Safe Area Indicator", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
-                canvasObject.transform.SetParent(zoneObject.transform, false);
-                canvasObject.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
-                canvasObject.GetComponent<Canvas>().sortingOrder = 5;
-                var scaler = canvasObject.GetComponent<CanvasScaler>();
-                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-                scaler.referenceResolution = new Vector2(1920, 1080);
-                var label = new GameObject("Safe Area Label", typeof(RectTransform), typeof(TextMeshProUGUI));
-                label.transform.SetParent(canvasObject.transform, false);
-                var text = label.GetComponent<TextMeshProUGUI>();
-                text.text = "DEPOT  /  SAFE AREA"; text.fontSize = 21; text.fontStyle = FontStyles.Bold;
-                text.alignment = TextAlignmentOptions.Center; text.color = new Color(.35f, 1, .6f); text.raycastTarget = false;
-                var rect = text.rectTransform;
-                rect.anchorMin = rect.anchorMax = new Vector2(.5f, 0);
-                rect.pivot = new Vector2(.5f, 0); rect.anchoredPosition = new Vector2(0, 120);
-                rect.sizeDelta = new Vector2(340, 38);
-                canvasObject.SetActive(false);
                 var serialized = new SerializedObject(zone);
                 serialized.FindProperty("m_boundary").objectReferenceValue = volume;
-                serialized.FindProperty("m_localIndicator").objectReferenceValue = canvasObject;
                 serialized.ApplyModifiedPropertiesWithoutUndo();
                 PrefabUtility.SaveAsPrefabAsset(root, path);
             }
@@ -138,7 +119,6 @@ namespace CouchGuys.Editor
             var saved = prefab.GetComponentInChildren<DepotSafeZone>(true);
             Require(saved != null, "Missing saved zone");
             Require(saved.GetComponent<NavMeshModifierVolume>().area == DepotSafeZone.NavigationArea, "Missing navigation area");
-            Require(new SerializedObject(saved).FindProperty("m_localIndicator").objectReferenceValue != null, "Missing saved HUD");
             var host = new GameObject("SafeAreaValidation");
             var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
             NavMeshSurface surface = null;
