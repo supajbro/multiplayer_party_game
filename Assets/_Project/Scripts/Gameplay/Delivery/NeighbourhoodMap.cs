@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using CouchGuys.Player;
+using CouchGuys.Networking;
+using CouchGuys.UI;
 using CouchGuys.Gameplay.Couch;
 using UnityEngine.InputSystem;
 using CouchGuys.Input;
@@ -32,6 +34,8 @@ namespace CouchGuys.Gameplay.Delivery
 
         [Header("Navigation")]
         [SerializeField] private RectTransform m_deliveryMarkerPrefab;
+        [SerializeField] private PingWaypointView m_pingMarkerPrefab;
+        public bool IsExpanded => m_expandedRoot != null && m_expandedRoot.gameObject.activeInHierarchy;
         [SerializeField] private InputAction m_cycleDestination = new("Cycle Delivery Destination",
             InputActionType.Button, "<Keyboard>/n");
         [SerializeField, Range(0.3f, 0.9f)] private float m_secondaryDestinationScale = 0.65f;
@@ -62,6 +66,14 @@ namespace CouchGuys.Gameplay.Delivery
 
         private readonly Dictionary<PlayerHealth, ActorMarker> m_actorMarkers = new();
         private readonly Dictionary<int, ActorMarker> m_couchMarkers = new();
+        private sealed class PingMarker
+        {
+            public PingWaypointView Mini;
+            public PingWaypointView Full;
+            public uint Sequence;
+        }
+        private readonly Dictionary<NetworkPlayerOwnership, PingMarker> m_pingMarkers = new();
+        private readonly List<NetworkPlayerOwnership> m_removedPings = new(8);
         private readonly List<int> m_removedCouches = new();
         private PlayerCouchCarrier m_carrier;
         private readonly List<PlayerHealth> m_removedActors = new(8);
@@ -126,6 +138,7 @@ namespace CouchGuys.Gameplay.Delivery
             RefreshNavigation();
             UpdateWaypoint();
             UpdateCouchMarkers();
+            UpdatePingMarkers();
         }
 
         private void LateUpdate()
@@ -185,6 +198,57 @@ namespace CouchGuys.Gameplay.Delivery
             m_expandedWaypoint.gameObject.SetActive(active);
             if (active) m_expandedWaypoint.anchoredPosition = ExpandedPosition(destination.transform.position, scale);
             UpdateExpandedCouches(scale);
+            foreach (var entry in m_pingMarkers)
+            {
+                if (entry.Key == null || !entry.Key.Ping.Active) continue;
+                if (entry.Value.Full == null)
+                {
+                    entry.Value.Full = Instantiate(m_pingMarkerPrefab, m_expandedMarkers, false);
+                    entry.Value.Full.Bind(entry.Key);
+                }
+                ((RectTransform)entry.Value.Full.transform).anchoredPosition = ExpandedPosition(entry.Key.Ping.Position, scale);
+            }
+        }
+
+        private void UpdatePingMarkers()
+        {
+            if (m_pingMarkerPrefab == null || m_markerLayer == null) return;
+            var players = NetworkPlayerOwnership.ClientPlayers;
+            for (int i = 0; i < players.Count; i++)
+            {
+                var player = players[i];
+                if (player == null || !player.Ping.Active) continue;
+                if (!m_pingMarkers.TryGetValue(player, out var marker))
+                {
+                    marker = new PingMarker { Mini = Instantiate(m_pingMarkerPrefab, m_markerLayer, false) };
+                    marker.Mini.Bind(player);
+                    m_pingMarkers.Add(player, marker);
+                }
+                if (marker.Sequence != player.Ping.Sequence)
+                {
+                    marker.Sequence = player.Ping.Sequence;
+                    marker.Mini.Replay();
+                    if (marker.Full != null) marker.Full.Replay();
+                }
+                Vector2 offset = Offset(transform.position, player.Ping.Position);
+                // Keep distant pings inside the circular mask rather than losing the waypoint.
+                ((RectTransform)marker.Mini.transform).anchoredPosition =
+                    Vector2.ClampMagnitude(offset / m_visibleRadiusMetres, .82f) * m_markerRadius;
+            }
+            m_removedPings.Clear();
+            foreach (var entry in m_pingMarkers)
+            {
+                if (entry.Key != null && entry.Key.IsClientInitialized && entry.Key.Ping.Active) continue;
+                DestroyPingMarker(entry.Value);
+                m_removedPings.Add(entry.Key);
+            }
+            foreach (var player in m_removedPings) m_pingMarkers.Remove(player);
+        }
+
+        private static void DestroyPingMarker(PingMarker marker)
+        {
+            if (marker.Mini != null) Destroy(marker.Mini.gameObject);
+            if (marker.Full != null) Destroy(marker.Full.gameObject);
         }
 
         private Vector2 ExpandedPosition(Vector3 world, float scale) =>
@@ -746,6 +810,9 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void DestroyMinimap()
         {
+            foreach (var marker in m_pingMarkers.Values) DestroyPingMarker(marker);
+            m_pingMarkers.Clear();
+            m_removedPings.Clear();
             foreach (var marker in m_couchMarkers.Values)
             {
                 if (marker.Rect != null) Destroy(marker.Rect.gameObject);

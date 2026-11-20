@@ -22,7 +22,6 @@ namespace CouchGuys.Gameplay.Traffic
         private readonly Collider[] m_explosionHits = new Collider[32];
         private readonly RaycastHit[] m_obstacleHits = new RaycastHit[8];
         private readonly RaycastHit[] m_groundHits = new RaycastHit[8];
-        private readonly Collider[] m_intersectionHits = new Collider[8];
         private readonly Collider[] m_impactHits = new Collider[32];
         private readonly HashSet<int> m_explosionVictims = new HashSet<int>();
 
@@ -402,40 +401,16 @@ namespace CouchGuys.Gameplay.Traffic
                 Collider hit = m_obstacleHits[index].collider;
                 if (hit == null || hit.attachedRigidbody == m_rigidbody ||
                     hit.transform == transform || hit.transform.IsChildOf(transform)) continue;
+                // Cars never yield to each other; contact triggers a random wreck.
                 // Players are impact targets, never a reason to yield or brake.
                 if (hit.GetComponentInParent<PlayerHealth>() != null) continue;
-                if (hit.GetComponentInParent<TrafficVehicleController>() != null ||
-                         hit.GetComponentInParent<ThiefHealth>() != null)
+                if (hit.GetComponentInParent<ThiefHealth>() != null)
                 {
                     obstacleFound = true;
                 }
             }
 
-            if (obstacleFound) return true;
-
-            if (m_route != null && m_waypointIndex > 0 &&
-                m_waypointIndex + 1 < m_route.Waypoints.Length)
-            {
-                Vector3 incoming = m_route.Waypoints[m_waypointIndex] -
-                                   m_route.Waypoints[m_waypointIndex - 1];
-                Vector3 outgoing = m_route.Waypoints[m_waypointIndex + 1] -
-                                   m_route.Waypoints[m_waypointIndex];
-                if (Vector3.Angle(incoming, outgoing) > 12f)
-                {
-                    int nearbyCount = Physics.OverlapSphereNonAlloc(
-                        m_route.Waypoints[m_waypointIndex], 4.5f, m_intersectionHits, ~0,
-                        QueryTriggerInteraction.Ignore);
-                    for (int index = 0; index < nearbyCount; index++)
-                    {
-                        TrafficVehicleController other = m_intersectionHits[index]
-                            ?.GetComponentInParent<TrafficVehicleController>();
-                        if (other != null && other != this &&
-                            other.GetInstanceID() < GetInstanceID())
-                            return true;
-                    }
-                }
-            }
-            return false;
+            return obstacleFound;
         }
 
         [Server]
@@ -510,11 +485,30 @@ namespace CouchGuys.Gameplay.Traffic
         private void OnCollisionEnter(Collision collision)
         {
             if (!IsServerInitialized || (!m_serverDriving && m_rogueSettings == null) || m_destroyed.Value || m_settings == null) return;
+            TrafficVehicleController other = collision.collider.GetComponentInParent<TrafficVehicleController>();
+            if (other != null)
+            {
+                ResolveCarCollisionServer(other);
+                return;
+            }
             Vector3 velocity = m_impactVelocity.sqrMagnitude > 0.01f
                 ? m_impactVelocity
                 : Vector3.ProjectOnPlane(m_rigidbody.linearVelocity, Vector3.up);
             ApplyCharacterImpact(collision.collider, velocity,
                 Mathf.Max(collision.relativeVelocity.magnitude, velocity.magnitude));
+        }
+
+        private void ResolveCarCollisionServer(TrafficVehicleController other)
+        {
+            if (!IsServerInitialized || IsDestroyed || m_settings == null ||
+                other == null || other == this || !other.IsServerInitialized ||
+                other.IsDestroyed || other.m_settings == null) return;
+
+            // Resolve immediately on the server. The destroyed flag prevents the
+            // other car's callback (and compound collider contacts) choosing again.
+            TrafficVehicleController victim = Random.value < 0.5f ? this : other;
+            victim.m_health.Value = 0f;
+            victim.DestroyVehicleServer();
         }
 
         private void ApplyCharacterImpact(Collider collider, Vector3 velocity, float speed)

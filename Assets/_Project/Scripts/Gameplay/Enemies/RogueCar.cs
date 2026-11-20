@@ -153,6 +153,8 @@ namespace CouchGuys.Gameplay.Enemies
             // The truck owns this special collision on the server. Do not let
             // callback order destroy/freeze the rogue car before it can be launched.
             if (collision.collider.GetComponentInParent<GetawayTruckController>() != null) return;
+            // TrafficVehicleController chooses exactly one wreck for a car collision.
+            if (collision.collider.GetComponentInParent<TrafficVehicleController>() != null) return;
             float impactSpeed = 0f;
             for (int i = 0; i < collision.contactCount; i++)
             {

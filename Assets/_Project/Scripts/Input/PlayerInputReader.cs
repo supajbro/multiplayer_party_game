@@ -121,6 +121,17 @@ namespace CouchGuys.Input
         public bool CanNavigateDeliveries => isActiveAndEnabled && !MenuBlocked && !m_emoteWheelOpen;
         public bool CanShowMap => isActiveAndEnabled && !GameplaySuppressed;
         public bool MapPressedThisFrame => CanShowMap && (Keyboard.current?.mKey.wasPressedThisFrame ?? false);
+        public bool PingPressedThisFrame
+        {
+            get
+            {
+                if (!isActiveAndEnabled || GameplaySuppressed || Time.timeScale <= 0f ||
+                    Cursor.lockState != CursorLockMode.Locked || MapPressedThisFrame ||
+                    !(Mouse.current?.middleButton.wasPressedThisFrame ?? false)) return false;
+                var ui = UnityEngine.EventSystems.EventSystem.current;
+                return ui == null || (!ui.IsPointerOverGameObject() && ui.currentSelectedGameObject == null);
+            }
+        }
 
         public void SetGameplaySuppressed(bool suppressed)
         {

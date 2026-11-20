@@ -400,6 +400,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03031e9f7a755f441a700e11056a4d9d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Networking.NetworkPlayerOwnership
+  m_pingPrefab: {fileID: 102, guid: 25df1d17878f4e8eaec608cd1aae6148, type: 3}
+  m_pingLifetime: 10
+  m_pingRange: 1000
+  m_pingLayers:
+    serializedVersion: 2
+    m_Bits: 4294967291
   _componentIndexCache: 1
   _addedNetworkObject: {fileID: 4753475039817145927}
   _networkObjectCache: {fileID: 4753475039817145927}
@@ -819,6 +825,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49b1e3edba294a9b92b972e39fdbcb7b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Delivery.NeighbourhoodMap
+  m_pingMarkerPrefab: {fileID: 102, guid: 9c96cab3089b44fa8e90fbe0527871fd, type: 3}
   m_visibleRadiusMetres: 65
   m_textureResolution: 512
   m_actorRefreshInterval: 0.5

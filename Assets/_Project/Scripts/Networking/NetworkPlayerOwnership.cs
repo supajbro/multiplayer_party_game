@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using CouchGuys.Gameplay.Delivery;
+using CouchGuys.UI;
 using CouchGuys.CameraSystem;
 using CouchGuys.Input;
 using CouchGuys.Player;
@@ -7,6 +10,7 @@ using FishNet.Object;
 using FishNet.Object.Synchronizing;
 using Steamworks;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CouchGuys.Networking
 {
@@ -24,6 +28,32 @@ namespace CouchGuys.Networking
         // SyncVar state is included when a late observer receives the player spawn.
         private readonly SyncVar<string> m_displayName = new(string.Empty);
         public string DisplayName => m_displayName.Value;
+        public Color IdentityColour => m_colourPalette.GetColour(OwnerId);
+
+        public struct PingState
+        {
+            public bool Active;
+            public Vector3 Position;
+            public uint Sequence;
+        }
+
+        private static readonly List<NetworkPlayerOwnership> s_clientPlayers = new(8);
+        public static IReadOnlyList<NetworkPlayerOwnership> ClientPlayers => s_clientPlayers;
+        private readonly SyncVar<PingState> m_ping = new();
+        public PingState Ping => m_ping.Value;
+
+        [Header("Location Ping")]
+        [SerializeField] private PingWaypointView m_pingPrefab;
+        [SerializeField, Min(1f)] private float m_pingLifetime = 10f;
+        [SerializeField, Min(1f)] private float m_pingRange = 1000f;
+        [SerializeField] private LayerMask m_pingLayers = Physics.DefaultRaycastLayers;
+        private readonly RaycastHit[] m_pingHits = new RaycastHit[32];
+        private PingWaypointView m_pingView;
+        private PlayerHealth m_pingHealth;
+        private NeighbourhoodMap m_pingMap;
+        private double m_pingExpiresAt;
+        private double m_nextPingAt;
+        private uint m_presentedPingSequence;
 
         [Header("Local-only Components")]
         [SerializeField] private PlayerInputReader m_input;
@@ -71,6 +101,8 @@ namespace CouchGuys.Networking
         private void Awake()
         {
             ResolveReferences();
+            m_pingHealth = GetComponent<PlayerHealth>();
+            m_pingMap = GetComponent<NeighbourhoodMap>();
             CacheCameraRigHierarchy();
             SetLocalControl(false);
             gameObject.AddComponent<PlayerDebugMenu>();
@@ -138,11 +170,14 @@ namespace CouchGuys.Networking
             SetCameraRigDetached(IsOwner);
             SetLocalControl(IsOwner);
             ApplyIdentityColour();
+            if (!s_clientPlayers.Contains(this)) s_clientPlayers.Add(this);
         }
 
         public override void OnStartServer()
         {
             base.OnStartServer();
+            m_ping.Value = default;
+            m_nextPingAt = 0;
             ServerPlayerStarted?.Invoke(this);
         }
 
@@ -187,6 +222,7 @@ namespace CouchGuys.Networking
 
         public override void OnStopClient()
         {
+            ClearPingPresentation();
             SetLocalControl(false);
             SetCameraRigDetached(false);
             base.OnStopClient();
@@ -194,6 +230,7 @@ namespace CouchGuys.Networking
 
         private void OnDestroy()
         {
+            ClearPingPresentation();
             if (LocalPlayer == this) LocalPlayer = null;
             // A detached camera is no longer a child of the network Player, so it must be
             // explicitly cleaned up if the Player is destroyed without OnStopClient.
@@ -201,6 +238,82 @@ namespace CouchGuys.Networking
             {
                 Destroy(m_cameraRig.gameObject);
             }
+        }
+
+        private void Update()
+        {
+            // Only changes are replicated: placement/replacement and one server expiry.
+            if (IsServerInitialized && m_ping.Value.Active && Time.unscaledTimeAsDouble >= m_pingExpiresAt)
+                m_ping.Value = new PingState { Sequence = m_ping.Value.Sequence };
+
+            if (!IsClientInitialized) return;
+            PingState ping = m_ping.Value;
+            if (!ping.Active)
+            {
+                if (m_pingView != null) m_pingView.gameObject.SetActive(false);
+                return;
+            }
+            if (m_pingView == null && m_pingPrefab != null)
+            {
+                m_pingView = Instantiate(m_pingPrefab);
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(m_pingView.gameObject, gameObject.scene);
+                m_pingView.Bind(this);
+            }
+            if (m_pingView == null) return;
+            m_pingView.transform.position = ping.Position + Vector3.up * .15f;
+            if (!m_pingView.gameObject.activeSelf || m_presentedPingSequence != ping.Sequence)
+            {
+                m_pingView.gameObject.SetActive(true);
+                m_pingView.Replay();
+                m_presentedPingSequence = ping.Sequence;
+            }
+        }
+
+        private void LateUpdate()
+        {
+            // All menu Update handlers must resolve before accepting a gameplay click.
+            if (IsClientInitialized && IsOwner && m_input != null && m_input.PingPressedThisFrame &&
+                (m_pingMap == null || !m_pingMap.IsExpanded) && m_playerCamera != null &&
+                m_playerCamera.isActiveAndEnabled && m_pingHealth != null && m_pingHealth.IsAlive &&
+                !m_pingHealth.IsAiTeammate)
+            {
+                Ray ray = m_playerCamera.ViewportPointToRay(new Vector3(.5f, .5f, 0f));
+                // Match the existing non-alloc camera trace pattern; ignore our own body.
+                int count = gameObject.scene.GetPhysicsScene().Raycast(ray.origin, ray.direction,
+                    m_pingHits, m_pingRange, m_pingLayers, QueryTriggerInteraction.Ignore);
+                float nearest = float.PositiveInfinity;
+                Vector3 point = default;
+                for (int i = 0; i < count; i++)
+                {
+                    RaycastHit hit = m_pingHits[i];
+                    if (hit.transform.IsChildOf(transform) || hit.distance >= nearest) continue;
+                    nearest = hit.distance;
+                    point = hit.point;
+                }
+                // A saturated buffer might omit an obstruction. Don't place a misleading ping.
+                if (count < m_pingHits.Length && nearest < float.PositiveInfinity) PlacePingServerRpc(point);
+            }
+
+        }
+
+        [ServerRpc] // FishNet's default ownership check prevents pinging as another player.
+        private void PlacePingServerRpc(Vector3 position)
+        {
+            if (GameplaySessionController.IsServerGameOver || m_pingHealth == null || !m_pingHealth.IsAlive ||
+                m_pingHealth.IsAiTeammate || Time.unscaledTimeAsDouble < m_nextPingAt ||
+                !float.IsFinite(position.x) || !float.IsFinite(position.y) || !float.IsFinite(position.z) ||
+                (position - transform.position).sqrMagnitude > (m_pingRange + 50f) * (m_pingRange + 50f)) return;
+            m_nextPingAt = Time.unscaledTimeAsDouble + .2;
+            m_pingExpiresAt = Time.unscaledTimeAsDouble + m_pingLifetime;
+            m_ping.Value = new PingState { Active = true, Position = position, Sequence = m_ping.Value.Sequence + 1 };
+        }
+
+        private void ClearPingPresentation()
+        {
+            s_clientPlayers.Remove(this);
+            if (m_pingView != null) Destroy(m_pingView.gameObject);
+            m_pingView = null;
+            m_presentedPingSequence = 0;
         }
 
         private void ResolveReferences()
