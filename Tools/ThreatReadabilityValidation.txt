@@ -1,0 +1,7 @@
+PASS: saved prefab references, warning meshes without colliders, spatial audio, registered network behaviours, wind-up/commit/recovery settings.
+PASS: three saved threats spawn on host and independent late client; preparation visuals and server tick deadlines agree
+PASS: locked aim, recovery windows and cancellation replicate without restarting the client's wind-up
+PASS: real grapple trace misses a sidestep after aim lock
+PASS: real rocket fires at the locked position after its complete wind-up, despite subsequent target movement
+PASS: rogue damage is gated until commitment and its charge destination survives target movement
+PASS: multiplayer threat readability probe complete

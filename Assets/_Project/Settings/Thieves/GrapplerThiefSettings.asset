@@ -15,7 +15,9 @@ MonoBehaviour:
   GrappleRange: 20
   PreferredDistance: 12
   AttackCooldown: 5
-  AimWindup: 0.6
+  AimWindup: 1.1
+  AimCommitLead: 0.35
+  RewindDuration: 1.2
   HoldDuration: 0.5
   ThrowHorizontalVelocity: 24
   ThrowUpwardVelocity: 10

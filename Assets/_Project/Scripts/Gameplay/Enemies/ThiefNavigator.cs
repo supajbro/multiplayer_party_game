@@ -399,11 +399,11 @@ namespace CouchGuys.Gameplay.Enemies
                 m_agent.isStopped = true;
                 return;
             }
-            Vector3 aim = Vector3.ProjectOnPlane(target.AimPoint - transform.position, Vector3.up);
+            Vector3 aim = Vector3.ProjectOnPlane(m_grappler.AttackAimPoint - transform.position, Vector3.up);
             if (aim.sqrMagnitude > 0.001f)
                 transform.rotation = Quaternion.RotateTowards(transform.rotation,
                     Quaternion.LookRotation(aim), m_aimTurnSpeed * Time.deltaTime);
-            if (m_grappler.IsHolding)
+            if (m_grappler.IsAttackStationary)
             {
                 m_agent.isStopped = true;
                 return;
@@ -627,11 +627,19 @@ namespace CouchGuys.Gameplay.Enemies
             if (m_target == null) { UpdateNoPlayerObjective(); return; }
             if (m_agent == null || !m_agent.enabled || !m_agent.isOnNavMesh || m_target == null) return;
 
-            Vector3 aim = Vector3.ProjectOnPlane(m_target.AimPoint - transform.position, Vector3.up);
+            Vector3 aim = Vector3.ProjectOnPlane((m_weapon != null && m_weapon.IsAttackStationary
+                ? m_weapon.AttackAimPoint : m_target.AimPoint) - transform.position, Vector3.up);
             if (aim.sqrMagnitude > 0.001f)
                 transform.rotation = Quaternion.RotateTowards(transform.rotation,
                     Quaternion.LookRotation(aim.normalized), m_aimTurnSpeed * Time.deltaTime);
 
+            if (m_weapon != null && m_weapon.IsAttackStationary)
+            {
+                m_agent.isStopped = true;
+                m_hasDestination = false;
+                m_nextPathTime = 0f;
+                return;
+            }
             if (Time.time < m_nextPathTime) return;
             m_nextPathTime = Time.time + m_pathRefreshInterval;
             Vector3 targetPosition = m_target.transform.position;

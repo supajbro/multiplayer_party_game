@@ -520,6 +520,8 @@ namespace CouchGuys.Gameplay.Traffic
         private void ApplyCharacterImpact(Collider collider, Vector3 velocity, float speed)
         {
             PlayerHealth player = collider.GetComponentInParent<PlayerHealth>();
+            if (m_rogueSettings != null && player != null && TryGetComponent(out RogueCar rogue) &&
+                !rogue.CanDamagePlayers) return;
             if (m_rogueSettings != null && player != null && !player.IsEnemyTargetable) return;
             ThiefHealth thief = collider.GetComponentInParent<ThiefHealth>();
             Object victim = player != null ? (Object)player : thief;

@@ -16,6 +16,7 @@ namespace CouchGuys.Gameplay.Enemies
         [SerializeField] private Transform m_gun;
         [SerializeField] private Transform m_muzzle;
         [SerializeField] private LineRenderer m_rope;
+        [SerializeField] private ThreatTelegraph m_telegraph;
         private readonly SyncVar<NetworkObject> m_aimTarget = new();
         private readonly SyncVar<NetworkObject> m_heldTarget = new();
         private readonly RaycastHit[] m_hits = new RaycastHit[32];
@@ -31,12 +32,17 @@ namespace CouchGuys.Gameplay.Enemies
         public PlayerHealth Target => m_held != null ? m_held : m_target;
         public float PreferredDistance => m_settings.PreferredDistance;
         public bool IsHolding => m_held != null;
+        public bool IsAttackStationary => IsHolding || (m_telegraph != null &&
+            (m_telegraph.IsPreparing || m_telegraph.IsRecovering));
+        public Vector3 AttackAimPoint => m_telegraph != null && m_telegraph.IsPreparing
+            ? m_telegraph.AimPoint : m_target != null ? m_target.AimPoint : transform.position + transform.forward;
 
         private void Awake()
         {
             m_health = GetComponent<ThiefHealth>();
             m_navigator = GetComponent<ThiefNavigator>();
             m_animation = GetComponent<ThiefAnimationDriver>();
+            m_telegraph ??= GetComponent<ThreatTelegraph>();
         }
 
         public override void OnStartServer()
@@ -88,7 +94,8 @@ namespace CouchGuys.Gameplay.Enemies
                 m_nextEvaluation = 0f;
             }
             if (m_held != null && !IsTargetable(m_held)) CancelAttack();
-            if (Time.time >= m_nextEvaluation || !IsTargetable(m_target))
+            if ((m_telegraph == null || !m_telegraph.IsPreparing) &&
+                (Time.time >= m_nextEvaluation || !IsTargetable(m_target)))
             {
                 m_nextEvaluation = Time.time + Mathf.Max(0.1f, m_settings.TargetEvaluationInterval);
                 PlayerHealth target = FindTarget(couch.transform.position);
@@ -106,6 +113,7 @@ namespace CouchGuys.Gameplay.Enemies
                         Random.Range(-m_settings.LateralVariationDegrees, m_settings.LateralVariationDegrees));
                     m_held.ApplyEnemyGrappleThrowServer(velocity, m_settings.MomentumDuration, m_settings.AirDrag);
                     CancelAttack();
+                    m_telegraph?.RecoverServer(m_settings.RewindDuration);
                 }
                 else if (Time.time >= m_nextPull)
                 {
@@ -116,6 +124,26 @@ namespace CouchGuys.Gameplay.Enemies
                 }
                 return;
             }
+            if (m_telegraph != null)
+            {
+                if (m_telegraph.IsRecovering) return;
+                if (m_telegraph.Phase == ThreatAttackPhase.Committed)
+                {
+                    if (m_telegraph.Remaining <= 0f) m_telegraph.RecoverServer(m_settings.RewindDuration);
+                    return;
+                }
+                if (m_telegraph.IsPreparing)
+                {
+                    if (!IsTargetable(m_target) || !m_target.CanBeEnemyGrappled)
+                    { CancelAttack(); return; }
+                    if (m_telegraph.Phase == ThreatAttackPhase.Preparing &&
+                        m_telegraph.Remaining <= Mathf.Min(m_settings.AimCommitLead, m_settings.AimWindup))
+                        m_telegraph.LockServer(m_target.AimPoint);
+                    if (m_telegraph.Remaining > 0f) return;
+                    FireGrappleServer();
+                    return;
+                }
+            }
             if (!IsTargetable(m_target) || Time.time < m_nextAttack || !m_target.CanBeEnemyGrappled ||
                 !HasLineOfSight(m_target) || Vector3.Angle(transform.forward,
                     Vector3.ProjectOnPlane(m_target.AimPoint - transform.position, Vector3.up)) > 16f)
@@ -123,14 +151,26 @@ namespace CouchGuys.Gameplay.Enemies
                 m_windupEnds = 0f;
                 return;
             }
-            if (m_windupEnds == 0f) m_windupEnds = Time.time + m_settings.AimWindup;
+            if (m_windupEnds == 0f)
+            {
+                m_windupEnds = Time.time + m_settings.AimWindup;
+                m_telegraph?.PrepareServer(m_target.NetworkObject, m_target.AimPoint, m_settings.AimWindup);
+            }
             if (Time.time < m_windupEnds) return;
+            FireGrappleServer();
+        }
+
+        private void FireGrappleServer()
+        {
             // The same instant-hit ray used by the player grapple. Only the first non-self
             // collider can attach; cover, couches, vehicles and other enemies cause a miss.
-            Vector3 direction = (m_target.AimPoint - m_muzzle.position).normalized;
+            Vector3 point = m_telegraph != null ? m_telegraph.AimPoint : m_target.AimPoint;
+            if (DepotSafeZone.Intersects(m_muzzle.position, point)) { CancelAttack(); return; }
+            Vector3 direction = (point - m_muzzle.position).normalized;
             bool hit = Trace(m_muzzle.position, direction, m_settings.GrappleRange, out RaycastHit contact);
             m_nextAttack = Time.time + Mathf.Max(0.1f, m_settings.AttackCooldown);
             m_windupEnds = 0f;
+            m_telegraph?.CommitServer(.2f);
             bool attached = hit && contact.collider.GetComponentInParent<PlayerHealth>() == m_target &&
                 m_target.TryClaimEnemyGrappleServer(m_settings.HoldDuration + m_settings.PlayerRecoveryTime);
             ShowShotObserversRpc(hit ? contact.point : m_muzzle.position + direction * m_settings.GrappleRange, attached);
@@ -186,6 +226,9 @@ namespace CouchGuys.Gameplay.Enemies
 
         private void CancelAttack()
         {
+            if (m_telegraph != null && m_telegraph.IsPreparing)
+                m_nextAttack = Mathf.Max(m_nextAttack, Time.time + m_settings.RewindDuration);
+            m_telegraph?.CancelServer();
             m_held = null;
             m_heldTarget.Value = null;
             m_windupEnds = 0f;
@@ -195,6 +238,11 @@ namespace CouchGuys.Gameplay.Enemies
         {
             CancelAttack();
             m_aimTarget.Value = null;
+        }
+
+        private void OnDisable()
+        {
+            if (IsServerInitialized) CancelAttack();
         }
 
         [ObserversRpc(RunLocally = true)]
@@ -212,7 +260,8 @@ namespace CouchGuys.Gameplay.Enemies
             NetworkObject target = m_heldTarget.Value != null ? m_heldTarget.Value : m_aimTarget.Value;
             if (alive && target != null && target.TryGetComponent(out PlayerHealth player))
             {
-                Vector3 aim = player.AimPoint - m_gun.position;
+                Vector3 aim = (m_telegraph != null && m_telegraph.IsPreparing
+                    ? m_telegraph.AimPoint : player.AimPoint) - m_gun.position;
                 if (aim.sqrMagnitude > 0.001f) m_gun.rotation = Quaternion.LookRotation(aim);
             }
             NetworkObject held = m_heldTarget.Value;

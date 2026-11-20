@@ -1,0 +1,69 @@
+Threat readability
+
+Saved prefabs
+- Assets/_Project/Prefabs/Enemies/GrapplerThief.prefab
+- Assets/_Project/Prefabs/Enemies/Thief_RocketLauncher.prefab
+- Assets/_Project/Prefabs/Enemies/RogueCar.prefab
+- Assets/_Project/Prefabs/Weapons/RocketLauncher/RocketProjectile.prefab
+
+Behaviour and tuning
+Grappler: 1.1-second preparation; aim locks for the final 0.35 seconds. A
+committed ray can miss a sidestepping player or hit cover. Rewind lasts 1.2
+seconds; the existing five-second attack cooldown also remains in effect.
+Configure GrapplerThiefSettings.asset in Settings/Thieves.
+
+Rocket thief: 1.5-second preparation; aim locks for the final 0.45 seconds.
+The thief stands still to prepare, fires towards the committed world point,
+then pauses for a 1.5-second recovery. Existing fire cooldowns still apply.
+Configure the Rocket Telegraph fields under Combat in
+Settings/Thieves/RocketLauncherThiefSettings.asset.
+
+Rogue car: approaches at 40% speed, lines up within 22 degrees of its target,
+then brakes for a 1.8-second warning. Its bearing is sampled when preparation
+starts; the final 0.6 seconds explicitly enters the locked phase. The charge
+lasts two seconds, cannot reverse or retarget, and caps steering at 12 degrees
+per second. Braking recovery lasts 2.2 seconds. Scripted player impact damage
+is enabled only during the committed charge. Physical chassis collisions
+remain solid. Configure Charge Telegraph fields in the Medium/Hard delivery
+RogueCarSettings assets. Getaway trucks keep their existing motor behaviour.
+
+Presentation
+Each enemy prefab has a ThreatTelegraph component with editable source,
+clip, preparation signal, bearing arrow and recovery signal references.
+Yellow shapes identify preparation; blue pause bars identify recovery.
+Shape differences supplement colour: hook, ignition symbol, charge chevron.
+The arrows show an attack bearing, not an explosion radius or guaranteed
+trajectory. They are solid scene meshes and are occluded by scenery.
+The grappler reel and rogue roof identifier are hidden during destruction
+or ragdoll/launch states. The launcher retains its existing weapon silhouette.
+
+Arrival sounds play once per local client when a threat first enters the
+configured audible distance. Separate spatial voices carry preparation,
+commitment and recovery sounds. Thirteen original synthesised cue clips are
+saved in Assets/_Project/Audio/Threats; replace them through the Inspector.
+Preparation audio follows the configured wind-up duration. Late clients
+seek into the current cue instead of restarting its sound or deadline.
+The shared rocket projectile now has a saved looping flight voice, so player
+rockets also use that whistle. It starts/stops with the client spawn lifecycle.
+
+Networking
+The server owns attack decisions. A single synchronised snapshot carries
+the phase, start/end ticks, target and locked point. Navigation pauses during
+thief preparation/recovery. Death, knockback and departure cancel queued
+attacks through the existing combat/health paths. No runtime warning object
+construction or prefab rebuilding is used.
+
+Validation
+Unity menu: Couch Guys > Tests > Threat Readability > Validate Assets
+Unity menu: Couch Guys > Tests > Threat Readability > Run Multiplayer Probe
+The probe uses a local host plus an independent late client, checks shared
+deadlines, locks, recovery/cancellation, grapple dodges and cover, rocket
+commitment and flight audio, and rogue damage/charge commitment.
+Results: Tools/ThreatReadabilityValidation.txt
+Preview: Tools/ThreatReadabilityPreview.png
+The probe restores the Editor scene by leaving its temporary Play session.
+It does not simulate internet latency or replace multiplayer balance playtests.
+
+Tools/author_threat_readability.py is an explicit one-time asset authoring
+utility. It skips already-authored cues to preserve Inspector customisations.
+Nothing invokes it on import, script reload or entering Play mode.

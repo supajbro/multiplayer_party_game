@@ -79,6 +79,10 @@ namespace CouchGuys.Gameplay.Enemies
         [Serializable]
         public sealed class CombatSettings
         {
+            [Header("Rocket Telegraph")]
+            [Min(.1f)] public float RocketWindup = 1.5f;
+            [Min(.05f)] public float RocketAimCommitLead = .45f;
+            [Min(.1f)] public float RocketRecovery = 1.5f;
             [Header("Retaliation")]
             [Range(0f, 100f)] public float RetaliationChance = 50f;
             [Range(0f, 100f), Tooltip("Each thief rolls a fixed chance within this many percentage points of the base chance when spawned.")]

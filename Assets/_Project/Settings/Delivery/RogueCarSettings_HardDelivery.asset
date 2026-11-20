@@ -40,3 +40,10 @@ MonoBehaviour:
   SpawnChance: 0.75
   MaxActiveCars: 10
   MaxSpawnsPerDelivery: 100
+  ChargeRange: 24
+  ChargeWindup: 1.8
+  ChargeAimCommitLead: 0.6
+  ChargeDuration: 2
+  ChargeRecovery: 2.2
+  ApproachSpeedMultiplier: 0.4
+  ChargeTurnSpeed: 12

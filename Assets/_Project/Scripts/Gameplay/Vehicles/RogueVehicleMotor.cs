@@ -63,7 +63,8 @@ namespace CouchGuys.Gameplay.Vehicles
         }
 
         internal float Drive(RogueCarSettings settings, Vector3 target, float maximumSpeed,
-            float stoppingDistance, float dt, bool forwardOnly = false)
+            float stoppingDistance, float dt, bool forwardOnly = false, bool committed = false,
+            float maximumYawSpeed = float.PositiveInfinity)
         {
             if (m_body.isKinematic) m_body.isKinematic = false;
             m_reverseRemaining = Mathf.Max(0f, m_reverseRemaining - dt);
@@ -81,7 +82,7 @@ namespace CouchGuys.Gameplay.Vehicles
                 m_progressPosition = m_body.position;
                 m_stuckTime = 0f;
             }
-            else if (m_reverseRemaining <= 0f && !m_turnaround)
+            else if (!committed && m_reverseRemaining <= 0f && !m_turnaround)
             {
                 m_stuckTime += dt;
                 if (m_stuckTime >= Mathf.Max(.1f, settings.StuckDetectionTime))
@@ -92,7 +93,7 @@ namespace CouchGuys.Gameplay.Vehicles
                 }
             }
             float angle = Vector3.SignedAngle(forward, toTarget, normal);
-            if (forwardOnly && !m_turnaround && Mathf.Abs(angle) > 110f &&
+            if (!committed && forwardOnly && !m_turnaround && Mathf.Abs(angle) > 110f &&
                 toTarget.magnitude < settings.MinTurningRadius * 3f)
             {
                 m_turnaround = true;
@@ -141,6 +142,7 @@ namespace CouchGuys.Gameplay.Vehicles
             m_body.AddForce(-lateral * Vector3.Dot(m_body.linearVelocity, lateral) * 7f, ForceMode.Acceleration);
             float yawLimit = Mathf.Min(Mathf.Max(0f, settings.TurnSpeed),
                 Mathf.Abs(speed) / Mathf.Max(.1f, settings.MinTurningRadius) * Mathf.Rad2Deg);
+            yawLimit = Mathf.Min(yawLimit, maximumYawSpeed);
             float yaw = steering * Mathf.Sign(speed) * yawLimit * Mathf.Deg2Rad;
             Vector3 angular = normal * Mathf.Clamp((yaw - Vector3.Dot(m_body.angularVelocity, normal)) / dt,
                 -settings.AngularAcceleration, settings.AngularAcceleration);

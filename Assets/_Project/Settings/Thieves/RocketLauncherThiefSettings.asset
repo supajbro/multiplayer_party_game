@@ -43,6 +43,9 @@ MonoBehaviour:
     DeathDespawnDelay: 2.5
     WeaponDropChance: 35
   Combat:
+    RocketWindup: 1.5
+    RocketAimCommitLead: 0.45
+    RocketRecovery: 1.5
     RetaliationChance: 50
     RetaliationChanceVariation: 25
     RetaliationDuration: 5

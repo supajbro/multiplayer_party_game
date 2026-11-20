@@ -20,6 +20,7 @@ namespace CouchGuys.Gameplay.Enemies
         [Header("Rocket Launcher")]
         [SerializeField] private WeaponDefinition m_rocketWeapon;
         [SerializeField, Min(.1f)] private float m_rocketTargetInterval = .25f;
+        [SerializeField] private ThreatTelegraph m_telegraph;
         private DeliveryManager m_delivery;
         private float m_nextRocketTargetTime;
         private EnemyWeaponType m_weaponType => m_settings != null
@@ -94,11 +95,16 @@ namespace CouchGuys.Gameplay.Enemies
         public float PreferredRange => m_preferredRange;
         public bool IsRocketLauncher => m_weaponType == EnemyWeaponType.RocketLauncher;
         public PlayerHealth Target => m_target;
+        public bool IsAttackStationary => IsRocketLauncher && m_telegraph != null &&
+            (m_telegraph.IsPreparing || m_telegraph.IsRecovering);
+        public Vector3 AttackAimPoint => m_telegraph != null && m_telegraph.IsPreparing
+            ? m_telegraph.AimPoint : TargetAimPoint;
 
         private void Awake()
         {
             m_animationDriver = GetComponentInChildren<ThiefAnimationDriver>(true);
             m_navigator = GetComponent<ThiefNavigator>();
+            m_telegraph ??= GetComponent<ThreatTelegraph>();
             m_agent = GetComponent<NavMeshAgent>();
             m_audio = GetComponent<WeaponAudioEmitter>();
             if (m_audio == null) m_audio = gameObject.AddComponent<WeaponAudioEmitter>();
@@ -119,6 +125,11 @@ namespace CouchGuys.Gameplay.Enemies
             if (m_tracerMaterial != null) Destroy(m_tracerMaterial);
         }
 
+        private void OnDisable()
+        {
+            if (IsServerInitialized) m_telegraph?.CancelServer();
+        }
+
         public void SetTargetServer(PlayerHealth target)
         {
             if (!IsServerInitialized && NetworkObject != null && NetworkObject.IsSpawned) return;
@@ -131,6 +142,7 @@ namespace CouchGuys.Gameplay.Enemies
             if (target != null && !target.IsEnemyTargetable) target = null;
             if (m_target != target || m_targetTruck != null)
             {
+                if (m_telegraph != null && (target == null || m_telegraph.IsPreparing)) m_telegraph.CancelServer();
                 EndRifleBurstServer();
                 m_reactionEndsAt = Time.time + m_reactionTime;
                 m_burstShotsRemaining = Random.Range(m_minBurstShots, m_maxBurstShots + 1);
@@ -171,7 +183,8 @@ namespace CouchGuys.Gameplay.Enemies
                 m_delivery ??= FindFirstObjectByType<DeliveryManager>();
                 NetworkObject couch = m_delivery != null && TryGetComponent(out ThiefSpawnMember member) && m_delivery.TryGetDelivery(member.DeliveryId, out var job) ? job.Couch : null;
                 if (couch == null) { SetCombatTarget(null); return; }
-                if (Time.time >= m_nextRocketTargetTime || m_target == null || !m_target.IsEnemyTargetable)
+                if ((m_telegraph == null || !m_telegraph.IsPreparing) &&
+                    (Time.time >= m_nextRocketTargetTime || m_target == null || !m_target.IsEnemyTargetable))
                 {
                     m_nextRocketTargetTime = Time.time + m_rocketTargetInterval;
                     SetCombatTarget(FindClosestCouchEnemy(couch.transform.position));
@@ -184,10 +197,16 @@ namespace CouchGuys.Gameplay.Enemies
                 return;
             }
             Vector3 desired = (TargetAimPoint - GetMuzzlePosition()).normalized;
-            m_aimDirection = Vector3.RotateTowards(m_aimDirection, desired,
-                m_aimRotationSpeed * Mathf.Deg2Rad * Time.deltaTime, 0f).normalized;
+            if (m_telegraph == null || m_telegraph.Phase != ThreatAttackPhase.Locked)
+                m_aimDirection = Vector3.RotateTowards(m_aimDirection, desired,
+                    m_aimRotationSpeed * Mathf.Deg2Rad * Time.deltaTime, 0f).normalized;
             if (IsRocketLauncher)
             {
+                if (m_telegraph != null)
+                {
+                    UpdateRocketAttackServer(desired);
+                    return;
+                }
                 if (Time.time >= m_reactionEndsAt && Time.time >= m_nextFireTime && CanShootTarget(desired))
                     FireRocketServer();
                 return;
@@ -203,6 +222,32 @@ namespace CouchGuys.Gameplay.Enemies
                 m_nextFireTime = Time.time + m_burstCooldown;
             }
             else m_nextFireTime = Time.time + m_fireInterval;
+        }
+
+        private void UpdateRocketAttackServer(Vector3 desired)
+        {
+            if (m_telegraph.IsRecovering) return;
+            if (m_telegraph.Phase == ThreatAttackPhase.Committed)
+            {
+                if (m_telegraph.Remaining <= 0f) m_telegraph.RecoverServer(m_settings.Combat.RocketRecovery);
+                return;
+            }
+            if (m_telegraph.IsPreparing)
+            {
+                if (m_telegraph.Phase == ThreatAttackPhase.Preparing &&
+                    m_telegraph.Remaining <= Mathf.Min(m_settings.Combat.RocketAimCommitLead, m_settings.Combat.RocketWindup))
+                    m_telegraph.LockServer(TargetAimPoint);
+                if (m_telegraph.Remaining > 0f) return;
+                Vector3 point = m_telegraph.AimPoint;
+                if (DepotSafeZone.Intersects(GetMuzzlePosition(), point))
+                { m_telegraph.CancelServer(); return; }
+                m_aimDirection = (point - GetMuzzlePosition()).normalized;
+                // Once committed, cover and dodges cause a real miss rather than a fresh aim check.
+                FireRocketServer();
+                return;
+            }
+            if (Time.time >= m_reactionEndsAt && Time.time >= m_nextFireTime && CanShootTarget(desired))
+                m_telegraph.PrepareServer(m_target.NetworkObject, TargetAimPoint, m_settings.Combat.RocketWindup);
         }
 
         public static PlayerHealth FindClosestCouchEnemy(Vector3 couchPosition)
@@ -229,6 +274,7 @@ namespace CouchGuys.Gameplay.Enemies
             rocket.InitializeEnemyServer(GetComponent<ThiefHealth>(), m_rocketWeapon, m_hitMask);
             ServerManager.Spawn(rocket.NetworkObject);
             m_nextFireTime = Time.time + Mathf.Max(m_fireInterval, m_burstCooldown);
+            m_telegraph?.CommitServer(.2f);
             ShowShotObserversRpc(origin, System.Array.Empty<Vector3>());
         }
 

@@ -15,6 +15,7 @@ namespace CouchGuys.Gameplay.Weapons
     public sealed class RocketProjectile : NetworkBehaviour
     {
         [SerializeField] private RocketExplosionVfx m_explosionPrefab;
+        [SerializeField] private AudioSource m_flightAudio;
         private PlayerHealth m_shooter;
         private Transform m_ignoredShooterRoot;
         private PlayerWeaponController m_weaponOwner;
@@ -26,6 +27,23 @@ namespace CouchGuys.Gameplay.Weapons
         private bool m_firstStep = true;
         private bool m_exploded;
         private readonly Dictionary<Component, float> m_distances = new();
+
+        public override void OnStartClient()
+        {
+            base.OnStartClient();
+            if (m_flightAudio != null) m_flightAudio.Play();
+        }
+
+        public override void OnStopClient()
+        {
+            if (m_flightAudio != null) m_flightAudio.Stop();
+            base.OnStopClient();
+        }
+
+        private void OnDisable()
+        {
+            if (m_flightAudio != null) m_flightAudio.Stop();
+        }
 
         public void InitializeServer(PlayerWeaponController owner, PlayerHealth shooter,
             WeaponDefinition weapon, LayerMask mask)

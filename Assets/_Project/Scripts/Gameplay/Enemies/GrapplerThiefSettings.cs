@@ -8,7 +8,10 @@ namespace CouchGuys.Gameplay.Enemies
         [Min(1f)] public float GrappleRange = 14f;
         [Min(1f)] public float PreferredDistance = 9f;
         [Min(0.1f)] public float AttackCooldown = 8f;
-        [Min(0.1f)] public float AimWindup = 0.6f;
+        [Min(0.1f)] public float AimWindup = 1.1f;
+        [Tooltip("Final part of the wind-up during which the shot no longer follows its target.")]
+        [Min(0.05f)] public float AimCommitLead = .35f;
+        [Min(.1f)] public float RewindDuration = 1.2f;
         [Min(0.1f)] public float HoldDuration = 0.5f;
         [Min(0f)] public float ThrowHorizontalVelocity = 12f;
         [Min(0f)] public float ThrowUpwardVelocity = 5f;

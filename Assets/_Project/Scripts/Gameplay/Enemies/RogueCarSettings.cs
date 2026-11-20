@@ -22,6 +22,14 @@ namespace CouchGuys.Gameplay.Enemies
         [Min(0.1f)] public float StuckDetectionTime = 2f;
         [Tooltip("Back toward close targets behind the vehicle instead of circling them. Useful for larger vehicles.")]
         public bool ReverseTowardsNearbyTargets;
+        [Header("Charge Telegraph")]
+        [Min(2f)] public float ChargeRange = 24f;
+        [Min(.1f)] public float ChargeWindup = 1.8f;
+        [Min(.05f)] public float ChargeAimCommitLead = .6f;
+        [Min(.1f)] public float ChargeDuration = 2f;
+        [Min(.1f)] public float ChargeRecovery = 2.2f;
+        [Range(.1f, 1f)] public float ApproachSpeedMultiplier = .4f;
+        [Range(0f, 45f)] public float ChargeTurnSpeed = 12f;
         [Header("Forward Navigation Turnaround")]
         [Min(.1f)] public float TurnaroundForwardDuration = 2f;
         [Min(.1f)] public float TurnaroundReverseDuration = 1.4f;
