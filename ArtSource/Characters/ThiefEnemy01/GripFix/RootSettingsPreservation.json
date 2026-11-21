@@ -1,0 +1,24 @@
+{
+  "Thief_Pistol": {
+    "root_id": 2569576030818965973,
+    "root_components_preserved": 8,
+    "intentional_reference_changes": []
+  },
+  "Thief_AssaultRifle": {
+    "root_id": 5886176085319091588,
+    "root_components_preserved": 8,
+    "intentional_reference_changes": []
+  },
+  "Thief_Shotgun": {
+    "root_id": 3721535447601552465,
+    "root_components_preserved": 8,
+    "intentional_reference_changes": []
+  },
+  "GrapplerThief": {
+    "root_id": 3224752670529808980,
+    "root_components_preserved": 9,
+    "intentional_reference_changes": [
+      "GrapplerThief.m_gun -> WeaponGrip aim pivot"
+    ]
+  }
+}

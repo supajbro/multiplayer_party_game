@@ -1,0 +1,29 @@
+AUTHORED Thief_Pistol: handle centered at palm, barrel follows fingers; saved WeaponGrip and HandleCenter transforms; original gun, muzzle and renderer objects retained.
+AUTHORED Thief_AssaultRifle: handle centered at palm, barrel follows fingers; saved WeaponGrip and HandleCenter transforms; original gun, muzzle and renderer objects retained.
+AUTHORED Thief_Shotgun: handle centered at palm, barrel follows fingers; saved WeaponGrip and HandleCenter transforms; original gun, muzzle and renderer objects retained.
+AUTHORED GrapplerThief: handle centered at palm, barrel follows fingers; saved WeaponGrip and HandleCenter transforms; original gun, muzzle and renderer objects retained.
+PASS Thief_Pistol Idle: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS Thief_Pistol Walk: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS Thief_Pistol Shoot: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS Thief_Pistol Frustration: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS Thief_Pistol Death: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS Thief_Pistol Tpose: correct grip position, orientation and muzzle; original component references retained.
+PASS Thief_AssaultRifle Idle: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS Thief_AssaultRifle Walk: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS Thief_AssaultRifle Shoot: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS Thief_AssaultRifle Frustration: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS Thief_AssaultRifle Death: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS Thief_AssaultRifle Tpose: correct grip position, orientation and muzzle; original component references retained.
+PASS Thief_Shotgun Idle: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS Thief_Shotgun Walk: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS Thief_Shotgun Shoot: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS Thief_Shotgun Frustration: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS Thief_Shotgun Death: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS Thief_Shotgun Tpose: correct grip position, orientation and muzzle; original component references retained.
+PASS GrapplerThief Idle: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS GrapplerThief Walk: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS GrapplerThief Shoot: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS GrapplerThief Frustration: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS GrapplerThief Death: 13 sampled poses, handle remains in palm and muzzle follows finger/barrel axis.
+PASS GrapplerThief runtime aiming: gun pivots at palm; handle does not orbit or leave hand.
+PASS GrapplerThief Tpose: correct grip position, orientation and muzzle; original component references retained.

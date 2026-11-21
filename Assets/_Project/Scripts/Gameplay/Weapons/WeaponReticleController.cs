@@ -1,4 +1,5 @@
 using FishNet.Object;
+using CouchGuys.Player;
 using UnityEngine;
 
 namespace CouchGuys.Gameplay.Weapons
@@ -12,6 +13,8 @@ namespace CouchGuys.Gameplay.Weapons
 
         private NetworkObject m_networkObject;
         private PlayerWeaponController m_weapons;
+        private PlayerTruckInteractor m_truck;
+        private PlayerHoverboardInteractor m_hoverboard;
         private ReticleTargetDetector m_targetDetector;
         private WeaponReticleView m_view;
         private ReticleSettings m_settings;
@@ -24,6 +27,8 @@ namespace CouchGuys.Gameplay.Weapons
         {
             m_networkObject = GetComponent<NetworkObject>();
             m_weapons = GetComponent<PlayerWeaponController>();
+            m_truck = GetComponent<PlayerTruckInteractor>();
+            m_hoverboard = GetComponent<PlayerHoverboardInteractor>();
             m_targetDetector = GetComponent<ReticleTargetDetector>();
         }
 
@@ -31,6 +36,12 @@ namespace CouchGuys.Gameplay.Weapons
         {
             if (m_networkObject == null || !m_networkObject.IsOwner) return;
             if (!m_bound) Bind();
+            ReticleSettings settings = m_weapons.CurrentReticleSettings;
+            if (m_hoverboard != null && m_hoverboard.IsMounted)
+                settings = null;
+            else if (m_truck != null && m_truck.CurrentTruck != null)
+                settings = m_truck.IsDriver ? null : m_weapons.AssaultRifleReticleSettings;
+            if (settings != m_settings) SetSettings(settings);
             if (m_view == null || m_settings == null) return;
 
             ReticleTargetType target = m_targetDetector != null
@@ -61,7 +72,6 @@ namespace CouchGuys.Gameplay.Weapons
             m_bound = true;
             m_weapons.LocalShotFired += OnShotFired;
             m_weapons.LocalHitConfirmed += OnHitConfirmed;
-            m_weapons.LocalReticleChanged += SetSettings;
             if (m_reticlePrefab != null)
             {
                 m_view = Instantiate(m_reticlePrefab);
@@ -102,7 +112,6 @@ namespace CouchGuys.Gameplay.Weapons
             {
                 m_weapons.LocalShotFired -= OnShotFired;
                 m_weapons.LocalHitConfirmed -= OnHitConfirmed;
-                m_weapons.LocalReticleChanged -= SetSettings;
             }
             if (m_view != null) Destroy(m_view.gameObject);
         }

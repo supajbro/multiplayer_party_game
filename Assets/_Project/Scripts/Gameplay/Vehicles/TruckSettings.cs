@@ -29,6 +29,7 @@ namespace CouchGuys.Gameplay.Vehicles
         [SerializeField, Min(0f)] private float m_antiRollStrength = 9f;
 
         [Header("Fuel")]
+        [SerializeField, Tooltip("Enable fuel consumption, empty-tank driving restrictions, and the fuel HUD.")] private bool m_useFuel = false;
         [SerializeField, Min(0.01f)] private float m_maxFuel = 90f;
         [SerializeField, Min(0f), Tooltip("Fuel units consumed per second while the occupied engine is idling.")] private float m_fuelConsumptionIdle = 0.03f;
         [SerializeField, Min(0f), Tooltip("Fuel units consumed per second at full driving speed.")] private float m_fuelConsumptionDriving = 0.25f;
@@ -93,6 +94,7 @@ namespace CouchGuys.Gameplay.Vehicles
         public float SteeringSensitivity => m_steeringSensitivity; public float SteeringResponseSpeed => m_steeringResponseSpeed;
         public float HighSpeedSteeringMultiplier => m_highSpeedSteeringMultiplier; public float VehicleMass => m_vehicleMass;
         public float Traction => m_traction; public float UphillPowerMultiplier => m_uphillPowerMultiplier; public float AntiRollStrength => m_antiRollStrength;
+        public bool UseFuel => m_useFuel;
         public float MaxFuel => m_maxFuel; public float FuelConsumptionIdle => m_fuelConsumptionIdle;
         public float FuelConsumptionDriving => m_fuelConsumptionDriving; public float AccelerationFuelMultiplier => m_accelerationFuelMultiplier;
         public float LowFuelWarningThreshold => m_lowFuelWarningThreshold; public float MaxHealth => m_maxHealth;

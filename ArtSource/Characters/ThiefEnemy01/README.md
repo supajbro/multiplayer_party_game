@@ -17,7 +17,7 @@ The 1.65 m character faces Unity +Z and uses one shared skeleton, Animator and U
 
 Character01Thief's base Blender file has no Actions. Its Pistol, AssaultRifle and Shotgun masters each have Idle, Walk, Shoot, Death and Frustration. All 15 were retargeted to this character and embedded in the FBX as `<variant>_Thief_<action>`, at the original 30 fps and durations. Idle/Walk loop; the remaining clips play once. Root motion is disabled and floor contact was adjusted for the target proportions.
 
-Three controllers are saved under `Assets/_Project/Animations/Thieves/ThiefEnemy01/`, named `thief_enemy_01_Pistol.controller`, `thief_enemy_01_AssaultRifle.controller` and `thief_enemy_01_Shotgun.controller`. The prefab uses Pistol by default; select another in its Animator Inspector.
+Five controllers are saved under `Assets/_Project/Animations/Thieves/ThiefEnemy01/`: Unarmed, Pistol, AssaultRifle, Shotgun and Speaker, named `thief_enemy_01_<variant>.controller`. The shared visual and base Thief use Unarmed; SpeakerThief uses Speaker. The armed variants retain their weapon-specific sets.
 
 Controllers expose Speed, Shoot, Dead, Frustration and FrustrationSpeed. State names are compatible with the existing ThiefAnimationDriver. Speed above 0.08 enters Walk; Shoot/Frustration are triggers; Dead takes priority and holds Death. Frustration also supports the driver's CrossFade call. This is a visual prefab with empty hands. Weapons, gameplay/network components and spawner installation are separate configuration. Simplified fingers have no independent articulation; holding poses transfer body motion without adding finger grips.
 
@@ -34,7 +34,11 @@ The seven production character prefabs in Prefabs/Enemies now use this LOD visua
 
 ## Sources and reproduction
 
-`thief_enemy_01.blend` is the packed final master with four LODs and 15 Actions, saved in T-pose. `thief_enemy_01_20000_source.blend` and `thief_enemy_01_20000_source.glb` preserve the original asset. `OriginalGeometryValidation.json` preserves its report; GeometryValidation.json and LODAnimationValidation.json describe the final version. Original root-folder turntable images show the earlier 20,000-triangle source.
+`thief_enemy_01.blend` is the packed final master with four LODs and 25 Actions, saved in T-pose. The original 15 source-derived actions remain named as before, with revised arm acting; ten additional actions support Unarmed and Speaker. `thief_enemy_01_20000_source.blend` and `thief_enemy_01_20000_source.glb` preserve the original asset. Original root-folder turntable images show the earlier 20,000-triangle source.
+
+The latest acting revision is documented in `ExpressivePoses/README.md`. It corrects overlapping hand poses, adds asymmetric idle poses, arm swings, head/shoulder motion, separate pistol free-hand poses and a speaker carrying pose. `ExpressivePoses/UnityPoseValidation.txt` and `ExpressivePoses/FBXRoundtripValidation.json` validate the current 25-clip model. The earlier validation text files describe the initial 15-clip LOD implementation. `ExpressivePoses/EnemyActingComparison.png` shows the current posed enemy variants.
+
+The subsequent weapon-mount correction is documented in `GripFix/README.md`. Pistol, assault rifle, shotgun and grapple weapons now use palm-centered WeaponGrip transforms and correct barrel/muzzle axes in both T-pose and animation. `GripFix/GripComparison.png` shows the current mounted weapons; the expressive-pose previews retain the earlier mounting state. Current mount validation and installation hashes are in GripFix/.
 
 The original reference was created with built-in imagegen from the supplied burglar: rounded cartoon forms, front T-pose, tan skin, brown eyes, black domino mask, black/ivory striped beanie and shirt, charcoal trousers, oversized brown shoes, no props and a white background. The saved Pixal3DWorkflow.json records local ComfyUI generation with Pixal3D INT8, seed 42, 1024 generation/atlas and the original 20,000-triangle output. The raw GLB remains in Generated/. No paid API nodes were used.
 

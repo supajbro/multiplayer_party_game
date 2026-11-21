@@ -26,350 +26,205 @@
     }
   ],
   "animations": {
+    "Pistol_Thief_Idle": {
+      "frames": [
+        1,
+        48
+      ],
+      "min_hand_surface_distance_m": 0.397049177433368,
+      "min_wrist_distance_m": 0.5872177506227664
+    },
     "Pistol_Thief_Walk": {
       "frames": [
         1,
         24
       ],
-      "fps": 30,
-      "source": "ArtSource\\Characters\\Character01Thief\\Armed\\Character01_Thief_Pistol.blend",
-      "source_action": "Thief_Walk",
-      "samples": [
-        {
-          "frame": 1,
-          "floor_correction_m": 0.029200907796621323
-        },
-        {
-          "frame": 12,
-          "floor_correction_m": 0.02743496000766754
-        },
-        {
-          "frame": 24,
-          "floor_correction_m": 0.029200907796621323
-        }
-      ]
+      "min_hand_surface_distance_m": 0.3816050465052931,
+      "min_wrist_distance_m": 0.5683701209399376
     },
     "Pistol_Thief_Shoot": {
       "frames": [
         1,
         24
       ],
-      "fps": 30,
-      "source": "ArtSource\\Characters\\Character01Thief\\Armed\\Character01_Thief_Pistol.blend",
-      "source_action": "Thief_Shoot",
-      "samples": [
-        {
-          "frame": 1,
-          "floor_correction_m": 0.002005642745643854
-        },
-        {
-          "frame": 12,
-          "floor_correction_m": 0.002005642745643854
-        },
-        {
-          "frame": 24,
-          "floor_correction_m": 0.002005642745643854
-        }
-      ]
-    },
-    "Pistol_Thief_Idle": {
-      "frames": [
-        1,
-        48
-      ],
-      "fps": 30,
-      "source": "ArtSource\\Characters\\Character01Thief\\Armed\\Character01_Thief_Pistol.blend",
-      "source_action": "Thief_Idle",
-      "samples": [
-        {
-          "frame": 1,
-          "floor_correction_m": 0.002005642745643854
-        },
-        {
-          "frame": 24,
-          "floor_correction_m": 0.002005642745643854
-        },
-        {
-          "frame": 48,
-          "floor_correction_m": 0.002005642745643854
-        }
-      ]
-    },
-    "Pistol_Thief_Frustration": {
-      "frames": [
-        1,
-        31
-      ],
-      "fps": 30,
-      "source": "ArtSource\\Characters\\Character01Thief\\Armed\\Character01_Thief_Pistol.blend",
-      "source_action": "Thief_Frustration",
-      "samples": [
-        {
-          "frame": 1,
-          "floor_correction_m": 0.002005629241466522
-        },
-        {
-          "frame": 16,
-          "floor_correction_m": 0.002005629241466522
-        },
-        {
-          "frame": 31,
-          "floor_correction_m": 0.002005629241466522
-        }
-      ]
+      "min_hand_surface_distance_m": 0.3976641759611139,
+      "min_wrist_distance_m": 0.5872179568016724
     },
     "Pistol_Thief_Death": {
       "frames": [
         1,
         52
       ],
-      "fps": 30,
-      "source": "ArtSource\\Characters\\Character01Thief\\Armed\\Character01_Thief_Pistol.blend",
-      "source_action": "Thief_Death",
-      "samples": [
-        {
-          "frame": 1,
-          "floor_correction_m": 0.002005642745643854
-        },
-        {
-          "frame": 26,
-          "floor_correction_m": 0.11357945203781128
-        },
-        {
-          "frame": 52,
-          "floor_correction_m": 0.05046337842941284
-        }
-      ]
+      "min_hand_surface_distance_m": null,
+      "min_wrist_distance_m": null
     },
-    "AssaultRifle_Thief_Walk": {
+    "Pistol_Thief_Frustration": {
       "frames": [
         1,
-        24
+        31
       ],
-      "fps": 30,
-      "source": "ArtSource\\Characters\\Character01Thief\\Armed\\Character01_Thief_AssaultRifle.blend",
-      "source_action": "Thief_Walk",
-      "samples": [
-        {
-          "frame": 1,
-          "floor_correction_m": 0.02894674614071846
-        },
-        {
-          "frame": 12,
-          "floor_correction_m": 0.027190007269382477
-        },
-        {
-          "frame": 24,
-          "floor_correction_m": 0.02894674614071846
-        }
-      ]
-    },
-    "AssaultRifle_Thief_Shoot": {
-      "frames": [
-        1,
-        24
-      ],
-      "fps": 30,
-      "source": "ArtSource\\Characters\\Character01Thief\\Armed\\Character01_Thief_AssaultRifle.blend",
-      "source_action": "Thief_Shoot",
-      "samples": [
-        {
-          "frame": 1,
-          "floor_correction_m": 0.001937617314979434
-        },
-        {
-          "frame": 12,
-          "floor_correction_m": 0.001937617314979434
-        },
-        {
-          "frame": 24,
-          "floor_correction_m": 0.001937617314979434
-        }
-      ]
+      "min_hand_surface_distance_m": 0.3399036009541888,
+      "min_wrist_distance_m": 0.5801773050721952
     },
     "AssaultRifle_Thief_Idle": {
       "frames": [
         1,
         48
       ],
-      "fps": 30,
-      "source": "ArtSource\\Characters\\Character01Thief\\Armed\\Character01_Thief_AssaultRifle.blend",
-      "source_action": "Thief_Idle",
-      "samples": [
-        {
-          "frame": 1,
-          "floor_correction_m": 0.001937617314979434
-        },
-        {
-          "frame": 24,
-          "floor_correction_m": 0.001937617314979434
-        },
-        {
-          "frame": 48,
-          "floor_correction_m": 0.001937617314979434
-        }
-      ]
+      "min_hand_surface_distance_m": 0.06914073564832161,
+      "min_wrist_distance_m": 0.3187864394610109
     },
-    "AssaultRifle_Thief_Frustration": {
+    "AssaultRifle_Thief_Walk": {
       "frames": [
         1,
-        31
+        24
       ],
-      "fps": 30,
-      "source": "ArtSource\\Characters\\Character01Thief\\Armed\\Character01_Thief_AssaultRifle.blend",
-      "source_action": "Thief_Frustration",
-      "samples": [
-        {
-          "frame": 1,
-          "floor_correction_m": 0.001937585067935288
-        },
-        {
-          "frame": 16,
-          "floor_correction_m": 0.001937585067935288
-        },
-        {
-          "frame": 31,
-          "floor_correction_m": 0.001937585067935288
-        }
-      ]
+      "min_hand_surface_distance_m": 0.06865678847046688,
+      "min_wrist_distance_m": 0.31878644452792204
+    },
+    "AssaultRifle_Thief_Shoot": {
+      "frames": [
+        1,
+        24
+      ],
+      "min_hand_surface_distance_m": 0.06990839175433491,
+      "min_wrist_distance_m": 0.31878682664583036
     },
     "AssaultRifle_Thief_Death": {
       "frames": [
         1,
         52
       ],
-      "fps": 30,
-      "source": "ArtSource\\Characters\\Character01Thief\\Armed\\Character01_Thief_AssaultRifle.blend",
-      "source_action": "Thief_Death",
-      "samples": [
-        {
-          "frame": 1,
-          "floor_correction_m": 0.001937617314979434
-        },
-        {
-          "frame": 26,
-          "floor_correction_m": 0.1217004656791687
-        },
-        {
-          "frame": 52,
-          "floor_correction_m": 0.06485509872436523
-        }
-      ]
+      "min_hand_surface_distance_m": null,
+      "min_wrist_distance_m": null
     },
-    "Shotgun_Thief_Walk": {
+    "AssaultRifle_Thief_Frustration": {
       "frames": [
         1,
-        24
+        31
       ],
-      "fps": 30,
-      "source": "ArtSource\\Characters\\Character01Thief\\Armed\\Character01_Thief_Shotgun.blend",
-      "source_action": "Thief_Walk",
-      "samples": [
-        {
-          "frame": 1,
-          "floor_correction_m": 0.028636660426855087
-        },
-        {
-          "frame": 12,
-          "floor_correction_m": 0.02689097821712494
-        },
-        {
-          "frame": 24,
-          "floor_correction_m": 0.028636660426855087
-        }
-      ]
-    },
-    "Shotgun_Thief_Shoot": {
-      "frames": [
-        1,
-        24
-      ],
-      "fps": 30,
-      "source": "ArtSource\\Characters\\Character01Thief\\Armed\\Character01_Thief_Shotgun.blend",
-      "source_action": "Thief_Shoot",
-      "samples": [
-        {
-          "frame": 1,
-          "floor_correction_m": 0.0018501757876947522
-        },
-        {
-          "frame": 12,
-          "floor_correction_m": 0.0018501757876947522
-        },
-        {
-          "frame": 24,
-          "floor_correction_m": 0.0018501757876947522
-        }
-      ]
+      "min_hand_surface_distance_m": 0.06990853486277965,
+      "min_wrist_distance_m": 0.3187869877825006
     },
     "Shotgun_Thief_Idle": {
       "frames": [
         1,
         48
       ],
-      "fps": 30,
-      "source": "ArtSource\\Characters\\Character01Thief\\Armed\\Character01_Thief_Shotgun.blend",
-      "source_action": "Thief_Idle",
-      "samples": [
-        {
-          "frame": 1,
-          "floor_correction_m": 0.0018501757876947522
-        },
-        {
-          "frame": 24,
-          "floor_correction_m": 0.0018501757876947522
-        },
-        {
-          "frame": 48,
-          "floor_correction_m": 0.0018501757876947522
-        }
-      ]
+      "min_hand_surface_distance_m": 0.07845661795310349,
+      "min_wrist_distance_m": 0.3265727762262815
     },
-    "Shotgun_Thief_Frustration": {
+    "Shotgun_Thief_Walk": {
       "frames": [
         1,
-        31
+        24
       ],
-      "fps": 30,
-      "source": "ArtSource\\Characters\\Character01Thief\\Armed\\Character01_Thief_Shotgun.blend",
-      "source_action": "Thief_Frustration",
-      "samples": [
-        {
-          "frame": 1,
-          "floor_correction_m": 0.0018501749727874994
-        },
-        {
-          "frame": 16,
-          "floor_correction_m": 0.0018501749727874994
-        },
-        {
-          "frame": 31,
-          "floor_correction_m": 0.0018501749727874994
-        }
-      ]
+      "min_hand_surface_distance_m": 0.07859858833740012,
+      "min_wrist_distance_m": 0.3265727790780886
+    },
+    "Shotgun_Thief_Shoot": {
+      "frames": [
+        1,
+        24
+      ],
+      "min_hand_surface_distance_m": 0.07930759325342217,
+      "min_wrist_distance_m": 0.32657315551641075
     },
     "Shotgun_Thief_Death": {
       "frames": [
         1,
         52
       ],
-      "fps": 30,
-      "source": "ArtSource\\Characters\\Character01Thief\\Armed\\Character01_Thief_Shotgun.blend",
-      "source_action": "Thief_Death",
-      "samples": [
-        {
-          "frame": 1,
-          "floor_correction_m": 0.0018501757876947522
-        },
-        {
-          "frame": 26,
-          "floor_correction_m": 0.12271445989608765
-        },
-        {
-          "frame": 52,
-          "floor_correction_m": 0.06578278541564941
-        }
-      ]
+      "min_hand_surface_distance_m": null,
+      "min_wrist_distance_m": null
+    },
+    "Shotgun_Thief_Frustration": {
+      "frames": [
+        1,
+        31
+      ],
+      "min_hand_surface_distance_m": 0.07930738291780669,
+      "min_wrist_distance_m": 0.326573028432878
+    },
+    "Unarmed_Thief_Idle": {
+      "frames": [
+        1,
+        48
+      ],
+      "min_hand_surface_distance_m": 0.37208190838011107,
+      "min_wrist_distance_m": 0.5310599306408667
+    },
+    "Unarmed_Thief_Walk": {
+      "frames": [
+        1,
+        24
+      ],
+      "min_hand_surface_distance_m": 0.37342985273881857,
+      "min_wrist_distance_m": 0.5308841961391798
+    },
+    "Unarmed_Thief_Shoot": {
+      "frames": [
+        1,
+        24
+      ],
+      "min_hand_surface_distance_m": 0.3724363099702492,
+      "min_wrist_distance_m": 0.5310599759905857
+    },
+    "Unarmed_Thief_Death": {
+      "frames": [
+        1,
+        52
+      ],
+      "min_hand_surface_distance_m": null,
+      "min_wrist_distance_m": null
+    },
+    "Unarmed_Thief_Frustration": {
+      "frames": [
+        1,
+        31
+      ],
+      "min_hand_surface_distance_m": 0.37245804158721185,
+      "min_wrist_distance_m": 0.5310603525438136
+    },
+    "Speaker_Thief_Idle": {
+      "frames": [
+        1,
+        48
+      ],
+      "min_hand_surface_distance_m": 0.7413505624611473,
+      "min_wrist_distance_m": 0.7707459927129964
+    },
+    "Speaker_Thief_Walk": {
+      "frames": [
+        1,
+        24
+      ],
+      "min_hand_surface_distance_m": 0.7134040724128132,
+      "min_wrist_distance_m": 0.7629582724729707
+    },
+    "Speaker_Thief_Shoot": {
+      "frames": [
+        1,
+        24
+      ],
+      "min_hand_surface_distance_m": 0.741729853766273,
+      "min_wrist_distance_m": 0.7707462059848308
+    },
+    "Speaker_Thief_Death": {
+      "frames": [
+        1,
+        52
+      ],
+      "min_hand_surface_distance_m": null,
+      "min_wrist_distance_m": null
+    },
+    "Speaker_Thief_Frustration": {
+      "frames": [
+        1,
+        31
+      ],
+      "min_hand_surface_distance_m": 0.6298211203492748,
+      "min_wrist_distance_m": 0.745201158604109
     }
   },
   "bone_count": 22,
@@ -377,5 +232,6 @@
   "source_master": "ArtSource\\Characters\\ThiefEnemy01\\thief_enemy_01_20000_source.blend",
   "unity_import_validation": "UnityLODAnimationValidation.txt",
   "unity_playback_validation": "UnityAnimatorPlaybackValidation.txt",
-  "fbx_roundtrip_validation": "FBXRoundtripValidation.json"
+  "fbx_roundtrip_validation": "FBXRoundtripValidation.json",
+  "latest_animation_revision": "ExpressivePoses/README.md"
 }

@@ -26,15 +26,20 @@ namespace CouchGuys.Gameplay.Vehicles
 
         private void DrawVehicleHud(TruckController truck)
         {
-            Rect panel = new(Screen.width - 330f, Screen.height - 235f, 300f, 200f);
+            bool useFuel = truck.Settings.UseFuel;
+            float height = useFuel ? 200f : 163f;
+            Rect panel = new(Screen.width - 330f, Screen.height - height - 35f, 300f, height);
             GUI.color = new Color(0.055f, 0.07f, 0.09f, 0.94f); GUI.Box(panel, GUIContent.none); GUI.color = Color.white;
             GUI.Label(new Rect(panel.x + 18f, panel.y + 12f, 265f, 32f), truck.Settings.DisplayName, m_title);
             GUI.Label(new Rect(panel.x + 18f, panel.y + 47f, 265f, 30f), $"{Mathf.RoundToInt(truck.SpeedKph)} km/h", m_label);
-            DrawBar(new Rect(panel.x + 18f, panel.y + 86f, 264f, 20f), truck.FuelFraction, new Color(1f, .66f, .08f), "FUEL");
-            DrawBar(new Rect(panel.x + 18f, panel.y + 123f, 264f, 20f), truck.HealthFraction, new Color(.25f, .92f, .35f), "TRUCK");
-            if (truck.Fuel <= 0f) GUI.Label(new Rect(panel.x + 18f, panel.y + 151f, 264f, 25f), "OUT OF FUEL", m_warning);
-            else if (truck.FuelFraction <= truck.Settings.LowFuelWarningThreshold) GUI.Label(new Rect(panel.x + 18f, panel.y + 151f, 264f, 25f), "LOW FUEL", m_warning);
-            else if (truck.HealthFraction <= truck.Settings.CriticalHealthThreshold) GUI.Label(new Rect(panel.x + 18f, panel.y + 151f, 264f, 25f), "CRITICAL DAMAGE", m_warning);
+            if (useFuel)
+                DrawBar(new Rect(panel.x + 18f, panel.y + 86f, 264f, 20f), truck.FuelFraction, new Color(1f, .66f, .08f), "FUEL");
+            float healthY = useFuel ? 123f : 86f;
+            DrawBar(new Rect(panel.x + 18f, panel.y + healthY, 264f, 20f), truck.HealthFraction, new Color(.25f, .92f, .35f), "TRUCK");
+            Rect warning = new(panel.x + 18f, panel.y + healthY + 28f, 264f, 25f);
+            if (useFuel && truck.Fuel <= 0f) GUI.Label(warning, "OUT OF FUEL", m_warning);
+            else if (useFuel && truck.FuelFraction <= truck.Settings.LowFuelWarningThreshold) GUI.Label(warning, "LOW FUEL", m_warning);
+            else if (truck.HealthFraction <= truck.Settings.CriticalHealthThreshold) GUI.Label(warning, "CRITICAL DAMAGE", m_warning);
         }
 
         private void DrawBar(Rect rect, float value, Color colour, string text)

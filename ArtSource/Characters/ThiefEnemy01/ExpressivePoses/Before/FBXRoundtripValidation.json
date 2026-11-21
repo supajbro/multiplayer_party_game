@@ -1,0 +1,331 @@
+{
+  "lods": [
+    {
+      "name": "thief_enemy_01",
+      "triangles": 10000,
+      "vertices_after_uv_split": 5002,
+      "dimensions_m": [
+        1.6082104444503784,
+        0.5936815738677979,
+        1.6499863862991333
+      ],
+      "unweighted_vertices": 0,
+      "max_influences": 4,
+      "topology_after_seam_welding": {
+        "nonmanifold_edges": 0,
+        "boundary_edges": 0,
+        "loose_vertices": 0
+      }
+    },
+    {
+      "name": "thief_enemy_01_LOD1",
+      "triangles": 4000,
+      "vertices_after_uv_split": 2002,
+      "dimensions_m": [
+        1.6094528436660767,
+        0.5934370756149292,
+        1.6499015092849731
+      ],
+      "unweighted_vertices": 0,
+      "max_influences": 4,
+      "topology_after_seam_welding": {
+        "nonmanifold_edges": 0,
+        "boundary_edges": 0,
+        "loose_vertices": 0
+      }
+    },
+    {
+      "name": "thief_enemy_01_LOD2",
+      "triangles": 1500,
+      "vertices_after_uv_split": 752,
+      "dimensions_m": [
+        1.607367992401123,
+        0.5921716690063477,
+        1.6487056016921997
+      ],
+      "unweighted_vertices": 0,
+      "max_influences": 2,
+      "topology_after_seam_welding": {
+        "nonmanifold_edges": 0,
+        "boundary_edges": 0,
+        "loose_vertices": 0
+      }
+    },
+    {
+      "name": "thief_enemy_01_LOD3",
+      "triangles": 700,
+      "vertices_after_uv_split": 352,
+      "dimensions_m": [
+        1.607203722000122,
+        0.5953712463378906,
+        1.6499429941177368
+      ],
+      "unweighted_vertices": 0,
+      "max_influences": 2,
+      "topology_after_seam_welding": {
+        "nonmanifold_edges": 0,
+        "boundary_edges": 0,
+        "loose_vertices": 0
+      }
+    }
+  ],
+  "animations": {
+    "thief_enemy_01_Rig|thief_enemy_01_Rig|AssaultRifle_Thief_Death": {
+      "frames": [
+        1,
+        52
+      ],
+      "sampled_frames_all_lods": 52,
+      "bounds_min_m": [
+        -0.4119262099266052,
+        -1.0097543001174927,
+        -0.0697736144065857
+      ],
+      "bounds_max_m": [
+        0.6185301542282104,
+        0.682381272315979,
+        1.6497544050216675
+      ]
+    },
+    "thief_enemy_01_Rig|thief_enemy_01_Rig|AssaultRifle_Thief_Frustration": {
+      "frames": [
+        1,
+        31
+      ],
+      "sampled_frames_all_lods": 31,
+      "bounds_min_m": [
+        -0.3476608991622925,
+        -0.5569829940795898,
+        -0.002499928930774331
+      ],
+      "bounds_max_m": [
+        0.43473726511001587,
+        0.3507050573825836,
+        1.6497544050216675
+      ]
+    },
+    "thief_enemy_01_Rig|thief_enemy_01_Rig|AssaultRifle_Thief_Idle": {
+      "frames": [
+        1,
+        48
+      ],
+      "sampled_frames_all_lods": 48,
+      "bounds_min_m": [
+        -0.34766092896461487,
+        -0.48222509026527405,
+        -0.002499931026250124
+      ],
+      "bounds_max_m": [
+        0.34127625823020935,
+        0.31371188163757324,
+        1.6500122547149658
+      ]
+    },
+    "thief_enemy_01_Rig|thief_enemy_01_Rig|AssaultRifle_Thief_Shoot": {
+      "frames": [
+        1,
+        24
+      ],
+      "sampled_frames_all_lods": 24,
+      "bounds_min_m": [
+        -0.34766092896461487,
+        -0.5229702591896057,
+        -0.002499931026250124
+      ],
+      "bounds_max_m": [
+        0.34127625823020935,
+        0.3446487486362457,
+        1.6499894857406616
+      ]
+    },
+    "thief_enemy_01_Rig|thief_enemy_01_Rig|AssaultRifle_Thief_Walk": {
+      "frames": [
+        1,
+        24
+      ],
+      "sampled_frames_all_lods": 24,
+      "bounds_min_m": [
+        -0.38744616508483887,
+        -0.48291274905204773,
+        -0.028002146631479263
+      ],
+      "bounds_max_m": [
+        0.37996572256088257,
+        0.4639635980129242,
+        1.649840235710144
+      ]
+    },
+    "thief_enemy_01_Rig|thief_enemy_01_Rig|Pistol_Thief_Death": {
+      "frames": [
+        1,
+        52
+      ],
+      "sampled_frames_all_lods": 52,
+      "bounds_min_m": [
+        -0.4119262397289276,
+        -1.0097543001174927,
+        -0.06996011734008789
+      ],
+      "bounds_max_m": [
+        0.6187440156936646,
+        0.6826369762420654,
+        1.6497544050216675
+      ]
+    },
+    "thief_enemy_01_Rig|thief_enemy_01_Rig|Pistol_Thief_Frustration": {
+      "frames": [
+        1,
+        31
+      ],
+      "sampled_frames_all_lods": 31,
+      "bounds_min_m": [
+        -0.3476610779762268,
+        -0.5504509806632996,
+        -0.0025427951477468014
+      ],
+      "bounds_max_m": [
+        0.6125922799110413,
+        0.3507050573825836,
+        1.6497544050216675
+      ]
+    },
+    "thief_enemy_01_Rig|thief_enemy_01_Rig|Pistol_Thief_Idle": {
+      "frames": [
+        1,
+        48
+      ],
+      "sampled_frames_all_lods": 48,
+      "bounds_min_m": [
+        -0.3476610481739044,
+        -0.4278576970100403,
+        -0.0025428105145692825
+      ],
+      "bounds_max_m": [
+        0.3412764072418213,
+        0.31371188163757324,
+        1.6500123739242554
+      ]
+    },
+    "thief_enemy_01_Rig|thief_enemy_01_Rig|Pistol_Thief_Shoot": {
+      "frames": [
+        1,
+        24
+      ],
+      "sampled_frames_all_lods": 24,
+      "bounds_min_m": [
+        -0.3476610481739044,
+        -0.4821256399154663,
+        -0.0025428105145692825
+      ],
+      "bounds_max_m": [
+        0.3412764072418213,
+        0.3446487486362457,
+        1.650242805480957
+      ]
+    },
+    "thief_enemy_01_Rig|thief_enemy_01_Rig|Pistol_Thief_Walk": {
+      "frames": [
+        1,
+        24
+      ],
+      "sampled_frames_all_lods": 24,
+      "bounds_min_m": [
+        -0.3874608874320984,
+        -0.4285247325897217,
+        -0.02825881913304329
+      ],
+      "bounds_max_m": [
+        0.37998074293136597,
+        0.46356770396232605,
+        1.649840235710144
+      ]
+    },
+    "thief_enemy_01_Rig|thief_enemy_01_Rig|Shotgun_Thief_Death": {
+      "frames": [
+        1,
+        52
+      ],
+      "sampled_frames_all_lods": 52,
+      "bounds_min_m": [
+        -0.4119260609149933,
+        -1.0097543001174927,
+        -0.06954485923051834
+      ],
+      "bounds_max_m": [
+        0.6182740926742554,
+        0.6820682287216187,
+        1.6497544050216675
+      ]
+    },
+    "thief_enemy_01_Rig|thief_enemy_01_Rig|Shotgun_Thief_Frustration": {
+      "frames": [
+        1,
+        31
+      ],
+      "sampled_frames_all_lods": 31,
+      "bounds_min_m": [
+        -0.3476608395576477,
+        -0.556983232498169,
+        -0.002443218370899558
+      ],
+      "bounds_max_m": [
+        0.43473735451698303,
+        0.3507050573825836,
+        1.6497544050216675
+      ]
+    },
+    "thief_enemy_01_Rig|thief_enemy_01_Rig|Shotgun_Thief_Idle": {
+      "frames": [
+        1,
+        48
+      ],
+      "sampled_frames_all_lods": 48,
+      "bounds_min_m": [
+        -0.3476608395576477,
+        -0.4821922779083252,
+        -0.002443218370899558
+      ],
+      "bounds_max_m": [
+        0.3412761390209198,
+        0.31371188163757324,
+        1.6500123739242554
+      ]
+    },
+    "thief_enemy_01_Rig|thief_enemy_01_Rig|Shotgun_Thief_Shoot": {
+      "frames": [
+        1,
+        24
+      ],
+      "sampled_frames_all_lods": 24,
+      "bounds_min_m": [
+        -0.3476608395576477,
+        -0.533713161945343,
+        -0.002443218370899558
+      ],
+      "bounds_max_m": [
+        0.3412761390209198,
+        0.3446487784385681,
+        1.6500012874603271
+      ]
+    },
+    "thief_enemy_01_Rig|thief_enemy_01_Rig|Shotgun_Thief_Walk": {
+      "frames": [
+        1,
+        24
+      ],
+      "sampled_frames_all_lods": 24,
+      "bounds_min_m": [
+        -0.3874272406101227,
+        -0.4832818806171417,
+        -0.027692647650837898
+      ],
+      "bounds_max_m": [
+        0.37994641065597534,
+        0.46443745493888855,
+        1.6498404741287231
+      ]
+    }
+  },
+  "bones": 22,
+  "rest_pose": true
+}

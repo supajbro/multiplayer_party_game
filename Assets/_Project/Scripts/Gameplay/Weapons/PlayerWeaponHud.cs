@@ -22,6 +22,8 @@ namespace CouchGuys.Gameplay.Weapons
 
         private NetworkObject m_networkObject;
         private VehicleHud m_vehicleHud;
+        private PlayerTruckInteractor m_truck;
+        private PlayerHoverboardInteractor m_hoverboard;
         private PlayerWeaponController m_weapons;
         private PlayerHealth m_health;
         private PlayerStamina m_stamina;
@@ -50,6 +52,8 @@ namespace CouchGuys.Gameplay.Weapons
         {
             m_networkObject = GetComponent<NetworkObject>();
             m_vehicleHud = GetComponent<VehicleHud>();
+            m_truck = GetComponent<PlayerTruckInteractor>();
+            m_hoverboard = GetComponent<PlayerHoverboardInteractor>();
             m_weapons = GetComponent<PlayerWeaponController>();
             m_health = GetComponent<PlayerHealth>();
             m_stamina = GetComponent<PlayerStamina>();
@@ -264,6 +268,8 @@ namespace CouchGuys.Gameplay.Weapons
         private void LateUpdate()
         {
             if (!m_hudBuilt) return;
+            m_view.PresentVehicleMode((m_truck != null && m_truck.CurrentTruck != null) ||
+                (m_hoverboard != null && m_hoverboard.IsMounted));
             var dispatcher = DispatcherMenuController.Active;
             bool hideForDispatcher = dispatcher != null && dispatcher.Owner == m_carrier;
             if (hideForDispatcher && !m_hiddenForDispatcher)

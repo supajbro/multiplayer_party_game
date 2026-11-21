@@ -1,8 +1,4 @@
-using System.Collections.Generic;
 using CouchGuys.Gameplay.Couch;
-using CouchGuys.Gameplay.Enemies;
-using CouchGuys.Gameplay.Pedestrians;
-using CouchGuys.Gameplay.Traffic;
 using CouchGuys.Gameplay.Weapons;
 using CouchGuys.Player;
 using FishNet.Object;
@@ -34,19 +30,7 @@ namespace CouchGuys.Gameplay.Vehicles
         private readonly float[] m_nextTurretShot = new float[3];
         private readonly bool[] m_turretFire = new bool[3];
         private readonly float[] m_clampProgress = new float[4];
-        private readonly List<TurretShot> m_turretShots = new();
-        private readonly Dictionary<uint, HoverTruckBolt> m_boltVisuals = new();
-        private uint m_nextShotId;
         private Vector3 m_visualBasePosition;
-
-        private struct TurretShot
-        {
-            public uint Id;
-            public Vector3 Position;
-            public Vector3 Velocity;
-            public float Expires;
-            public PlayerHealth Shooter;
-        }
 
         public bool IsHoverTruck => m_hoverSettings != null && !IsGetawayTruck;
         public HoverTruckSettings HoverSettings => m_hoverSettings;
@@ -69,7 +53,7 @@ namespace CouchGuys.Gameplay.Vehicles
             int index = seatIndex - 1;
             if (m_turretSettings == null || index < 0 || index >= m_turretMuzzles.Length || m_turretMuzzles[index] == null)
                 return cameraRay.direction;
-            float range = m_turretSettings.ProjectileSpeed * m_turretSettings.Lifetime;
+            float range = GetOccupant(seatIndex)?.GetComponent<PlayerWeaponController>()?.AssaultRifleDefinition?.Range ?? 55f;
             Vector3 target = cameraRay.GetPoint(range);
             float closest = range;
             foreach (RaycastHit hit in Physics.RaycastAll(cameraRay, range, m_turretSettings.HitMask, QueryTriggerInteraction.Collide))
@@ -140,7 +124,7 @@ namespace CouchGuys.Gameplay.Vehicles
             TickTurretsServer(dt);
         }
 
-        private bool IgnoreHoverCollider(Collider collider)
+        internal bool IgnoreHoverCollider(Collider collider)
         {
             if (collider == null || collider.transform.IsChildOf(transform)) return true;
             if (collider.TryGetComponent(out HoverTruckBolt _)) return true;
@@ -166,91 +150,13 @@ namespace CouchGuys.Gameplay.Vehicles
                 ApplyTurretPose(index, next);
                 if (!m_turretFire[index] || Time.time < m_nextTurretShot[index] ||
                     index >= m_turretMuzzles.Length || m_turretMuzzles[index] == null) continue;
-                m_nextTurretShot[index] = Time.time + m_turretSettings.FireInterval;
+                var weapons = occupant.GetComponent<PlayerWeaponController>();
+                WeaponDefinition rifle = weapons != null ? weapons.AssaultRifleDefinition : null;
+                if (rifle == null) continue;
+                m_nextTurretShot[index] = Time.time + rifle.FireInterval;
                 Transform muzzle = m_turretMuzzles[index];
-                var shot = new TurretShot { Id = ++m_nextShotId, Position = muzzle.position,
-                    Velocity = muzzle.forward * m_turretSettings.ProjectileSpeed + m_rigidbody.linearVelocity,
-                    Expires = Time.time + m_turretSettings.Lifetime, Shooter = occupant.GetComponent<PlayerHealth>() };
-                m_turretShots.Add(shot);
-                FireTurretObserversRpc(shot.Id, shot.Position, shot.Velocity);
+                weapons.FireTruckRifleServer(this, muzzle.position, muzzle.forward);
             }
-        }
-
-        private void TickTurretShotsServer(float dt)
-        {
-            for (int index = m_turretShots.Count - 1; index >= 0; index--)
-            {
-                TurretShot shot = m_turretShots[index];
-                Vector3 travel = shot.Velocity * dt;
-                RaycastHit nearest = default;
-                float distance = float.PositiveInfinity;
-                foreach (RaycastHit hit in Physics.SphereCastAll(shot.Position, m_turretSettings.CollisionRadius,
-                    travel.normalized, travel.magnitude, m_turretSettings.HitMask, QueryTriggerInteraction.Collide))
-                {
-                    if (IgnoreHoverCollider(hit.collider) || hit.distance >= distance) continue;
-                    if (hit.collider.isTrigger && RocketProjectile.FindDamageTarget(hit.collider) == null) continue;
-                    nearest = hit;
-                    distance = hit.distance;
-                }
-                if (!float.IsPositiveInfinity(distance))
-                {
-                    ApplyTurretDamageServer(nearest, shot);
-                    HitTurretObserversRpc(shot.Id, nearest.point, nearest.normal, true);
-                    m_turretShots.RemoveAt(index);
-                }
-                else if (Time.time >= shot.Expires)
-                {
-                    HitTurretObserversRpc(shot.Id, shot.Position, Vector3.up, false);
-                    m_turretShots.RemoveAt(index);
-                }
-                else
-                {
-                    shot.Position += travel;
-                    m_turretShots[index] = shot;
-                }
-            }
-        }
-
-        private void ClearTurretShotsServer()
-        {
-            foreach (TurretShot shot in m_turretShots)
-                HitTurretObserversRpc(shot.Id, shot.Position, Vector3.up, false);
-            m_turretShots.Clear();
-        }
-
-        private void ApplyTurretDamageServer(RaycastHit hit, TurretShot shot)
-        {
-            Component target = RocketProjectile.FindDamageTarget(hit.collider);
-            Vector3 direction = shot.Velocity.normalized;
-            float damage = m_turretSettings.Damage;
-            float force = m_turretSettings.Knockback;
-            switch (target)
-            {
-                case PlayerHealth player: player.ApplyDamageServer(damage, direction, force); break;
-                case ThiefHealth thief: thief.ApplyBulletDamageServer(damage, direction, force, hit.point, shot.Shooter); break;
-                case PedestrianController pedestrian: pedestrian.ApplyBulletDamageServer(damage, hit.point, direction); break;
-                case TruckController truck: truck.ApplyBulletDamageServer(damage); break;
-                case MagneticHoverboardController board: board.ApplyBulletDamageServer(damage); break;
-                case TrafficVehicleController traffic: traffic.ApplyBulletDamageServer(damage); break;
-            }
-        }
-
-        [ObserversRpc(RunLocally = true)]
-        private void FireTurretObserversRpc(uint id, Vector3 position, Vector3 velocity)
-        {
-            if (!IsClientInitialized || m_turretSettings.ProjectilePrefab == null) return;
-            var bolt = Instantiate(m_turretSettings.ProjectilePrefab, position, Quaternion.LookRotation(velocity));
-            bolt.Launch(velocity, m_turretSettings.Lifetime);
-            m_boltVisuals[id] = bolt;
-        }
-
-        [ObserversRpc(RunLocally = true)]
-        private void HitTurretObserversRpc(uint id, Vector3 position, Vector3 normal, bool impact)
-        {
-            if (m_boltVisuals.Remove(id, out HoverTruckBolt bolt) && bolt != null) Destroy(bolt.gameObject);
-            if (!IsClientInitialized || !impact || m_turretSettings.ImpactPrefab == null) return;
-            GameObject effect = Instantiate(m_turretSettings.ImpactPrefab, position, Quaternion.LookRotation(normal));
-            Destroy(effect, 2f);
         }
 
         private void ApplyTurretPose(int index, Vector2 aim, float step = float.PositiveInfinity)

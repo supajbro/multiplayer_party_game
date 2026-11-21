@@ -1,0 +1,1 @@
+PASS: FBX scale and bottom origin, nine resolved material slots per LOD, three LODs, nine convex colliders, nine unobstructed mouth rays, eight wall rays, weapon-sized rigidbody drop, saved prefab reload. Bounds: Center: (0.00, 0.82, 0.01), Extents: (1.62, 0.82, 1.63)

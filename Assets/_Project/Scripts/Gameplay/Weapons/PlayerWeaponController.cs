@@ -127,6 +127,8 @@ namespace CouchGuys.Gameplay.Weapons
         public int SelectedHotbarSlot => Mathf.Clamp(m_selectedHotbarSlot.Value, 0, InventorySlotCount - 1);
         public int GetInventoryWeaponIndex(int slot) => slot >= 0 && slot < m_inventory.Count ? m_inventory[slot] : -1;
         public ReticleSettings CurrentReticleSettings => GetWeaponReticle(m_equippedIndex.Value);
+        public ReticleSettings AssaultRifleReticleSettings => GetWeaponReticle((int)PlayerWeaponType.AssaultRifle);
+        public WeaponDefinition AssaultRifleDefinition => GetWeapon((int)PlayerWeaponType.AssaultRifle);
         public float CurrentWeaponRange => m_equippedIndex.Value == (int)PlayerWeaponType.GrappleGun && m_grappleSettings != null
             ? m_grappleSettings.MaximumRange : GetWeapon(m_equippedIndex.Value)?.Range ?? 60f;
 
@@ -731,7 +733,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         [Server]
         private Vector3[] ResolveHitsServer(Vector3 origin, Vector3 forward, WeaponDefinition weapon,
-            out Vector3[] normals, out byte[] surfaces)
+            out Vector3[] normals, out byte[] surfaces, TruckController ignoredTruck = null)
         {
             m_bloodHits.Clear();
             m_playerDamage.Clear();
@@ -754,7 +756,7 @@ namespace CouchGuys.Gameplay.Weapons
                     ? forward
                     : ApplySpread(forward, weapon.SpreadDegrees);
                 ends[pellet] = origin + direction * weapon.Range;
-                if (!TryGetNearestNonSelfHit(origin, direction, weapon.Range, out RaycastHit nearest)) continue;
+                if (!TryGetNearestNonSelfHit(origin, direction, weapon.Range, out RaycastHit nearest, ignoredTruck)) continue;
                 ends[pellet] = nearest.point;
                 normals[pellet] = nearest.normal;
                 surfaces[pellet] = (byte)ClassifySurface(nearest.collider);
@@ -882,7 +884,7 @@ namespace CouchGuys.Gameplay.Weapons
         }
 
         private bool TryGetNearestNonSelfHit(Vector3 origin, Vector3 direction, float range,
-            out RaycastHit nearest)
+            out RaycastHit nearest, TruckController ignoredTruck = null)
         {
             int hitCount = Physics.RaycastNonAlloc(origin, direction, m_hits, range,
                 m_hitMask, QueryTriggerInteraction.Collide);
@@ -892,6 +894,7 @@ namespace CouchGuys.Gameplay.Weapons
             for (int hitIndex = 0; hitIndex < hitCount; hitIndex++)
             {
                 RaycastHit hit = m_hits[hitIndex];
+                if (ignoredTruck != null && ignoredTruck.IgnoreHoverCollider(hit.collider)) continue;
                 if (!CouchGuys.Gameplay.Pedestrians.PedestrianController.IsBulletHit(hit.collider) ||
                     hit.collider.GetComponentInParent<PlayerWeaponController>() == this ||
                     hit.distance >= nearestDistance) continue;
@@ -974,6 +977,27 @@ namespace CouchGuys.Gameplay.Weapons
         private void ConfirmHostileHitTargetRpc(NetworkConnection connection, bool elimination)
         {
             if (IsOwner) LocalHitConfirmed?.Invoke(elimination);
+        }
+
+        // Called only by the server-owned turret loop; mounted guns do not consume inventory ammo.
+        [Server]
+        internal void FireTruckRifleServer(TruckController truck, Vector3 muzzle, Vector3 direction)
+        {
+            if (truck == null || !TryGetComponent(out PlayerTruckInteractor rider) ||
+                rider.CurrentTruck != truck || rider.IsDriver || !m_health.IsAlive || m_health.IsKnockedDown) return;
+            WeaponDefinition weapon = AssaultRifleDefinition;
+            if (weapon == null) return;
+            Vector3[] ends = ResolveHitsServer(muzzle, direction, weapon, out var normals, out var surfaces, truck);
+            ShowTruckRifleObserversRpc(muzzle, ends, normals, surfaces);
+        }
+
+        [ObserversRpc(RunLocally = true)]
+        private void ShowTruckRifleObserversRpc(Vector3 muzzle, Vector3[] ends, Vector3[] normals, byte[] surfaces)
+        {
+            WeaponDefinition weapon = AssaultRifleDefinition;
+            m_audio?.PlayShot(PlayerWeaponType.AssaultRifle, muzzle, null);
+            m_effects?.PlayShot(weapon, muzzle, ends, normals, surfaces, IsOwner);
+            if (IsOwner) LocalShotFired?.Invoke(PlayerWeaponType.AssaultRifle);
         }
 
         [ObserversRpc(RunLocally = true)]

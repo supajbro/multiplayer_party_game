@@ -1,10 +1,11 @@
 """Render posed meshes captured from the actual upgraded Unity prefabs."""
 from pathlib import Path
-import bpy,json
+import bpy,json,sys
 from mathutils import Vector
 ROOT=Path(__file__).resolve().parents[2]
-SRC=ROOT/'ArtSource/Characters/ThiefEnemy01/PrefabUpgrade'
-for name in ['Thief','Thief_Pistol','Thief_AssaultRifle','Thief_Shotgun','Thief_RocketLauncher','GrapplerThief','SpeakerThief']:
+SRC=ROOT/'ArtSource/Characters/ThiefEnemy01'/('GripFix' if '--grips' in sys.argv else 'ExpressivePoses' if '--expressive' in sys.argv else 'PrefabUpgrade')
+names=[n+'_'+pose for n in ['Thief_Pistol','Thief_AssaultRifle','Thief_Shotgun','GrapplerThief'] for pose in ['Tpose','Idle','Shoot']] if '--grips' in sys.argv else ['Thief','Thief_Pistol','Thief_AssaultRifle','Thief_Shotgun','Thief_RocketLauncher','GrapplerThief','SpeakerThief']
+for name in names:
     path=SRC/(name+'_Preview.json')
     if not path.exists():continue
     bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=False)

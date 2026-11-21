@@ -6,6 +6,39 @@ namespace CouchGuys.Gameplay.Weapons
 {
     public sealed class PlayerWeaponHudView : MonoBehaviour
     {
+        [Header("Vehicle visibility")]
+        [Tooltip("Panels hidden while driving or riding. Deliveries and vehicle telemetry stay visible.")]
+        [SerializeField] private CanvasGroup[] m_hideInVehicle;
+        private bool m_inVehicle;
+        private float[] m_previousAlphas;
+        private bool[] m_previousInteractions, m_previousRaycasts;
+
+        public void PresentVehicleMode(bool mounted)
+        {
+            if (mounted == m_inVehicle || m_hideInVehicle == null) return;
+            m_inVehicle = mounted;
+            if (mounted)
+            {
+                m_previousAlphas = new float[m_hideInVehicle.Length];
+                m_previousInteractions = new bool[m_hideInVehicle.Length];
+                m_previousRaycasts = new bool[m_hideInVehicle.Length];
+            }
+            for (int i = 0; i < m_hideInVehicle.Length; i++)
+            {
+                CanvasGroup panel = m_hideInVehicle[i];
+                if (panel == null) continue;
+                if (mounted)
+                {
+                    m_previousAlphas[i] = panel.alpha;
+                    m_previousInteractions[i] = panel.interactable;
+                    m_previousRaycasts[i] = panel.blocksRaycasts;
+                }
+                panel.alpha = mounted ? 0f : m_previousAlphas[i];
+                panel.interactable = !mounted && m_previousInteractions[i];
+                panel.blocksRaycasts = !mounted && m_previousRaycasts[i];
+            }
+        }
+
         [SerializeField] public InteractionPromptView m_interactionPrompt;
         [SerializeField] public RectTransform m_minimapRoot;
         [Tooltip("Decorative frame only; adjust its RectTransform independently of the live map.")]

@@ -1,0 +1,202 @@
+{
+  "Pistol_Thief_Idle": {
+    "frames": [
+      1,
+      48
+    ],
+    "min_hand_surface_distance_m": 0.397049177433368,
+    "min_wrist_distance_m": 0.5872177506227664
+  },
+  "Pistol_Thief_Walk": {
+    "frames": [
+      1,
+      24
+    ],
+    "min_hand_surface_distance_m": 0.3816050465052931,
+    "min_wrist_distance_m": 0.5683701209399376
+  },
+  "Pistol_Thief_Shoot": {
+    "frames": [
+      1,
+      24
+    ],
+    "min_hand_surface_distance_m": 0.3976641759611139,
+    "min_wrist_distance_m": 0.5872179568016724
+  },
+  "Pistol_Thief_Death": {
+    "frames": [
+      1,
+      52
+    ],
+    "min_hand_surface_distance_m": null,
+    "min_wrist_distance_m": null
+  },
+  "Pistol_Thief_Frustration": {
+    "frames": [
+      1,
+      31
+    ],
+    "min_hand_surface_distance_m": 0.3399036009541888,
+    "min_wrist_distance_m": 0.5801773050721952
+  },
+  "AssaultRifle_Thief_Idle": {
+    "frames": [
+      1,
+      48
+    ],
+    "min_hand_surface_distance_m": 0.06914073564832161,
+    "min_wrist_distance_m": 0.3187864394610109
+  },
+  "AssaultRifle_Thief_Walk": {
+    "frames": [
+      1,
+      24
+    ],
+    "min_hand_surface_distance_m": 0.06865678847046688,
+    "min_wrist_distance_m": 0.31878644452792204
+  },
+  "AssaultRifle_Thief_Shoot": {
+    "frames": [
+      1,
+      24
+    ],
+    "min_hand_surface_distance_m": 0.06990839175433491,
+    "min_wrist_distance_m": 0.31878682664583036
+  },
+  "AssaultRifle_Thief_Death": {
+    "frames": [
+      1,
+      52
+    ],
+    "min_hand_surface_distance_m": null,
+    "min_wrist_distance_m": null
+  },
+  "AssaultRifle_Thief_Frustration": {
+    "frames": [
+      1,
+      31
+    ],
+    "min_hand_surface_distance_m": 0.06990853486277965,
+    "min_wrist_distance_m": 0.3187869877825006
+  },
+  "Shotgun_Thief_Idle": {
+    "frames": [
+      1,
+      48
+    ],
+    "min_hand_surface_distance_m": 0.07845661795310349,
+    "min_wrist_distance_m": 0.3265727762262815
+  },
+  "Shotgun_Thief_Walk": {
+    "frames": [
+      1,
+      24
+    ],
+    "min_hand_surface_distance_m": 0.07859858833740012,
+    "min_wrist_distance_m": 0.3265727790780886
+  },
+  "Shotgun_Thief_Shoot": {
+    "frames": [
+      1,
+      24
+    ],
+    "min_hand_surface_distance_m": 0.07930759325342217,
+    "min_wrist_distance_m": 0.32657315551641075
+  },
+  "Shotgun_Thief_Death": {
+    "frames": [
+      1,
+      52
+    ],
+    "min_hand_surface_distance_m": null,
+    "min_wrist_distance_m": null
+  },
+  "Shotgun_Thief_Frustration": {
+    "frames": [
+      1,
+      31
+    ],
+    "min_hand_surface_distance_m": 0.07930738291780669,
+    "min_wrist_distance_m": 0.326573028432878
+  },
+  "Unarmed_Thief_Idle": {
+    "frames": [
+      1,
+      48
+    ],
+    "min_hand_surface_distance_m": 0.37208190838011107,
+    "min_wrist_distance_m": 0.5310599306408667
+  },
+  "Unarmed_Thief_Walk": {
+    "frames": [
+      1,
+      24
+    ],
+    "min_hand_surface_distance_m": 0.37342985273881857,
+    "min_wrist_distance_m": 0.5308841961391798
+  },
+  "Unarmed_Thief_Shoot": {
+    "frames": [
+      1,
+      24
+    ],
+    "min_hand_surface_distance_m": 0.3724363099702492,
+    "min_wrist_distance_m": 0.5310599759905857
+  },
+  "Unarmed_Thief_Death": {
+    "frames": [
+      1,
+      52
+    ],
+    "min_hand_surface_distance_m": null,
+    "min_wrist_distance_m": null
+  },
+  "Unarmed_Thief_Frustration": {
+    "frames": [
+      1,
+      31
+    ],
+    "min_hand_surface_distance_m": 0.37245804158721185,
+    "min_wrist_distance_m": 0.5310603525438136
+  },
+  "Speaker_Thief_Idle": {
+    "frames": [
+      1,
+      48
+    ],
+    "min_hand_surface_distance_m": 0.7413505624611473,
+    "min_wrist_distance_m": 0.7707459927129964
+  },
+  "Speaker_Thief_Walk": {
+    "frames": [
+      1,
+      24
+    ],
+    "min_hand_surface_distance_m": 0.7134040724128132,
+    "min_wrist_distance_m": 0.7629582724729707
+  },
+  "Speaker_Thief_Shoot": {
+    "frames": [
+      1,
+      24
+    ],
+    "min_hand_surface_distance_m": 0.741729853766273,
+    "min_wrist_distance_m": 0.7707462059848308
+  },
+  "Speaker_Thief_Death": {
+    "frames": [
+      1,
+      52
+    ],
+    "min_hand_surface_distance_m": null,
+    "min_wrist_distance_m": null
+  },
+  "Speaker_Thief_Frustration": {
+    "frames": [
+      1,
+      31
+    ],
+    "min_hand_surface_distance_m": 0.6298211203492748,
+    "min_wrist_distance_m": 0.745201158604109
+  }
+}

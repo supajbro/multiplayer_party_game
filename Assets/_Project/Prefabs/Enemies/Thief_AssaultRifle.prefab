@@ -24,12 +24,76 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1290453619578613951}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.66180253, y: -0.7496782, z: 0.0000000071144637, w: 0.00000007407357}
-  m_LocalPosition: {x: 0.002792159, y: 0.0007212188, z: 0.00035078274}
+  m_LocalRotation: {x: -0.00000008940697, y: 0.000000014901161, z: 0.000000044703484, w: 1}
+  m_LocalPosition: {x: -0.000010051931, y: 0.06646719, z: 0.29990593}
+  m_LocalScale: {x: 109.0909, y: 109.09095, z: 109.090904}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7407373103301758194}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &4642325874550174890
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7407373103301758194}
+  m_Layer: 0
+  m_Name: WeaponGrip
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7407373103301758194
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4642325874550174890}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.000000018632802, y: 0.70710695, z: 0.70710665, w: -0.000000049870355}
+  m_LocalPosition: {x: 2.1827867e-10, y: 0.0007499996, z: -0.00000000383019}
+  m_LocalScale: {x: 0.009166669, y: 0.0091666635, z: 0.009166668}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7915924776550099168}
+  - {fileID: 4264250254033604688}
+  m_Father: {fileID: 2914633148435642435}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &5443067491246771060
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8377120930483336060}
+  m_Layer: 0
+  m_Name: HandleCenter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8377120930483336060
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5443067491246771060}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.0403, y: -0.0282, z: 0.0121}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2914633148435642435}
+  m_Father: {fileID: 7915924776550099168}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &5867577797574308678
 GameObject:
@@ -57,12 +121,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5867577797574308678}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.467965, y: 0.5301026, z: 0.5301025, w: 0.46796507}
-  m_LocalPosition: {x: -2.3411953e-10, y: -2.9264938e-11, z: -0.0000000038057544}
-  m_LocalScale: {x: 0.009166669, y: 0.0091666635, z: 0.009166668}
+  m_LocalRotation: {x: -0.000000059604645, y: 0.000000059604645, z: 0.000000014901161, w: 1}
+  m_LocalPosition: {x: -0.040299967, y: 0.02819995, z: -0.012099967}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2914633148435642435}
+  m_Children:
+  - {fileID: 8377120930483336060}
+  m_Father: {fileID: 7407373103301758194}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &7583501428251911356
 MeshFilter:
@@ -544,10 +609,7 @@ PrefabInstance:
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 6427265383511854976, guid: ee30c368409292945a90695d109653c0, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 7915924776550099168}
-    - targetCorrespondingSourceObject: {fileID: 6427265383511854976, guid: ee30c368409292945a90695d109653c0, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 4264250254033604688}
+      addedObject: {fileID: 7407373103301758194}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 4612384780739113246, guid: ee30c368409292945a90695d109653c0, type: 3}
       insertIndex: -1

@@ -641,7 +641,7 @@ Transform:
   m_GameObject: {fileID: 3714241433586475486}
   serializedVersion: 2
   m_LocalRotation: {x: 0.706806, y: 0.00000029802322, z: 0.00000008940697, w: 0.7074075}
-  m_LocalPosition: {x: -0.00032083192, y: -0.004244171, z: 0.0004145957}
+  m_LocalPosition: {x: -0.000320831, y: 0.0034107938, z: 0.00041459152}
   m_LocalScale: {x: 0.0041250037, y: 0.0041250014, z: 0.0041250037}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1135,6 +1135,10 @@ PrefabInstance:
       propertyPath: m_LocalReferencePoint.z
       value: 0.8352375
       objectReference: {fileID: 0}
+    - target: {fileID: 3279568378916244799, guid: ee30c368409292945a90695d109653c0, type: 3}
+      propertyPath: m_Controller
+      value:
+      objectReference: {fileID: 9100000, guid: 43035bea1e4a3e74091e14e94959414d, type: 2}
     - target: {fileID: 4612384780739113246, guid: ee30c368409292945a90695d109653c0, type: 3}
       propertyPath: m_Name
       value: ThiefModel

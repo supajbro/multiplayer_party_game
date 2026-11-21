@@ -1,0 +1,81 @@
+{
+  "visual": {
+    "objects": 61,
+    "triangles": 19548
+  },
+  "collision": {
+    "objects": 9,
+    "triangles": 124
+  },
+  "lods": [
+    {
+      "name": "RecyclingBin_LOD0",
+      "triangles": 19548,
+      "materialSlots": 9
+    },
+    {
+      "name": "RecyclingBin_LOD1",
+      "triangles": 8796,
+      "materialSlots": 9
+    },
+    {
+      "name": "RecyclingBin_LOD2",
+      "triangles": 3518,
+      "materialSlots": 9
+    }
+  ],
+  "referenceHash": "3d7ff31965fcc805852018777f0532bfce042edc1a13679f1629b6316f7efe40",
+  "referenceUnchanged": true,
+  "openingAcrossFlats": 2.4759971471302484,
+  "height": 1.63,
+  "sourceUnits": "metres",
+  "origin": "bottom centre",
+  "materials": [
+    "D02_Yellow",
+    "D02_Teal",
+    "D02_Steel",
+    "D02_Silver",
+    "D02_Shutter",
+    "D02_Rubber",
+    "D02_Light",
+    "RB_GreenEmission",
+    "RB_InteriorGlow"
+  ],
+  "fbxRoundtrip": [
+    {
+      "name": "RecyclingBin_LOD0",
+      "nonmanifoldEdges": 0,
+      "looseVertices": 0,
+      "uvLayers": 1,
+      "dimensions": [
+        3.234999895095825,
+        1.6299999952316284,
+        3.252999782562256
+      ]
+    },
+    {
+      "name": "RecyclingBin_LOD1",
+      "nonmanifoldEdges": 350,
+      "looseVertices": 0,
+      "uvLayers": 1,
+      "dimensions": [
+        3.2335948944091797,
+        1.6299999952316284,
+        3.251481533050537
+      ]
+    },
+    {
+      "name": "RecyclingBin_LOD2",
+      "nonmanifoldEdges": 274,
+      "looseVertices": 0,
+      "uvLayers": 1,
+      "dimensions": [
+        3.22981858253479,
+        1.6264653205871582,
+        3.246493339538574
+      ]
+    }
+  ],
+  "watertightCollisionParts": 9,
+  "unityValidation": "PASS: FBX scale and bottom origin, nine resolved material slots per LOD, three LODs, nine convex colliders, nine unobstructed mouth rays, eight wall rays, weapon-sized rigidbody drop, saved prefab reload. Bounds: Center: (0.00, 0.82, 0.01), Extents: (1.62, 0.82, 1.63)"
+}

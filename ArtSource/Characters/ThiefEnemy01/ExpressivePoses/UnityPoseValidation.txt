@@ -1,0 +1,8 @@
+PASS thief_enemy_01: Unarmed acting, all five states, four unchanged body LODs, valid avatar and references, pose-aware bounds, minimum sampled wrist separation 0.530m.
+PASS Thief: Unarmed acting, all five states, four unchanged body LODs, valid avatar and references, pose-aware bounds, minimum sampled wrist separation 0.578m.
+PASS Thief_Pistol: Pistol acting, all five states, four unchanged body LODs, valid avatar and references, pose-aware bounds, minimum sampled wrist separation 0.621m.
+PASS Thief_AssaultRifle: AssaultRifle acting, all five states, four unchanged body LODs, valid avatar and references, pose-aware bounds, minimum sampled wrist separation 0.347m.
+PASS Thief_Shotgun: Shotgun acting, all five states, four unchanged body LODs, valid avatar and references, pose-aware bounds, minimum sampled wrist separation 0.355m.
+PASS Thief_RocketLauncher: AssaultRifle acting, all five states, four unchanged body LODs, valid avatar and references, pose-aware bounds, minimum sampled wrist separation 0.347m.
+PASS GrapplerThief: Pistol acting, all five states, four unchanged body LODs, valid avatar and references, pose-aware bounds, minimum sampled wrist separation 0.621m.
+PASS SpeakerThief: Speaker acting, all five states, four unchanged body LODs, valid avatar and references, pose-aware bounds, minimum sampled wrist separation 0.807m.

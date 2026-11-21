@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1648819731684193381
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6824958489764738189}
+  m_Layer: 0
+  m_Name: HandleCenter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6824958489764738189
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1648819731684193381}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.0403, y: -0.0282, z: 0.0121}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 507170144637207508}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1733626415833966727
 GameObject:
   m_ObjectHideFlags: 0
@@ -26,12 +57,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1733626415833966727}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.467965, y: 0.5301026, z: 0.5301025, w: 0.46796507}
-  m_LocalPosition: {x: -2.3411953e-10, y: -2.9264938e-11, z: -0.0000000038057544}
-  m_LocalScale: {x: 0.009166669, y: 0.0091666635, z: 0.009166668}
+  m_LocalRotation: {x: -0.000000059604645, y: 0.000000059604645, z: 0.000000014901161, w: 1}
+  m_LocalPosition: {x: -0.040299967, y: 0.02819995, z: -0.012099967}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 5516105928455050652}
+  m_Children:
+  - {fileID: 6824958489764738189}
+  m_Father: {fileID: 4206410012544684711}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &6271032009764975700
 MeshFilter:
@@ -392,6 +424,39 @@ MonoBehaviour:
   m_auraPrefab: {fileID: 15874004329490329, guid: fb06f42f6b771f244aaac9e894949e4b, type: 3}
   m_handClearance: 0.22
   m_movementLean: 4
+--- !u!1 &4229906267461999866
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4206410012544684711}
+  m_Layer: 0
+  m_Name: WeaponGrip
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4206410012544684711
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4229906267461999866}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.000000018632802, y: 0.70710695, z: 0.70710665, w: -0.000000049870355}
+  m_LocalPosition: {x: 2.1827867e-10, y: 0.0007499996, z: -0.00000000383019}
+  m_LocalScale: {x: 0.009166669, y: 0.0091666635, z: 0.009166668}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 507170144637207508}
+  - {fileID: 778329086578487266}
+  m_Father: {fileID: 5516105928455050652}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7168826831836534186
 GameObject:
   m_ObjectHideFlags: 0
@@ -416,12 +481,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7168826831836534186}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.66180253, y: -0.74967825, z: 0.000000006983334, w: 0.00000007224965}
-  m_LocalPosition: {x: 0.0018338036, y: 0.0006014215, z: 0.00035078285}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalRotation: {x: -0.00000008940697, y: 0.000000014901161, z: 0.000000044703484, w: 1}
+  m_LocalPosition: {x: -0.000010247191, y: 0.06646761, z: 0.19454448}
+  m_LocalScale: {x: 109.0909, y: 109.09095, z: 109.090904}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 5516105928455050652}
+  m_Father: {fileID: 4206410012544684711}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1567005065017743900
 PrefabInstance:
@@ -479,6 +544,10 @@ PrefabInstance:
       propertyPath: m_LODs.Array.data[3].renderers.Array.data[1].renderer
       value:
       objectReference: {fileID: 8989523312764160508}
+    - target: {fileID: 3279568378916244799, guid: ee30c368409292945a90695d109653c0, type: 3}
+      propertyPath: m_Controller
+      value:
+      objectReference: {fileID: 9100000, guid: 4b126f249f2302f49882fb39d5aafa81, type: 2}
     - target: {fileID: 4612384780739113246, guid: ee30c368409292945a90695d109653c0, type: 3}
       propertyPath: m_Name
       value: ThiefModel
@@ -540,10 +609,7 @@ PrefabInstance:
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 6427265383511854976, guid: ee30c368409292945a90695d109653c0, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 507170144637207508}
-    - targetCorrespondingSourceObject: {fileID: 6427265383511854976, guid: ee30c368409292945a90695d109653c0, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 778329086578487266}
+      addedObject: {fileID: 4206410012544684711}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 4612384780739113246, guid: ee30c368409292945a90695d109653c0, type: 3}
       insertIndex: -1

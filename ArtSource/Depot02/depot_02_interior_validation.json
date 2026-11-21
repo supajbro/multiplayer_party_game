@@ -1,0 +1,11 @@
+{
+  "unchangedObjects": 129,
+  "removedObjects": [
+    "D02_BrandSign"
+  ],
+  "assemblies": 18,
+  "triangles": 12380,
+  "unityValidation": "PASS: 18 interior assemblies, all mesh and material references resolved.",
+  "removedLogoSerializedObjects": 13,
+  "preservedPrefabObjects": 851
+}

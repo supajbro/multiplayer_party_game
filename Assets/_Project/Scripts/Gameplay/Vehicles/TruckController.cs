@@ -211,7 +211,6 @@ namespace CouchGuys.Gameplay.Vehicles
             m_health.Value = IsGetawayTruck ? m_getaway.MaximumHealth : m_settings.MaxHealth;
             m_destroyed.Value = false;
             m_rearDoorsOpen.Value = IsHoverTruck;
-            m_turretShots.Clear();
             for (int index = 0; index < 3; index++)
             {
                 m_turretFire[index] = false;
@@ -228,7 +227,6 @@ namespace CouchGuys.Gameplay.Vehicles
 
         public override void OnStopServer()
         {
-            ClearTurretShotsServer();
             RecoverLoadedCouchesServer();
             ReleaseAllOccupantsServer();
             base.OnStopServer();
@@ -276,8 +274,6 @@ namespace CouchGuys.Gameplay.Vehicles
         private void FixedUpdate()
         {
             if (IsDestroyed) return;
-            if (IsServerInitialized && IsHoverTruck && m_turretSettings != null)
-                TickTurretShotsServer(Time.fixedDeltaTime);
             if (IsServerInitialized && m_batLaunch.Tick(m_rigidbody)) return;
             if (!IsServerInitialized || m_settings == null || m_rigidbody.isKinematic || IsGetawayTruck) return;
             if (Time.time - m_lastInputTime > 0.35f) m_driveInput = Vector2.zero;
@@ -682,7 +678,6 @@ namespace CouchGuys.Gameplay.Vehicles
             m_health.Value = Mathf.Max(0f, m_health.Value - Mathf.Max(0f, damage));
             if (m_health.Value > 0f) return;
             m_destroyed.Value = true;
-            ClearTurretShotsServer();
             m_driveInput = Vector2.zero;
             RecoverLoadedCouchesServer();
             ReleaseAllOccupantsServer();
@@ -923,7 +918,7 @@ namespace CouchGuys.Gameplay.Vehicles
             Vector3 localVelocity = transform.InverseTransformDirection(m_rigidbody.linearVelocity);
             float forwardSpeed = localVelocity.z;
             float throttle = m_driveInput.y;
-            bool powered = m_driver.Value != null && !IsDestroyed && m_fuel.Value > 0f &&
+            bool powered = m_driver.Value != null && !IsDestroyed && (!m_settings.UseFuel || m_fuel.Value > 0f) &&
                 (!m_rearDoorsOpen.Value || m_settings.AllowDrivingWithDoorsOpen);
             if (powered && Mathf.Abs(throttle) > 0.01f)
             {
@@ -972,7 +967,7 @@ namespace CouchGuys.Gameplay.Vehicles
 
         private void ConsumeFuel(float dt)
         {
-            if (m_driver.Value == null || IsDestroyed || m_fuel.Value <= 0f) return;
+            if (!m_settings.UseFuel || m_driver.Value == null || IsDestroyed || m_fuel.Value <= 0f) return;
             float speed01 = Mathf.Clamp01(SpeedKph / m_settings.MaxForwardSpeed);
             float rate = m_settings.FuelConsumptionIdle + m_settings.FuelConsumptionDriving * speed01 +
                 m_settings.AccelerationFuelMultiplier * Mathf.Max(0f, m_driveInput.y);

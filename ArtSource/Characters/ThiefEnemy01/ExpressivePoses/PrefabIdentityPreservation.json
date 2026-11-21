@@ -1,0 +1,34 @@
+{
+  "thief_enemy_01": {
+    "root_game_object_id": 4579339051770668961,
+    "gameplay_components_preserved": 0
+  },
+  "Thief": {
+    "root_game_object_id": 1000,
+    "gameplay_components_preserved": 7
+  },
+  "Thief_Pistol": {
+    "root_game_object_id": 2569576030818965973,
+    "gameplay_components_preserved": 8
+  },
+  "Thief_AssaultRifle": {
+    "root_game_object_id": 5886176085319091588,
+    "gameplay_components_preserved": 8
+  },
+  "Thief_Shotgun": {
+    "root_game_object_id": 3721535447601552465,
+    "gameplay_components_preserved": 8
+  },
+  "Thief_RocketLauncher": {
+    "root_game_object_id": 4280269212087817757,
+    "gameplay_components_preserved": 9
+  },
+  "GrapplerThief": {
+    "root_game_object_id": 3224752670529808980,
+    "gameplay_components_preserved": 9
+  },
+  "SpeakerThief": {
+    "root_game_object_id": 3713258935689448990,
+    "gameplay_components_preserved": 9
+  }
+}
