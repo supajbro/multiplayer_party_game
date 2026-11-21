@@ -19,6 +19,10 @@ namespace CouchGuys.Gameplay.Traffic
         [SerializeField, Min(10f)] private float m_despawnDistance = 450f;
         [SerializeField, Min(1f)] private float m_minimumVehicleSpawnDistance = 14f;
         [SerializeField, Range(0.12f, 0.35f)] private float m_laneOffsetFraction = 0.22f;
+        [Header("Individual Routes")]
+        [Tooltip("Cars explore this many road tiles with randomized junction choices before heading to an exit tunnel.")]
+        [SerializeField, Min(2)] private int m_minimumRandomRouteTiles = 40;
+        [SerializeField, Min(2)] private int m_maximumRandomRouteTiles = 140;
 
         public GameObject CarPrefab => m_carPrefab;
         public TrafficDrivingSide DrivingSide => m_drivingSide;
@@ -28,6 +32,8 @@ namespace CouchGuys.Gameplay.Traffic
         public float DespawnDistance => m_despawnDistance;
         public float MinimumVehicleSpawnDistance => m_minimumVehicleSpawnDistance;
         public float LaneOffsetFraction => m_laneOffsetFraction;
+        public int MinimumRandomRouteTiles => m_minimumRandomRouteTiles;
+        public int MaximumRandomRouteTiles => m_maximumRandomRouteTiles;
 
 #if UNITY_EDITOR
         private void OnValidate()
@@ -37,6 +43,8 @@ namespace CouchGuys.Gameplay.Traffic
             m_minimumPlayerSpawnDistance = Mathf.Max(0f, m_minimumPlayerSpawnDistance);
             m_despawnDistance = Mathf.Max(10f, m_despawnDistance);
             m_minimumVehicleSpawnDistance = Mathf.Max(1f, m_minimumVehicleSpawnDistance);
+            m_minimumRandomRouteTiles = Mathf.Max(2, m_minimumRandomRouteTiles);
+            m_maximumRandomRouteTiles = Mathf.Max(m_minimumRandomRouteTiles, m_maximumRandomRouteTiles);
         }
 #endif
     }

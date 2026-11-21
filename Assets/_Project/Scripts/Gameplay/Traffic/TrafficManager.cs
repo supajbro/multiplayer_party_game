@@ -17,10 +17,12 @@ namespace CouchGuys.Gameplay.Traffic
         private readonly Collider[] m_spawnHits = new Collider[32];
         private readonly TrafficLaneGraph m_laneGraph = new TrafficLaneGraph();
         private readonly List<int> m_routeOrder = new List<int>(64);
+        private readonly System.Random m_routeRandom = new System.Random();
 
         [SerializeField] private NeighbourhoodGenerator m_generator;
         [SerializeField] private TrafficSettings m_settings;
         [SerializeField] private NetworkObject m_carPrefab;
+        [SerializeField, TextArea] private string m_trafficStatus = "Waiting for neighbourhood generation.";
 
         private float m_nextSpawnTime;
         private float m_nextPruneTime;
@@ -84,7 +86,12 @@ namespace CouchGuys.Gameplay.Traffic
         private void OnRegionGenerated(NeighbourhoodGenerator generator)
         {
             m_laneGraph.Build(generator, m_settings);
-            m_regionReady = m_laneGraph.Routes.Count > 0;
+            m_regionReady = m_laneGraph.Routes.Count > 0 && m_carPrefab != null;
+            m_trafficStatus = m_regionReady
+                ? $"Ready: {m_laneGraph.Routes.Count} routes through {generator.TrafficRoadPortals.Count} tunnel portals."
+                : m_laneGraph.BuildFailureReason ?? "Traffic car prefab is missing.";
+            if (!m_regionReady)
+                Debug.LogWarning($"Traffic disabled for seed {generator.CurrentSeed}: {m_trafficStatus}", this);
             RebuildRouteOrder();
             m_nextSpawnTime = Time.time + (m_settings != null ? m_settings.SpawnInterval : 5f);
         }
@@ -93,6 +100,7 @@ namespace CouchGuys.Gameplay.Traffic
         {
             ClearRogueCars();
             m_regionReady = false;
+            m_trafficStatus = "Waiting for neighbourhood generation.";
             m_laneGraph.Clear();
             m_routeOrder.Clear();
             m_routeCursor = 0;
@@ -108,6 +116,8 @@ namespace CouchGuys.Gameplay.Traffic
                 int routeIndex = m_routeOrder[m_routeCursor++];
                 TrafficRoute route = m_laneGraph.Routes[routeIndex];
                 if (route.Waypoints.Length < 2 || !IsSpawnClear(route.Waypoints[0])) continue;
+                if (m_laneGraph.TryCreateRandomRoute(route, m_settings, m_routeRandom, out var individualRoute))
+                    route = individualRoute;
 
                 Vector3 direction = Vector3.ProjectOnPlane(
                     route.Waypoints[1] - route.Waypoints[0], Vector3.up).normalized;

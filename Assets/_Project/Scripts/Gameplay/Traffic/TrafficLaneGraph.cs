@@ -7,28 +7,37 @@ namespace CouchGuys.Gameplay.Traffic
     public sealed class TrafficRoute
     {
         public readonly Vector3[] Waypoints;
+        public readonly GridCoordinate[] Coordinates;
 
-        public TrafficRoute(Vector3[] waypoints)
+        public TrafficRoute(Vector3[] waypoints, GridCoordinate[] coordinates = null)
         {
             Waypoints = waypoints;
+            Coordinates = coordinates;
         }
     }
 
-    /// <summary>Immutable routes precomputed once from a generated neighbourhood.</summary>
+    /// <summary>Cached road connectivity and baseline routes, with individual randomized trips.</summary>
     public sealed class TrafficLaneGraph
     {
         private readonly List<TrafficRoute> m_routes = new List<TrafficRoute>(4);
         private readonly Dictionary<GridCoordinate, GeneratedRoad> m_roads =
             new Dictionary<GridCoordinate, GeneratedRoad>();
+        private readonly List<GridCoordinate> m_portals = new List<GridCoordinate>();
 
         public IReadOnlyList<TrafficRoute> Routes => m_routes;
+        public string BuildFailureReason { get; private set; }
 
         public void Build(NeighbourhoodGenerator generator, TrafficSettings settings)
         {
-            m_routes.Clear();
-            m_roads.Clear();
-            if (generator == null || settings == null || generator.TrafficRoadPortals.Count < 2)
+            Clear();
+            if (generator == null || settings == null)
             {
+                BuildFailureReason = "Missing neighbourhood generator or traffic settings.";
+                return;
+            }
+            if (generator.TrafficRoadPortals.Count < 2)
+            {
+                BuildFailureReason = "Traffic requires at least two tunnel portals.";
                 return;
             }
 
@@ -43,7 +52,21 @@ namespace CouchGuys.Gameplay.Traffic
 
             List<GridCoordinate> portals = new List<GridCoordinate>(generator.TrafficRoadPortals.Count);
             for (int index = 0; index < generator.TrafficRoadPortals.Count; index++)
-                portals.Add(generator.TrafficRoadPortals[index].Coordinate);
+            {
+                GridCoordinate coordinate = generator.TrafficRoadPortals[index].Coordinate;
+                if (!m_roads.ContainsKey(coordinate))
+                {
+                    BuildFailureReason = $"Tunnel portal {coordinate} has no generated road.";
+                    return;
+                }
+                if (!portals.Contains(coordinate)) portals.Add(coordinate);
+            }
+            if (portals.Count < 2)
+            {
+                BuildFailureReason = "Traffic requires two distinct tunnel portals.";
+                return;
+            }
+            m_portals.AddRange(portals);
 
             HashSet<string> routeKeys = new HashSet<string>();
             for (int start = 0; start < portals.Count; start++)
@@ -55,6 +78,12 @@ namespace CouchGuys.Gameplay.Traffic
                     if (TryFindPath(portals[start], portals[end], out List<GridCoordinate> path))
                         AddRoute(path, settings, routeKeys);
                 }
+            }
+
+            if (m_routes.Count == 0)
+            {
+                BuildFailureReason = "No connected driving route exists between the tunnel portals, even allowing junction turns.";
+                return;
             }
 
             // Add trips through side streets and loops where the forward-first
@@ -73,12 +102,12 @@ namespace CouchGuys.Gameplay.Traffic
                     int endOffset = 1 + targetIndex % (portals.Count - 1);
                     GridCoordinate start = portals[startIndex];
                     GridCoordinate end = portals[(startIndex + endOffset) % portals.Count];
-                    if (!TryFindPath(start, target, out List<GridCoordinate> outbound))
+                    if (!TryFindStrictPath(start, target, out List<GridCoordinate> outbound))
                         continue;
                     CardinalDirection? incoming = outbound.Count > 1
                         ? Direction(outbound[outbound.Count - 1] - outbound[outbound.Count - 2])
                         : null;
-                    if (!TryFindPath(target, end, out List<GridCoordinate> inbound, incoming))
+                    if (!TryFindStrictPath(target, end, out List<GridCoordinate> inbound, incoming))
                         continue;
 
                     List<GridCoordinate> combined = new List<GridCoordinate>(
@@ -95,9 +124,130 @@ namespace CouchGuys.Gameplay.Traffic
         {
             m_routes.Clear();
             m_roads.Clear();
+            m_portals.Clear();
+            BuildFailureReason = null;
+        }
+
+        public bool TryCreateRandomRoute(TrafficRoute entryRoute, TrafficSettings settings,
+            System.Random random, out TrafficRoute route)
+        {
+            route = null;
+            if (entryRoute?.Coordinates == null || entryRoute.Coordinates.Length < 2 ||
+                settings == null || random == null || m_portals.Count < 2) return false;
+
+            var coordinates = new List<GridCoordinate> { entryRoute.Coordinates[0], entryRoute.Coordinates[1] };
+            var visits = new Dictionary<(GridCoordinate From, GridCoordinate To), int>();
+            var candidates = new List<GridCoordinate>(3);
+            int minimum = System.Math.Max(2, settings.MinimumRandomRouteTiles);
+            int maximum = System.Math.Max(minimum, settings.MaximumRandomRouteTiles);
+            int length = random.Next(minimum, maximum + 1);
+            for (int step = 1; step < length; step++)
+            {
+                GridCoordinate current = coordinates[coordinates.Count - 1];
+                GridCoordinate previous = coordinates[coordinates.Count - 2];
+                candidates.Clear();
+                int fewestVisits = int.MaxValue;
+                for (int direction = 0; direction < 4; direction++)
+                {
+                    if (!CanTravel(current, (CardinalDirection)direction)) continue;
+                    GridCoordinate next = current + Offset((CardinalDirection)direction);
+                    if (next == previous) continue;
+                    visits.TryGetValue((current, next), out int count);
+                    if (count < fewestVisits) { candidates.Clear(); fewestVisits = count; }
+                    if (count == fewestVisits) candidates.Add(next);
+                }
+                // At junctions, straight and turns are equally eligible. Prefer
+                // unexplored edges so cars spread out instead of circling one block.
+                GridCoordinate chosen = candidates.Count > 0
+                    ? candidates[random.Next(candidates.Count)]
+                    : previous;
+                visits.TryGetValue((current, chosen), out int used);
+                visits[(current, chosen)] = used + 1;
+                coordinates.Add(chosen);
+            }
+
+            GridCoordinate last = coordinates[coordinates.Count - 1];
+            CardinalDirection heading = Direction(last - coordinates[coordinates.Count - 2]);
+            int firstExit = random.Next(m_portals.Count);
+            for (int index = 0; index < m_portals.Count; index++)
+            {
+                GridCoordinate exit = m_portals[(firstExit + index) % m_portals.Count];
+                if (exit == coordinates[0]) continue;
+                if (!TryFindTurningPath(last, exit, out var finish, heading)) continue;
+                for (int point = 1; point < finish.Count; point++) coordinates.Add(finish[point]);
+                route = CreateRoute(coordinates, settings);
+                return true;
+            }
+            return false;
         }
 
         private bool TryFindPath(
+            GridCoordinate start,
+            GridCoordinate end,
+            out List<GridCoordinate> coordinates,
+            CardinalDirection? incoming = null)
+        {
+            return TryFindStrictPath(start, end, out coordinates, incoming) ||
+                   TryFindTurningPath(start, end, out coordinates, incoming);
+        }
+
+        // Fallback only for portal trips. Keep the existing cheap straight-first
+        // searches for optional coverage loops so generation cost stays bounded.
+        private bool TryFindTurningPath(
+            GridCoordinate start,
+            GridCoordinate end,
+            out List<GridCoordinate> coordinates,
+            CardinalDirection? incoming = null)
+        {
+            coordinates = null;
+            var initial = (Coordinate: start, Heading: incoming.HasValue ? (int)incoming.Value : -1);
+            var costs = new Dictionary<(GridCoordinate Coordinate, int Heading), (int Turns, int Steps)>();
+            var previous = new Dictionary<(GridCoordinate Coordinate, int Heading),
+                (GridCoordinate Coordinate, int Heading)>();
+            var frontier = new SortedSet<(int Turns, int Steps, int X, int Y, int Heading)>();
+            costs[initial] = (0, 0);
+            frontier.Add((0, 0, start.X, start.Y, initial.Heading));
+            while (frontier.Count > 0)
+            {
+                var entry = frontier.Min;
+                frontier.Remove(entry);
+                var current = (Coordinate: new GridCoordinate(entry.X, entry.Y), Heading: entry.Heading);
+                if (costs[current] != (entry.Turns, entry.Steps)) continue;
+                if (current.Coordinate == end)
+                {
+                    coordinates = new List<GridCoordinate> { current.Coordinate };
+                    while (current != initial)
+                    {
+                        current = previous[current];
+                        coordinates.Add(current.Coordinate);
+                    }
+                    coordinates.Reverse();
+                    return true;
+                }
+
+                int reverse = current.Heading >= 0 ? (current.Heading + 2) % 4 : -1;
+                bool deadEnd = true;
+                for (int direction = 0; direction < 4; direction++)
+                    if (direction != reverse && CanTravel(current.Coordinate, (CardinalDirection)direction))
+                        deadEnd = false;
+                for (int direction = 0; direction < 4; direction++)
+                {
+                    if ((direction == reverse && !deadEnd) ||
+                        !CanTravel(current.Coordinate, (CardinalDirection)direction)) continue;
+                    var next = (Coordinate: current.Coordinate + Offset((CardinalDirection)direction), Heading: direction);
+                    int turns = entry.Turns + (current.Heading >= 0 && direction != current.Heading ? 1 : 0);
+                    int steps = entry.Steps + 1;
+                    if (costs.TryGetValue(next, out var cost) &&
+                        (cost.Turns < turns || (cost.Turns == turns && cost.Steps <= steps))) continue;
+                    costs[next] = (turns, steps);
+                    previous[next] = current;
+                    frontier.Add((turns, steps, next.Coordinate.X, next.Coordinate.Y, direction));
+                }
+            }
+            return false;
+        }
+
+        private bool TryFindStrictPath(
             GridCoordinate start,
             GridCoordinate end,
             out List<GridCoordinate> coordinates,
@@ -199,6 +349,11 @@ namespace CouchGuys.Gameplay.Traffic
             string key = string.Join(";", coordinates);
             if (!routeKeys.Add(key)) return;
 
+            m_routes.Add(CreateRoute(coordinates, settings));
+        }
+
+        private TrafficRoute CreateRoute(List<GridCoordinate> coordinates, TrafficSettings settings)
+        {
             float laneOffset = Mathf.Max(0.8f,
                 Vector3.Distance(m_roads[coordinates[0]].transform.position,
                     m_roads[coordinates[1]].transform.position) * settings.LaneOffsetFraction);
@@ -221,7 +376,7 @@ namespace CouchGuys.Gameplay.Traffic
                 waypoints[index] = centre + right * (side * laneOffset) + Vector3.up * 0.12f;
             }
 
-            m_routes.Add(new TrafficRoute(waypoints));
+            return new TrafficRoute(waypoints, coordinates.ToArray());
         }
 
         private static GridCoordinate Offset(CardinalDirection direction) => direction switch

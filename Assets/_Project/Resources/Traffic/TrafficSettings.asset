@@ -20,3 +20,5 @@ MonoBehaviour:
   m_despawnDistance: 450
   m_minimumVehicleSpawnDistance: 14
   m_laneOffsetFraction: 0.22
+  m_minimumRandomRouteTiles: 40
+  m_maximumRandomRouteTiles: 140

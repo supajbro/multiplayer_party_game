@@ -2778,6 +2778,8 @@ namespace CouchGuys.ProceduralGeneration
         {
             float height = CalculateProgressiveElevation(localX, localY);
             height = ApplyHillyPerimeter(height, localX, localY);
+            height = ApplySummitHighlands(height, localY);
+            height = CarveTrafficTunnelPassages(height, flatWorldPosition);
             height = BlendHousePads(height, flatWorldPosition);
             height = BlendDrivewayGrades(height, flatWorldPosition);
             return ApplyDepotAndRoadHeights(height, localX, localY, flatWorldPosition);
@@ -2790,6 +2792,8 @@ namespace CouchGuys.ProceduralGeneration
         {
             float height = CalculateProgressiveElevation(localX, localY);
             height = ApplyHillyPerimeter(height, localX, localY);
+            height = ApplySummitHighlands(height, localY);
+            height = CarveTrafficTunnelPassages(height, flatWorldPosition);
             return ApplyDepotAndRoadHeights(height, localX, localY, flatWorldPosition);
         }
 

@@ -19,6 +19,35 @@ namespace CouchGuys.ProceduralGeneration
 
         public float SummitTunnelExclusionHalfWidth => GetSummitTunnelExclusionHalfWidth();
 
+        internal bool IsHillTreePositionClear(Vector3 worldPosition)
+        {
+            float clearance = Mathf.Max(m_borderSettings.TunnelClearance,
+                m_terrainSettings.RoadHalfWidth + m_terrainSettings.RoadShoulderWidth);
+            GridCoordinate nearest = WorldToGrid(worldPosition);
+            int radius = Mathf.CeilToInt(clearance / m_roadTileSize) + 1;
+            for (int y = nearest.Y - radius; y <= nearest.Y + radius; y++)
+            {
+                for (int x = nearest.X - radius; x <= nearest.X + radius; x++)
+                {
+                    var coordinate = new GridCoordinate(x, y);
+                    if (!m_roadCells.Contains(coordinate)) continue;
+                    Vector3 offset = worldPosition - GridToWorld(coordinate);
+                    if (Mathf.Abs(offset.x) < clearance + m_roadTileSize * 0.5f &&
+                        Mathf.Abs(offset.z) < clearance + m_roadTileSize * 0.5f) return false;
+                }
+            }
+            foreach (TrafficRoadPortal portal in m_trafficRoadPortals)
+            {
+                Vector3 offset = worldPosition - portal.WorldPosition;
+                float along = Vector3.Dot(offset, portal.WorldOutward);
+                float across = Mathf.Abs(Vector3.Dot(offset,
+                    Vector3.Cross(Vector3.up, portal.WorldOutward)));
+                if (Mathf.Abs(along) < m_borderSettings.TunnelDepth * 0.5f + clearance &&
+                    across < GetTunnelOuterHalfWidth() + clearance) return false;
+            }
+            return true;
+        }
+
         private void CreateUphillExitRestriction()
         {
             if (!HasSummitExit) return;
@@ -58,6 +87,49 @@ namespace CouchGuys.ProceduralGeneration
             int localY = m_gridHeight * (m_blockHeight + 1) +
                          (m_landmarkRoads.Enabled ? m_landmarkRoads.UphillLengthTiles : 0);
             return LocalToGrid(0, localY);
+        }
+
+        private float ApplySummitHighlands(float terrainHeight, float localY)
+        {
+            float boundaryY = m_gridHeight * (m_blockHeight + 1);
+            if (!HasSummitExit || localY <= boundaryY)
+            {
+                return terrainHeight;
+            }
+
+            // Continue the climb across the entire rear of the map, rather than
+            // leaving the exit road on a narrow ridge. Clamp beyond the summit
+            // so the high ground continues as a plateau to the terrain edge.
+            float roadY = Mathf.Min(localY, boundaryY + m_landmarkRoads.UphillLengthTiles);
+            Vector3 roadPoint = LocalCoordinatesToWorld(0f, roadY, 0f);
+            float hillHeight = SampleRoadSurfaceHeight(roadPoint) - m_gridOrigin.y;
+            float blend = Mathf.SmoothStep(0f, 1f,
+                (localY - boundaryY) * m_roadTileSize /
+                Mathf.Max(m_roadTileSize, m_landmarkRoads.EmbankmentBlendWidth));
+            return Mathf.Lerp(terrainHeight, hillHeight, blend);
+        }
+
+        private float CarveTrafficTunnelPassages(float height, Vector3 worldPosition)
+        {
+            if (!m_borderSettings.Enabled) return height;
+            float halfWidth = m_borderSettings.TunnelWidth * 0.5f;
+            float halfDepth = m_borderSettings.TunnelDepth * 0.5f;
+            float blendWidth = Mathf.Max(1f, m_terrainSettings.RoadShoulderWidth);
+            foreach (TrafficRoadPortal portal in m_trafficRoadPortals)
+            {
+                Vector3 offset = worldPosition - portal.WorldPosition;
+                float along = Vector3.Dot(offset, portal.WorldOutward);
+                float across = Mathf.Abs(Vector3.Dot(offset,
+                    Vector3.Cross(Vector3.up, portal.WorldOutward)));
+                float lateral = 1f - Mathf.SmoothStep(0f, 1f,
+                    (across - halfWidth) / blendWidth);
+                float longitudinal = 1f - Mathf.SmoothStep(0f, 1f,
+                    (Mathf.Abs(along) - halfDepth - m_roadTileSize) / blendWidth);
+                float roadHeight = portal.WorldPosition.y - m_gridOrigin.y +
+                                   m_terrainSettings.RoadSurfaceOffset;
+                height = Mathf.Lerp(height, Mathf.Min(height, roadHeight), lateral * longitudinal);
+            }
+            return height;
         }
 
         private float ApplyHillyPerimeter(float terrainHeight, float localX, float localY)

@@ -1,0 +1,1255 @@
+[
+  {
+    "text": "Imagine",
+    "startMs": 70.0,
+    "endMs": 400.0,
+    "timestampMs": 70.0,
+    "confidence": null
+  },
+  {
+    "text": "making",
+    "startMs": 400.0,
+    "endMs": 640.0,
+    "timestampMs": 400.0,
+    "confidence": null
+  },
+  {
+    "text": "a",
+    "startMs": 640.0,
+    "endMs": 670.0,
+    "timestampMs": 640.0,
+    "confidence": null
+  },
+  {
+    "text": "video",
+    "startMs": 670.0,
+    "endMs": 980.0,
+    "timestampMs": 670.0,
+    "confidence": null
+  },
+  {
+    "text": "game",
+    "startMs": 980.0,
+    "endMs": 1250.0,
+    "timestampMs": 980.0,
+    "confidence": null
+  },
+  {
+    "text": "that",
+    "startMs": 1250.0,
+    "endMs": 1360.0,
+    "timestampMs": 1250.0,
+    "confidence": null
+  },
+  {
+    "text": "earns",
+    "startMs": 1360.0,
+    "endMs": 1600.0,
+    "timestampMs": 1360.0,
+    "confidence": null
+  },
+  {
+    "text": "more",
+    "startMs": 1610.0,
+    "endMs": 1880.0,
+    "timestampMs": 1610.0,
+    "confidence": null
+  },
+  {
+    "text": "money",
+    "startMs": 1880.0,
+    "endMs": 2280.0,
+    "timestampMs": 1880.0,
+    "confidence": null
+  },
+  {
+    "text": "in",
+    "startMs": 2380.0,
+    "endMs": 2520.0,
+    "timestampMs": 2380.0,
+    "confidence": null
+  },
+  {
+    "text": "one",
+    "startMs": 2520.0,
+    "endMs": 2740.0,
+    "timestampMs": 2520.0,
+    "confidence": null
+  },
+  {
+    "text": "day",
+    "startMs": 2740.0,
+    "endMs": 2880.0,
+    "timestampMs": 2740.0,
+    "confidence": null
+  },
+  {
+    "text": "than",
+    "startMs": 2890.0,
+    "endMs": 2980.0,
+    "timestampMs": 2890.0,
+    "confidence": null
+  },
+  {
+    "text": "Avatar",
+    "startMs": 2980.0,
+    "endMs": 3420.0,
+    "timestampMs": 2980.0,
+    "confidence": null
+  },
+  {
+    "text": "made",
+    "startMs": 3430.0,
+    "endMs": 3760.0,
+    "timestampMs": 3430.0,
+    "confidence": null
+  },
+  {
+    "text": "during",
+    "startMs": 3770.0,
+    "endMs": 4020.0,
+    "timestampMs": 3770.0,
+    "confidence": null
+  },
+  {
+    "text": "its",
+    "startMs": 4030.0,
+    "endMs": 4110.0,
+    "timestampMs": 4030.0,
+    "confidence": null
+  },
+  {
+    "text": "entire",
+    "startMs": 4110.0,
+    "endMs": 4510.0,
+    "timestampMs": 4110.0,
+    "confidence": null
+  },
+  {
+    "text": "cinema",
+    "startMs": 4520.0,
+    "endMs": 4810.0,
+    "timestampMs": 4520.0,
+    "confidence": null
+  },
+  {
+    "text": "run",
+    "startMs": 4810.0,
+    "endMs": 5080.0,
+    "timestampMs": 4810.0,
+    "confidence": null
+  },
+  {
+    "text": "Well",
+    "startMs": 5400.0,
+    "endMs": 5590.0,
+    "timestampMs": 5400.0,
+    "confidence": null
+  },
+  {
+    "text": "GTA",
+    "startMs": 5770.0,
+    "endMs": 6250.0,
+    "timestampMs": 5770.0,
+    "confidence": null
+  },
+  {
+    "text": "six",
+    "startMs": 6250.0,
+    "endMs": 6600.0,
+    "timestampMs": 6250.0,
+    "confidence": null
+  },
+  {
+    "text": "just",
+    "startMs": 6600.0,
+    "endMs": 6750.0,
+    "timestampMs": 6600.0,
+    "confidence": null
+  },
+  {
+    "text": "did",
+    "startMs": 6750.0,
+    "endMs": 6860.0,
+    "timestampMs": 6750.0,
+    "confidence": null
+  },
+  {
+    "text": "exactly",
+    "startMs": 6860.0,
+    "endMs": 7290.0,
+    "timestampMs": 6860.0,
+    "confidence": null
+  },
+  {
+    "text": "that",
+    "startMs": 7290.0,
+    "endMs": 7560.0,
+    "timestampMs": 7290.0,
+    "confidence": null
+  },
+  {
+    "text": "On",
+    "startMs": 7890.0,
+    "endMs": 7950.0,
+    "timestampMs": 7890.0,
+    "confidence": null
+  },
+  {
+    "text": "November",
+    "startMs": 7950.0,
+    "endMs": 8200.0,
+    "timestampMs": 7950.0,
+    "confidence": null
+  },
+  {
+    "text": "nineteenth",
+    "startMs": 8200.0,
+    "endMs": 8770.0,
+    "timestampMs": 8200.0,
+    "confidence": null
+  },
+  {
+    "text": "GTA",
+    "startMs": 8950.0,
+    "endMs": 9560.0,
+    "timestampMs": 8950.0,
+    "confidence": null
+  },
+  {
+    "text": "six",
+    "startMs": 9780.0,
+    "endMs": 10060.0,
+    "timestampMs": 9780.0,
+    "confidence": null
+  },
+  {
+    "text": "finally",
+    "startMs": 10070.0,
+    "endMs": 10340.0,
+    "timestampMs": 10070.0,
+    "confidence": null
+  },
+  {
+    "text": "launched",
+    "startMs": 10340.0,
+    "endMs": 10790.0,
+    "timestampMs": 10340.0,
+    "confidence": null
+  },
+  {
+    "text": "And",
+    "startMs": 11120.0,
+    "endMs": 11210.0,
+    "timestampMs": 11120.0,
+    "confidence": null
+  },
+  {
+    "text": "Rockstar",
+    "startMs": 11210.0,
+    "endMs": 11580.0,
+    "timestampMs": 11210.0,
+    "confidence": null
+  },
+  {
+    "text": "reported",
+    "startMs": 11580.0,
+    "endMs": 11880.0,
+    "timestampMs": 11580.0,
+    "confidence": null
+  },
+  {
+    "text": "an",
+    "startMs": 11880.0,
+    "endMs": 11990.0,
+    "timestampMs": 11880.0,
+    "confidence": null
+  },
+  {
+    "text": "absolutely",
+    "startMs": 11990.0,
+    "endMs": 12630.0,
+    "timestampMs": 11990.0,
+    "confidence": null
+  },
+  {
+    "text": "ridiculous",
+    "startMs": 12630.0,
+    "endMs": 13260.0,
+    "timestampMs": 12630.0,
+    "confidence": null
+  },
+  {
+    "text": "three",
+    "startMs": 13340.0,
+    "endMs": 13700.0,
+    "timestampMs": 13340.0,
+    "confidence": null
+  },
+  {
+    "text": "point",
+    "startMs": 13710.0,
+    "endMs": 14020.0,
+    "timestampMs": 13710.0,
+    "confidence": null
+  },
+  {
+    "text": "seven",
+    "startMs": 14120.0,
+    "endMs": 14470.0,
+    "timestampMs": 14120.0,
+    "confidence": null
+  },
+  {
+    "text": "nine",
+    "startMs": 14470.0,
+    "endMs": 14700.0,
+    "timestampMs": 14470.0,
+    "confidence": null
+  },
+  {
+    "text": "billion",
+    "startMs": 14710.0,
+    "endMs": 15010.0,
+    "timestampMs": 14710.0,
+    "confidence": null
+  },
+  {
+    "text": "dollars",
+    "startMs": 15010.0,
+    "endMs": 15430.0,
+    "timestampMs": 15010.0,
+    "confidence": null
+  },
+  {
+    "text": "in",
+    "startMs": 15600.0,
+    "endMs": 15720.0,
+    "timestampMs": 15600.0,
+    "confidence": null
+  },
+  {
+    "text": "first-day",
+    "startMs": 15730.0,
+    "endMs": 16170.0,
+    "timestampMs": 15730.0,
+    "confidence": null
+  },
+  {
+    "text": "retail",
+    "startMs": 16170.0,
+    "endMs": 16530.0,
+    "timestampMs": 16170.0,
+    "confidence": null
+  },
+  {
+    "text": "sales",
+    "startMs": 16540.0,
+    "endMs": 16990.0,
+    "timestampMs": 16540.0,
+    "confidence": null
+  },
+  {
+    "text": "For",
+    "startMs": 17340.0,
+    "endMs": 17410.0,
+    "timestampMs": 17340.0,
+    "confidence": null
+  },
+  {
+    "text": "comparison",
+    "startMs": 17410.0,
+    "endMs": 17970.0,
+    "timestampMs": 17410.0,
+    "confidence": null
+  },
+  {
+    "text": "Avatar",
+    "startMs": 18300.0,
+    "endMs": 18670.0,
+    "timestampMs": 18300.0,
+    "confidence": null
+  },
+  {
+    "text": "made",
+    "startMs": 18670.0,
+    "endMs": 18800.0,
+    "timestampMs": 18670.0,
+    "confidence": null
+  },
+  {
+    "text": "around",
+    "startMs": 18810.0,
+    "endMs": 19100.0,
+    "timestampMs": 18810.0,
+    "confidence": null
+  },
+  {
+    "text": "two",
+    "startMs": 19200.0,
+    "endMs": 19400.0,
+    "timestampMs": 19200.0,
+    "confidence": null
+  },
+  {
+    "text": "point",
+    "startMs": 19400.0,
+    "endMs": 19650.0,
+    "timestampMs": 19400.0,
+    "confidence": null
+  },
+  {
+    "text": "nine",
+    "startMs": 19650.0,
+    "endMs": 19920.0,
+    "timestampMs": 19650.0,
+    "confidence": null
+  },
+  {
+    "text": "two",
+    "startMs": 19930.0,
+    "endMs": 20120.0,
+    "timestampMs": 19930.0,
+    "confidence": null
+  },
+  {
+    "text": "billion",
+    "startMs": 20130.0,
+    "endMs": 20420.0,
+    "timestampMs": 20130.0,
+    "confidence": null
+  },
+  {
+    "text": "dollars",
+    "startMs": 20430.0,
+    "endMs": 20870.0,
+    "timestampMs": 20430.0,
+    "confidence": null
+  },
+  {
+    "text": "at",
+    "startMs": 20930.0,
+    "endMs": 20990.0,
+    "timestampMs": 20930.0,
+    "confidence": null
+  },
+  {
+    "text": "the",
+    "startMs": 20990.0,
+    "endMs": 21060.0,
+    "timestampMs": 20990.0,
+    "confidence": null
+  },
+  {
+    "text": "worldwide",
+    "startMs": 21070.0,
+    "endMs": 21550.0,
+    "timestampMs": 21070.0,
+    "confidence": null
+  },
+  {
+    "text": "box",
+    "startMs": 21560.0,
+    "endMs": 21810.0,
+    "timestampMs": 21560.0,
+    "confidence": null
+  },
+  {
+    "text": "office",
+    "startMs": 21820.0,
+    "endMs": 22270.0,
+    "timestampMs": 21820.0,
+    "confidence": null
+  },
+  {
+    "text": "But",
+    "startMs": 22600.0,
+    "endMs": 22660.0,
+    "timestampMs": 22600.0,
+    "confidence": null
+  },
+  {
+    "text": "here's",
+    "startMs": 22660.0,
+    "endMs": 22850.0,
+    "timestampMs": 22660.0,
+    "confidence": null
+  },
+  {
+    "text": "where",
+    "startMs": 22850.0,
+    "endMs": 22970.0,
+    "timestampMs": 22850.0,
+    "confidence": null
+  },
+  {
+    "text": "things",
+    "startMs": 22980.0,
+    "endMs": 23310.0,
+    "timestampMs": 22980.0,
+    "confidence": null
+  },
+  {
+    "text": "get",
+    "startMs": 23310.0,
+    "endMs": 23430.0,
+    "timestampMs": 23310.0,
+    "confidence": null
+  },
+  {
+    "text": "even",
+    "startMs": 23440.0,
+    "endMs": 23620.0,
+    "timestampMs": 23440.0,
+    "confidence": null
+  },
+  {
+    "text": "crazier",
+    "startMs": 23630.0,
+    "endMs": 24200.0,
+    "timestampMs": 23630.0,
+    "confidence": null
+  },
+  {
+    "text": "Before",
+    "startMs": 24520.0,
+    "endMs": 24760.0,
+    "timestampMs": 24520.0,
+    "confidence": null
+  },
+  {
+    "text": "GTA",
+    "startMs": 24760.0,
+    "endMs": 25150.0,
+    "timestampMs": 24760.0,
+    "confidence": null
+  },
+  {
+    "text": "six",
+    "startMs": 25150.0,
+    "endMs": 25470.0,
+    "timestampMs": 25150.0,
+    "confidence": null
+  },
+  {
+    "text": "was",
+    "startMs": 25480.0,
+    "endMs": 25660.0,
+    "timestampMs": 25480.0,
+    "confidence": null
+  },
+  {
+    "text": "even",
+    "startMs": 25710.0,
+    "endMs": 25930.0,
+    "timestampMs": 25710.0,
+    "confidence": null
+  },
+  {
+    "text": "released",
+    "startMs": 25930.0,
+    "endMs": 26370.0,
+    "timestampMs": 25930.0,
+    "confidence": null
+  },
+  {
+    "text": "Rockstar",
+    "startMs": 26700.0,
+    "endMs": 27110.0,
+    "timestampMs": 26700.0,
+    "confidence": null
+  },
+  {
+    "text": "says",
+    "startMs": 27110.0,
+    "endMs": 27280.0,
+    "timestampMs": 27110.0,
+    "confidence": null
+  },
+  {
+    "text": "thirty-two",
+    "startMs": 27290.0,
+    "endMs": 27720.0,
+    "timestampMs": 27290.0,
+    "confidence": null
+  },
+  {
+    "text": "point",
+    "startMs": 27720.0,
+    "endMs": 27950.0,
+    "timestampMs": 27720.0,
+    "confidence": null
+  },
+  {
+    "text": "five",
+    "startMs": 27960.0,
+    "endMs": 28230.0,
+    "timestampMs": 27960.0,
+    "confidence": null
+  },
+  {
+    "text": "million",
+    "startMs": 28240.0,
+    "endMs": 28580.0,
+    "timestampMs": 28240.0,
+    "confidence": null
+  },
+  {
+    "text": "copies",
+    "startMs": 28580.0,
+    "endMs": 28930.0,
+    "timestampMs": 28580.0,
+    "confidence": null
+  },
+  {
+    "text": "had",
+    "startMs": 28930.0,
+    "endMs": 29030.0,
+    "timestampMs": 28930.0,
+    "confidence": null
+  },
+  {
+    "text": "already",
+    "startMs": 29090.0,
+    "endMs": 29340.0,
+    "timestampMs": 29090.0,
+    "confidence": null
+  },
+  {
+    "text": "been",
+    "startMs": 29340.0,
+    "endMs": 29470.0,
+    "timestampMs": 29340.0,
+    "confidence": null
+  },
+  {
+    "text": "sold",
+    "startMs": 29480.0,
+    "endMs": 29870.0,
+    "timestampMs": 29480.0,
+    "confidence": null
+  },
+  {
+    "text": "GTA",
+    "startMs": 30200.0,
+    "endMs": 30750.0,
+    "timestampMs": 30200.0,
+    "confidence": null
+  },
+  {
+    "text": "five",
+    "startMs": 30920.0,
+    "endMs": 31290.0,
+    "timestampMs": 30920.0,
+    "confidence": null
+  },
+  {
+    "text": "took",
+    "startMs": 31300.0,
+    "endMs": 31490.0,
+    "timestampMs": 31300.0,
+    "confidence": null
+  },
+  {
+    "text": "three",
+    "startMs": 31500.0,
+    "endMs": 31820.0,
+    "timestampMs": 31500.0,
+    "confidence": null
+  },
+  {
+    "text": "days",
+    "startMs": 31830.0,
+    "endMs": 32280.0,
+    "timestampMs": 31830.0,
+    "confidence": null
+  },
+  {
+    "text": "to",
+    "startMs": 32450.0,
+    "endMs": 32560.0,
+    "timestampMs": 32450.0,
+    "confidence": null
+  },
+  {
+    "text": "reach",
+    "startMs": 32560.0,
+    "endMs": 32810.0,
+    "timestampMs": 32560.0,
+    "confidence": null
+  },
+  {
+    "text": "one",
+    "startMs": 32820.0,
+    "endMs": 33010.0,
+    "timestampMs": 32820.0,
+    "confidence": null
+  },
+  {
+    "text": "billion",
+    "startMs": 33020.0,
+    "endMs": 33280.0,
+    "timestampMs": 33020.0,
+    "confidence": null
+  },
+  {
+    "text": "dollars",
+    "startMs": 33280.0,
+    "endMs": 33740.0,
+    "timestampMs": 33280.0,
+    "confidence": null
+  },
+  {
+    "text": "GTA",
+    "startMs": 34060.0,
+    "endMs": 34540.0,
+    "timestampMs": 34060.0,
+    "confidence": null
+  },
+  {
+    "text": "six",
+    "startMs": 34550.0,
+    "endMs": 34940.0,
+    "timestampMs": 34550.0,
+    "confidence": null
+  },
+  {
+    "text": "smashed",
+    "startMs": 35070.0,
+    "endMs": 35650.0,
+    "timestampMs": 35070.0,
+    "confidence": null
+  },
+  {
+    "text": "that",
+    "startMs": 35650.0,
+    "endMs": 35740.0,
+    "timestampMs": 35650.0,
+    "confidence": null
+  },
+  {
+    "text": "in",
+    "startMs": 35740.0,
+    "endMs": 35790.0,
+    "timestampMs": 35740.0,
+    "confidence": null
+  },
+  {
+    "text": "its",
+    "startMs": 35800.0,
+    "endMs": 35890.0,
+    "timestampMs": 35800.0,
+    "confidence": null
+  },
+  {
+    "text": "first",
+    "startMs": 35890.0,
+    "endMs": 36120.0,
+    "timestampMs": 35890.0,
+    "confidence": null
+  },
+  {
+    "text": "day",
+    "startMs": 36120.0,
+    "endMs": 36390.0,
+    "timestampMs": 36120.0,
+    "confidence": null
+  },
+  {
+    "text": "And",
+    "startMs": 36700.0,
+    "endMs": 36760.0,
+    "timestampMs": 36700.0,
+    "confidence": null
+  },
+  {
+    "text": "if",
+    "startMs": 36760.0,
+    "endMs": 36830.0,
+    "timestampMs": 36760.0,
+    "confidence": null
+  },
+  {
+    "text": "you",
+    "startMs": 36830.0,
+    "endMs": 36900.0,
+    "timestampMs": 36830.0,
+    "confidence": null
+  },
+  {
+    "text": "spread",
+    "startMs": 36900.0,
+    "endMs": 37210.0,
+    "timestampMs": 36900.0,
+    "confidence": null
+  },
+  {
+    "text": "those",
+    "startMs": 37210.0,
+    "endMs": 37400.0,
+    "timestampMs": 37210.0,
+    "confidence": null
+  },
+  {
+    "text": "reported",
+    "startMs": 37400.0,
+    "endMs": 37760.0,
+    "timestampMs": 37400.0,
+    "confidence": null
+  },
+  {
+    "text": "sales",
+    "startMs": 37760.0,
+    "endMs": 38080.0,
+    "timestampMs": 37760.0,
+    "confidence": null
+  },
+  {
+    "text": "across",
+    "startMs": 38080.0,
+    "endMs": 38480.0,
+    "timestampMs": 38080.0,
+    "confidence": null
+  },
+  {
+    "text": "twenty-four",
+    "startMs": 38490.0,
+    "endMs": 38930.0,
+    "timestampMs": 38490.0,
+    "confidence": null
+  },
+  {
+    "text": "hours",
+    "startMs": 38930.0,
+    "endMs": 39370.0,
+    "timestampMs": 38930.0,
+    "confidence": null
+  },
+  {
+    "text": "that's",
+    "startMs": 39540.0,
+    "endMs": 39700.0,
+    "timestampMs": 39540.0,
+    "confidence": null
+  },
+  {
+    "text": "an",
+    "startMs": 39700.0,
+    "endMs": 39810.0,
+    "timestampMs": 39700.0,
+    "confidence": null
+  },
+  {
+    "text": "average",
+    "startMs": 39820.0,
+    "endMs": 40180.0,
+    "timestampMs": 39820.0,
+    "confidence": null
+  },
+  {
+    "text": "of",
+    "startMs": 40180.0,
+    "endMs": 40270.0,
+    "timestampMs": 40180.0,
+    "confidence": null
+  },
+  {
+    "text": "over",
+    "startMs": 40280.0,
+    "endMs": 40510.0,
+    "timestampMs": 40280.0,
+    "confidence": null
+  },
+  {
+    "text": "two",
+    "startMs": 40600.0,
+    "endMs": 40740.0,
+    "timestampMs": 40600.0,
+    "confidence": null
+  },
+  {
+    "text": "point",
+    "startMs": 40750.0,
+    "endMs": 40980.0,
+    "timestampMs": 40750.0,
+    "confidence": null
+  },
+  {
+    "text": "six",
+    "startMs": 40980.0,
+    "endMs": 41230.0,
+    "timestampMs": 40980.0,
+    "confidence": null
+  },
+  {
+    "text": "million",
+    "startMs": 41240.0,
+    "endMs": 41520.0,
+    "timestampMs": 41240.0,
+    "confidence": null
+  },
+  {
+    "text": "dollars",
+    "startMs": 41530.0,
+    "endMs": 41930.0,
+    "timestampMs": 41530.0,
+    "confidence": null
+  },
+  {
+    "text": "every",
+    "startMs": 42040.0,
+    "endMs": 42240.0,
+    "timestampMs": 42040.0,
+    "confidence": null
+  },
+  {
+    "text": "minute",
+    "startMs": 42240.0,
+    "endMs": 42560.0,
+    "timestampMs": 42240.0,
+    "confidence": null
+  },
+  {
+    "text": "That",
+    "startMs": 42890.0,
+    "endMs": 42980.0,
+    "timestampMs": 42890.0,
+    "confidence": null
+  },
+  {
+    "text": "includes",
+    "startMs": 42990.0,
+    "endMs": 43350.0,
+    "timestampMs": 42990.0,
+    "confidence": null
+  },
+  {
+    "text": "preorders",
+    "startMs": 43410.0,
+    "endMs": 44130.0,
+    "timestampMs": 43410.0,
+    "confidence": null
+  },
+  {
+    "text": "of",
+    "startMs": 44270.0,
+    "endMs": 44360.0,
+    "timestampMs": 44270.0,
+    "confidence": null
+  },
+  {
+    "text": "course",
+    "startMs": 44360.0,
+    "endMs": 44870.0,
+    "timestampMs": 44360.0,
+    "confidence": null
+  },
+  {
+    "text": "and",
+    "startMs": 45040.0,
+    "endMs": 45150.0,
+    "timestampMs": 45040.0,
+    "confidence": null
+  },
+  {
+    "text": "movie",
+    "startMs": 45150.0,
+    "endMs": 45380.0,
+    "timestampMs": 45150.0,
+    "confidence": null
+  },
+  {
+    "text": "ticket",
+    "startMs": 45380.0,
+    "endMs": 45580.0,
+    "timestampMs": 45380.0,
+    "confidence": null
+  },
+  {
+    "text": "sales",
+    "startMs": 45580.0,
+    "endMs": 45900.0,
+    "timestampMs": 45580.0,
+    "confidence": null
+  },
+  {
+    "text": "aren't",
+    "startMs": 45900.0,
+    "endMs": 46140.0,
+    "timestampMs": 45900.0,
+    "confidence": null
+  },
+  {
+    "text": "directly",
+    "startMs": 46150.0,
+    "endMs": 46580.0,
+    "timestampMs": 46150.0,
+    "confidence": null
+  },
+  {
+    "text": "comparable",
+    "startMs": 46580.0,
+    "endMs": 47060.0,
+    "timestampMs": 46580.0,
+    "confidence": null
+  },
+  {
+    "text": "to",
+    "startMs": 47070.0,
+    "endMs": 47140.0,
+    "timestampMs": 47070.0,
+    "confidence": null
+  },
+  {
+    "text": "game",
+    "startMs": 47140.0,
+    "endMs": 47380.0,
+    "timestampMs": 47140.0,
+    "confidence": null
+  },
+  {
+    "text": "retail",
+    "startMs": 47380.0,
+    "endMs": 47700.0,
+    "timestampMs": 47380.0,
+    "confidence": null
+  },
+  {
+    "text": "sales",
+    "startMs": 47700.0,
+    "endMs": 48160.0,
+    "timestampMs": 47700.0,
+    "confidence": null
+  },
+  {
+    "text": "But",
+    "startMs": 48490.0,
+    "endMs": 48580.0,
+    "timestampMs": 48490.0,
+    "confidence": null
+  },
+  {
+    "text": "after",
+    "startMs": 48590.0,
+    "endMs": 48760.0,
+    "timestampMs": 48590.0,
+    "confidence": null
+  },
+  {
+    "text": "thirteen",
+    "startMs": 48770.0,
+    "endMs": 49240.0,
+    "timestampMs": 48770.0,
+    "confidence": null
+  },
+  {
+    "text": "years",
+    "startMs": 49240.0,
+    "endMs": 49650.0,
+    "timestampMs": 49240.0,
+    "confidence": null
+  },
+  {
+    "text": "GTA",
+    "startMs": 49860.0,
+    "endMs": 50410.0,
+    "timestampMs": 49860.0,
+    "confidence": null
+  },
+  {
+    "text": "six",
+    "startMs": 50420.0,
+    "endMs": 50800.0,
+    "timestampMs": 50420.0,
+    "confidence": null
+  },
+  {
+    "text": "didn't",
+    "startMs": 50810.0,
+    "endMs": 50970.0,
+    "timestampMs": 50810.0,
+    "confidence": null
+  },
+  {
+    "text": "just",
+    "startMs": 50970.0,
+    "endMs": 51140.0,
+    "timestampMs": 50970.0,
+    "confidence": null
+  },
+  {
+    "text": "break",
+    "startMs": 51150.0,
+    "endMs": 51490.0,
+    "timestampMs": 51150.0,
+    "confidence": null
+  },
+  {
+    "text": "gaming",
+    "startMs": 51580.0,
+    "endMs": 51850.0,
+    "timestampMs": 51580.0,
+    "confidence": null
+  },
+  {
+    "text": "records",
+    "startMs": 51860.0,
+    "endMs": 52300.0,
+    "timestampMs": 51860.0,
+    "confidence": null
+  },
+  {
+    "text": "It",
+    "startMs": 52630.0,
+    "endMs": 52680.0,
+    "timestampMs": 52630.0,
+    "confidence": null
+  },
+  {
+    "text": "became",
+    "startMs": 52680.0,
+    "endMs": 52930.0,
+    "timestampMs": 52680.0,
+    "confidence": null
+  },
+  {
+    "text": "the",
+    "startMs": 52930.0,
+    "endMs": 53020.0,
+    "timestampMs": 52930.0,
+    "confidence": null
+  },
+  {
+    "text": "biggest",
+    "startMs": 53110.0,
+    "endMs": 53440.0,
+    "timestampMs": 53110.0,
+    "confidence": null
+  },
+  {
+    "text": "entertainment",
+    "startMs": 53490.0,
+    "endMs": 53880.0,
+    "timestampMs": 53490.0,
+    "confidence": null
+  },
+  {
+    "text": "launch",
+    "startMs": 53880.0,
+    "endMs": 54180.0,
+    "timestampMs": 53880.0,
+    "confidence": null
+  },
+  {
+    "text": "ever",
+    "startMs": 54260.0,
+    "endMs": 54500.0,
+    "timestampMs": 54260.0,
+    "confidence": null
+  },
+  {
+    "text": "according",
+    "startMs": 54830.0,
+    "endMs": 55100.0,
+    "timestampMs": 54830.0,
+    "confidence": null
+  },
+  {
+    "text": "to",
+    "startMs": 55100.0,
+    "endMs": 55160.0,
+    "timestampMs": 55100.0,
+    "confidence": null
+  },
+  {
+    "text": "Rockstar",
+    "startMs": 55170.0,
+    "endMs": 55730.0,
+    "timestampMs": 55170.0,
+    "confidence": null
+  },
+  {
+    "text": "So",
+    "startMs": 56060.0,
+    "endMs": 56170.0,
+    "timestampMs": 56060.0,
+    "confidence": null
+  },
+  {
+    "text": "here's",
+    "startMs": 56170.0,
+    "endMs": 56330.0,
+    "timestampMs": 56170.0,
+    "confidence": null
+  },
+  {
+    "text": "the",
+    "startMs": 56330.0,
+    "endMs": 56390.0,
+    "timestampMs": 56330.0,
+    "confidence": null
+  },
+  {
+    "text": "real",
+    "startMs": 56390.0,
+    "endMs": 56590.0,
+    "timestampMs": 56390.0,
+    "confidence": null
+  },
+  {
+    "text": "question",
+    "startMs": 56590.0,
+    "endMs": 56970.0,
+    "timestampMs": 56590.0,
+    "confidence": null
+  },
+  {
+    "text": "how",
+    "startMs": 57420.0,
+    "endMs": 57500.0,
+    "timestampMs": 57420.0,
+    "confidence": null
+  },
+  {
+    "text": "could",
+    "startMs": 57500.0,
+    "endMs": 57630.0,
+    "timestampMs": 57500.0,
+    "confidence": null
+  },
+  {
+    "text": "GTA",
+    "startMs": 57630.0,
+    "endMs": 58120.0,
+    "timestampMs": 57630.0,
+    "confidence": null
+  },
+  {
+    "text": "seven",
+    "startMs": 58290.0,
+    "endMs": 58610.0,
+    "timestampMs": 58290.0,
+    "confidence": null
+  },
+  {
+    "text": "possibly",
+    "startMs": 58620.0,
+    "endMs": 59020.0,
+    "timestampMs": 58620.0,
+    "confidence": null
+  },
+  {
+    "text": "top",
+    "startMs": 59030.0,
+    "endMs": 59270.0,
+    "timestampMs": 59030.0,
+    "confidence": null
+  },
+  {
+    "text": "that",
+    "startMs": 59270.0,
+    "endMs": 59530.0,
+    "timestampMs": 59270.0,
+    "confidence": null
+  }
+]

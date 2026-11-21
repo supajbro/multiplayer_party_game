@@ -52,6 +52,7 @@ namespace CouchGuys.ProceduralGeneration
             CreateUphillCorridorContainment(generator, playableBounds, settings);
             CreateTunnels(generator, settings);
             CreateScenery(generator, edges, settings, random);
+            CreateRearHillForest(generator, playableBounds, outerOffset, settings, random);
             CreateRoadClosures(generator, playableBounds, settings, random);
 
             float recoveryMaximumZ = playableBounds.yMax + outerOffset - settings.ColliderThickness;
@@ -270,6 +271,7 @@ namespace CouchGuys.ProceduralGeneration
                 settings.TreeDensity);
             for (int edgeIndex = 0; edgeIndex < edges.Length; edgeIndex++)
             {
+                if (generator.HasSummitExit && edgeIndex == 2) continue;
                 Edge edge = edges[edgeIndex];
                 List<float> portalDistances = GetPortalDistances(generator, edge);
                 int depthRows = Mathf.Max(2, Mathf.CeilToInt(settings.BorderWidth / spacing));
@@ -295,6 +297,12 @@ namespace CouchGuys.ProceduralGeneration
                                              depthRows * settings.BorderWidth;
                             Vector3 localPosition = edge.Start + edge.Tangent * (distance + jitter) -
                                                     edge.Outward * rowDepth;
+                            if (generator.HasSummitExit && localPosition.z >
+                                edges[2].Start.z - Mathf.Max(settings.HillDepth, settings.BorderWidth))
+                            {
+                                distance += spacing;
+                                continue;
+                            }
                             Quaternion rotation = Quaternion.Euler(
                                 0f, RandomRange(random, 0f, 360f), 0f);
                             if (PlaceScenery(generator, sceneryRoot,
@@ -304,6 +312,38 @@ namespace CouchGuys.ProceduralGeneration
                         }
                         distance += spacing;
                     }
+                }
+            }
+        }
+
+        private void CreateRearHillForest(
+            NeighbourhoodGenerator generator,
+            Rect bounds,
+            float outerOffset,
+            NeighbourhoodBorderSettings settings,
+            System.Random random)
+        {
+            if (!generator.HasSummitExit || settings.TreeDensity <= 0f) return;
+            Transform root = new GameObject("RearHillForest").transform;
+            root.SetParent(transform, false);
+            float spacing = Mathf.Lerp(settings.MaximumTreeSpacing,
+                settings.MinimumTreeSpacing, settings.TreeDensity);
+            float summitZ = transform.InverseTransformPoint(generator.SummitExitPortal.WorldPosition).z;
+            float minimumX = bounds.xMin - outerOffset;
+            float maximumX = bounds.xMax + outerOffset;
+            float maximumZ = summitZ + outerOffset;
+            for (float z = bounds.yMax + spacing * 0.5f; z < maximumZ - spacing * 0.5f; z += spacing)
+            {
+                for (float x = minimumX + spacing * 0.5f; x < maximumX - spacing * 0.5f; x += spacing)
+                {
+                    Vector3 local = new Vector3(
+                        x + RandomRange(random, -spacing * 0.3f, spacing * 0.3f), 0f,
+                        z + RandomRange(random, -spacing * 0.3f, spacing * 0.3f));
+                    if (random.NextDouble() > settings.TreeDensity ||
+                        !generator.IsHillTreePositionClear(transform.TransformPoint(local))) continue;
+                    if (PlaceScenery(generator, root, NeighbourhoodBorderType.Forest, local,
+                            Quaternion.Euler(0f, RandomRange(random, 0f, 360f), 0f), settings, random))
+                        SceneryItemCount++;
                 }
             }
         }

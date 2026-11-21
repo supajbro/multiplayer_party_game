@@ -138,6 +138,21 @@ namespace CouchGuys.ProceduralGeneration
             }
 
             m_trafficPortalCoordinates.Add(endpoint);
+
+            // The portal marks the traffic handoff, but asphalt must continue through
+            // the complete tunnel shell instead of stopping inside its entrance.
+            if (m_borderSettings.Enabled)
+            {
+                float tunnelHeight = m_roadHeights[endpoint];
+                int tunnelTiles = Mathf.CeilToInt(
+                    (m_borderSettings.TunnelDepth * 0.5f + m_roadTileSize) / m_roadTileSize);
+                for (int step = 0; step < tunnelTiles; step++)
+                {
+                    endpoint += forward;
+                    AddRoad(endpoint, tunnelHeight);
+                    m_trafficGatewayRoads.Add(endpoint);
+                }
+            }
         }
 
         private void FinaliseTrafficBoundaryConnections()
