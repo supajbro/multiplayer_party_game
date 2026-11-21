@@ -81,16 +81,22 @@ namespace CouchGuys.Gameplay.Vehicles
         {
             CouchCarryController carryTarget = couch != null && couch.MountedSled != null
                 ? couch.MountedSled.CarryController : couch;
+            var board = couch != null && couch.MountedHoverboardObject != null
+                ? couch.MountedHoverboardObject.GetComponent<MagneticHoverboardController>() : null;
+            bool fromBoard = board != null && board.HasThiefDriver;
             if (!IsGetawayTruck || IsDestroyed || !RearDoorsOpen || LoadedCouchCount > 0 ||
                 m_loadedCouches.Count == 0 || couch == null || carryTarget.HasHumanCarrierServer() ||
-                carryTarget.ThiefCarrierCountServer() == 0 || carryTarget.IsLoaded || !carryTarget.IsPickupAvailable ||
+                (!fromBoard && (carryTarget.ThiefCarrierCountServer() == 0 || carryTarget.IsLoaded || !carryTarget.IsPickupAvailable)) ||
                 couch.IsCargoTransitioning || !IsCouchInLoadingRange(couch, loadingDistance) ||
                 GetCargoPoint(0) == null) return false;
             bool fromSled = couch.MountedSled != null;
             if (fromSled) couch.UnmountFromSledServer();
+            if (fromBoard) couch.ReleaseHoverboardServer(couch.transform.position, couch.transform.rotation);
             if (!couch.LoadIntoTruckServer(this, 0, m_settings.CouchLoadingDuration)) return false;
             m_loadedCouches[0] = couch.NetworkObject;
             if (fromSled) carryTarget.ReleaseAllOccupantsServer();
+            if (fromBoard && board.Driver != null && board.Driver.TryGetComponent(out ThiefNavigator rider))
+                rider.ReleaseHoverboardServer();
             return true;
         }
 

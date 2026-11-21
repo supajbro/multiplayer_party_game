@@ -4,6 +4,7 @@ using FishNet.Object.Synchronizing;
 using FishNet.Component.Transforming;
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Gameplay.Sled;
 using CouchGuys.Gameplay.Weapons;
@@ -126,6 +127,10 @@ namespace CouchGuys.Gameplay.Couch
         private Bounds m_originalVisualColliderBounds;
         private Bounds m_originalCargoBounds;
         private readonly RaycastHit[] m_stepHits = new RaycastHit[12];
+        private readonly RaycastHit[] m_sledRecoveryHits = new RaycastHit[32];
+        private readonly Collider[] m_sledRecoveryOverlaps = new Collider[32];
+        private float m_nextSledGroundRecovery;
+        private readonly List<Collider> m_sledCharacterSupports = new();
         private Coroutine m_cargoTransition;
         private Bounds m_cargoBounds;
         private readonly System.Collections.Generic.List<Collider> m_cargoIgnoredColliders = new();
@@ -281,6 +286,7 @@ namespace CouchGuys.Gameplay.Couch
                 board.ForgetCouchServer(this);
             UnmountFromSledServer();
             ReleaseAllOccupantsServer();
+            ClearSledCharacterContacts();
             base.OnStopServer();
         }
 
@@ -310,6 +316,7 @@ namespace CouchGuys.Gameplay.Couch
 
         private void OnDestroy()
         {
+            ClearSledCharacterContacts();
             m_modelVariantIndex.OnChange -= OnModelVariantChanged;
             m_loadedTruck.OnChange -= OnLoadedTruckChanged;
             m_mountedHoverboard.OnChange -= OnHoverboardChanged;
@@ -393,6 +400,7 @@ namespace CouchGuys.Gameplay.Couch
                 return;
             }
             if (IsServerInitialized) UpdateCargoCollisionRecovery();
+            if (IsServerInitialized && IsSled) RestoreSledCharacterContacts();
             if (IsServerInitialized) UpdateAutomaticLoadingServer();
             if (!IsServerInitialized || IsLoaded || m_cargoTransition != null || m_rigidbody == null || m_rigidbody.isKinematic)
             {
@@ -405,6 +413,7 @@ namespace CouchGuys.Gameplay.Couch
                 out float totalIntentMagnitude,
                 out int movingCarrierCount,
                 out int sprintingCarrierCount);
+            RecoverSledGround(combinedMovementIntent);
             m_movingCarrierCount.Value = movingCarrierCount;
             float cooperationEfficiency = CalculateCooperationEfficiency(
                 movingCarrierCount,
@@ -473,12 +482,7 @@ namespace CouchGuys.Gameplay.Couch
                 horizontalForce = PreserveDownhillMotion(horizontalForce, gripDownhillResistance);
 
                 float heightError = targetPosition.y - pointPosition.y;
-                float liftForce = supportPerCarrier + Mathf.Max(0f, heightError) * LiftForce -
-                    pointVelocity.y * LiftDamping;
-                liftForce = Mathf.Clamp(
-                    liftForce,
-                    0f,
-                    MaximumLiftForce);
+                float liftForce = CalculateGripLift(IsSled, supportPerCarrier, heightError, pointVelocity.y);
                 Vector3 verticalForce = Vector3.up * liftForce;
 
                 // Translation and rotation are applied explicitly. This preserves the
@@ -1110,7 +1114,8 @@ namespace CouchGuys.Gameplay.Couch
         {
             m_hoverboardReleasePending = false;
             if (next != null) m_hoverboardTransition = 0f;
-            ApplyLoadedStateImmediately();
+            // A delayed mount SyncVar must not interrupt the getaway loading animation.
+            if (m_cargoTransition == null) ApplyLoadedStateImmediately();
         }
 
         [Server]
@@ -1535,6 +1540,82 @@ namespace CouchGuys.Gameplay.Couch
                 ForceMode.Acceleration);
         }
 
+        // The wide, upright sled can straddle terrain seams that a single central
+        // step ray misses. Correct terrain penetration on the server, even after
+        // carriers release it; never let a local client independently move the body.
+        private void RecoverSledGround(Vector3 movementIntent)
+        {
+            if (!IsSled || Time.fixedTime < m_nextSledGroundRecovery) return;
+            m_nextSledGroundRecovery = Time.fixedTime + m_sledSettings.GroundRecoveryInterval;
+            if (!TryGetSledGroundCorrection(movementIntent, out Vector3 correction)) return;
+            Vector3 position = m_rigidbody.position + correction;
+            m_rigidbody.position = position;
+            transform.position = position;
+            Vector3 velocity = m_rigidbody.linearVelocity;
+            velocity.y = Mathf.Max(0f, velocity.y);
+            m_rigidbody.linearVelocity = velocity;
+            m_rigidbody.WakeUp();
+        }
+
+        private bool TryGetSledGroundCorrection(Vector3 movementIntent, out Vector3 correction)
+        {
+            correction = Vector3.zero;
+            if (!IsSled || !TryGetColliderBounds(out Bounds hull)) return false;
+            float reach = m_sledSettings.GroundRecoveryHeight;
+            float lift = 0f;
+            // Probe the centre, edges and corners in sled space rather than its
+            // rotated world AABB. Leading probes also anticipate low curbs.
+            Vector3 advance = Vector3.ProjectOnPlane(movementIntent, Vector3.up);
+            advance = advance.sqrMagnitude > .04f ? advance.normalized * StepProbeDistance : Vector3.zero;
+            for (int x = -1; x <= 1; x++)
+                for (int z = -1; z <= 1; z++)
+                {
+                    Vector3 local = m_cargoBounds.center + new Vector3(
+                        x * m_cargoBounds.extents.x * .95f, 0f, z * m_cargoBounds.extents.z * .95f);
+                    Vector3 sample = transform.TransformPoint(local);
+                    bool leading = Vector3.Dot(sample - hull.center, advance) > 0f;
+                    for (int probe = 0; probe < (leading ? 2 : 1); probe++)
+                    {
+                        Vector3 point = sample + (probe == 1 ? advance : Vector3.zero);
+                        Vector3 origin = new(point.x, hull.min.y + reach + .05f, point.z);
+                        int count = Physics.RaycastNonAlloc(origin, Vector3.down, m_sledRecoveryHits,
+                            reach + .1f, ~0, QueryTriggerInteraction.Ignore);
+                        if (count == m_sledRecoveryHits.Length) return false;
+                        for (int i = 0; i < count; i++)
+                        {
+                            var hit = m_sledRecoveryHits[i];
+                            if (!TruckController.IsGroundSurface(hit.collider) ||
+                                hit.collider.transform.IsChildOf(transform) || hit.normal.y < .65f) continue;
+                            float rise = hit.point.y + .025f - hull.min.y;
+                            // Ahead probes may step up a curb, but cannot climb a tall ledge.
+                            if (probe == 1 && rise > MaximumStepHeight) continue;
+                            if (rise > .04f && rise <= reach) lift = Mathf.Max(lift, rise);
+                        }
+                    }
+                }
+            if (lift <= 0f) return false;
+
+            // Include mounted cargo when checking headroom. Do not recover through
+            // ceilings, buildings, other vehicles, or players standing above the sled.
+            Bounds assembly = hull;
+            if (TryGetComponent(out SledController sled)) sled.EncapsulateCargoBounds(ref assembly);
+            int sweeps = Physics.BoxCastNonAlloc(assembly.center, assembly.extents * .98f,
+                Vector3.up, m_sledRecoveryHits, Quaternion.identity, lift, ~0, QueryTriggerInteraction.Ignore);
+            if (sweeps == m_sledRecoveryHits.Length) return false;
+            for (int i = 0; i < sweeps; i++)
+                if (!IgnoreSledRecoveryObstacle(m_sledRecoveryHits[i].collider)) return false;
+            int overlaps = Physics.OverlapBoxNonAlloc(assembly.center + Vector3.up * lift,
+                assembly.extents * .98f, m_sledRecoveryOverlaps, Quaternion.identity, ~0, QueryTriggerInteraction.Ignore);
+            if (overlaps == m_sledRecoveryOverlaps.Length) return false;
+            for (int i = 0; i < overlaps; i++)
+                if (!IgnoreSledRecoveryObstacle(m_sledRecoveryOverlaps[i])) return false;
+            correction = Vector3.up * lift;
+            return true;
+        }
+
+        private bool IgnoreSledRecoveryObstacle(Collider hit) => hit == null ||
+            hit.transform.IsChildOf(transform) || TruckController.IsGroundSurface(hit) || IsCarrierColliderServer(hit);
+
         private void ApplyStepAssistance(Vector3 movementIntent)
         {
             Vector3 direction = Vector3.ProjectOnPlane(movementIntent, Vector3.up);
@@ -1684,8 +1765,62 @@ namespace CouchGuys.Gameplay.Couch
             }
         }
 
+        private static float CalculateGripLift(bool sled, float support, float heightError, float verticalVelocity)
+        {
+            // An airborne sled above the carrier's hands must fall under gravity,
+            // rather than receive support and upward damping from every grip.
+            if (sled && heightError <= 0f) return 0f;
+            return Mathf.Clamp(support + Mathf.Max(0f, heightError) * LiftForce -
+                verticalVelocity * LiftDamping, 0f, MaximumLiftForce);
+        }
+
+        private void IgnoreSledCharacterSupport(Collision collision)
+        {
+            if (!IsServerInitialized || !IsSled || collision.collider == null ||
+                (collision.collider.GetComponentInParent<CouchGuys.Gameplay.Enemies.ThiefHealth>() == null &&
+                 collision.collider.GetComponentInParent<PlayerHealth>() == null)) return;
+            for (int i = 0; i < collision.contactCount; i++)
+            {
+                // Normal points upward on the sled when a character is underneath.
+                // Side impacts and characters standing on top retain normal physics.
+                if (collision.GetContact(i).normal.y <= .35f) continue;
+                IgnoreSledCharacterCollider(collision.collider);
+                return;
+            }
+        }
+
+        private void IgnoreSledCharacterCollider(Collider other)
+        {
+            if (other == null) return;
+            if (!m_sledCharacterSupports.Contains(other)) m_sledCharacterSupports.Add(other);
+            SetCarrierCollisionIgnored(other, true);
+        }
+
+        private void ClearSledCharacterContacts()
+        {
+            foreach (var other in m_sledCharacterSupports)
+                if (other != null) SetCarrierCollisionIgnored(other, false);
+            m_sledCharacterSupports.Clear();
+        }
+
+        private void RestoreSledCharacterContacts()
+        {
+            if (m_sledCharacterSupports.Count == 0 || !TryGetColliderBounds(out Bounds hull)) return;
+            if (TryGetComponent(out SledController sled)) sled.EncapsulateCargoBounds(ref hull);
+            hull.Expand(.1f);
+            for (int i = m_sledCharacterSupports.Count - 1; i >= 0; i--)
+            {
+                var other = m_sledCharacterSupports[i];
+                if (other != null && other.enabled && hull.Intersects(other.bounds)) continue;
+                // A real handle occupant still needs its usual collision exclusion.
+                if (other != null && !IsCarrierColliderServer(other)) SetCarrierCollisionIgnored(other, false);
+                m_sledCharacterSupports.RemoveAt(i);
+            }
+        }
+
         private void OnCollisionStay(Collision collision)
         {
+            IgnoreSledCharacterSupport(collision);
             if (MountedSled != null) MountedSled.TryMountCollisionServer(collision);
             Vector3 bestGroundNormal = m_groundNormal;
             bool foundGround = false;
@@ -1708,6 +1843,7 @@ namespace CouchGuys.Gameplay.Couch
 
         private void OnCollisionEnter(Collision collision)
         {
+            IgnoreSledCharacterSupport(collision);
             if (!IsServerInitialized || m_rigidbody == null || m_rigidbody.isKinematic ||
                 collision.contactCount == 0)
             {

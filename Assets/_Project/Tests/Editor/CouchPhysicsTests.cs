@@ -10,6 +10,23 @@ namespace CouchGuys.Tests.Editor
     {
         private const BindingFlags StaticPrivate = BindingFlags.Static | BindingFlags.NonPublic;
 
+        [TestCase(0f, -2f)]
+        [TestCase(100f, -2f)]
+        [TestCase(300f, -5f)]
+        public void AirborneSledDoesNotReceiveUpwardSupportFromGrips(float support, float fallingSpeed)
+        {
+            var method = typeof(CouchCarryController).GetMethod("CalculateGripLift", StaticPrivate);
+            Assert.That((float)method.Invoke(null, new object[] { true, support, -.5f, fallingSpeed }), Is.Zero);
+        }
+
+        [Test]
+        public void OrdinaryCouchLiftAndSledLiftBelowTheHandsRemainUnchanged()
+        {
+            var method = typeof(CouchCarryController).GetMethod("CalculateGripLift", StaticPrivate);
+            Assert.That((float)method.Invoke(null, new object[] { false, 100f, -.5f, -2f }), Is.EqualTo(210f));
+            Assert.That((float)method.Invoke(null, new object[] { true, 100f, .2f, -2f }), Is.EqualTo(300f).Within(.001f));
+        }
+
         [TestCase(0, 0, 1f)]
         [TestCase(0, 2, 1f)]
         [TestCase(1, 1, 1.25f)]

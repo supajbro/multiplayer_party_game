@@ -9,6 +9,8 @@ using FishNet.Object.Synchronizing;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEditor.SceneManagement;
 
 namespace CouchGuys.Tests.Editor
 {
@@ -19,6 +21,131 @@ namespace CouchGuys.Tests.Editor
         private static object Call(object target, string method, params object[] args) => target.GetType().GetMethod(method, Private).Invoke(target, args);
         private static void Value<T>(object target, string field, T value) =>
             ((SyncVar<T>)target.GetType().GetField(field, Private).GetValue(target)).Value = value;
+
+        [Test]
+        public void LaunchedSledFallsPastCharacterSupportAndRestoresCollisionsAfterSeparation()
+        {
+            var scene = EditorSceneManager.NewPreviewScene();
+            try
+            {
+                var sled = Object.Instantiate(Prefab("Vehicles/Sled"));
+                var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                var character = new GameObject("Character under launched sled");
+                SceneManager.MoveGameObjectToScene(sled, scene);
+                SceneManager.MoveGameObjectToScene(floor, scene);
+                SceneManager.MoveGameObjectToScene(character, scene);
+                floor.transform.position = Vector3.down * .5f;
+                floor.transform.localScale = new Vector3(30f, 1f, 30f);
+                var capsule = character.AddComponent<CapsuleCollider>();
+                capsule.center = Vector3.up * .9f; capsule.height = 1.8f; capsule.radius = .3f;
+                sled.transform.position = Vector3.up * 2.4f;
+                var carry = sled.GetComponent<CouchCarryController>();
+                Call(carry, "Awake");
+                var body = sled.GetComponent<Rigidbody>();
+                body.isKinematic = false;
+                Physics.SyncTransforms();
+                for (int i = 0; i < 90; i++) scene.GetPhysicsScene().Simulate(.02f);
+                Assert.That(body.position.y, Is.GreaterThan(1.6f), "The fixture reproduces a sled resting on a character's head.");
+                Call(carry, "IgnoreSledCharacterCollider", capsule);
+                for (int i = 0; i < 90; i++) scene.GetPhysicsScene().Simulate(.02f);
+                Assert.That(body.position.y, Is.LessThan(.1f), "The sled must land on the floor instead of remaining on the character.");
+                var collider = sled.GetComponentInChildren<BoxCollider>();
+                Assert.That(Physics.GetIgnoreCollision(collider, capsule), Is.True);
+                character.transform.position = Vector3.right * 20f;
+                Physics.SyncTransforms();
+                Call(carry, "RestoreSledCharacterContacts");
+                Assert.That(Physics.GetIgnoreCollision(collider, capsule), Is.False);
+            }
+            finally { EditorSceneManager.ClosePreviewScene(scene); }
+        }
+
+        [TestCase(0f)]
+        [TestCase(43f)]
+        [TestCase(90f)]
+        public void BuriedSledRecoversWhileUnattendedAndCanMoveAgain(float yaw)
+        {
+            var simulation = EditorSceneManager.NewPreviewScene();
+            var sled = Object.Instantiate(Prefab("Vehicles/Sled"));
+            var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                Vector3 origin = new(48000f, 0f, 48000f);
+                floor.name = "Ground sled recovery regression";
+                floor.transform.position = origin - Vector3.up * .5f;
+                floor.transform.localScale = new Vector3(30f, 1f, 30f);
+                sled.transform.SetPositionAndRotation(origin - Vector3.up * .65f, Quaternion.Euler(0f, yaw, 0f));
+                var carry = sled.GetComponent<CouchCarryController>();
+                Call(carry, "Awake");
+                var body = sled.GetComponent<Rigidbody>();
+                body.isKinematic = false;
+                Physics.SyncTransforms();
+                object[] args = { Vector3.zero, Vector3.zero };
+                Assert.That((bool)Call(carry, "TryGetSledGroundCorrection", args), Is.True,
+                    "An embedded sled must recover without relying on a player or thief's lift force.");
+                var correction = (Vector3)args[1];
+                Assert.That(correction.y, Is.InRange(.6f, .8f));
+                Call(carry, "RecoverSledGround", Vector3.zero);
+                Physics.SyncTransforms();
+                Assert.That(body.position.y, Is.GreaterThan(origin.y - .05f));
+                Assert.That((bool)Call(carry, "TryGetSledGroundCorrection", new object[] { Vector3.zero, Vector3.zero }), Is.False,
+                    "Recovery must stop once the sled clears the surface.");
+                Assert.That(body.isKinematic, Is.False);
+                Assert.That(body.constraints & RigidbodyConstraints.FreezePosition, Is.EqualTo(RigidbodyConstraints.None));
+                SceneManager.MoveGameObjectToScene(sled, simulation);
+                SceneManager.MoveGameObjectToScene(floor, simulation);
+                Physics.SyncTransforms();
+                Vector3 start = body.position;
+                body.linearVelocity = Vector3.right * 2f;
+                for (int i = 0; i < 30; i++) simulation.GetPhysicsScene().Simulate(.02f);
+                Assert.That(body.position.x - start.x, Is.GreaterThan(.2f),
+                    "The recovered body must actually move under physics, not remain pinned to the floor.");
+            }
+            finally { Object.DestroyImmediate(sled); Object.DestroyImmediate(floor); EditorSceneManager.ClosePreviewScene(simulation); }
+        }
+
+        [Test]
+        public void SledDetectsCornerCurbButCannotLiftThroughCeiling()
+        {
+            var sled = Object.Instantiate(Prefab("Vehicles/Sled"));
+            var curb = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            var ceiling = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            try
+            {
+                Vector3 origin = new(48000f, 0f, 48000f);
+                sled.transform.position = origin;
+                var carry = sled.GetComponent<CouchCarryController>();
+                Call(carry, "Awake");
+                // Only one corner overlaps the curb; the old central ray misses it.
+                curb.name = "Sidewalk corner regression";
+                curb.transform.position = origin + new Vector3(2.3f, .12f, 2f);
+                curb.transform.localScale = new Vector3(.8f, .24f, .8f);
+                ceiling.name = "Solid ceiling regression";
+                ceiling.transform.position = origin + Vector3.up * 20f;
+                ceiling.transform.localScale = new Vector3(10f, .2f, 10f);
+                Physics.SyncTransforms();
+                object[] args = { Vector3.forward, Vector3.zero };
+                Assert.That((bool)Call(carry, "TryGetSledGroundCorrection", args), Is.True);
+                Assert.That(((Vector3)args[1]).y, Is.InRange(.2f, .3f));
+                ceiling.transform.position = origin + Vector3.up * 1.1f;
+                Physics.SyncTransforms();
+                Assert.That((bool)Call(carry, "TryGetSledGroundCorrection", new object[] { Vector3.forward, Vector3.zero }), Is.False,
+                    "An overhead solid must block the entire recovery sweep.");
+            }
+            finally { Object.DestroyImmediate(sled); Object.DestroyImmediate(curb); Object.DestroyImmediate(ceiling); }
+        }
+
+        [Test]
+        public void TerrainRecoveryDoesNotLiftOrdinaryCouches()
+        {
+            var couch = Object.Instantiate(Prefab("Couch"));
+            try
+            {
+                var carry = couch.GetComponent<CouchCarryController>();
+                Call(carry, "Awake");
+                Assert.That((bool)Call(carry, "TryGetSledGroundCorrection", new object[] { Vector3.forward, Vector3.zero }), Is.False);
+            }
+            finally { Object.DestroyImmediate(couch); }
+        }
 
         [Test]
         public void RaisedSledHandlesAreReachableWithOffsetPlayerCapsule()

@@ -69,6 +69,39 @@ namespace CouchGuys.Tests.Editor
             }
         }
 
+        [Test]
+        public void PunchAudioUsesExistingClipsAndTwentyMetreRange()
+        {
+            var settings = Resources.Load<WeaponAudioSettings>(WeaponAudioSettings.ResourcesPath);
+            Assert.That(settings, Is.Not.Null);
+            Assert.That(settings.VoicePrefab, Is.Not.Null);
+            const string folder = "Assets/_Project/Audio/Melee/";
+            var miss = AssetDatabase.LoadAssetAtPath<AudioClip>(folder + "mixkit-air-in-a-hit-2161.wav");
+            Assert.That(miss, Is.Not.Null);
+            Assert.That(settings.GetPunchClip(false, false), Is.SameAs(miss));
+            Assert.That(settings.GetPunchClip(true, false), Is.SameAs(miss));
+            Assert.That(settings.GetPunchClip(false, true), Is.SameAs(
+                AssetDatabase.LoadAssetAtPath<AudioClip>(folder + "mixkit-hard-and-quick-punch-2143.wav")));
+            Assert.That(settings.GetPunchClip(true, true), Is.SameAs(
+                AssetDatabase.LoadAssetAtPath<AudioClip>(folder + "mixkit-cartoon-punch-2149.wav")));
+            Assert.That(settings.PunchMaximumDistance, Is.EqualTo(20f));
+        }
+
+        private static AudioSource[] PunchVoices() => Object.FindObjectsByType<AudioSource>(FindObjectsSortMode.None)
+            .Where(source => source.name == "PunchVoice").ToArray();
+
+        private static void CheckPunchVoice(AudioSource source, Vector3 position)
+        {
+            Check(source.transform.position == position && source.transform.parent == null,
+                "Punch audio did not originate at the attacker's world position.");
+            Check(source.spatialBlend == 1f && source.maxDistance == 20f &&
+                  !source.loop && !source.playOnAwake, "Incorrect punch audio configuration.");
+            var curve = source.GetCustomCurve(AudioSourceCurveType.CustomRolloff);
+            Check(curve.Evaluate(0f) == 1f && curve.Evaluate(.5f) < 1f &&
+                  curve.Evaluate(1f) == 0f && curve.Evaluate(2f) == 0f,
+                "Punch audio must fade to silence at and beyond its hearing radius.");
+        }
+
         [MenuItem("Couch Guys/Weapons/Validate Melee Combo")]
         public static void Run()
         {
@@ -76,7 +109,9 @@ namespace CouchGuys.Tests.Editor
             File.WriteAllText(Report, "START: focused melee validation\n");
             AssetDatabase.ImportAsset("Assets/_Project/Animations/CouchGuy.controller", ImportAssetOptions.ForceUpdate);
             new MeleeComboValidation().ExistingControllerUsesAuthoredPunchClipsAndTorsoMask();
+            new MeleeComboValidation().PunchAudioUsesExistingClipsAndTwentyMetreRange();
             Log("PASS: existing FBX clip references, lengths and torso/head mask.");
+            Log("PASS: both miss stages and weak/strong impacts reference the requested clips; default hearing radius is 20 m.");
             SessionState.SetBool(Pending, true);
             EditorApplication.EnterPlaymode();
         }
@@ -164,11 +199,13 @@ namespace CouchGuys.Tests.Editor
             victim.transform.SetPositionAndRotation(origin + Vector3.forward * 1.1f, Quaternion.identity);
             Physics.SyncTransforms();
             float hp = health.CurrentHealth;
+            var beforeJab = PunchVoices();
             Call(melee, "RequestPunchServerRpc");
             Check(health.CurrentHealth == hp, "Jab damaged before contact.");
             while ((byte)Get(melee, "m_punchStage") == 0) yield return null;
             yield return Time.time + .1f;
             Check(health.CurrentHealth == hp, "Jab damaged during wind-up.");
+            Check(!PunchVoices().Except(beforeJab).Any(), "Punch audio played before hit detection resolved.");
             yield return Time.time + .13f;
             Check(Mathf.Approximately(hp - health.CurrentHealth, 25), "Jab expected 25 damage, got " + (hp - health.CurrentHealth) +
                 "; stage=" + Get(melee, "m_punchStage") + "; impact=" + Get(melee, "m_punchImpactApplied") +
@@ -176,7 +213,11 @@ namespace CouchGuys.Tests.Editor
             Check(attacker.GetComponent<CouchGuyAnimationDriver>().Animator.GetLayerWeight(
                 attacker.GetComponent<CouchGuyAnimationDriver>().Animator.GetLayerIndex("Punches")) > .9f, "Host observer did not play jab.");
             Log("PASS: owning host RPC, wind-up has no damage, impact hits player once; observer jab layer active.");
+            var jabVoices = PunchVoices().Except(beforeJab).ToArray();
+            Check(jabVoices.Length == 1, "Owning host must hear exactly one successful jab.");
+            CheckPunchVoice(jabVoices[0], origin);
             // A fresh press during jab recovery must buffer the opposite-arm cross.
+            var beforeCross = PunchVoices();
             Call(melee, "RequestPunchServerRpc");
             yield return Time.time + .23f;
             Check((byte)Get(melee, "m_punchStage") == 2, "Second press did not buffer cross.");
@@ -192,6 +233,11 @@ namespace CouchGuys.Tests.Editor
             Check(thief.IsAlive && thief.IsBeingKnockedBack, "Living thief lost normal recovery state.");
             Check(ragdoll.Body.linearVelocity.z > 1f, "Cross ragdoll did not launch away from attacker.");
             Log("PASS: buffered cross deals 1.5x damage once and launches a living thief through existing ragdoll state.");
+            var crossVoices = PunchVoices().Except(beforeCross).ToArray();
+            Check(crossVoices.Length == 1, "Owning host must hear exactly one successful cross.");
+            CheckPunchVoice(crossVoices[0], origin);
+            Check(jabVoices[0] != crossVoices[0], "Consecutive punches must use independent voices.");
+            Log("PASS: authoritative jab/cross hits each play once on the owning host, at the attacker, with independent 3D voices and a 20 m cutoff.");
             yield return Time.time + .3f;
             Call(melee, "RequestPunchServerRpc");
             yield return Time.time + .06f;
@@ -217,6 +263,19 @@ namespace CouchGuys.Tests.Editor
             yield return Time.time + .06f;
             Check((byte)Get(melee, "m_punchStage") == 0, "Equipped weapon allowed punching.");
             Log("PASS: weapon equip cancels pending attack and blocks unarmed requests.");
+            var unowned = Spawn("Assets/_Project/Prefabs/Player.prefab", origin + Vector3.right * 50);
+            var unownedMelee = unowned.GetComponent<PlayerWeaponController>();
+            while (!unownedMelee.IsClientInitialized) yield return null;
+            Check(!unownedMelee.IsOwner, "Miss probe requires an unowned player.");
+            Physics.SyncTransforms();
+            var beforeMisses = PunchVoices();
+            Call(unownedMelee, "ApplyPunchImpactServer", false);
+            Call(unownedMelee, "ApplyPunchImpactServer", true);
+            yield return Time.time + .1f;
+            var missVoices = PunchVoices().Except(beforeMisses).ToArray();
+            Check(missVoices.Length == 2, "Nonowning host observer must hear exactly one sound per missed punch.");
+            foreach (var voice in missVoices) CheckPunchVoice(voice, unowned.transform.position);
+            Log("PASS: unowned jab/cross misses each replicate once to the host observer without interrupting each other.");
             Log("ALL FOCUSED HOST CHECKS PASSED. Remote-client latency and visual review still require two-process play.");
         }
     }

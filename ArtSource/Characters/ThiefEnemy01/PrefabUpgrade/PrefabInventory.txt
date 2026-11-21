@@ -1,0 +1,201 @@
+Thief: animator=ThiefModel scale=(0.85, 0.85, 0.85) position=(0.00, 0.02, 0.00)
+  RENDERER SkinnedMeshRenderer ThiefModel/Character01_Thief material=Character01_Thief
+  OLD MODEL Assets/_Project/Models/Thieves/Character01Thief/Character01_Thief.fbx
+  BODY mixamorig:Hips mass=12 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftUpLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightUpLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:Spine mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftForeArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:Head mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightForeArm mass=4 scale=(85.37, 85.37, 85.37)
+  REF ThiefAnimationDriver.m_animator => Animator ThiefModel
+  REF ThiefHealth.m_ragdoll => PedestrianRagdoll ThiefModel
+Thief_Pistol: animator=ThiefModel scale=(0.85, 0.85, 0.85) position=(0.00, 0.02, 0.00)
+  RENDERER SkinnedMeshRenderer ThiefModel/Character01_Thief material=Character01_Thief
+  RENDERER SkinnedMeshRenderer ThiefModel/Weapon_Pistol material=CG_Weapon_Yellow,CG_Weapon_Ink,CG_Weapon_YellowLight,CG_Weapon_Blue,CG_Weapon_Purple,CG_Weapon_Steel
+  OLD MODEL Assets/_Project/Models/Thieves/Character01Thief/Armed/Character01_Thief_Pistol.fbx
+  BODY mixamorig:Hips mass=12 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftUpLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightUpLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:Spine mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftForeArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:Head mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightForeArm mass=4 scale=(85.37, 85.37, 85.37)
+  REF EnemyWeapon.m_muzzle => Transform ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Muzzle
+  REF EnemyWeapon.m_heldWeaponRenderers.Array.data[0] => SkinnedMeshRenderer ThiefModel/Weapon_Pistol
+  REF ThiefHealth.m_ragdoll => PedestrianRagdoll ThiefModel
+  REF ThiefAnimationDriver.m_animator => Animator ThiefModel
+Thief_AssaultRifle: animator=ThiefModel scale=(0.85, 0.85, 0.85) position=(0.00, 0.02, 0.00)
+  RENDERER SkinnedMeshRenderer ThiefModel/Character01_Thief material=Character01_Thief
+  RENDERER SkinnedMeshRenderer ThiefModel/Weapon_AssaultRifle material=CG_Weapon_Blue,CG_Weapon_Yellow,CG_Weapon_Ink,CG_Weapon_Steel,CG_Weapon_YellowLight,CG_Weapon_Coral
+  OLD MODEL Assets/_Project/Models/Thieves/Character01Thief/Armed/Character01_Thief_AssaultRifle.fbx
+  BODY mixamorig:Hips mass=12 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftUpLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightUpLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:Spine mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftForeArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:Head mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightForeArm mass=4 scale=(85.37, 85.37, 85.37)
+  REF EnemyWeapon.m_muzzle => Transform ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Muzzle
+  REF EnemyWeapon.m_heldWeaponRenderers.Array.data[0] => SkinnedMeshRenderer ThiefModel/Weapon_AssaultRifle
+  REF ThiefHealth.m_ragdoll => PedestrianRagdoll ThiefModel
+  REF ThiefAnimationDriver.m_animator => Animator ThiefModel
+Thief_Shotgun: animator=ThiefModel scale=(0.85, 0.85, 0.85) position=(0.00, 0.02, 0.00)
+  RENDERER SkinnedMeshRenderer ThiefModel/Character01_Thief material=Character01_Thief
+  RENDERER SkinnedMeshRenderer ThiefModel/Weapon_Shotgun material=CG_Weapon_Yellow,CG_Weapon_Ink,CG_Weapon_Steel,CG_Weapon_Purple,CG_Weapon_YellowLight,CG_Weapon_DeepPurple,CG_Weapon_ShellRed
+  OLD MODEL Assets/_Project/Models/Thieves/Character01Thief/Armed/Character01_Thief_Shotgun.fbx
+  BODY mixamorig:Hips mass=12 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftUpLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightUpLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:Spine mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftForeArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:Head mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightForeArm mass=4 scale=(85.37, 85.37, 85.37)
+  REF EnemyWeapon.m_muzzle => Transform ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Muzzle
+  REF EnemyWeapon.m_heldWeaponRenderers.Array.data[0] => SkinnedMeshRenderer ThiefModel/Weapon_Shotgun
+  REF ThiefHealth.m_ragdoll => PedestrianRagdoll ThiefModel
+  REF ThiefAnimationDriver.m_animator => Animator ThiefModel
+Thief_RocketLauncher: animator=ThiefModel scale=(0.85, 0.85, 0.85) position=(0.00, 0.02, 0.00)
+  RENDERER SkinnedMeshRenderer ThiefModel/Character01_Thief material=Character01_Thief
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_-1 material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_-1.001 material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_-1.002 material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_1 material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_1.001 material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_1.002 material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Barrel_BlueShell material=RL_Blue
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Barrel_TopRedLug material=RL_Red
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Bore_ShadowBack material=RL_Bore
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_-1_-1 material=RL_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_-1_0 material=RL_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_-1_1 material=RL_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_1_-1 material=RL_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_1_0 material=RL_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_1_1 material=RL_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Emblem_RedPorthole_-1 material=RL_Red
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Emblem_RedPorthole_1 material=RL_Red
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/EmblemArmour_-1 material=RL_Red
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/EmblemArmour_1 material=RL_Red
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/FrontVentArmour_L material=RL_Red
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/FrontVentArmour_R material=RL_Red
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Grip_Navy material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Grip_YellowBase material=RL_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Muzzle_InnerLiner material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Muzzle_YellowRim material=RL_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Receiver_LowerBlueRail material=RL_Blue
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Receiver_NavyCore material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Receiver_TopBlueRail material=RL_Blue
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/RocketEmblem_-1 material=RL_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/RocketEmblem_1 material=RL_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/RocketFinA_-1 material=RL_Blue
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/RocketFinA_1 material=RL_Blue
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/RocketFinB_-1 material=RL_Blue
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/RocketFinB_1 material=RL_Blue
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Sight_AmberInset material=RL_Amber
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Sight_NavyApertureFrame material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Sight_NavyRearHousing material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Sight_RedMount material=RL_Red
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Sight_ReticleHorizontal material=RL_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Sight_ReticleVertical material=RL_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Sight_YellowReticleRing material=RL_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Stock_BlueExtension material=RL_Blue
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Stock_RedCollar material=RL_Red
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Stock_ShoulderPad material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Trigger_Yellow material=RL_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/TriggerGuard_Blue material=RL_Blue
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_-1_0 material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_-1_1 material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_-1_2 material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_1_0 material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_1_1 material=RL_Navy
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_1_2 material=RL_Navy
+  RENDERER SkinnedMeshRenderer ThiefModel/Weapon_Shotgun material=CG_Weapon_Yellow,CG_Weapon_Ink,CG_Weapon_Steel,CG_Weapon_Purple,CG_Weapon_YellowLight,CG_Weapon_DeepPurple,CG_Weapon_ShellRed
+  OLD MODEL Assets/_Project/Models/Thieves/Character01Thief/Armed/Character01_Thief_Shotgun.fbx
+  ATTACHMENT ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher prefab=Assets/_Project/Prefabs/Weapons/RocketLauncher/RocketLauncher.prefab
+  BODY mixamorig:Hips mass=12 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftUpLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightUpLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:Spine mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftForeArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:Head mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightForeArm mass=4 scale=(85.37, 85.37, 85.37)
+  REF EnemyWeapon.m_muzzle => Transform ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/Weapon_RocketLauncher/Muzzle
+  REF EnemyWeapon.m_heldWeaponRenderers.Array.data[0] => SkinnedMeshRenderer ThiefModel/Weapon_Shotgun
+  REF ThiefHealth.m_ragdoll => PedestrianRagdoll ThiefModel
+  REF ThiefAnimationDriver.m_animator => Animator ThiefModel
+GrapplerThief: animator=ThiefModel scale=(0.85, 0.85, 0.85) position=(0.00, 0.02, 0.00)
+  RENDERER SkinnedMeshRenderer ThiefModel/Character01_Thief material=Character01_Thief
+  RENDERER LineRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Weapon_GrappleGun material=GrappleRope
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Weapon_GrappleGun/CG_GrappleGun/Body_LOD1 material=CG_Grapple_Orange,CG_Grapple_Rubber,CG_Grapple_Steel,CG_Grapple_Yellow,CG_Grapple_Rope,CG_Grapple_Screen,CG_Grapple_CouchGlow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Weapon_GrappleGun/CG_GrappleGun/Body_LOD2 material=CG_Grapple_Orange,CG_Grapple_Rubber,CG_Grapple_Steel,CG_Grapple_Yellow,CG_Grapple_Rope,CG_Grapple_Screen,CG_Grapple_CouchGlow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Weapon_GrappleGun/CG_GrappleGun/Claw_LOD1 material=CG_Grapple_Steel,CG_Grapple_Rubber,CG_Grapple_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Weapon_GrappleGun/CG_GrappleGun/Claw_LOD2 material=CG_Grapple_Steel,CG_Grapple_Rubber,CG_Grapple_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0/Body_LOD0 material=CG_Grapple_Orange,CG_Grapple_Rubber,CG_Grapple_Steel,CG_Grapple_Yellow,CG_Grapple_Rope,CG_Grapple_Screen,CG_Grapple_CouchGlow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0/Claw_LOD0 material=CG_Grapple_Steel,CG_Grapple_Rubber,CG_Grapple_Yellow
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0/Spool_LOD0 material=CG_Grapple_Rubber,CG_Grapple_Yellow,CG_Grapple_Steel,CG_Grapple_Rope
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0/Trigger_LOD0 material=CG_Grapple_Trigger
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Weapon_GrappleGun/CG_GrappleGun/Spool_LOD1 material=CG_Grapple_Rubber,CG_Grapple_Yellow,CG_Grapple_Steel,CG_Grapple_Rope
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Weapon_GrappleGun/CG_GrappleGun/Spool_LOD2 material=CG_Grapple_Rubber,CG_Grapple_Yellow,CG_Grapple_Steel,CG_Grapple_Rope
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Weapon_GrappleGun/CG_GrappleGun/Trigger_LOD1 material=CG_Grapple_Trigger
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Weapon_GrappleGun/CG_GrappleGun/Trigger_LOD2 material=CG_Grapple_Trigger
+  RENDERER SkinnedMeshRenderer ThiefModel/Weapon_Pistol material=CG_Weapon_Yellow,CG_Weapon_Ink,CG_Weapon_YellowLight,CG_Weapon_Blue,CG_Weapon_Purple,CG_Weapon_Steel
+  OLD MODEL Assets/_Project/Models/Thieves/Character01Thief/Armed/Character01_Thief_Pistol.fbx
+  ATTACHMENT ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Weapon_GrappleGun prefab=Assets/_Project/Prefabs/Weapons/GrappleGun.prefab
+  BODY mixamorig:Hips mass=12 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftUpLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightUpLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:Spine mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftForeArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:Head mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightForeArm mass=4 scale=(85.37, 85.37, 85.37)
+  REF ThiefHealth.m_ragdoll => PedestrianRagdoll ThiefModel
+  REF ThiefAnimationDriver.m_animator => Animator ThiefModel
+  REF GrapplerThief.m_gun => Transform ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Weapon_GrappleGun
+  REF GrapplerThief.m_muzzle => Transform ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/mixamorig:RightArm/mixamorig:RightForeArm/mixamorig:RightHand/weapon_socket/Weapon_GrappleGun/Muzzle
+SpeakerThief: animator=ThiefModel scale=(0.85, 0.85, 0.85) position=(0.00, 0.02, 0.00)
+  RENDERER SkinnedMeshRenderer ThiefModel/Character01_Thief material=Character01_Thief
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/ShoulderSpeaker/Speaker_LOD0/Speaker_Body material=CG_Speaker
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/ShoulderSpeaker/Speaker_LOD0/Speaker_Handle material=CG_Speaker
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/ShoulderSpeaker/Speaker_LOD1/Speaker_Body material=CG_Speaker
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/ShoulderSpeaker/Speaker_LOD1/Speaker_Handle material=CG_Speaker
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/ShoulderSpeaker/Speaker_LOD2/Speaker_Body material=CG_Speaker
+  RENDERER MeshRenderer ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/ShoulderSpeaker/Speaker_LOD2/Speaker_Handle material=CG_Speaker
+  OLD MODEL Assets/_Project/Models/Thieves/Character01Thief/Character01_Thief.fbx
+  ATTACHMENT ThiefModel/Character01_Thief_Rig/mixamorig:Hips/mixamorig:Spine/mixamorig:Spine1/mixamorig:Spine2/mixamorig:RightShoulder/ShoulderSpeaker prefab=
+  BODY mixamorig:Hips mass=12 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftUpLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightUpLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightLeg mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:Spine mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:LeftForeArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:Head mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightArm mass=4 scale=(85.37, 85.37, 85.37)
+  BODY mixamorig:RightForeArm mass=4 scale=(85.37, 85.37, 85.37)
+  REF ThiefAnimationDriver.m_animator => Animator ThiefModel
+  REF ThiefHealth.m_ragdoll => PedestrianRagdoll ThiefModel

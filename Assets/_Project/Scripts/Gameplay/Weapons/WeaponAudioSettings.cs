@@ -64,7 +64,22 @@ namespace CouchGuys.Gameplay.Weapons
         [SerializeField] private AudioSource m_voicePrefab;
         [SerializeField] private Profile[] m_profiles = new Profile[5];
 
+        [Header("Punch Audio")]
+        [SerializeField] private AudioClip m_punchMissClip;
+        [SerializeField] private AudioClip m_punchWeakHitClip;
+        [SerializeField] private AudioClip m_punchStrongHitClip;
+        [SerializeField, Range(0f, 1f)] private float m_punchVolume = 1f;
+        [SerializeField, Min(0.1f)] private float m_punchMinimumDistance = 1f;
+        [Tooltip("Punch audio fades to silence at this distance in metres.")]
+        [SerializeField, Min(0.2f)] private float m_punchMaximumDistance = 20f;
+
         public AudioSource VoicePrefab => m_voicePrefab;
+        public float PunchVolume => Mathf.Clamp01(m_punchVolume);
+        public float PunchMaximumDistance => Mathf.Max(.2f, m_punchMaximumDistance);
+        public float PunchMinimumDistance => Mathf.Clamp(m_punchMinimumDistance, .1f, PunchMaximumDistance - .1f);
+
+        public AudioClip GetPunchClip(bool cross, bool hit) =>
+            !hit ? m_punchMissClip : cross ? m_punchStrongHitClip : m_punchWeakHitClip;
 
         public Profile GetProfile(PlayerWeaponType weaponType)
         {

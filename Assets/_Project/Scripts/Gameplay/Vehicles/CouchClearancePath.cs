@@ -42,6 +42,19 @@ namespace CouchGuys.Gameplay.Vehicles
             m_settings = settings;
             m_rotation = couch.transform.rotation;
             Bounds bounds = couch.CargoBounds;
+            // A mounted couch is offset from the sled centre. Expand in couch
+            // space so the full sled, including its far edge, fits the route.
+            if (couch.MountedSled != null)
+            {
+                var sled = couch.MountedSled.CarryController;
+                Bounds sledBounds = sled.CargoBounds;
+                for (int x = -1; x <= 1; x += 2)
+                    for (int y = -1; y <= 1; y += 2)
+                        for (int z = -1; z <= 1; z += 2)
+                            bounds.Encapsulate(couch.transform.InverseTransformPoint(
+                                sled.transform.TransformPoint(sledBounds.center +
+                                    Vector3.Scale(sledBounds.extents, new Vector3(x, y, z)))));
+            }
             if (bounds.size.sqrMagnitude < .01f) bounds = new Bounds(Vector3.up * .45f, new Vector3(2.1f, .9f, .9f));
             Vector3 scale = couch.transform.lossyScale;
             scale = new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z));
@@ -147,6 +160,7 @@ namespace CouchGuys.Gameplay.Vehicles
             if (m_ignore.TryGetValue(hit, out bool ignored)) return ignored;
             ignored = hit.transform.IsChildOf(m_couch.transform) ||
                 (m_couch.MountedSled != null && hit.transform.IsChildOf(m_couch.MountedSled.transform)) ||
+                (m_couch.MountedHoverboardObject != null && hit.transform.IsChildOf(m_couch.MountedHoverboardObject.transform)) ||
                 TruckController.IsGroundSurface(hit) ||
                 hit.GetComponentInParent<ThiefHealth>() != null || hit.GetComponentInParent<PlayerHealth>() != null;
             m_ignore[hit] = ignored;

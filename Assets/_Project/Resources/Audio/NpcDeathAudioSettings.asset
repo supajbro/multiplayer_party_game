@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98e343cf31724b2d99d04af3d7c431c1, type: 3}
+  m_Name: NpcDeathAudioSettings
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Pedestrians.NpcDeathAudioSettings
+  m_voicePrefab: {fileID: 8200000, guid: 8d6f218ffe3af513b0e594741f024229, type: 3}
+  m_clip: {fileID: 8300000, guid: 44622d8810a792e49a60c0c9902b0f98, type: 3}
+  m_volume: 1
+  m_minimumDistance: 1
+  m_maximumDistance: 25

@@ -25,6 +25,11 @@ namespace CouchGuys.Gameplay.Vehicles
         [Min(.1f)] public float EscapeSpeed = 15f;
         [Min(5f)] public float ParkingDistance = 12f;
         [Min(.1f)] public float LoadingDistance = 2.5f;
+        [Min(0f), Tooltip("Extra handoff reach for the four-couch sled.")] public float SledLoadingDistanceBonus = 4f;
+        [Min(0f), Tooltip("Extra handoff reach for a stolen hoverboard.")] public float HoverboardLoadingDistanceBonus = 2f;
+        internal float GetLoadingDistance(CouchGuys.Gameplay.Couch.CouchCarryController couch) =>
+            LoadingDistance + (couch != null && couch.MountedSled != null ? SledLoadingDistanceBonus :
+                couch != null && couch.MountedHoverboardObject != null ? HoverboardLoadingDistanceBonus : 0f);
         [Min(.1f)] public float ReplacementDelay = 8f;
         [Min(0f)] public float MinimumSpawnDistance = 100f;
         [Min(.1f)] public float DecisionInterval = 1f;

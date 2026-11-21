@@ -1,6 +1,7 @@
 using CouchGuys.Gameplay.Depot;
 using System.Collections.Generic;
 using CouchGuys.Gameplay.Couch;
+using CouchGuys.Gameplay.Vehicles;
 using CouchGuys.Gameplay.Delivery;
 using CouchGuys.Player;
 using FishNet.Object;
@@ -102,7 +103,7 @@ namespace CouchGuys.Gameplay.Enemies
         private CouchCarryController m_collisionIgnoredCouch;
 
         NetworkObject ICouchCarrierServer.CarrierNetworkObject => NetworkObject;
-        bool ICouchCarrierServer.IsCarrierAvailable => !DepotSafeZone.Contains(transform.position) && m_grappler == null && m_speaker == null && IsSpawned && !IsDeparting &&
+        bool ICouchCarrierServer.IsCarrierAvailable => !DepotSafeZone.Contains(transform.position) && m_grappler == null && m_speaker == null && IsSpawned && !IsDeparting && !IsRidingHoverboard &&
             (m_weapon == null || !m_weapon.IsRocketLauncher) &&
             (m_health == null || m_health.IsAlive);
 
@@ -116,6 +117,7 @@ namespace CouchGuys.Gameplay.Enemies
             m_audio = GetComponent<ThiefAudioEmitter>();
             m_carrierCollider = GetComponent<Collider>();
             m_path = new NavMeshPath();
+            m_hoverboard.OnChange += OnHoverboardChanged;
             if (m_agent != null)
             {
                 ApplyMovementSettings();
@@ -164,17 +166,20 @@ namespace CouchGuys.Gameplay.Enemies
         {
             base.OnStartClient();
             if (!IsServerInitialized && m_agent != null) m_agent.enabled = false;
+            ApplyHoverboardState();
             m_audio.StartLocal();
         }
 
         public override void OnStopClient()
         {
+            RestoreHoverboardState();
             m_audio.StopLocal();
             base.OnStopClient();
         }
 
         public override void OnStopServer()
         {
+            ReleaseHoverboardServer();
             m_alerting.Value = false;
             ReleaseCarriedCouchServer();
             SetConstrainedCarryMovement(false);
@@ -184,6 +189,8 @@ namespace CouchGuys.Gameplay.Enemies
 
         private void OnDestroy()
         {
+            m_hoverboard.OnChange -= OnHoverboardChanged;
+            RestoreHoverboardState();
             UpdateCarriedCouchCollision(null);
         }
 
@@ -230,6 +237,7 @@ namespace CouchGuys.Gameplay.Enemies
         private void Update()
         {
             if (!IsServerInitialized) return;
+            if (UpdateHoverboardRideServer()) return;
             if (m_health != null && m_health.IsBeingKnockedBack)
             {
                 m_alerting.Value = false;
@@ -314,10 +322,15 @@ namespace CouchGuys.Gameplay.Enemies
                 SetConstrainedCarryMovement(false);
                 var truck = couch.LoadedTruckObject != null
                     ? couch.LoadedTruckObject.GetComponent<CouchGuys.Gameplay.Vehicles.TruckController>() : null;
+                if (couch.MountedHoverboardObject != null &&
+                    couch.MountedHoverboardObject.TryGetComponent(out MagneticHoverboardController board))
+                {
+                    UpdateHoverboardObjective(board);
+                    return;
+                }
                 if (truck == null)
                 {
-                    // Hoverboards also count as loaded cargo. Continue ordinary
-                    // combat without assuming a truck or stealing its cargo.
+                    // Unknown loaded attachments have no theft interaction.
                     UpdateFightObjective(GetClosestLivingTarget());
                     return;
                 }

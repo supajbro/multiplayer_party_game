@@ -78,7 +78,9 @@ namespace CouchGuys.Gameplay.Enemies
         private readonly RaycastHit[] m_hits = new RaycastHit[24];
         private PlayerHealth m_target;
         private TruckController m_targetTruck;
-        private Vector3 TargetAimPoint => m_targetTruck != null
+        private MagneticHoverboardController m_targetHoverboard;
+        private readonly Dictionary<MagneticHoverboardController, float> m_damageByHoverboard = new();
+        private Vector3 TargetAimPoint => m_targetHoverboard != null ? m_targetHoverboard.transform.position : m_targetTruck != null
             ? m_targetTruck.CameraTarget.position : m_target.AimPoint;
         private Material m_tracerMaterial;
         private ThiefAnimationDriver m_animationDriver;
@@ -140,7 +142,7 @@ namespace CouchGuys.Gameplay.Enemies
         private void SetCombatTarget(PlayerHealth target)
         {
             if (target != null && !target.IsEnemyTargetable) target = null;
-            if (m_target != target || m_targetTruck != null)
+            if (m_target != target || m_targetTruck != null || m_targetHoverboard != null)
             {
                 if (m_telegraph != null && (target == null || m_telegraph.IsPreparing)) m_telegraph.CancelServer();
                 EndRifleBurstServer();
@@ -149,6 +151,7 @@ namespace CouchGuys.Gameplay.Enemies
             }
             m_target = target;
             m_targetTruck = null;
+            m_targetHoverboard = null;
         }
 
         public void SetTruckTargetServer(TruckController truck)
@@ -162,6 +165,18 @@ namespace CouchGuys.Gameplay.Enemies
                 m_burstShotsRemaining = Random.Range(m_minBurstShots, m_maxBurstShots + 1);
             }
             m_targetTruck = truck;
+        }
+
+        internal void SetHoverboardTargetServer(MagneticHoverboardController board)
+        {
+            if (!IsServerInitialized || IsRocketLauncher) return;
+            if (board != null && (board.IsDestroyed || board.Driver == null || board.HasThiefDriver ||
+                DepotSafeZone.Contains(board.transform.position))) board = null;
+            if (m_targetHoverboard == board) return;
+            SetCombatTarget(null);
+            m_reactionEndsAt = Time.time + m_reactionTime;
+            m_burstShotsRemaining = Random.Range(m_minBurstShots, m_maxBurstShots + 1);
+            m_targetHoverboard = board;
         }
 
         private void Update()
@@ -190,7 +205,7 @@ namespace CouchGuys.Gameplay.Enemies
                     SetCombatTarget(FindClosestCouchEnemy(couch.transform.position));
                 }
             }
-            if (m_targetTruck != null ? m_targetTruck.IsDestroyed || DepotSafeZone.Contains(m_targetTruck.transform.position) : m_target == null || !m_target.IsEnemyTargetable)
+            if (m_targetHoverboard != null ? m_targetHoverboard.IsDestroyed || m_targetHoverboard.Driver == null || m_targetHoverboard.HasThiefDriver || DepotSafeZone.Contains(m_targetHoverboard.transform.position) : m_targetTruck != null ? m_targetTruck.IsDestroyed || DepotSafeZone.Contains(m_targetTruck.transform.position) : m_target == null || !m_target.IsEnemyTargetable)
             {
                 if (m_targetTruck == null) SetCombatTarget(null);
                 EndRifleBurstServer();
@@ -294,6 +309,9 @@ namespace CouchGuys.Gameplay.Enemies
                 // Rocket thieves accept collateral risk; the projectile still
                 // collides with this thief and its blast damages all nearby thieves.
                 if (IsRocketLauncher && m_hits[i].collider.GetComponentInParent<ThiefHealth>() != null) return true;
+                var hitBoard = m_hits[i].collider.GetComponentInParent<MagneticHoverboardController>();
+                if (hitBoard != null && (hitBoard == m_targetHoverboard ||
+                    m_target != null && hitBoard.Driver == m_target.NetworkObject)) return true;
                 TruckController hitTruck = m_hits[i].collider.GetComponentInParent<TruckController>();
                 return hitTruck != null && (m_targetTruck != null
                     ? hitTruck == m_targetTruck : m_target != null && hitTruck.Driver == m_target.NetworkObject);
@@ -317,6 +335,7 @@ namespace CouchGuys.Gameplay.Enemies
             m_damageByPlayer.Clear();
             m_dispatcherHits.Clear();
             m_damageByTruck.Clear();
+            m_damageByHoverboard.Clear();
             m_damageByPedestrian.Clear();
             m_bloodHits.Clear();
             m_tracerEnds.Clear();
@@ -355,6 +374,12 @@ namespace CouchGuys.Gameplay.Enemies
                     }
                     else
                     {
+                        var board = hit.collider.GetComponentInParent<MagneticHoverboardController>();
+                        if (board != null)
+                        {
+                            m_damageByHoverboard.TryGetValue(board, out float boardDamage);
+                            m_damageByHoverboard[board] = boardDamage + m_damagePerPellet;
+                        }
                         TruckController truck = hit.collider.GetComponentInParent<TruckController>();
                         if (truck != null)
                         {
@@ -376,6 +401,8 @@ namespace CouchGuys.Gameplay.Enemies
             }
             foreach (KeyValuePair<TruckController, float> damage in m_damageByTruck)
                 damage.Key.ApplyBulletDamageServer(damage.Value);
+            foreach (var damage in m_damageByHoverboard)
+                damage.Key.ApplyBulletDamageServer(damage.Value);
             foreach (var damage in m_damageByPedestrian)
             {
                 RaycastHit bloodHit = m_bloodHits[damage.Key];
@@ -389,7 +416,8 @@ namespace CouchGuys.Gameplay.Enemies
         private Vector3 GetMissDirection(Vector3 origin, float spread)
         {
             // Aim outside the target's bounding sphere, allowing room for pellet spread.
-            Transform targetRoot = m_targetTruck != null ? m_targetTruck.transform : m_target.transform;
+            Transform targetRoot = m_targetHoverboard != null ? m_targetHoverboard.transform :
+                m_targetTruck != null ? m_targetTruck.transform : m_target.transform;
             if (m_target != null && m_target.TryGetComponent(out PlayerTruckInteractor interactor) && interactor.CurrentTruck != null)
                 targetRoot = interactor.CurrentTruck.transform;
             targetRoot.GetComponentsInChildren<Collider>(m_targetColliders);

@@ -111,7 +111,11 @@ namespace CouchGuys.Gameplay.Weapons
                 distance = offset.magnitude;
                 point = candidate;
             }
-            if (nearest == null) return;
+            if (nearest == null)
+            {
+                PlayPunchSoundObserversRpc(cross, false, transform.position);
+                return;
+            }
             float damage = m_punchDamage * (cross ? m_crossDamageMultiplier : 1f);
             float force = m_punchKnockback * (cross ? m_crossKnockbackMultiplier : 1f);
             Vector3 direction = transform.forward;
@@ -145,7 +149,14 @@ namespace CouchGuys.Gameplay.Weapons
                     break;
             }
             PunchImpactObserversRpc(point, -direction);
+            PlayPunchSoundObserversRpc(cross, true, transform.position);
         }
+
+        // No prediction or server-local playback: every observing client (including the host
+        // and attacker) receives exactly one unbuffered event after authoritative contact.
+        [ObserversRpc]
+        private void PlayPunchSoundObserversRpc(bool cross, bool hit, Vector3 position) =>
+            m_audio?.PlayPunch(cross, hit, position);
 
         // Buffered state plus server tick lets newly observing clients seek into the correct clip,
         // and prevents an old buffered punch from replaying after it has finished.

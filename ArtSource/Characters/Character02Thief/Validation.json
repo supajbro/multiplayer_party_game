@@ -1,0 +1,82 @@
+{
+  "source_body_vertices_preserved": true,
+  "source_body_weights_preserved": true,
+  "prefabs_created": 0,
+  "variants": {
+    "Pistol": {
+      "actions": {
+        "Thief_Walk": [
+          1.0,
+          24.0
+        ],
+        "Thief_Shoot": [
+          1.0,
+          24.0
+        ],
+        "Thief_Idle": [
+          1.0,
+          48.0
+        ],
+        "Thief_Frustration": [
+          1.0,
+          31.0
+        ],
+        "Thief_Death": [
+          1.0,
+          52.0
+        ]
+      },
+      "bones": 43
+    },
+    "AssaultRifle": {
+      "actions": {
+        "Thief_Walk": [
+          1.0,
+          24.0
+        ],
+        "Thief_Shoot": [
+          1.0,
+          24.0
+        ],
+        "Thief_Idle": [
+          1.0,
+          48.0
+        ],
+        "Thief_Frustration": [
+          1.0,
+          31.0
+        ],
+        "Thief_Death": [
+          1.0,
+          52.0
+        ]
+      },
+      "bones": 43
+    },
+    "Shotgun": {
+      "actions": {
+        "Thief_Walk": [
+          1.0,
+          24.0
+        ],
+        "Thief_Shoot": [
+          1.0,
+          24.0
+        ],
+        "Thief_Idle": [
+          1.0,
+          48.0
+        ],
+        "Thief_Frustration": [
+          1.0,
+          31.0
+        ],
+        "Thief_Death": [
+          1.0,
+          52.0
+        ]
+      },
+      "bones": 43
+    }
+  }
+}

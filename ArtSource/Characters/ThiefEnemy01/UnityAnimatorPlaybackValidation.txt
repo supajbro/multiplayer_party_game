@@ -1,0 +1,18 @@
+PASS: Pistol Idle plays through Animator with all four LODs inside their saved bounds.
+PASS: Pistol Walk plays through Animator with all four LODs inside their saved bounds.
+PASS: Pistol Shoot plays through Animator with all four LODs inside their saved bounds.
+PASS: Pistol Death plays through Animator with all four LODs inside their saved bounds.
+PASS: Pistol Frustration plays through Animator with all four LODs inside their saved bounds.
+PASS: Pistol Speed transition and Death priority.
+PASS: AssaultRifle Idle plays through Animator with all four LODs inside their saved bounds.
+PASS: AssaultRifle Walk plays through Animator with all four LODs inside their saved bounds.
+PASS: AssaultRifle Shoot plays through Animator with all four LODs inside their saved bounds.
+PASS: AssaultRifle Death plays through Animator with all four LODs inside their saved bounds.
+PASS: AssaultRifle Frustration plays through Animator with all four LODs inside their saved bounds.
+PASS: AssaultRifle Speed transition and Death priority.
+PASS: Shotgun Idle plays through Animator with all four LODs inside their saved bounds.
+PASS: Shotgun Walk plays through Animator with all four LODs inside their saved bounds.
+PASS: Shotgun Shoot plays through Animator with all four LODs inside their saved bounds.
+PASS: Shotgun Death plays through Animator with all four LODs inside their saved bounds.
+PASS: Shotgun Frustration plays through Animator with all four LODs inside their saved bounds.
+PASS: Shotgun Speed transition and Death priority.

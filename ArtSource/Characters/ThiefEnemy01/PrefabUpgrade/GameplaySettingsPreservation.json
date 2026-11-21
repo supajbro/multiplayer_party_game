@@ -1,0 +1,65 @@
+{
+  "GrapplerThief": {
+    "root_components_preserved": 9,
+    "only_references_changed": [
+      "m_ragdoll",
+      "m_animator"
+    ],
+    "root_game_object_id": 3224752670529808980
+  },
+  "SpeakerThief": {
+    "root_components_preserved": 9,
+    "only_references_changed": [
+      "m_animator",
+      "m_ragdoll"
+    ],
+    "root_game_object_id": 3713258935689448990
+  },
+  "Thief": {
+    "root_components_preserved": 7,
+    "only_references_changed": [
+      "m_animator",
+      "m_ragdoll"
+    ],
+    "root_game_object_id": 1000
+  },
+  "Thief_AssaultRifle": {
+    "root_components_preserved": 8,
+    "only_references_changed": [
+      "m_muzzle",
+      "m_heldWeaponRenderers",
+      "m_ragdoll",
+      "m_animator"
+    ],
+    "root_game_object_id": 5886176085319091588
+  },
+  "Thief_Pistol": {
+    "root_components_preserved": 8,
+    "only_references_changed": [
+      "m_muzzle",
+      "m_heldWeaponRenderers",
+      "m_ragdoll",
+      "m_animator"
+    ],
+    "root_game_object_id": 2569576030818965973
+  },
+  "Thief_RocketLauncher": {
+    "root_components_preserved": 9,
+    "only_references_changed": [
+      "m_heldWeaponRenderers",
+      "m_ragdoll",
+      "m_animator"
+    ],
+    "root_game_object_id": 4280269212087817757
+  },
+  "Thief_Shotgun": {
+    "root_components_preserved": 8,
+    "only_references_changed": [
+      "m_muzzle",
+      "m_heldWeaponRenderers",
+      "m_ragdoll",
+      "m_animator"
+    ],
+    "root_game_object_id": 3721535447601552465
+  }
+}

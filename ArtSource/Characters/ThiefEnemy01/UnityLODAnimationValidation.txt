@@ -1,0 +1,21 @@
+LOD0: 10000 triangles, 7878 imported vertices, 4 bone influences, one shared material.
+LOD1: 4000 triangles, 3975 imported vertices, 4 bone influences, one shared material.
+LOD2: 1500 triangles, 1966 imported vertices, 2 bone influences, one shared material.
+LOD3: 700 triangles, 1184 imported vertices, 2 bone influences, one shared material.
+Animation: Shotgun_Thief_Idle, 1.567s, 30fps, loop=True, curves=230.
+Animation: Pistol_Thief_Shoot, 0.767s, 30fps, loop=False, curves=230.
+Animation: Pistol_Thief_Walk, 0.767s, 30fps, loop=True, curves=230.
+Animation: Shotgun_Thief_Shoot, 0.767s, 30fps, loop=False, curves=230.
+Animation: Pistol_Thief_Death, 1.700s, 30fps, loop=False, curves=230.
+Animation: Shotgun_Thief_Death, 1.700s, 30fps, loop=False, curves=230.
+Animation: AssaultRifle_Thief_Shoot, 0.767s, 30fps, loop=False, curves=230.
+Animation: Pistol_Thief_Frustration, 1.000s, 30fps, loop=False, curves=230.
+Animation: Shotgun_Thief_Walk, 0.767s, 30fps, loop=True, curves=230.
+Animation: AssaultRifle_Thief_Frustration, 1.000s, 30fps, loop=False, curves=230.
+Animation: Pistol_Thief_Idle, 1.567s, 30fps, loop=True, curves=230.
+Animation: Shotgun_Thief_Frustration, 1.000s, 30fps, loop=False, curves=230.
+Animation: AssaultRifle_Thief_Idle, 1.567s, 30fps, loop=True, curves=230.
+Animation: AssaultRifle_Thief_Walk, 0.767s, 30fps, loop=True, curves=230.
+Animation: AssaultRifle_Thief_Death, 1.700s, 30fps, loop=False, curves=230.
+PASS: saved prefab has four exclusive LOD levels; common avatar/skeleton/material; animation-aware skin bounds; no CPU-readable meshes; offscreen animation culling enabled.
+LOD screen-height transitions: 0.35 / 0.16 / 0.07 / 0.025 (culled below 2.5%). LOD2/3 cast no shadows.

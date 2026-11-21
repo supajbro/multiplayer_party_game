@@ -328,8 +328,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8468c78c72d3491582c4c5a003273d41, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Vehicles.VehicleAudioEmitter
-  m_engineClip: {fileID: 0}
-  m_splatClip: {fileID: 0}
+  m_engineClip: {fileID: 8300000, guid: 80f7b7bca45b47cfac5a88e8c7727d4e, type: 3}
+  m_splatClip: {fileID: 8300000, guid: a15d1d70eef3413ab7dfe68dbcbf5ea7, type: 3}
   m_hornClip: {fileID: 0}
   m_engineVolume: 0.65
   m_minDistance: 3

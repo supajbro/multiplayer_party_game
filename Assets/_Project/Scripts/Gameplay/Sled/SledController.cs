@@ -210,6 +210,23 @@ namespace CouchGuys.Gameplay.Sled
             m_nextMountTime = Time.time + 1f;
         }
 
+        internal void EncapsulateCargoBounds(ref Bounds bounds)
+        {
+            foreach (var couch in m_cargo)
+            {
+                if (couch == null) continue;
+                Bounds cargo = couch.CargoBounds;
+                for (int x = -1; x <= 1; x += 2)
+                    for (int y = -1; y <= 1; y += 2)
+                        for (int z = -1; z <= 1; z += 2)
+                            bounds.Encapsulate(couch.transform.TransformPoint(cargo.center +
+                                Vector3.Scale(cargo.extents, new Vector3(x, y, z))));
+            }
+            foreach (var weapon in m_weapons)
+                if (weapon != null)
+                    bounds.Encapsulate(weapon.transform.position);
+        }
+
         internal Vector3 GetMountPosition(CouchCarryController couch)
         {
             int dock = FindAvailableDock(couch);

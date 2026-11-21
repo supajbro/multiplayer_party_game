@@ -216,6 +216,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         private bool HasGroundSupport()
         {
+            if (m_navigator != null && m_navigator.IsRidingHoverboard) return true;
             // Probe the feet, not the NavMesh: an agent may still report being on a
             // NavMesh after its physical support has gone or it has been lifted.
             Bounds bounds = m_collider != null && m_collider.enabled
@@ -302,6 +303,7 @@ namespace CouchGuys.Gameplay.Enemies
                 BeginAirborneRagdoll();
                 if (m_ragdollState.Value != 0) return;
             }
+            if (m_navigator != null && m_navigator.IsRidingHoverboard) return;
             RetryNavigationAfterRecovery();
             if (Time.time < m_resumeNavigationAt)
             {
@@ -395,6 +397,7 @@ namespace CouchGuys.Gameplay.Enemies
         {
             if ((!allowPushWithoutDamage && damage <= 0f) ||
                 (damage <= 0f && knockbackForce <= 0f && upwardForce <= 0f) || !IsAlive) return;
+            m_navigator?.ReleaseHoverboardServer();
             float appliedDamage = Mathf.Max(0f, damage);
             m_currentHealth.Value = Mathf.Max(0f, m_currentHealth.Value - appliedDamage);
             Vector3 impulse = NpcImpactPhysics.Impulse(impactDirection, knockbackForce, upwardForce);
@@ -406,6 +409,7 @@ namespace CouchGuys.Gameplay.Enemies
                     ? CreateAirborneSpin(impulse) : Vector3.zero;
                 m_ragdollState.Value = 2;
                 m_dead.Value = true;
+                PlayDeathAudioObserversRpc(transform.position);
                 float chance = m_settings != null ? m_settings.Health.WeaponDropChance : 35f;
                 if (TryGetComponent(out EnemyWeapon weapon) && UnityEngine.Random.value * 100f < chance)
                     CouchGuys.Gameplay.Weapons.WeaponPickup.SpawnServer(
@@ -436,6 +440,11 @@ namespace CouchGuys.Gameplay.Enemies
 
         [ObserversRpc(RunLocally = true)]
         private void PlayHitObserversRpc() => m_animationDriver?.TriggerHit();
+
+        // No local/server playback or SyncVar callback: hosts receive this once as a client.
+        [ObserversRpc]
+        private void PlayDeathAudioObserversRpc(Vector3 position) => NpcDeathAudioSettings.Play(position);
+
         private void OnHealthChanged(float previous, float next, bool asServer) => HealthChanged?.Invoke(next, MaxHealth);
         private void OnRagdollChanged(byte previous, byte next, bool asServer)
         {

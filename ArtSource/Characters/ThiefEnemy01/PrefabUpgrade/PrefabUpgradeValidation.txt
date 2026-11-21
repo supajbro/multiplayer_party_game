@@ -1,0 +1,7 @@
+PASS Thief: four body LODs, Pistol controller, 11 ragdoll bodies, 0 baked weapon skins, 0 preserved attachment roots; gameplay root preserved.
+PASS Thief_Pistol: four body LODs, Pistol controller, 11 ragdoll bodies, 1 baked weapon skins, 0 preserved attachment roots; gameplay root preserved.
+PASS Thief_AssaultRifle: four body LODs, AssaultRifle controller, 11 ragdoll bodies, 1 baked weapon skins, 0 preserved attachment roots; gameplay root preserved.
+PASS Thief_Shotgun: four body LODs, Shotgun controller, 11 ragdoll bodies, 1 baked weapon skins, 0 preserved attachment roots; gameplay root preserved.
+PASS Thief_RocketLauncher: four body LODs, AssaultRifle controller, 11 ragdoll bodies, 1 baked weapon skins, 1 preserved attachment roots; gameplay root preserved.
+PASS GrapplerThief: four body LODs, Pistol controller, 11 ragdoll bodies, 1 baked weapon skins, 1 preserved attachment roots; gameplay root preserved.
+PASS SpeakerThief: four body LODs, Pistol controller, 11 ragdoll bodies, 0 baked weapon skins, 1 preserved attachment roots; gameplay root preserved.

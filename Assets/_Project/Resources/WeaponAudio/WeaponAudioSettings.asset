@@ -13,6 +13,12 @@ MonoBehaviour:
   m_Name: WeaponAudioSettings
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Weapons.WeaponAudioSettings
   m_voicePrefab: {fileID: 8200000, guid: 8d6f218ffe3af513b0e594741f024229, type: 3}
+  m_punchMissClip: {fileID: 8300000, guid: 925dbd531d307764cbf9ed4171831d94, type: 3}
+  m_punchWeakHitClip: {fileID: 8300000, guid: 89e0e4799b243704fbeac1c5af36de82, type: 3}
+  m_punchStrongHitClip: {fileID: 8300000, guid: 34d72a6cfb2c36549a99e9f213fdde2c, type: 3}
+  m_punchVolume: 1
+  m_punchMinimumDistance: 1
+  m_punchMaximumDistance: 20
   m_profiles:
   - m_weaponType: 0
     m_gunshots:

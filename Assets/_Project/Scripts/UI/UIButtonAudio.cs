@@ -16,6 +16,12 @@ namespace CouchGuys.UI
         [Tooltip("Random pitch offset around normal speed for each click. Zero disables variation.")]
         [SerializeField, Range(0f, 0.1f)] private float m_pitchVariation = 0.04f;
 
+        [Header("Delivery Results")]
+        [SerializeField] private AudioSource m_deliverySource;
+        [SerializeField] private AudioClip m_deliverySuccess;
+        [SerializeField] private AudioClip m_deliveryFailure;
+        [SerializeField, Range(0f, 1f)] private float m_deliveryVolume = 1f;
+
         private static UIButtonAudio s_instance;
         private Selectable[] m_selectables = new Selectable[64];
         private UnityAction m_playClick;
@@ -55,6 +61,24 @@ namespace CouchGuys.UI
             m_source.ignoreListenerPause = true;
             // Keep ignoreListenerVolume false: Master volume is controlled by AudioListener.volume.
             m_source.ignoreListenerVolume = false;
+            if (m_deliverySource != null)
+            {
+                m_deliverySource.playOnAwake = false;
+                m_deliverySource.spatialBlend = 0f;
+                m_deliverySource.dopplerLevel = 0f;
+                m_deliverySource.ignoreListenerPause = true;
+                m_deliverySource.ignoreListenerVolume = false;
+            }
+        }
+
+        public static void PlayDeliveryResult(bool success)
+        {
+            if (s_instance == null) Initialise();
+            if (s_instance == null || s_instance.m_deliverySource == null) return;
+            AudioClip clip = success ? s_instance.m_deliverySuccess : s_instance.m_deliveryFailure;
+            // One-shots overlap, including several deliveries resolved in the same network tick.
+            // A separate UI source keeps button pitch variation from affecting result sounds.
+            if (clip != null) s_instance.m_deliverySource.PlayOneShot(clip, s_instance.m_deliveryVolume);
         }
 
         private void Update()

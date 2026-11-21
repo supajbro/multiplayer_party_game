@@ -1,0 +1,110 @@
+{
+  "Character02_Thief.fbx": {
+    "roundtrip_actions": {
+      "Thief_Death": [
+        1.0,
+        52.0
+      ],
+      "Thief_Frustration": [
+        1.0,
+        31.0
+      ],
+      "Thief_Idle": [
+        1.0,
+        48.0
+      ],
+      "Thief_Shoot": [
+        1.0,
+        24.0
+      ],
+      "Thief_Walk": [
+        1.0,
+        24.0
+      ]
+    },
+    "bones": 43,
+    "fully_weighted": true,
+    "meshes": 1
+  },
+  "Character02_Thief_AssaultRifle.fbx": {
+    "roundtrip_actions": {
+      "Thief_Death": [
+        1.0,
+        52.0
+      ],
+      "Thief_Frustration": [
+        1.0,
+        31.0
+      ],
+      "Thief_Idle": [
+        1.0,
+        48.0
+      ],
+      "Thief_Shoot": [
+        1.0,
+        24.0
+      ],
+      "Thief_Walk": [
+        1.0,
+        24.0
+      ]
+    },
+    "bones": 43,
+    "fully_weighted": true,
+    "meshes": 2
+  },
+  "Character02_Thief_Pistol.fbx": {
+    "roundtrip_actions": {
+      "Thief_Death": [
+        1.0,
+        52.0
+      ],
+      "Thief_Frustration": [
+        1.0,
+        31.0
+      ],
+      "Thief_Idle": [
+        1.0,
+        48.0
+      ],
+      "Thief_Shoot": [
+        1.0,
+        24.0
+      ],
+      "Thief_Walk": [
+        1.0,
+        24.0
+      ]
+    },
+    "bones": 43,
+    "fully_weighted": true,
+    "meshes": 2
+  },
+  "Character02_Thief_Shotgun.fbx": {
+    "roundtrip_actions": {
+      "Thief_Death": [
+        1.0,
+        52.0
+      ],
+      "Thief_Frustration": [
+        1.0,
+        31.0
+      ],
+      "Thief_Idle": [
+        1.0,
+        48.0
+      ],
+      "Thief_Shoot": [
+        1.0,
+        24.0
+      ],
+      "Thief_Walk": [
+        1.0,
+        24.0
+      ]
+    },
+    "bones": 43,
+    "fully_weighted": true,
+    "meshes": 2
+  }
+}

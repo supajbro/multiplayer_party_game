@@ -1,0 +1,22 @@
+{
+  "source": "Pixal3D INT8 through local ComfyUI",
+  "height_m": 1.65,
+  "vertices": 10002,
+  "triangles": 20000,
+  "uv_layers": 1,
+  "dimensions_m": [
+    1.6071768999099731,
+    0.5934878587722778,
+    1.649999976158142
+  ],
+  "materials": 1,
+  "boundary_edges": 0,
+  "nonmanifold_edges": 0,
+  "loose_vertices": 0,
+  "bones": 22,
+  "unweighted_vertices": 0,
+  "max_influences": 4,
+  "rig_type": "Generic; no animation clips or finger bones",
+  "deformation_sample_finite": true,
+  "deformation_sample_max_displacement_m": 0.37183393894832245
+}

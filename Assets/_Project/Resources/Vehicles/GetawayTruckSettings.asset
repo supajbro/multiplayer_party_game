@@ -25,6 +25,8 @@ MonoBehaviour:
   ApproachSpeed: 8
   EscapeSpeed: 15
   ParkingDistance: 12
+  SledLoadingDistanceBonus: 4
+  HoverboardLoadingDistanceBonus: 2
   LoadingDistance: 2.5
   ReplacementDelay: 8
   MinimumSpawnDistance: 100

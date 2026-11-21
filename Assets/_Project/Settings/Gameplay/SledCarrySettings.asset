@@ -15,3 +15,5 @@ MonoBehaviour:
   m_movementSpeedMultiplier: 0.85
   m_staminaDrainMultiplier: 0.05
   m_maximumCargoItems: 4
+  m_groundRecoveryHeight: 1.25
+  m_groundRecoveryInterval: 0.1

@@ -230,7 +230,17 @@ namespace CouchGuys.Gameplay.Delivery
             SetStateServer(HasActiveDelivery ? DeliveryState.Transport : DeliveryState.Available,
                 HasActiveDelivery ? DeliveryObjectiveStep.DeliverCouch : DeliveryObjectiveStep.AcceptDelivery);
             m_refreshDialogues = true;
+            DeliveryResultObserversRpc(success);
             return true;
+        }
+
+        // The job is removed before this is sent, so subsequent resolution attempts cannot resend.
+        // Receive only (no RunLocally): the host plays through its client exactly once, too.
+        // Unbuffered: joining players must not replay old delivery results.
+        [ObserversRpc]
+        private void DeliveryResultObserversRpc(bool success)
+        {
+            CouchGuys.UI.UIButtonAudio.PlayDeliveryResult(success);
         }
 
         private bool CanReceiveCouch(DeliveryInstance job, CouchCarryController couch,

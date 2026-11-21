@@ -1,0 +1,20 @@
+{
+  "Assets/_Project/Prefabs/Enemies/Thief.prefab": "20690a1ce609e00e9fd261d75854ab0376b23de7b45f7df39b8b58c43ff3e1e6",
+  "Assets/_Project/Prefabs/Enemies/Thief_Pistol.prefab": "1ea357e6e2208103ef59878d6eb434df43b66afd8584c627d1242322b7692886",
+  "Assets/_Project/Prefabs/Enemies/Thief_AssaultRifle.prefab": "d4cfbb94254cd53623700e7b409ed56f1058193dad1f42f49dbfd3581f22ba73",
+  "Assets/_Project/Prefabs/Enemies/Thief_Shotgun.prefab": "335c4777157c2fea56978728c93fac738202f09fb20c9205b70673921ba9707c",
+  "Assets/_Project/Prefabs/Enemies/Thief_RocketLauncher.prefab": "24e48018f647fcecaea2c6c4aa8af9ca1fd5d501a27a91d05baa2ce45398d8f4",
+  "Assets/_Project/Prefabs/Enemies/GrapplerThief.prefab": "92aef36cb09e5a247eceb0aa6b484c256a38bf022c82270d55208389ff053368",
+  "Assets/_Project/Prefabs/Enemies/SpeakerThief.prefab": "a31d33f00c865885835af5824b4dc530aa01bd6ac3f2b32be47daca774ddda5f",
+  "Assets/_Project/Models/Thieves/ThiefEnemy01Attachments/GrapplerThief_Weapon_Pistol.asset": "95f363994c5e9cb5d2cf595bd5572812a75cef8c5c10c9ae5c0f75300dc3e688",
+  "Assets/_Project/Models/Thieves/ThiefEnemy01Attachments/GrapplerThief_Weapon_Pistol.asset.meta": "5c3d8c4288c5c5547a28cf1879367dcfee3922962a055aa0dcecfaf72615b17a",
+  "Assets/_Project/Models/Thieves/ThiefEnemy01Attachments/Thief_AssaultRifle_Weapon_AssaultRifle.asset": "0f9270b04a28ddf4a5d53f484ebb3057b15cb1cb96f9634d337656ee6643aff9",
+  "Assets/_Project/Models/Thieves/ThiefEnemy01Attachments/Thief_AssaultRifle_Weapon_AssaultRifle.asset.meta": "5b3b30d824762f1fa04c8d628983d61395d0270cb07806538f3ab775e1dbf566",
+  "Assets/_Project/Models/Thieves/ThiefEnemy01Attachments/Thief_Pistol_Weapon_Pistol.asset": "57c500015895be3c4229612833fb773bd6600bcceb8ed9f0e6f27a984d0b1108",
+  "Assets/_Project/Models/Thieves/ThiefEnemy01Attachments/Thief_Pistol_Weapon_Pistol.asset.meta": "67dd86a4fe40b0e2cc9e7dbce4431b59c78dc12801cdfcfbdab86d70242d1096",
+  "Assets/_Project/Models/Thieves/ThiefEnemy01Attachments/Thief_RocketLauncher_Weapon_Shotgun.asset": "2a1571b9028b5d908dee66f3ee4ce8b1f0adb45a977bf68c759550a6e8ed630f",
+  "Assets/_Project/Models/Thieves/ThiefEnemy01Attachments/Thief_RocketLauncher_Weapon_Shotgun.asset.meta": "7feb5988add98358db7f78f95470a669b368ff50277f494e2c3d9cc0057d2e1f",
+  "Assets/_Project/Models/Thieves/ThiefEnemy01Attachments/Thief_Shotgun_Weapon_Shotgun.asset": "11af9660b16bccea950bea71d9ff5b71ad1f13a6f69909dbea9b3a63cad1ec67",
+  "Assets/_Project/Models/Thieves/ThiefEnemy01Attachments/Thief_Shotgun_Weapon_Shotgun.asset.meta": "e77f446c3f5c264435cda79ed396857da78942f9255c387f15a789254f6942ad",
+  "Assets/_Project/Models/Thieves/ThiefEnemy01Attachments.meta": "fdd4a396efb7dfcb6e7719a5d4afd0064144df2a047e546faebdf196f009ec6e"
+}

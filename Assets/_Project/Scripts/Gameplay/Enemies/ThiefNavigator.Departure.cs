@@ -27,7 +27,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         public bool IsDeparting => m_departurePhase.Value != DeparturePhase.None;
         public bool IsFrustrated => m_departurePhase.Value == DeparturePhase.Frustration;
-        public bool CanAttack => m_speaker == null && !DepotSafeZone.Contains(transform.position) && !IsCarrying && (!IsDeparting || m_departurePhase.Value == DeparturePhase.Chase);
+        public bool CanAttack => m_speaker == null && !DepotSafeZone.Contains(transform.position) && !IsCarrying && !IsRidingHoverboard && (!IsDeparting || m_departurePhase.Value == DeparturePhase.Chase);
         public float FrustrationDuration => Mathf.Max(0.1f, Departure.FrustrationDuration);
 
         private void ResetDepartureServer()
@@ -46,6 +46,7 @@ namespace CouchGuys.Gameplay.Enemies
         [Server]
         public void BeginDepartureServer()
         {
+            ReleaseHoverboardServer();
             if (IsDeparting || (m_health != null && !m_health.IsAlive)) return;
             m_departureTarget = m_grappler != null ? m_grappler.Target : m_target;
             bool pursuing = !IsAlerting && m_departureTarget != null &&
@@ -189,6 +190,7 @@ namespace CouchGuys.Gameplay.Enemies
 
         private void LateUpdate()
         {
+            UpdateHoverboardPose();
             if (!IsClientInitialized || m_departurePhase.Value != DeparturePhase.Retreat ||
                 Time.unscaledTime < m_nextVisibilityReport) return;
             m_nextVisibilityReport = Time.unscaledTime + 0.4f;

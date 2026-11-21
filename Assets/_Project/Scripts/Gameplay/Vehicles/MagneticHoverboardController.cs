@@ -47,6 +47,7 @@ namespace CouchGuys.Gameplay.Vehicles
         public float Health => m_health.Value;
         public bool IsDestroyed => m_destroyed.Value;
         public NetworkObject Driver => m_driver.Value;
+        public bool HasThiefDriver => Driver != null && Driver.TryGetComponent<ThiefNavigator>(out _);
         public CouchCarryController Couch => m_couch.Value != null ? m_couch.Value.GetComponent<CouchCarryController>() : null;
         public Transform CouchAnchor => m_couchAnchor;
         public Transform DriverAnchor => m_driverAnchor;
@@ -141,6 +142,7 @@ namespace CouchGuys.Gameplay.Vehicles
         public override void OnStopServer()
         {
             if (Driver != null && Driver.TryGetComponent(out PlayerHoverboardInteractor p)) p.ReleaseServer(true);
+            if (Driver != null && Driver.TryGetComponent(out ThiefNavigator thief)) thief.ReleaseHoverboardServer();
             if (Couch != null) Couch.ReleaseHoverboardServer(transform.position + Vector3.up * 1.5f, transform.rotation);
             m_couch.Value = null;
             base.OnStopServer();
@@ -151,6 +153,17 @@ namespace CouchGuys.Gameplay.Vehicles
             if (!IsServerInitialized || IsDestroyed || player == null || Driver != null || !player.CanMount || Speed > m_settings.MagnetMaximumSpeed ||
                 Vector3.Distance(player.transform.position, MountPosition) > m_settings.MountRange) return false;
             m_driver.Value = player.NetworkObject;
+            m_input = Vector2.zero; m_lastInput = Time.time;
+            return true;
+        }
+        [Server] internal bool TryMountThiefServer(ThiefNavigator thief)
+        {
+            if (!IsServerInitialized || IsDestroyed || Driver != null || Couch == null ||
+                Couch.IsCargoTransitioning || thief == null || !thief.CanStealHoverboard ||
+                Speed > m_settings.MagnetMaximumSpeed ||
+                (thief.transform.position - MountPosition).sqrMagnitude > m_settings.MountRange * m_settings.MountRange)
+                return false;
+            m_driver.Value = thief.NetworkObject;
             m_input = Vector2.zero; m_lastInput = Time.time;
             return true;
         }
@@ -170,10 +183,12 @@ namespace CouchGuys.Gameplay.Vehicles
             if (IsServerInitialized && !IsDestroyed && !m_ready) { m_body.isKinematic = true; return; }
             if (!IsServerInitialized || IsDestroyed || m_settings == null || m_body.isKinematic) return;
             if (m_batLaunch.Tick(m_body)) return;
-            if (Driver != null && (!Driver.IsSpawned || !Driver.Owner.IsActive ||
+            if (Driver != null && (!Driver.IsSpawned || (!HasThiefDriver && !Driver.Owner.IsActive) ||
+                Driver.TryGetComponent(out ThiefHealth thiefHealth) && (!thiefHealth.IsAlive || thiefHealth.IsBeingKnockedBack) ||
                 Driver.TryGetComponent(out PlayerHealth h) && (!h.IsAlive || h.IsKnockedDown)))
             {
                 if (Driver.TryGetComponent(out PlayerHoverboardInteractor p)) p.ReleaseServer(true);
+                else if (Driver.TryGetComponent(out ThiefNavigator thief)) thief.ReleaseHoverboardServer();
                 else { m_driver.Value = null; m_input = Vector2.zero; }
             }
             Vector2 input = Driver != null && Time.time - m_lastInput < m_settings.InputTimeout ? m_input : Vector2.zero;
@@ -461,6 +476,7 @@ namespace CouchGuys.Gameplay.Vehicles
             m_input = Vector2.zero;
             m_steering.Value = 0f;
             if (Driver != null && Driver.TryGetComponent(out PlayerHoverboardInteractor rider)) rider.ReleaseServer(true);
+            if (Driver != null && Driver.TryGetComponent(out ThiefNavigator thief)) thief.ReleaseHoverboardServer();
             m_driver.Value = null;
             var couch = Couch;
             if (couch != null)

@@ -101,6 +101,25 @@ namespace CouchGuys.Gameplay.Weapons
             Destroy(source.gameObject, clip.length / Mathf.Max(.01f, source.pitch) + .1f);
         }
 
+        public void PlayPunch(bool cross, bool hit, Vector3 worldPosition)
+        {
+            AudioClip clip = m_settings != null ? m_settings.GetPunchClip(cross, hit) : null;
+            if (clip == null || m_settings.VoicePrefab == null) return;
+
+            // Like carry grabs/explosions, use an independent saved voice so tails overlap
+            // and survive the attacker's movement, disable or despawn.
+            AudioSource source = CreateSource("PunchVoice");
+            source.transform.position = worldPosition;
+            source.spatialBlend = 1f;
+            source.minDistance = m_settings.PunchMinimumDistance;
+            source.maxDistance = m_settings.PunchMaximumDistance;
+            source.rolloffMode = AudioRolloffMode.Custom;
+            source.SetCustomCurve(AudioSourceCurveType.CustomRolloff, SmoothRolloff);
+            source.pitch = 1f;
+            source.PlayOneShot(clip, m_settings.PunchVolume);
+            Destroy(source.gameObject, clip.length + .1f);
+        }
+
         public void PlayShot(PlayerWeaponType weaponType, Vector3 worldPosition, Transform spatialOrigin = null)
         {
             WeaponAudioSettings.Profile profile = GetProfile(weaponType);

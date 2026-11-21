@@ -76,7 +76,7 @@ namespace CouchGuys.Gameplay.Enemies
             float worldSpeed = Vector3.ProjectOnPlane(
                 position - m_previousPosition,
                 Vector3.up).magnitude / Time.deltaTime;
-            float animationSpeed = worldSpeed >= m_movingThreshold ? worldSpeed : 0f;
+            float animationSpeed = m_navigator != null && m_navigator.IsRidingHoverboard ? 0f : worldSpeed >= m_movingThreshold ? worldSpeed : 0f;
             m_animator.SetFloat(SpeedHash, animationSpeed, m_speedDamping, Time.deltaTime);
             m_previousPosition = position;
         }

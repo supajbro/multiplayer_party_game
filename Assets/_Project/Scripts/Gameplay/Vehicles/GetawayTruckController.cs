@@ -98,7 +98,21 @@ namespace CouchGuys.Gameplay.Vehicles
                 Mathf.Abs(Vector3.Dot(rotation * Vector3.forward, transform.forward) * half.z);
             // Leave room for the grips, but stop comfortably inside the 3D loading
             // range even when the couch is below the raised truck entrance.
-            float gap = Mathf.Max(m_settings.CarryClearancePadding + .2f, m_settings.LoadingDistance * .5f);
+            float gap = Mathf.Max(m_settings.CarryClearancePadding + .2f, m_settings.GetLoadingDistance(m_couch) * .5f);
+            if (m_couch != null && m_couch.MountedSled != null)
+            {
+                var sled = m_couch.MountedSled.CarryController;
+                Bounds sledBounds = sled.CargoBounds;
+                Vector3 sledHalf = Vector3.Scale(sledBounds.extents, sled.transform.lossyScale);
+                Vector3 offset = sled.transform.TransformPoint(sledBounds.center) - m_couch.transform.position;
+                float sledReach = Vector3.Dot(offset, transform.forward) +
+                    Mathf.Abs(Vector3.Dot(sled.transform.right, transform.forward) * sledHalf.x) +
+                    Mathf.Abs(Vector3.Dot(sled.transform.forward, transform.forward) * sledHalf.z);
+                length = Mathf.Max(length, sledReach);
+                // Keep the complete sled outside the chassis while using its expanded
+                // handoff range. Ordinary couch arrival geometry stays unchanged.
+                gap = Mathf.Max(m_settings.CarryClearancePadding + .2f, m_settings.LoadingDistance * .5f);
+            }
             return CarryDestination - transform.forward * (length + gap);
         }
 
@@ -125,7 +139,7 @@ namespace CouchGuys.Gameplay.Vehicles
                 m_reachesRear = true;
                 return;
             }
-            float radius = rear ? m_settings.LoadingDistance : m_settings.CarrierNavigationSearchRadius;
+            float radius = rear ? m_settings.GetLoadingDistance(m_couch) : m_settings.CarrierNavigationSearchRadius;
             if (!rear && !NavMesh.SamplePosition(target, out _, radius, NavMesh.AllAreas) && m_roads != null)
             {
                 GeneratedRoad road = NearestInteriorRoad(target);
@@ -153,8 +167,8 @@ namespace CouchGuys.Gameplay.Vehicles
             Vector3 nearest = root + couch.transform.rotation * Vector3.Scale(bounds.ClosestPoint(local), scale);
             Vector3 relative = transform.InverseTransformPoint(root);
             Vector3 entrance = transform.InverseTransformPoint(CarryDestination);
-            return Vector3.Distance(nearest, CarryDestination) <= m_settings.LoadingDistance &&
-                relative.z <= entrance.z + .5f && Mathf.Abs(relative.x - entrance.x) <= m_settings.LoadingDistance &&
+            return Vector3.Distance(nearest, CarryDestination) <= m_settings.GetLoadingDistance(m_couch) &&
+                relative.z <= entrance.z + .5f && Mathf.Abs(relative.x - entrance.x) <= m_settings.GetLoadingDistance(m_couch) &&
                 m_carryPlanner.LoadingEntranceClear(couch, root, CarryDestination);
         }
 
@@ -316,7 +330,10 @@ namespace CouchGuys.Gameplay.Vehicles
             }
             CouchCarryController carryTarget = m_couch.MountedSled != null
                 ? m_couch.MountedSled.CarryController : m_couch;
-            bool thiefCarrying = carryTarget.ThiefCarrierCountServer() > 0;
+            var board = m_couch.MountedHoverboardObject != null
+                ? m_couch.MountedHoverboardObject.GetComponent<MagneticHoverboardController>() : null;
+            bool boardStolen = board != null && board.HasThiefDriver;
+            bool thiefCarrying = carryTarget.ThiefCarrierCountServer() > 0 || boardStolen;
             if (thiefCarrying) m_stolen = true;
             if (!thiefCarrying && carryTarget.HasHumanCarrierServer()) m_stolen = false;
             if (!m_stolen)
@@ -331,10 +348,10 @@ namespace CouchGuys.Gameplay.Vehicles
             if (State == GetawayTruckState.Parked)
             {
                 bool atEntrance = CouchAtLoadingEntrance(m_couch, m_couch.transform.position);
-                if (!carryTarget.HasHumanCarrierServer() && carryTarget.IsPickupAvailable &&
+                if (!carryTarget.HasHumanCarrierServer() && (carryTarget.IsPickupAvailable || boardStolen) &&
                     atEntrance &&
                     m_truck.RearDoorOpenProgress >= .95f && m_truck.SpeedKph < 1f &&
-                    m_truck.LoadGetawayCouchServer(m_couch, m_settings.LoadingDistance))
+                    m_truck.LoadGetawayCouchServer(m_couch, m_settings.GetLoadingDistance(m_couch)))
                 { m_state.Value = GetawayTruckState.Loading; return; }
                 if (atEntrance)
                 {

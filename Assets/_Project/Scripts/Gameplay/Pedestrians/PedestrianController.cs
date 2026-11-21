@@ -385,9 +385,13 @@ namespace CouchGuys.Gameplay.Pedestrians
         private void DieServer()
         {
             m_state.Value = MovementState.Dead;
+            PlayDeathAudioObserversRpc(transform.position);
             m_despawnAt = Time.time + Mathf.Max(0.1f, m_settings.CorpseDuration);
             m_deliveryManager?.RecipientDiedServer(this);
         }
+
+        [ObserversRpc]
+        private void PlayDeathAudioObserversRpc(Vector3 position) => NpcDeathAudioSettings.Play(position);
 
         private void OnTriggerEnter(Collider other) => TryVehicleImpact(other);
 
