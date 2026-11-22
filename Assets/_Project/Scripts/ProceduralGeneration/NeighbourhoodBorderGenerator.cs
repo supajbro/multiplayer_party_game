@@ -18,7 +18,6 @@ namespace CouchGuys.ProceduralGeneration
         private Material m_rockMaterial;
         private Material m_barrierMaterial;
         private Material m_warningMaterial;
-        private Material m_gatewayMaterial;
 
         public int PerimeterColliderCount { get; private set; }
         public int ProtectedPerimeterEdgeCount { get; private set; }
@@ -453,78 +452,34 @@ namespace CouchGuys.ProceduralGeneration
             Vector3 roadDirection = position - previous;
             if (roadDirection.sqrMagnitude < 0.01f) roadDirection = portal.WorldOutward;
             Quaternion rotation = Quaternion.LookRotation(roadDirection.normalized, Vector3.up);
-            GameObject tunnel;
-            if (prefab != null)
+            if (prefab == null)
             {
-                tunnel = Instantiate(prefab, position, rotation, parent);
-                tunnel.name = summit ? "SummitRegionGateway" : $"BoundaryTunnel_{index + 1:00}";
+                Debug.LogError("Assign a saved tunnel prefab in the region's Road Tunnels settings.", generator);
+                return;
             }
-            else
-            {
-                tunnel = CreateFallbackTunnel(parent, position, rotation, settings, summit, index);
-            }
+            GameObject tunnel = Instantiate(prefab, position, rotation, parent);
+            tunnel.name = summit ? "SummitRegionGateway" : $"BoundaryTunnel_{index + 1:00}";
 
-            if (summit)
+            if (tunnel.TryGetComponent(out TunnelGeometry geometry))
             {
-                RegionTransitionTrigger trigger = tunnel.GetComponentInChildren<RegionTransitionTrigger>();
+                geometry.Configure(settings, summit, generator.LandmarkRoads.TransitionTriggerDepth,
+                    generator.LandmarkRoads.NextRegionId);
+            }
+            else if (summit)
+            {
+                RegionTransitionTrigger trigger = tunnel.GetComponentInChildren<RegionTransitionTrigger>(true);
                 if (trigger == null)
                 {
-                    GameObject triggerObject = new GameObject("RegionTransitionTrigger");
-                    triggerObject.transform.SetParent(tunnel.transform, false);
-                    triggerObject.transform.localPosition = Vector3.forward *
-                                                            (settings.TunnelDepth * 0.35f);
-                    BoxCollider collider = triggerObject.AddComponent<BoxCollider>();
-                    collider.isTrigger = true;
-                    collider.size = new Vector3(settings.TunnelWidth * 0.8f,
-                        settings.TunnelHeight * 0.8f,
-                        generator.LandmarkRoads.TransitionTriggerDepth);
-                    trigger = triggerObject.AddComponent<RegionTransitionTrigger>();
+                    Debug.LogError("Summit tunnel prefab requires a saved RegionTransitionTrigger.", tunnel);
                 }
-                trigger.Initialise(generator.LandmarkRoads.NextRegionId);
+                else
+                {
+                    trigger.gameObject.SetActive(true);
+                    trigger.Initialise(generator.LandmarkRoads.NextRegionId);
+                }
             }
 
             TunnelCount++;
-        }
-
-        private GameObject CreateFallbackTunnel(
-            Transform parent,
-            Vector3 position,
-            Quaternion rotation,
-            NeighbourhoodBorderSettings settings,
-            bool summit,
-            int index)
-        {
-            GameObject root = new GameObject(summit
-                ? "Placeholder_SummitRegionGateway"
-                : $"Placeholder_BoundaryTunnel_{index + 1:00}");
-            root.transform.SetParent(parent, true);
-            root.transform.SetPositionAndRotation(position, rotation);
-            Material stone = GetMaterial(ref m_rockMaterial,
-                summit ? "Summit Gateway Stone" : "Tunnel Stone",
-                summit ? new Color(0.28f, 0.32f, 0.42f) : new Color(0.34f, 0.33f, 0.31f));
-            float pillarWidth = Mathf.Max(1.2f, settings.TunnelWidth * 0.16f);
-            CreatePrimitive(root.transform, PrimitiveType.Cube, "LeftPillar",
-                new Vector3(-(settings.TunnelWidth + pillarWidth) * 0.5f,
-                    settings.TunnelHeight * 0.5f, 0f),
-                new Vector3(pillarWidth, settings.TunnelHeight, settings.TunnelDepth), stone, true);
-            CreatePrimitive(root.transform, PrimitiveType.Cube, "RightPillar",
-                new Vector3((settings.TunnelWidth + pillarWidth) * 0.5f,
-                    settings.TunnelHeight * 0.5f, 0f),
-                new Vector3(pillarWidth, settings.TunnelHeight, settings.TunnelDepth), stone, true);
-            CreatePrimitive(root.transform, PrimitiveType.Cube, "Lintel",
-                new Vector3(0f, settings.TunnelHeight + pillarWidth * 0.5f, 0f),
-                new Vector3(settings.TunnelWidth + pillarWidth * 2f,
-                    pillarWidth, settings.TunnelDepth), stone, true);
-            if (summit)
-            {
-                CreatePrimitive(root.transform, PrimitiveType.Cube, "PlaceholderGatewayField",
-                    new Vector3(0f, settings.TunnelHeight * 0.5f,
-                        settings.TunnelDepth * 0.55f),
-                    new Vector3(settings.TunnelWidth, settings.TunnelHeight, 0.5f),
-                    GetMaterial(ref m_gatewayMaterial, "Summit Gateway Field",
-                        new Color(0.08f, 0.55f, 0.95f)), true);
-            }
-            return root;
         }
 
         private static Vector3 SampleTerrainNormal(

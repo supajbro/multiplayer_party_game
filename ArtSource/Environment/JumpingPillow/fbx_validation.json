@@ -1,0 +1,27 @@
+{
+  "AnchoredPerimeter": {
+    "world_dimensions_metres": [
+      12.312000274658203,
+      9.234000205993652,
+      0.1200006976723671
+    ],
+    "materials": [
+      "Pillow_Anchor"
+    ],
+    "parent": "AustralianJumpingPillow"
+  },
+  "JumpingSurface": {
+    "world_dimensions_metres": [
+      12.0,
+      9.0,
+      1.4100007340312004
+    ],
+    "materials": [
+      "Pillow_Red",
+      "Pillow_Blue",
+      "Pillow_Yellow"
+    ],
+    "parent": "AustralianJumpingPillow"
+  },
+  "checks": "PASS: FBX scale, orientation, hierarchy, materials, UVs, vertex mask, upper normals"
+}

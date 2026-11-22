@@ -45,6 +45,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.ProceduralGeneration.UphillExitRestriction
   m_allowedVehiclePrefab: {fileID: 5873252375396000528, guid: c81583f4afe8d854ea83fb3ab1808783, type: 3}
-  m_playerSlideSpeed: 6
-  m_vehicleSlideSpeed: 8
+  m_playerSlideSpeed: 2.5
+  m_vehicleSlideSpeed: 3
+  m_initialClimbSpeed: 6
+  m_slideAcceleration: 4
+  m_tractionLossDistance: 12
   m_summitOverrun: 40

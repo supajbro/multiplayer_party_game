@@ -75,6 +75,7 @@ namespace CouchGuys.Player
         private bool m_externalControlPaused;
         private bool m_externalRotationLocked;
         private float m_nextCouchBounceTime;
+        private float m_nextPillowBounceTime;
 
         public bool IsGrounded => m_characterController != null && m_characterController.isGrounded;
         public Vector3 MovementIntent { get; private set; }
@@ -450,10 +451,12 @@ namespace CouchGuys.Player
             MoveWithExitRestriction(velocity * Time.deltaTime);
         }
 
+        private float m_exitSlideLimit = float.PositiveInfinity;
+
         private void MoveWithExitRestriction(Vector3 displacement)
         {
             if (UphillExitRestriction.ConstrainPlayer(transform, displacement, m_characterController.radius,
-                    Time.deltaTime, out Vector3 destination))
+                    Time.deltaTime, ref m_exitSlideLimit, out Vector3 destination))
             {
                 if (m_worldGrappleActive) SetWorldGrapple(false, default, null);
                 m_verticalVelocity = Mathf.Min(0f, m_verticalVelocity);
@@ -507,7 +510,23 @@ namespace CouchGuys.Player
                 m_groundNormal = hit.normal;
             }
 
-            TryBounceFromCouch(hit);
+            if (!TryBounceFromPillow(hit.collider, hit.normal)) TryBounceFromCouch(hit);
+        }
+
+        private bool TryBounceFromPillow(Collider surface, Vector3 normal)
+        {
+            if (surface == null || m_externalControlPaused || Time.time < m_nextPillowBounceTime)
+                return false;
+            JumpingPillow pillow = surface.GetComponentInParent<JumpingPillow>();
+            if (pillow == null || pillow.SurfaceCollider != surface ||
+                normal.y < pillow.MinimumUpNormal || m_verticalVelocity > -pillow.MinimumLandingSpeed ||
+                m_gravity >= 0f)
+                return false;
+
+            m_verticalVelocity = Mathf.Sqrt(2f * -m_gravity * pillow.BounceHeight);
+            m_externalVelocity.y = 0f;
+            m_nextPillowBounceTime = Time.time + pillow.BounceCooldown;
+            return true;
         }
 
         private void TryBounceFromCouch(ControllerColliderHit hit)

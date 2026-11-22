@@ -1,0 +1,38 @@
+{
+  "JumpingSurface": {
+    "vertices": 4267,
+    "faces": 4141,
+    "triangles": 8530,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "dimensions": [
+      12.0,
+      9.0,
+      1.4100000858306885
+    ]
+  },
+  "AnchoredPerimeter": {
+    "vertices": 420,
+    "faces": 420,
+    "triangles": 840,
+    "boundary_edges": 0,
+    "nonmanifold_edges": 0,
+    "dimensions": [
+      12.312000274658203,
+      9.234000205993652,
+      0.11999999731779099
+    ]
+  },
+  "COL_JumpingSurface_Static": {
+    "vertices": 475,
+    "faces": 432,
+    "triangles": 864,
+    "boundary_edges": 84,
+    "nonmanifold_edges": 84,
+    "dimensions": [
+      12.0,
+      9.0,
+      1.25
+    ]
+  }
+}

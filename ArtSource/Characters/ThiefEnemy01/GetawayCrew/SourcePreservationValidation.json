@@ -1,0 +1,9 @@
+{
+  "source_master": "thief_enemy_01.blend",
+  "geometry_rig_uv_weights_actions_before_sha256": "868aa49b2e4f94adeff50b241bae1dcb1ffab3c448c892ed309d232ebd7d3062",
+  "geometry_rig_uv_weights_actions_after_sha256": "868aa49b2e4f94adeff50b241bae1dcb1ffab3c448c892ed309d232ebd7d3062",
+  "identical": true,
+  "fbx_reexported": false,
+  "actions": 25,
+  "meshes": 4
+}

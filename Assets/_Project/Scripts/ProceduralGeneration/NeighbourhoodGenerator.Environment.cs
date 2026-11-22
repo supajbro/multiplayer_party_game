@@ -288,6 +288,17 @@ namespace CouchGuys.ProceduralGeneration
                 : new GameObject($"{parkSize}_Park");
             if (root.transform.parent != m_parksRoot) root.transform.SetParent(m_parksRoot, true);
             root.name = $"Park_{m_generatedParks.Count:00}_{parkSize}";
+            if (root.TryGetComponent(out JumpingPillow pillow))
+            {
+                centre.y = SamplePlacementTerrainHeight(centre);
+                root.transform.position = centre;
+                pillow.FitToTerrain(SamplePlacementTerrainHeight);
+                EnvironmentPlacementMetadata metadata = root.GetComponent<EnvironmentPlacementMetadata>();
+                Vector2 pillowSize = metadata != null ? metadata.Footprint : new Vector2(12.312f, 9.234f);
+                m_environmentFootprints.Add(new OrientedFootprint(
+                    new Vector2(centre.x, centre.z), Vector2.right, Vector2.up,
+                    pillowSize * 0.5f + Vector2.one));
+            }
 
             Vector3 right = DirectionVector(TurnRight(m_startDirection));
             Vector3 forward = DirectionVector(m_startDirection);
@@ -344,6 +355,8 @@ namespace CouchGuys.ProceduralGeneration
             for (int parkIndex = 0; parkIndex < m_generatedParks.Count; parkIndex++)
             {
                 GeneratedParkRecord park = m_generatedParks[parkIndex];
+                // The saved pillow replaces the old park assembly, including centre paths/features.
+                if (park.Root.TryGetComponent<JumpingPillow>(out _)) continue;
                 CreateParkPath(park, prefabs.ParkPath);
                 CreateParkBoundaries(park, prefabs.ParkBoundary);
                 TryPlaceEnvironmentPrefab(prefabs.ParkSign, park.Entrance, Quaternion.LookRotation(park.Centre - park.Entrance), park.Root, false);

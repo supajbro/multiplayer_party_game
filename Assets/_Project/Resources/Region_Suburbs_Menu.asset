@@ -91,8 +91,8 @@ MonoBehaviour:
     MaximumTreeSlope: 38
     TreeScaleRange: {x: 0.8, y: 1.35}
     TreePrefabs: []
-    StandardTunnelPrefab: {fileID: 0}
-    SummitGatewayPrefab: {fileID: 0}
+    StandardTunnelPrefab: {fileID: 137631538979413839, guid: 58b298961a2fb484f9be4fb4c5ea4c6c, type: 3}
+    SummitGatewayPrefab: {fileID: 137631538979413839, guid: 58b298961a2fb484f9be4fb4c5ea4c6c, type: 3}
     TunnelWidth: 12
     TunnelHeight: 8
     TunnelDepth: 12
@@ -197,9 +197,9 @@ MonoBehaviour:
       DrivewayClearance: 1.25
     DrivewayMaterial: {fileID: 0}
     Prefabs:
-      SmallPark: {fileID: 0}
-      MediumPark: {fileID: 0}
-      LargePark: {fileID: 0}
+      SmallPark: {fileID: 8500776512651561806, guid: bc8423e0867d9c443b221a23aa31ddb1, type: 3}
+      MediumPark: {fileID: 8500776512651561806, guid: bc8423e0867d9c443b221a23aa31ddb1, type: 3}
+      LargePark: {fileID: 8500776512651561806, guid: bc8423e0867d9c443b221a23aa31ddb1, type: 3}
       TreePrefabs: []
       Bench: {fileID: 0}
       Bin: {fileID: 0}

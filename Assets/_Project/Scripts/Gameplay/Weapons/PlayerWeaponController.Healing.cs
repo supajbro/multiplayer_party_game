@@ -56,6 +56,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void RemoveHealingItemServer(int slot)
         {
+            ClearItemReleaseServer();
             m_healingQuantities[slot]--;
             if (m_healingQuantities[slot] > 0) return;
             m_inventory[slot] = -1;

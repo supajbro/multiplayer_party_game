@@ -19,7 +19,7 @@ namespace CouchGuys.Gameplay.Weapons
 
     /// <summary>One server-owned physical weapon. Claims are serialized on the server.</summary>
     [RequireComponent(typeof(Rigidbody), typeof(NetworkObject))]
-    public sealed class WeaponPickup : NetworkBehaviour
+    public sealed partial class WeaponPickup : NetworkBehaviour
     {
         internal static readonly HashSet<WeaponPickup> ActivePickups = new();
         private void OnEnable() => ActivePickups.Add(this);
@@ -125,7 +125,7 @@ namespace CouchGuys.Gameplay.Weapons
         [Server]
         internal bool MountOnSledServer(SledController sled, int slot)
         {
-            if (!IsServerInitialized || !IsSpawned || !m_allowSledStorage || m_claimed || MountedSled != null ||
+            if (!IsServerInitialized || !IsSpawned || !m_allowSledStorage || m_claimed || m_guidedThrow || MountedSled != null ||
                 sled == null || !sled.HasCargoSpace || sled.GetWeaponAnchor(slot) == null) return false;
             m_sledAttachment.Value = new SledPickupAttachment { Sled = sled.NetworkObject, Slot = slot };
             ApplySledAttachment(false);
@@ -176,7 +176,7 @@ namespace CouchGuys.Gameplay.Weapons
         [Server]
         public bool TryPickupServer(PlayerWeaponController player)
         {
-            if (m_claimed || !IsSpawned || player == null || !player.CanHandleWeaponServer ||
+            if (m_claimed || m_guidedThrow || !IsSpawned || player == null || !player.CanHandleWeaponServer ||
                 (transform.position - player.transform.position).sqrMagnitude > 2.15f * 2.15f) return false;
             Vector3 origin = player.transform.position + Vector3.up;
             Vector3 offset = transform.position - origin;

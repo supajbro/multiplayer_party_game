@@ -13,8 +13,14 @@ namespace CouchGuys.ProceduralGeneration
     public sealed class UphillExitRestriction : MonoBehaviour
     {
         [SerializeField] private NetworkObject m_allowedVehiclePrefab;
-        [SerializeField, Min(.1f)] private float m_playerSlideSpeed = 6f;
-        [SerializeField, Min(.1f)] private float m_vehicleSlideSpeed = 8f;
+        [SerializeField, Min(.1f)] private float m_playerSlideSpeed = 2.5f;
+        [SerializeField, Min(.1f)] private float m_vehicleSlideSpeed = 3f;
+        [Tooltip("Maximum initial uphill speed before traction is lost.")]
+        [SerializeField, Min(.1f)] private float m_initialClimbSpeed = 6f;
+        [Tooltip("How quickly uphill movement turns into a downhill slide, in units per second squared.")]
+        [SerializeField, Min(.1f)] private float m_slideAcceleration = 4f;
+        [Tooltip("Distance into the hill at which all uphill traction is lost. Limited to the first quarter of the route.")]
+        [SerializeField, Min(.1f)] private float m_tractionLossDistance = 12f;
         [SerializeField, Min(1f)] private float m_summitOverrun = 40f;
         [SerializeField, HideInInspector] private NeighbourhoodGenerator m_generator;
         [SerializeField, HideInInspector] private Vector3 m_start;
@@ -26,6 +32,7 @@ namespace CouchGuys.ProceduralGeneration
 
         private static readonly List<UphillExitRestriction> s_active = new();
         private readonly Dictionary<Rigidbody, Collider[]> m_bodyColliders = new();
+        private readonly Dictionary<Rigidbody, float> m_bodySlideLimits = new();
         private bool Ready => m_configured && (m_generator == null || m_generator.IsGenerationReady);
 
         private void OnEnable()
@@ -91,34 +98,42 @@ namespace CouchGuys.ProceduralGeneration
                 distance <= delta.magnitude;
         }
 
-        private Vector3 ClampToEntrance(Vector3 position, float radius, float groundOffset)
+        private float AdvanceSlideLimit(float limit, float slideSpeed, float progress, float deltaTime)
         {
-            float progress = Vector3.Dot(position - m_start, m_uphill);
-            if (progress <= -radius) return position;
-            position -= m_uphill * (progress + radius + .05f);
-            position.y = (m_generator != null ? m_generator.SampleTerrainHeight(position) : m_start.y) + groundOffset;
-            return position;
+            // Bound initial momentum so jumps, grapples and fast vehicles cannot cross
+            // the whole hill before losing traction. Never change the actor's position.
+            float distance = Mathf.Min(m_tractionLossDistance, m_length * .25f);
+            float traction = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(progress / distance));
+            float initialLimit = Mathf.Lerp(m_initialClimbSpeed, -slideSpeed, traction);
+            // Also bound a single swept step, including unusually long frames.
+            if (deltaTime > 0f)
+                initialLimit = Mathf.Min(initialLimit, Mathf.Max(0f, distance - progress) / deltaTime);
+            return Mathf.MoveTowards(Mathf.Min(limit, initialLimit), -slideSpeed,
+                m_slideAcceleration * Mathf.Max(0f, deltaTime));
         }
 
         public bool ConstrainPlayerMotion(Vector3 position, Vector3 displacement, float radius, float deltaTime,
-            out Vector3 destination)
+            ref float slideLimit, out Vector3 destination)
         {
             destination = position + displacement;
             if (!IntersectsRoute(position, destination, radius)) return false;
-            destination = ClampToEntrance(destination, radius, .1f);
-            float advance = Vector3.Dot(destination - position, m_uphill);
-            destination -= m_uphill * Mathf.Max(0f, advance);
-            destination -= m_uphill * (m_playerSlideSpeed * deltaTime);
+            slideLimit = AdvanceSlideLimit(slideLimit, m_playerSlideSpeed, LocalPlanar(position).z, deltaTime);
+            float advance = Vector3.Dot(displacement, m_uphill);
+            displacement -= m_uphill * Mathf.Max(0f, advance - slideLimit * Mathf.Max(0f, deltaTime));
+            // Airborne movement obeys the same traction rule; jumping cannot reset it.
+            displacement.y = Mathf.Min(0f, displacement.y);
+            destination = position + displacement;
             return true;
         }
 
         public static bool ConstrainPlayer(Transform player, Vector3 displacement, float radius, float deltaTime,
-            out Vector3 destination)
+            ref float slideLimit, out Vector3 destination)
         {
             destination = player.position + displacement;
             foreach (var restriction in s_active)
                 if (restriction != null && restriction.ConstrainPlayerMotion(player.position, displacement, radius,
-                        deltaTime, out destination)) return true;
+                        deltaTime, ref slideLimit, out destination)) return true;
+            slideLimit = float.PositiveInfinity;
             destination = player.position + displacement;
             return false;
         }
@@ -153,13 +168,22 @@ namespace CouchGuys.ProceduralGeneration
             }
             Vector2 padding = BodyPadding(body);
             Vector3 velocity = body.isKinematic ? Vector3.zero : body.linearVelocity;
-            if (!IntersectsRoute(body.position, body.position + velocity * deltaTime, padding)) return false;
-            body.position = ClampToEntrance(body.position, padding.y, .6f);
+            if (!IntersectsRoute(body.position, body.position + velocity * deltaTime, padding))
+            {
+                m_bodySlideLimits.Remove(body);
+                return false;
+            }
+            if (!m_bodySlideLimits.TryGetValue(body, out float limit)) limit = m_initialClimbSpeed;
+            limit = AdvanceSlideLimit(limit, m_vehicleSlideSpeed, LocalPlanar(body.position).z, deltaTime);
+            m_bodySlideLimits[body] = limit;
             if (body.isKinematic)
-                body.position -= m_uphill * (m_vehicleSlideSpeed * deltaTime);
+            {
+                if (deltaTime > 0f)
+                    body.MovePosition(body.position + m_uphill * (Mathf.Min(0f, limit) * deltaTime));
+            }
             else
             {
-                velocity -= m_uphill * (Vector3.Dot(velocity, m_uphill) + m_vehicleSlideSpeed);
+                velocity -= m_uphill * Mathf.Max(0f, Vector3.Dot(velocity, m_uphill) - limit);
                 velocity.y = Mathf.Min(0f, velocity.y);
                 body.linearVelocity = velocity;
             }
@@ -226,13 +250,6 @@ namespace CouchGuys.ProceduralGeneration
             {
                 if (networkObject == null || !networkObject.IsSpawned) continue;
                 if (TryGetVehicleBody(networkObject, out Rigidbody body)) ConstrainBody(body, 0f);
-                if (!networkObject.TryGetComponent(out PlayerCouchCarrier player)) continue;
-                if (player.TryGetComponent(out PlayerTruckInteractor seated) && seated.CurrentTruck != null) continue;
-                if (player.TryGetComponent(out PlayerHoverboardInteractor board) && board.IsMounted) continue;
-                if (!IntersectsRoute(player.transform.position, player.transform.position, .6f)) continue;
-                Vector3 destination = ClampToEntrance(player.transform.position, .6f, .1f);
-                destination -= m_uphill * (m_playerSlideSpeed * Time.deltaTime);
-                player.TeleportWithCouchServer(destination, player.transform.rotation);
             }
         }
     }

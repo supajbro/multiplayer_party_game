@@ -83,6 +83,9 @@ namespace CouchGuys.Input
         public bool ShootHeld => !GameplaySuppressed && (m_shootAction?.IsPressed() ?? false);
         public bool ShootPressedThisFrame => !GameplaySuppressed && (m_shootAction?.WasPressedThisFrame() ?? false);
         public bool DropWeaponPressedThisFrame => !GameplaySuppressed && (Keyboard.current?.qKey.wasPressedThisFrame ?? false);
+        public bool DropWeaponHeld => !GameplaySuppressed && (Keyboard.current?.qKey.isPressed ?? false);
+        public bool DropWeaponReleasedThisFrame => !GameplaySuppressed && (Keyboard.current?.qKey.wasReleasedThisFrame ?? false);
+        public bool CanReleaseCarriedItem => isActiveAndEnabled && !GameplaySuppressed && Time.timeScale > 0f;
         public bool ReloadPressedThisFrame => !GameplaySuppressed && (m_reloadAction?.WasPressedThisFrame() ?? false);
         public int HotbarSelectionPressedThisFrame
         {

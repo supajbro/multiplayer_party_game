@@ -201,12 +201,12 @@ namespace CouchGuys.Gameplay.Weapons
             }
 
             UpdateLocalRifleBurst();
+            UpdateItemReleaseInput();
 
             if (!IsOwner || m_input == null || !m_input.isActiveAndEnabled || m_health == null ||
                 !m_health.IsAlive || m_health.IsKnockedDown)
                 return;
 
-            if (m_input.DropWeaponPressedThisFrame) RequestDropWeaponServerRpc();
             if (m_pendingHotbarSlot == SelectedHotbarSlot || Time.unscaledTime >= m_pendingHotbarUntil)
                 m_pendingHotbarSlot = -1;
             int currentSlot = m_pendingHotbarSlot >= 0 ? m_pendingHotbarSlot : SelectedHotbarSlot;
@@ -368,6 +368,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void EquipInventorySlotServer(int slot)
         {
+            ClearItemReleaseServer();
             GetComponent<HealingItem>()?.CancelUseServer();
             m_batSwinging = false;
             StopGrappleServer();
@@ -385,7 +386,9 @@ namespace CouchGuys.Gameplay.Weapons
         }
 
         [ServerRpc]
-        private void RequestDropWeaponServerRpc()
+        private void RequestDropWeaponServerRpc() => DropSelectedItemServer();
+
+        private void DropSelectedItemServer()
         {
             if (!CanHandleWeaponServer || m_equippedIndex.Value < 0) return;
             var sled = SledController.FindLoadingSled(transform.position + Vector3.up);
@@ -406,6 +409,7 @@ namespace CouchGuys.Gameplay.Weapons
         [Server]
         public void CancelActionsForDownedServer()
         {
+            ClearItemReleaseServer();
             GetComponent<HealingItem>()?.CancelUseServer();
             m_batSwinging = false;
             StopGrappleServer();
@@ -454,29 +458,35 @@ namespace CouchGuys.Gameplay.Weapons
         private void ShowSledStorageNoticeTargetRpc(NetworkConnection connection, string message) =>
             CouchGuys.UI.DialogueShopUI.Instance.ShowNotice(message);
 
-        private bool DropOwnedWeaponServer(SledController sled = null)
+        private bool DropOwnedWeaponServer(SledController sled = null) => ReleaseOwnedItemServer(sled, false);
+
+        private bool ReleaseOwnedItemServer(SledController sled, bool thrown)
         {
+            ClearItemReleaseServer();
             int index = m_equippedIndex.Value;
+            Vector3 origin = transform.position + Vector3.up;
+            Vector3 direction = transform.forward;
+            float distance = Physics.Raycast(origin, direction, 0.8f, m_hitMask, QueryTriggerInteraction.Ignore) ? 0f : 0.65f;
+            Vector3 velocity = thrown ? direction * Mathf.Max(0f, m_throwSpeed) + Vector3.up * Mathf.Max(0f, m_throwLift) : direction * 1.5f;
             if (EquippedHealingItem is HealingItemSettings healing)
             {
-                var healingPickup = WeaponPickup.SpawnHealingServer(healing, transform.position + Vector3.up,
-                    transform.rotation, Vector3.zero);
+                var healingPickup = WeaponPickup.SpawnHealingServer(healing, thrown ? origin + direction * distance : origin,
+                    transform.rotation, thrown ? velocity : Vector3.zero);
                 if (healingPickup == null) return false;
                 if (sled != null && !sled.TryStoreWeaponServer(healingPickup))
                 {
                     Despawn(healingPickup.NetworkObject);
                     return false;
                 }
+                IgnoreReleasedItemCollisions(healingPickup);
+                if (thrown) RecyclingBin.FindThrowTarget(this, healingPickup.transform.position)?.GuideThrowServer(healingPickup);
                 GetComponent<HealingItem>()?.CancelUseServer();
                 RemoveHealingItemServer(SelectedHotbarSlot);
                 return true;
             }
             if (!ValidIndex(index)) return true;
-            Vector3 origin = transform.position + Vector3.up;
-            Vector3 direction = transform.forward;
-            float distance = Physics.Raycast(origin, direction, 0.8f, m_hitMask, QueryTriggerInteraction.Ignore) ? 0f : 0.65f;
             WeaponPickup pickup = WeaponPickup.SpawnServer((PlayerWeaponType)index,
-                origin + direction * distance, Quaternion.LookRotation(direction), direction * 1.5f,
+                origin + direction * distance, Quaternion.LookRotation(direction), velocity,
                 m_magazine[index], m_reserve[index]);
             if (pickup == null) return false;
             if (sled != null && !sled.TryStoreWeaponServer(pickup))
@@ -485,14 +495,20 @@ namespace CouchGuys.Gameplay.Weapons
                 return false;
             }
             StopGrappleServer();
-            foreach (Collider own in GetComponentsInChildren<Collider>())
-                foreach (Collider dropped in pickup.GetComponentsInChildren<Collider>())
-                    Physics.IgnoreCollision(own, dropped);
+            IgnoreReleasedItemCollisions(pickup);
+            if (thrown) RecyclingBin.FindThrowTarget(this, pickup.transform.position)?.GuideThrowServer(pickup);
             EndRifleBurstServer();
             m_reloadingIndex = -1;
             m_inventory[SelectedHotbarSlot] = -1;
             m_equippedIndex.Value = -1;
             return true;
+        }
+
+        private void IgnoreReleasedItemCollisions(WeaponPickup pickup)
+        {
+            foreach (Collider own in GetComponentsInChildren<Collider>())
+                foreach (Collider dropped in pickup.GetComponentsInChildren<Collider>())
+                    Physics.IgnoreCollision(own, dropped);
         }
 
         [ServerRpc]

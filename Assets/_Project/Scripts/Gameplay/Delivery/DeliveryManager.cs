@@ -195,7 +195,14 @@ namespace CouchGuys.Gameplay.Delivery
         [Server]
         public void AddTestCurrencyServer(int amount)
         {
-            if (amount > 0) m_currency.Value += amount;
+            AddCurrencyServer(amount);
+        }
+
+        /// <summary>Credits the replicated team balance from an authoritative gameplay action.</summary>
+        [Server]
+        public void AddCurrencyServer(int amount)
+        {
+            if (amount > 0) m_currency.Value = (int)System.Math.Min(int.MaxValue, (long)m_currency.Value + amount);
         }
 
         private void Update()

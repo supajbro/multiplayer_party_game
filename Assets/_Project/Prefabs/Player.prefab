@@ -758,6 +758,9 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   m_switchDuration: 0.18
+  m_throwHoldDuration: 0.75
+  m_throwSpeed: 12
+  m_throwLift: 3
   m_maximumAimOriginDistance: 6
   m_punchDamage: 25
   m_punchRange: 1.65

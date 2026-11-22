@@ -1,0 +1,11 @@
+Tunnel_Bay_3m: bounds=Center: (0.00, 4.08, 0.00), Extents: (7.15, 4.68, 1.50), vertices=1308
+Tunnel_Bay_3m: bounds=Center: (0.00, 4.08, 0.00), Extents: (7.15, 4.68, 1.50), vertices=1308
+Tunnel_Bay_3m: bounds=Center: (0.00, 4.08, 0.00), Extents: (7.15, 4.68, 1.50), vertices=1308
+Tunnel_Bay_3m: bounds=Center: (0.00, 4.08, 0.00), Extents: (7.15, 4.68, 1.50), vertices=1308
+Tunnel_Portal: bounds=Center: (0.00, 3.95, 0.39), Extents: (7.86, 5.15, 1.11), vertices=2020
+Tunnel_Portal: bounds=Center: (0.00, 3.95, 0.39), Extents: (7.86, 5.15, 1.11), vertices=2020
+Terrain transition: bounds=Center: (0.00, -5.30, 0.00), Extents: (50.00, 16.70, 20.00), vertices=422
+PASS seed 12345: 3 tunnels, 12m through-clearance for players/NPC cars/trucks; saved colliders/materials and summit trigger verified.
+PASS seed 10002: 3 tunnels, 12m through-clearance for players/NPC cars/trucks; saved colliders/materials and summit trigger verified.
+PASS seed 10007: 3 tunnels, 12m through-clearance for players/NPC cars/trucks; saved colliders/materials and summit trigger verified.
+Limitations: edit-mode geometry/physics checks only; no network host/client drive-through or gameplay trigger event test.

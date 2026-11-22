@@ -406,6 +406,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         public override void OnStopServer()
         {
+            ClearItemReleaseServer();
             StopGrappleServer();
             base.OnStopServer();
         }

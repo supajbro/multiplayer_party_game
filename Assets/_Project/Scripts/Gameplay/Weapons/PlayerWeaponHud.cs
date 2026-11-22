@@ -285,6 +285,8 @@ namespace CouchGuys.Gameplay.Weapons
             {
                 float progress = 0f, duration = 0f;
                 string prompt = m_health.GetRevivePrompt(out progress, out duration);
+                if (prompt == null && m_weapons != null)
+                    prompt = m_weapons.GetItemReleasePrompt(out progress, out duration);
                 if (prompt == null && !m_health.IsKnockedDown && m_vehicleHud != null)
                     prompt = m_vehicleHud.GetInteractionPrompt(out progress, out duration);
                 m_view.m_interactionPrompt.Present(prompt, progress, duration);

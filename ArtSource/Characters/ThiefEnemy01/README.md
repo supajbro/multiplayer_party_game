@@ -25,6 +25,8 @@ The seven production character prefabs in Prefabs/Enemies now use this LOD visua
 
 ## Verification
 
+The current appearance is the burgundy/plum/yellow getaway crew reskin. See `GetawayCrew/README.md` for the approved concept, actual model previews, texture backups and current Unity playback validation. This update changes only the three shared texture maps and the Blender master's packed material; the gameplay FBX, all 25 clips, rig, geometry, weights, prefab customizations, controllers and weapon mounts remain byte-identical. `GetawayCrew/UnityCrewValidation.txt` covers the shared visual and all seven production enemies, five states at 13 poses each, all four LODs, walking/death transitions and grip anchors.
+
 - `FBXRoundtripValidation.json`: reimported the delivered FBX; checked all four budgets, UVs, unit scale, normalized weights, and closed topology. Every frame of all 15 actions was evaluated on every LOD for finite positions and reasonable bounds.
 - `UnityLODAnimationValidation.txt`: Unity 6000.3.11f1 imported all meshes, URP material, textures, Generic avatar and clips, and verified budgets, weights, loop settings, references and saved optimization flags.
 - `UnityAnimatorPlaybackValidation.txt`: all 15 states played through Animator on every LOD within saved bounds. Speed transitions and Death priority passed for all controllers.

@@ -136,9 +136,9 @@ namespace CouchGuys.Editor
                 Cube(root, "Path", new Vector3(0f, 0.035f, 0f), new Vector3(2.2f, 0.07f, 1f), "Path"), false);
             GameObject boundary = CreatePrefab("ParkBoundary_Placeholder", new Vector2(0.35f, 2f), 0f, root =>
                 Cube(root, "Boundary", new Vector3(0f, 0.28f, 0f), new Vector3(0.35f, 0.56f, 2f), "Wood"), false);
-            GameObject smallPark = ParkRoot("SmallPark_Placeholder", new Vector2(20f, 20f));
-            GameObject mediumPark = ParkRoot("MediumPark_Placeholder", new Vector2(40f, 40f));
-            GameObject largePark = ParkRoot("LargePark_Placeholder", new Vector2(60f, 60f));
+            GameObject jumpingPillow = AssetDatabase.LoadAssetAtPath<GameObject>(JumpingPillowAuthoring.PrefabPath);
+            if (jumpingPillow == null)
+                throw new InvalidOperationException("Create the saved jumping pillow prefab first.");
             GameObject[] treePrefabs =
             {
                 AssetDatabase.LoadAssetAtPath<GameObject>($"{TreePrefabFolder}/tree_01.prefab"),
@@ -148,7 +148,7 @@ namespace CouchGuys.Editor
 
             return new EnvironmentPrefabLibrary
             {
-                SmallPark = smallPark, MediumPark = mediumPark, LargePark = largePark,
+                SmallPark = jumpingPillow, MediumPark = jumpingPillow, LargePark = jumpingPillow,
                 TreePrefabs = treePrefabs, Bench = bench, Bin = bin,
                 FlowerCluster = flowers, Fountain = fountain, Statue = statue,
                 Gazebo = gazebo, ParkSign = parkSign,
@@ -163,11 +163,6 @@ namespace CouchGuys.Editor
                 Cube(root, "PostR", new Vector3(footprint.x * 0.32f, 0.85f, 0f), new Vector3(0.16f, 1.7f, 0.16f), "Wood");
                 Cube(root, "Panel", new Vector3(0f, 1.65f, 0f), new Vector3(footprint.x, 0.9f, 0.2f), panelMaterial);
             });
-
-        private static GameObject ParkRoot(string name, Vector2 footprint) =>
-            CreatePrefab(name, footprint, 0f, root =>
-                Cube(root, "ReservedParkLawn", new Vector3(0f, -0.035f, 0f),
-                    new Vector3(footprint.x - 1f, 0.07f, footprint.y - 1f), "GrassBright"), false);
 
         private static GameObject CreatePrefab(
             string name,

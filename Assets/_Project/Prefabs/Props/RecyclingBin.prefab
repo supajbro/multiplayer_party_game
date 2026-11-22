@@ -756,6 +756,8 @@ GameObject:
   m_Component:
   - component: {fileID: 7203526268504993027}
   - component: {fileID: 4163879385678930562}
+  - component: {fileID: 8743201000000000001}
+  - component: {fileID: 8743201000000000002}
   m_Layer: 0
   m_Name: RecyclingBin
   m_TagString: Untagged
@@ -780,6 +782,49 @@ Transform:
   - {fileID: 6078429570741376062}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!65 &8743201000000000001
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8465652300361797377}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.6, y: 0.9, z: 1.6}
+  m_Center: {x: 0, y: 0.9, z: 0}
+--- !u!114 &8743201000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8465652300361797377}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4f96382b725491fbc664d19e103c672, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  m_intake: {fileID: 8743201000000000001}
+  m_entryPoint: {x: 0, y: 1, z: 0}
+  m_assistDistance: 4.5
+  m_facingAngle: 35
+  m_flightDuration: 0.65
+  m_arcHeight: 2.2
+  m_obstructionMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_refundFraction: 0.25
 --- !u!205 &4163879385678930562
 LODGroup:
   m_ObjectHideFlags: 0

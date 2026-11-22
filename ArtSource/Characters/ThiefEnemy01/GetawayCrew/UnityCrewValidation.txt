@@ -1,0 +1,49 @@
+PASS: Shared URP material imports all crew textures; 1024px runtime atlas and 25 original clips retained.
+PASS: thief_enemy_01 Idle, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: thief_enemy_01 Walk, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: thief_enemy_01 Shoot, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: thief_enemy_01 Frustration, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: thief_enemy_01 Death, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: thief_enemy_01 Speed transition and Death priority.
+PASS: Thief Idle, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief Walk, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief Shoot, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief Frustration, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief Death, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief Speed transition and Death priority.
+PASS: Thief_Pistol Idle, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_Pistol Walk, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_Pistol Shoot, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_Pistol Frustration, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_Pistol Death, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_Pistol Speed transition and Death priority.
+PASS: Thief_AssaultRifle Idle, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_AssaultRifle Walk, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_AssaultRifle Shoot, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_AssaultRifle Frustration, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_AssaultRifle Death, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_AssaultRifle Speed transition and Death priority.
+PASS: Thief_Shotgun Idle, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_Shotgun Walk, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_Shotgun Shoot, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_Shotgun Frustration, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_Shotgun Death, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_Shotgun Speed transition and Death priority.
+PASS: Thief_RocketLauncher Idle, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_RocketLauncher Walk, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_RocketLauncher Shoot, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_RocketLauncher Frustration, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_RocketLauncher Death, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: Thief_RocketLauncher Speed transition and Death priority.
+PASS: GrapplerThief Idle, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: GrapplerThief Walk, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: GrapplerThief Shoot, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: GrapplerThief Frustration, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: GrapplerThief Death, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: GrapplerThief Speed transition and Death priority.
+PASS: SpeakerThief Idle, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: SpeakerThief Walk, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: SpeakerThief Shoot, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: SpeakerThief Frustration, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: SpeakerThief Death, 13 poses on all four LODs; finite skinning, saved bounds and weapon attachments.
+PASS: SpeakerThief Speed transition and Death priority.
