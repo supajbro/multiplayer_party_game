@@ -230,6 +230,7 @@ namespace CouchGuys.Gameplay.Vehicles
             foreach (RaycastHit hit in Physics.RaycastAll(origin, Vector3.down, distance, m_settings.GroundMask, QueryTriggerInteraction.Ignore))
             {
                 if (hit.distance >= closest || hit.collider.transform.IsChildOf(transform) ||
+                    hit.collider.GetComponentInParent<CouchGuys.Gameplay.Traffic.TrafficVehicleController>() is { IsOrdinaryTraffic: true } ||
                     hit.collider.GetComponentInParent<CouchCarryController>() != null || hit.collider.GetComponentInParent<PlayerHealth>() != null ||
                     hit.collider.GetComponentInParent<PedestrianController>() != null || hit.collider.GetComponentInParent<ThiefHealth>() != null) continue;
                 ground = hit; closest = hit.distance;

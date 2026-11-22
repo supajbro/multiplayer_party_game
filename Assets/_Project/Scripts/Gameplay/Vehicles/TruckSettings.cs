@@ -23,6 +23,9 @@ namespace CouchGuys.Gameplay.Vehicles
         [SerializeField, Min(0f), Tooltip("Maximum yaw rate in degrees per second.")] private float m_steeringSensitivity = 90f;
         [SerializeField, Min(0f)] private float m_steeringResponseSpeed = 5f;
         [SerializeField, Range(0.05f, 1f)] private float m_highSpeedSteeringMultiplier = 0.4f;
+        [SerializeField, Min(0f), Tooltip("Smallest commanded turn radius in metres. Zero disables the radius limit.")] private float m_minimumTurningRadius;
+        [SerializeField, Tooltip("Forward speed fraction (0–1) to steering authority (0–1). Also used when reversing.")] private AnimationCurve m_steeringSpeedCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+        [SerializeField, Min(0.1f), Tooltip("How quickly yaw follows steering and recovers from collision spin, in inverse seconds.")] private float m_yawControlResponse = 10f;
         [SerializeField, Min(1f)] private float m_vehicleMass = 1450f;
         [SerializeField, Range(0f, 1f), Tooltip("Lateral tyre grip. Lower values produce more sliding.")] private float m_traction = 0.78f;
         [SerializeField, Range(0f, 1f)] private float m_uphillPowerMultiplier = 0.65f;
@@ -93,6 +96,9 @@ namespace CouchGuys.Gameplay.Vehicles
         public float BrakingForce => m_brakingForce; public float NaturalDeceleration => m_naturalDeceleration;
         public float SteeringSensitivity => m_steeringSensitivity; public float SteeringResponseSpeed => m_steeringResponseSpeed;
         public float HighSpeedSteeringMultiplier => m_highSpeedSteeringMultiplier; public float VehicleMass => m_vehicleMass;
+        public float MinimumTurningRadius => m_minimumTurningRadius;
+        public AnimationCurve SteeringSpeedCurve => m_steeringSpeedCurve;
+        public float YawControlResponse => m_yawControlResponse;
         public float Traction => m_traction; public float UphillPowerMultiplier => m_uphillPowerMultiplier; public float AntiRollStrength => m_antiRollStrength;
         public bool UseFuel => m_useFuel;
         public float MaxFuel => m_maxFuel; public float FuelConsumptionIdle => m_fuelConsumptionIdle;

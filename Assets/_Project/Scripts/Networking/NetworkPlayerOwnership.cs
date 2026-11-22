@@ -28,6 +28,19 @@ namespace CouchGuys.Networking
         // SyncVar state is included when a late observer receives the player spawn.
         private readonly SyncVar<string> m_displayName = new(string.Empty);
         public string DisplayName => m_displayName.Value;
+        // Keep iteration unrestricted in the Editor and Development Builds.
+        // Release access follows this player's replicated name on both client and server.
+        public bool CanUseDebugFeatures
+        {
+            get
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                return true;
+#else
+                return string.Equals(DisplayName, "supajbro", StringComparison.Ordinal);
+#endif
+            }
+        }
         public Color IdentityColour => m_colourPalette.GetColour(OwnerId);
 
         public struct PingState
@@ -114,6 +127,7 @@ namespace CouchGuys.Networking
         [ServerRpc]
         public void DebugSpawnServerRpc(int spawnIndex)
         {
+            if (!CanUseDebugFeatures) return;
             if (GameplaySessionController.IsServerGameOver || Time.unscaledTime < m_nextDebugActionTime) return;
             m_nextDebugActionTime = Time.unscaledTime + 0.25f;
             bool hoverboard = spawnIndex == 7;
@@ -158,6 +172,7 @@ namespace CouchGuys.Networking
         [ServerRpc]
         public void DebugAddCurrencyServerRpc(int amount)
         {
+            if (!CanUseDebugFeatures) return;
             if (GameplaySessionController.IsServerGameOver || amount < 1 || amount > 100000 ||
                 Time.unscaledTime < m_nextDebugActionTime) return;
             m_nextDebugActionTime = Time.unscaledTime + 0.25f;

@@ -558,6 +558,8 @@ namespace CouchGuys.Gameplay.Weapons
         [ServerRpc]
         private void RequestTestResourcesServerRpc()
         {
+            var player = GetComponent<CouchGuys.Networking.NetworkPlayerOwnership>();
+            if (player == null || !player.CanUseDebugFeatures) return;
             EndRifleBurstServer();
             m_reloadingIndex = -1;
             for (int index = 0; index < WeaponCount; index++)

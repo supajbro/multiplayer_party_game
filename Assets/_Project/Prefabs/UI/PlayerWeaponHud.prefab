@@ -4418,8 +4418,6 @@ MonoBehaviour:
   - {fileID: 995100004}
   - {fileID: 995100005}
   - {fileID: 995100006}
-  - {fileID: 995100007}
-  - {fileID: 995100008}
   - {fileID: 995100009}
   - {fileID: 995100010}
   m_interactionPrompt: {fileID: 910000000000000004}

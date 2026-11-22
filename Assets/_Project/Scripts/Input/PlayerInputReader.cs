@@ -120,7 +120,9 @@ namespace CouchGuys.Input
         public bool TeleportToDeliveryPressedThisFrame =>
             !GameplaySuppressed && (m_teleportToDeliveryAction?.WasPressedThisFrame() ?? false);
         public bool TestResourcesPressedThisFrame =>
-            !GameplaySuppressed && (Keyboard.current?.lKey.wasPressedThisFrame ?? false);
+            !GameplaySuppressed && CouchGuys.Networking.NetworkPlayerOwnership.LocalPlayer != null &&
+            CouchGuys.Networking.NetworkPlayerOwnership.LocalPlayer.CanUseDebugFeatures &&
+            (Keyboard.current?.lKey.wasPressedThisFrame ?? false);
         public bool CanNavigateDeliveries => isActiveAndEnabled && !MenuBlocked && !m_emoteWheelOpen;
         public bool CanShowMap => isActiveAndEnabled && !GameplaySuppressed;
         public bool MapPressedThisFrame => CanShowMap && (Keyboard.current?.mKey.wasPressedThisFrame ?? false);

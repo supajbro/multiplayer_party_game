@@ -127,6 +127,7 @@ namespace CouchGuys.Gameplay.Vehicles
         internal bool IgnoreHoverCollider(Collider collider)
         {
             if (collider == null || collider.transform.IsChildOf(transform)) return true;
+            if (collider.GetComponentInParent<CouchGuys.Gameplay.Traffic.TrafficVehicleController>() is { IsOrdinaryTraffic: true }) return true;
             if (collider.TryGetComponent(out HoverTruckBolt _)) return true;
             var couch = collider.GetComponentInParent<CouchCarryController>();
             if (couch != null && couch.LoadedTruckObject == NetworkObject) return true;

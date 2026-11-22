@@ -210,6 +210,7 @@ namespace CouchGuys.Gameplay.Traffic
 
         private void FixedUpdate()
         {
+            TickPlayerVehicleContacts();
             if (IsDestroyed) return;
             if (m_isDistantSimulation) return;
             if (IsServerInitialized && m_batLaunch.Tick(m_rigidbody)) return;
@@ -438,14 +439,14 @@ namespace CouchGuys.Gameplay.Traffic
         }
 
         [Server]
-        private void DestroyVehicleServer()
+        private void DestroyVehicleServer(bool damageCharacters = true)
         {
             if (m_destroyed.Value) return;
             KeepFullPhysicsForInteraction();
             m_destroyed.Value = true;
             m_serverDriving = false;
             m_wheelSteering.Value = 0f;
-            ApplyExplosionDamage();
+            if (damageCharacters) ApplyExplosionDamage();
             GetComponent<VehicleDestruction>().DestroyServer(m_rogueSettings != null ? m_rogueSettings.Destruction : m_settings.Destruction);
         }
 
@@ -527,6 +528,12 @@ namespace CouchGuys.Gameplay.Traffic
         private void ApplyCharacterImpact(Collider collider, Vector3 velocity, float speed)
         {
             PlayerHealth player = collider.GetComponentInParent<PlayerHealth>();
+            // A hoverboard rider has a separate enabled hitbox. Traffic must not
+            // knock them off while its chassis passes harmlessly through the board.
+            if (IsOrdinaryTraffic && player != null &&
+                ((player.TryGetComponent(out PlayerHoverboardInteractor boardRider) && boardRider.CurrentBoard != null) ||
+                 (player.TryGetComponent(out PlayerTruckInteractor passenger) && passenger.CurrentTruck != null &&
+                  !passenger.CurrentTruck.IsGetawayTruck))) return;
             if (m_rogueSettings != null && player != null && TryGetComponent(out RogueCar rogue) &&
                 !rogue.CanDamagePlayers) return;
             if (m_rogueSettings != null && player != null && !player.IsEnemyTargetable) return;

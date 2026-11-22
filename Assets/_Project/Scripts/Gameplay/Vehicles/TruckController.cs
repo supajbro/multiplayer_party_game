@@ -952,15 +952,7 @@ namespace CouchGuys.Gameplay.Vehicles
             Vector3 rebuilt = transform.TransformDirection(new Vector3(localVelocity.x, 0f, localVelocity.z));
             m_rigidbody.linearVelocity = new Vector3(rebuilt.x, m_rigidbody.linearVelocity.y, rebuilt.z);
 
-            float speed01 = Mathf.Clamp01(Mathf.Abs(forwardSpeed) / maxForward);
-            float steeringScale = Mathf.Lerp(1f, m_settings.HighSpeedSteeringMultiplier, speed01);
-            float desiredSteering = m_driveInput.x * m_settings.SteeringSensitivity * steeringScale;
-            m_steering = Mathf.MoveTowards(m_steering, desiredSteering, m_settings.SteeringResponseSpeed * m_settings.SteeringSensitivity * dt);
-            if (Mathf.Abs(forwardSpeed) > 0.2f)
-            {
-                float direction = Mathf.Sign(forwardSpeed);
-                m_rigidbody.MoveRotation(m_rigidbody.rotation * Quaternion.Euler(0f, m_steering * direction * speed01 * dt, 0f));
-            }
+            SimulateSteering(forwardSpeed, dt);
             if (!IsHoverTruck)
                 m_rigidbody.AddTorque(Vector3.Cross(transform.up, Vector3.up) * m_settings.AntiRollStrength, ForceMode.Acceleration);
         }

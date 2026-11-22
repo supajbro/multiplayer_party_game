@@ -24,11 +24,46 @@ MonoBehaviour:
   m_reverseAcceleration: 5
   m_brakingForce: 16
   m_naturalDeceleration: 1.2
-  m_steeringSensitivity: 100
+  m_steeringSensitivity: 150
   m_steeringResponseSpeed: 5
-  m_highSpeedSteeringMultiplier: 0.32
+  m_highSpeedSteeringMultiplier: 0.5
+  m_minimumTurningRadius: 4.5
+  m_steeringSpeedCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 2.5
+      outSlope: 2.5
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 0.2
+      value: 0.5
+      inSlope: 2.5
+      outSlope: 0.625
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0.625
+      outSlope: 0.625
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  m_yawControlResponse: 10
   m_vehicleMass: 1250
-  m_traction: 0.62
+  m_traction: 0.8
   m_uphillPowerMultiplier: 0.8
   m_antiRollStrength: 9
   m_maxFuel: 60
