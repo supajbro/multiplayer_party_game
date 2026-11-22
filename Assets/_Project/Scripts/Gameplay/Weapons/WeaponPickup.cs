@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using FishNet;
 using CouchGuys.Gameplay.Healing;
 using FishNet.Object;
@@ -20,6 +21,10 @@ namespace CouchGuys.Gameplay.Weapons
     [RequireComponent(typeof(Rigidbody), typeof(NetworkObject))]
     public sealed class WeaponPickup : NetworkBehaviour
     {
+        internal static readonly HashSet<WeaponPickup> ActivePickups = new();
+        private void OnEnable() => ActivePickups.Add(this);
+        private void OnDisable() => ActivePickups.Remove(this);
+
         [SerializeField] private PlayerWeaponType m_weaponType;
         [SerializeField] private HealingItemSettings m_healingItem;
         [Header("Sled Cargo")]

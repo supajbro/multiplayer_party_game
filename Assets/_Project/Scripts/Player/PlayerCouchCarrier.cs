@@ -32,6 +32,8 @@ namespace CouchGuys.Player
         [Header("Interaction")]
         [SerializeField, Min(0.1f)] private float m_interactionRange = 1.8f;
         [SerializeField, Min(0f)] private float m_serverRangeTolerance = 0.35f;
+        [SerializeField, Min(0.02f), Tooltip("Seconds between nearby interaction prompt refreshes. Interaction presses always check current targets.")]
+        private float m_interactionPromptRefreshInterval = 0.1f;
 
         [Header("Networked Movement Intent")]
         [SerializeField, Min(0.02f)] private float m_intentSendInterval = 0.1f;
@@ -68,6 +70,8 @@ namespace CouchGuys.Player
         private uint m_closedDispatcherSession;
         private uint m_dispatcherSession;
         private DispatcherMenuController m_dispatcherMenu;
+        private float m_nextInteractionPromptRefresh;
+        private NetworkObject m_promptCarriedCouch;
         private string m_sledInteractionPrompt = string.Empty;
         private string m_sledFeedback;
         private float m_sledFeedbackUntil;
@@ -120,7 +124,7 @@ namespace CouchGuys.Player
 
             UpdateMovementSpeed();
             UpdateMovementIntent();
-            UpdateSledInteractionPrompt();
+            UpdateSledInteractionPrompt(m_input != null && m_input.InteractPressedThisFrame);
             if (m_input != null && m_input.TeleportToDeliveryPressedThisFrame && IsCarrying)
             {
                 RequestTeleportToDeliveryServerRpc();
@@ -435,20 +439,20 @@ namespace CouchGuys.Player
 
         // Share target selection with the prompt so it describes what pressing E will do.
         private void FindNearestInteraction(out CouchCarryPoint closestPoint, out SledController closestUnloadSled,
-            out DeliveryNPC closestNpc, out WeaponPickup closestWeapon, out bool depotDoorButton)
+            out DeliveryNPC closestNpc, out WeaponPickup closestWeapon, out bool depotDoorButton, bool checkRack = true)
         {
             closestPoint = null;
             closestUnloadSled = null;
             closestNpc = null;
             closestWeapon = null;
             depotDoorButton = false;
-            var rackPickup = FindNearbyRackPickup();
+            var rackPickup = checkRack ? FindNearbyRackPickup() : null;
             if (rackPickup != null)
             {
                 closestWeapon = rackPickup;
                 return;
             }
-            CouchCarryPoint[] points = FindObjectsByType<CouchCarryPoint>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            var points = CouchCarryPoint.ActivePoints;
             float closestDistanceSquared = m_interactionRange * m_interactionRange;
 
             foreach (CouchCarryPoint point in points)
@@ -476,7 +480,7 @@ namespace CouchGuys.Player
                 }
             }
 
-            foreach (SledController sled in FindObjectsByType<SledController>(FindObjectsSortMode.None))
+            foreach (SledController sled in SledController.ActiveSleds)
             {
                 if (!sled.IsSpawned || sled.MountedCouchCount == 0 || sled.UnloadPoint == null) continue;
                 float distanceSquared = (sled.UnloadPoint.position - SledGrabOrigin).sqrMagnitude;
@@ -486,7 +490,7 @@ namespace CouchGuys.Player
                 closestUnloadSled = sled;
             }
 
-            DeliveryNPC[] npcs = FindObjectsByType<DeliveryNPC>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            var npcs = DeliveryNPC.ActiveNpcs;
             foreach (DeliveryNPC npc in npcs)
             {
                 float distanceSquared = npc.InteractionDistanceSquared(transform.position);
@@ -499,7 +503,7 @@ namespace CouchGuys.Player
                 }
             }
 
-            foreach (WeaponPickup pickup in FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None))
+            foreach (WeaponPickup pickup in WeaponPickup.ActivePickups)
             {
                 float distance = (pickup.transform.position - transform.position).sqrMagnitude;
                 if (!pickup.IsSpawned || distance > closestDistanceSquared) continue;
@@ -510,9 +514,7 @@ namespace CouchGuys.Player
                 closestNpc = null;
             }
 
-            DepotController depot = FindFirstObjectByType<DepotController>();
-            if (depot != null && depot.HasNearbyButton(transform.position,
-                    Mathf.Sqrt(closestDistanceSquared), out _))
+            if (HasNearbyDepotButton(Mathf.Sqrt(closestDistanceSquared)))
             {
                 depotDoorButton = true;
                 closestWeapon = null;
@@ -534,7 +536,7 @@ namespace CouchGuys.Player
         {
             WeaponPickup nearest = null;
             float distance = Mathf.Min(m_interactionRange, 1.15f);
-            foreach (var pickup in FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None))
+            foreach (var pickup in WeaponPickup.ActivePickups)
             {
                 if (!pickup.IsSpawned || pickup.MountedSled == null ||
                     !IsFacingTarget(transform.position, transform.forward, pickup.transform.position, .6f)) continue;
@@ -550,8 +552,20 @@ namespace CouchGuys.Player
             sled != null && sled.HasCargoSpace && TryGetComponent(out PlayerWeaponController weapon) && weapon.HasEquippedWeapon
                 ? " | Q to store held item" : string.Empty;
 
-        private void UpdateSledInteractionPrompt()
+        private bool HasNearbyDepotButton(float range)
         {
+            foreach (var depot in DepotController.ActiveDepots)
+                if (depot != null && depot.HasNearbyButton(transform.position, range, out _)) return true;
+            return false;
+        }
+
+        private void UpdateSledInteractionPrompt(bool force = false)
+        {
+            // Carry transitions and presses bypass the display refresh interval.
+            if (!force && m_promptCarriedCouch == m_carriedCouch.Value &&
+                Time.unscaledTime < m_nextInteractionPromptRefresh) return;
+            m_promptCarriedCouch = m_carriedCouch.Value;
+            m_nextInteractionPromptRefresh = Time.unscaledTime + Mathf.Max(0.02f, m_interactionPromptRefreshInterval);
             if (!IsCarrying)
             {
                 var terminal = WeaponShopTerminal.FindNearby(transform.position);
@@ -569,9 +583,7 @@ namespace CouchGuys.Player
                     loadingSled.HasCargoSpace ? $"Bring couch close to load automatically | {loadingSled.CargoStatus}" : loadingSled.LoadingStatus;
                 return;
             }
-            DepotController depot = FindFirstObjectByType<DepotController>();
-            if (depot != null && depot.HasNearbyButton(
-                    transform.position, m_interactionRange, out _))
+            if (HasNearbyDepotButton(m_interactionRange))
             {
                 m_sledInteractionPrompt = "Press E to operate roller door";
                 return;
@@ -582,7 +594,7 @@ namespace CouchGuys.Player
                 m_sledInteractionPrompt = $"Press E to pick up {rackPickup.DisplayName} | {rackPickup.MountedSled.CargoStatus}";
                 return;
             }
-            FindNearestInteraction(out CouchCarryPoint carryPoint, out _, out DeliveryNPC npc, out _, out _);
+            FindNearestInteraction(out CouchCarryPoint carryPoint, out _, out DeliveryNPC npc, out _, out _, false);
             if (npc != null)
             {
                 m_sledInteractionPrompt = $"Press E to talk to {npc.DisplayName}";
@@ -594,7 +606,7 @@ namespace CouchGuys.Player
                 m_sledInteractionPrompt = "Press E to carry couch";
                 return;
             }
-            foreach (var sled in FindObjectsByType<SledController>(FindObjectsSortMode.None))
+            foreach (var sled in SledController.ActiveSleds)
                 if (sled.IsSpawned && sled.MountedCouchCount > 0 && sled.UnloadPoint != null &&
                     Vector3.Distance(SledGrabOrigin, sled.UnloadPoint.position) <= m_interactionRange &&
                     sled.GetPoint(0) != null &&
@@ -606,8 +618,7 @@ namespace CouchGuys.Player
                     return;
                 }
             float rangeSquared = m_interactionRange * m_interactionRange;
-            foreach (SledGrabPoint point in FindObjectsByType<SledGrabPoint>(
-                         FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            foreach (SledGrabPoint point in SledGrabPoint.ActivePoints)
             {
                 if (point != null && point.IsAvailable &&
                     (point.transform.position - SledGrabOrigin).sqrMagnitude <= rangeSquared)
@@ -620,7 +631,7 @@ namespace CouchGuys.Player
             m_sledInteractionPrompt = nearbySled != null ? nearbySled.LoadingStatus : string.Empty;
             if (nearbySled != null && TryGetComponent(out PlayerWeaponController weapons) && weapons.HasEquippedWeapon)
                 m_sledInteractionPrompt += nearbySled.HasCargoSpace ? " | Q to store held item" : string.Empty;
-            foreach (WeaponPickup pickup in FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None))
+            foreach (WeaponPickup pickup in WeaponPickup.ActivePickups)
             {
                 if (pickup.IsSpawned && (pickup.transform.position - transform.position).sqrMagnitude <= rangeSquared)
                 {
@@ -643,7 +654,7 @@ namespace CouchGuys.Player
         private void RequestDeliveryServerRpc()
         {
             if (TryGetComponent(out PlayerHealth health) && health.IsKnockedDown) return;
-            DeliveryNPC[] npcs = FindObjectsByType<DeliveryNPC>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            var npcs = DeliveryNPC.ActiveNpcs;
             DeliveryNPC closestNpc = null;
             float allowedRange = m_interactionRange + m_serverRangeTolerance;
             float closestDistanceSquared = allowedRange * allowedRange;
@@ -774,7 +785,7 @@ namespace CouchGuys.Player
                 else
                 {
                     float nearest = float.PositiveInfinity;
-                    foreach (var npc in FindObjectsByType<DeliveryNPC>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+                    foreach (var npc in DeliveryNPC.ActiveNpcs)
                     {
                         float distance = (npc.transform.position - dispatcherPosition).sqrMagnitude;
                         if (distance >= nearest || !npc.TryGetComponent(out DispatcherMenuController menu)) continue;

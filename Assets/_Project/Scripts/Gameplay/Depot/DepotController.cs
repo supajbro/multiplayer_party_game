@@ -130,6 +130,9 @@ namespace CouchGuys.Gameplay.Depot
     [DisallowMultipleComponent]
     public sealed class DepotController : MonoBehaviour
     {
+        internal static readonly HashSet<DepotController> ActiveDepots = new();
+        private void OnEnable() => ActiveDepots.Add(this);
+
         [Header("Dispatch Markers")]
         [SerializeField] private Transform m_deliveryNpc;
         [SerializeField, Tooltip("Depot-local customer area in front of the dispatcher desk.")]
@@ -353,6 +356,7 @@ namespace CouchGuys.Gameplay.Depot
 
         private void OnDisable()
         {
+            ActiveDepots.Remove(this);
             PauseMusic();
             m_neighbourhoodMusic?.Suspend();
             m_musicPlayer = null;

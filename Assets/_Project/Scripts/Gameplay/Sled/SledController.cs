@@ -99,7 +99,7 @@ namespace CouchGuys.Gameplay.Sled
         {
             SledController nearest = null;
             float distance = float.PositiveInfinity;
-            foreach (var sled in FindObjectsByType<SledController>(FindObjectsSortMode.None))
+            foreach (var sled in ActiveSleds)
             {
                 if (!sled.IsSpawned || !sled.CanLoadFrom(position)) continue;
                 float candidate = (sled.CouchAnchor.position - position).sqrMagnitude;

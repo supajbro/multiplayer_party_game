@@ -68,6 +68,34 @@ captions/timestamps; render a fresh output; inspect the crop, captions and audio
 save source hashes, edit timing, credits and review status. The daily pipeline's
 30–45 second QC is specific to that format: a separate 15–30 second meme draft
 should have its own duration checks without weakening the production validator.
+
+Latest local meme work (22 November 2026):
+- Both the garage **and pickup** drafts above now have private upload records. Do
+  not upload either again. The separate record-news Short also has upload state.
+- `scripts/make_gta6_permanent_record_meme.py` creates a local-only, approximately
+  20-second Kai encounter edit from unused VOD action at 4968.5–5008.1 seconds.
+  It uses actual criminal-profile tutorial text, original captions, licensed music,
+  quick cuts and Kai's camera; no narrator or added footer. It checks prior uploaded
+  source ranges and hashes. Latest path: `data/gta6-meme-test/latest-permanent-record-preview.txt`.
+- Current campaign rules and music evidence were fetched and hashed under
+  `data/gta6-meme-test/new-moment-20261122/evidence/` and copied into the render.
+  Updated rules specify official-channel marathon footage and prohibit reposting
+  existing Kai Shorts. This cut uses a retained archive-mirror recording, so its
+  official-source provenance still needs confirmation before upload/submission.
+  Publisher policy retrieval timed out; public/commercial clearance remains false.
+- `scripts/scout_new_meme.py` attempted a fresh 5100-second VOD excerpt; transfers
+  stalled/timed out. Its incomplete MP4 files are NOT usable sources or previews.
+  `scripts/inspect_meme_source.py` inspects the retained unused encounter instead.
+- The user subsequently requested the permanent-record upload. It was uploaded
+  privately as `ZEkitcwQdX0`; retained upload state and remote privacy verification
+  are beside the render. Do not upload it again. The dedicated
+  `scripts/upload_gta6_permanent_record_draft.py` checks media hashes, local upload
+  records and recent remote uploads, and blocks uncertain insert retries.
+  Official Kai Cenat Live video metadata was retained as a candidate provenance
+  reference; exact correspondence to the archive remains unverified. Public and
+  commercial clearance remain false. No campaign submission is authorized.
+  Daily task was verified Disabled; upload_enabled and auto_publish remain false.
+
 Local assets, configuration and credentials may be ignored by Git and absent in a
 fresh checkout. Never claim a video exists or rights are established just because
 this section describes the workflow. Upload privately only when requested and

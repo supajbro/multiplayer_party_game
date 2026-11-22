@@ -173,6 +173,7 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void OnDisable()
         {
+            ActiveNpcs.Remove(this);
             if (m_reacting) transform.SetPositionAndRotation(m_reactionAnchor, m_reactionRotation);
             m_reacting = false;
             m_seenAggressiveLine = 0;

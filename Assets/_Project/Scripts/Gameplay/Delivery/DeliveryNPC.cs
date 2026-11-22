@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CouchGuys.Player;
 using CouchGuys.Gameplay.Depot;
 using UnityEngine;
@@ -8,6 +9,9 @@ namespace CouchGuys.Gameplay.Delivery
     [DisallowMultipleComponent]
     public sealed partial class DeliveryNPC : MonoBehaviour
     {
+        internal static readonly HashSet<DeliveryNPC> ActiveNpcs = new();
+        private void OnEnable() => ActiveNpcs.Add(this);
+
         [SerializeField] private string m_displayName = "Simo' The Dispatcher";
         [SerializeField] private DeliveryManager m_deliveryManager;
         [SerializeField] private Vector3 m_couchSpawnOffset = new Vector3(0f, 0.5f, 2.5f);

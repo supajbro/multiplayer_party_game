@@ -12,7 +12,7 @@ namespace CouchGuys.Gameplay.Traffic
     [RequireComponent(typeof(NetworkObject), typeof(Rigidbody))]
     [DisallowMultipleComponent]
     [RequireComponent(typeof(VehicleAudioEmitter), typeof(VehicleDestruction))]
-    public sealed class TrafficVehicleController : NetworkBehaviour
+    public sealed partial class TrafficVehicleController : NetworkBehaviour
     {
         private readonly SyncVar<float> m_health = new SyncVar<float>();
         private readonly SyncVar<bool> m_destroyed = new SyncVar<bool>();
@@ -74,6 +74,7 @@ namespace CouchGuys.Gameplay.Traffic
         [Server]
         public void ApplyBatLaunchServer(Vector3 velocity, Vector3 spin)
         {
+            KeepFullPhysicsForInteraction();
             if (!IsDestroyed) m_batLaunch.Launch(m_rigidbody, velocity, spin);
         }
 
@@ -88,6 +89,7 @@ namespace CouchGuys.Gameplay.Traffic
             m_rigidbody ??= GetComponent<Rigidbody>();
             m_audio = GetComponent<VehicleAudioEmitter>();
             ConfigureGroundContact();
+            CaptureSimulationDefaults();
             ApplyVisualVariant(0);
             m_health.OnChange += OnHealthChanged;
             m_destroyed.OnChange += OnDestroyedChanged;
@@ -104,6 +106,7 @@ namespace CouchGuys.Gameplay.Traffic
         {
             base.OnStartServer();
             m_lastSplatContactTime.Clear();
+            ResetSimulationServer();
             m_health.Value = m_settings != null ? m_settings.MaximumHealth : 120f;
             m_destroyed.Value = false;
             m_rigidbody.isKinematic = false;
@@ -114,6 +117,7 @@ namespace CouchGuys.Gameplay.Traffic
         {
             base.OnStartClient();
             if (!IsServerInitialized) m_rigidbody.isKinematic = true;
+            OnHealthChanged(0f, m_health.Value, false);
             ApplyDestroyedVisual(m_destroyed.Value);
             m_audio.SetEngineRunning(!IsDestroyed);
         }
@@ -130,13 +134,15 @@ namespace CouchGuys.Gameplay.Traffic
             base.OnStopServer();
         }
 
-        internal void InitialiseServer(TrafficRoute route, TrafficManager manager, int visualVariant)
+        internal void InitialiseServer(TrafficRoute route, TrafficManager manager, int visualVariant, int startWaypoint = 0)
         {
             m_route = route;
             m_manager = manager;
-            m_waypointIndex = route != null && route.Waypoints.Length > 1 ? 1 : 0;
+            m_waypointIndex = route != null && route.Waypoints.Length > 1
+                ? Mathf.Clamp(startWaypoint + 1, 1, route.Waypoints.Length - 1) : 0;
             m_serverDriving = route != null && route.Waypoints.Length > 1;
             SetVisualVariantObserversRpc(visualVariant);
+            OnHealthChanged(0f, m_health.Value, true);
             if (m_serverDriving && m_rigidbody != null)
             {
                 m_drivingStartPosition = m_rigidbody.position;
@@ -151,6 +157,7 @@ namespace CouchGuys.Gameplay.Traffic
         private void SetVisualVariantObserversRpc(int visualVariant)
         {
             ApplyVisualVariant(visualVariant);
+            OnHealthChanged(0f, m_health.Value, false);
         }
 
         private void ApplyVisualVariant(int visualVariant)
@@ -204,6 +211,7 @@ namespace CouchGuys.Gameplay.Traffic
         private void FixedUpdate()
         {
             if (IsDestroyed) return;
+            if (m_isDistantSimulation) return;
             if (IsServerInitialized && m_batLaunch.Tick(m_rigidbody)) return;
             if (!IsServerInitialized || !m_serverDriving || m_destroyed.Value || m_settings == null ||
                 m_route == null || m_route.Waypoints.Length < 2) return;
@@ -373,9 +381,10 @@ namespace CouchGuys.Gameplay.Traffic
 
         private void Update()
         {
+            if (IsServerInitialized && m_isDistantSimulation) UpdateDistantRouteServer();
             if (m_visualInstance != null && m_visualInstance.TryGetComponent(out TrafficWheelAnimator wheels))
                 wheels.SetSteering(IsDestroyed ? 0f : m_wheelSteering.Value);
-            if (m_serverDriving && !m_destroyed.Value && !m_warnedStationary &&
+            if (m_serverDriving && !m_isDistantSimulation && !m_destroyed.Value && !m_warnedStationary &&
                 Time.time >= m_stationaryCheckAt &&
                 (m_rigidbody.position - m_drivingStartPosition).sqrMagnitude < 0.0625f)
             {
@@ -423,6 +432,7 @@ namespace CouchGuys.Gameplay.Traffic
         private void ApplyDamageServer(float damage)
         {
             if (damage <= 0f || m_destroyed.Value) return;
+            KeepFullPhysicsForInteraction();
             m_health.Value = Mathf.Max(0f, m_health.Value - damage);
             if (m_health.Value <= 0f) DestroyVehicleServer();
         }
@@ -431,6 +441,7 @@ namespace CouchGuys.Gameplay.Traffic
         private void DestroyVehicleServer()
         {
             if (m_destroyed.Value) return;
+            KeepFullPhysicsForInteraction();
             m_destroyed.Value = true;
             m_serverDriving = false;
             m_wheelSteering.Value = 0f;
@@ -486,6 +497,8 @@ namespace CouchGuys.Gameplay.Traffic
         {
             if (!IsServerInitialized || (!m_serverDriving && m_rogueSettings == null) || m_destroyed.Value || m_settings == null) return;
             TrafficVehicleController other = collision.collider.GetComponentInParent<TrafficVehicleController>();
+            if (collision.rigidbody != null || collision.collider.GetComponentInParent<PlayerHealth>() != null ||
+                collision.collider.GetComponentInParent<ThiefHealth>() != null) KeepFullPhysicsForInteraction();
             if (other != null)
             {
                 ResolveCarCollisionServer(other);

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CouchGuys.Gameplay.Couch
@@ -9,6 +10,10 @@ namespace CouchGuys.Gameplay.Couch
     [DisallowMultipleComponent]
     public sealed class CouchCarryPoint : MonoBehaviour
     {
+        internal static readonly HashSet<CouchCarryPoint> ActivePoints = new();
+        private void OnEnable() => ActivePoints.Add(this);
+        private void OnDisable() => ActivePoints.Remove(this);
+
         [SerializeField, Range(0, CouchCarryController.MaximumCarryPoints - 1)]
         private int m_pointIndex;
 

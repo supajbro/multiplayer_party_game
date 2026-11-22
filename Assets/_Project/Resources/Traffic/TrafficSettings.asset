@@ -22,3 +22,10 @@ MonoBehaviour:
   m_laneOffsetFraction: 0.22
   m_minimumRandomRouteTiles: 40
   m_maximumRandomRouteTiles: 140
+  m_fullPhysicsDistance: 90
+  m_fullPhysicsReleaseDistance: 130
+  m_approachBufferSeconds: 1
+  m_simulationCheckInterval: 0.2
+  m_distantUpdateInterval: 0.2
+  m_distantNetworkInterval: 6
+  m_nearbyNetworkInterval: 1

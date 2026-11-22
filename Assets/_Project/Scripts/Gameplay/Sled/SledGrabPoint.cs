@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CouchGuys.Gameplay.Sled
@@ -6,6 +7,10 @@ namespace CouchGuys.Gameplay.Sled
     [DisallowMultipleComponent]
     public sealed class SledGrabPoint : MonoBehaviour
     {
+        internal static readonly HashSet<SledGrabPoint> ActivePoints = new();
+        private void OnEnable() => ActivePoints.Add(this);
+        private void OnDisable() => ActivePoints.Remove(this);
+
         [SerializeField, Range(0, SledController.MaximumGrabPoints - 1)]
         private int m_pointIndex;
         private SledController m_sled;
