@@ -3,7 +3,52 @@ guid: 35564239955181947ac1c6f87541b058
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_CityHatch_Alloy
+    second: {fileID: 2100000, guid: dac902352c5d7a74e9e4591ed43cf63e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_CityHatch_BodyPaint
+    second: {fileID: 2100000, guid: 4d70cdbab1a0ed647af8db8c79988d17, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_CityHatch_Details
+    second: {fileID: 2100000, guid: b630978c150ec1e449d403dc7c233d72, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_CityHatch_Glass
+    second: {fileID: 2100000, guid: bf8ea51808edde144a34156993ae3367, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_CityHatch_Headlamp
+    second: {fileID: 2100000, guid: 5d6d3c0a79ceac346bd2d004f4a4f5e9, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_CityHatch_Indicator
+    second: {fileID: 2100000, guid: 383cb18007d5bd048a081824501c7618, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_CityHatch_Rubber
+    second: {fileID: 2100000, guid: 89f125156cbd3d24587a90b15c71ea71, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_CityHatch_Stripe
+    second: {fileID: 2100000, guid: 9708c4c72148d9e41a3d5c675a5e146a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_CityHatch_TailLamp
+    second: {fileID: 2100000, guid: 4320e88520128df449bb21dc0f54a049, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

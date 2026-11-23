@@ -523,6 +523,7 @@ namespace CouchGuys.Player
                 m_gravity >= 0f)
                 return false;
 
+            pillow.NotifyPlayerLanding(transform.position, -m_verticalVelocity);
             m_verticalVelocity = Mathf.Sqrt(2f * -m_gravity * pillow.BounceHeight);
             m_externalVelocity.y = 0f;
             m_nextPillowBounceTime = Time.time + pillow.BounceCooldown;

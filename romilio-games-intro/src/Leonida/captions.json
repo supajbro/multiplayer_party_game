@@ -1,0 +1,1429 @@
+[
+  {
+    "text": "GTA six is laughing",
+    "startMs": 257,
+    "endMs": 2011,
+    "timestampMs": 257,
+    "confidence": null,
+    "words": [
+      {
+        "text": "GTA",
+        "startMs": 257,
+        "endMs": 830,
+        "timestampMs": 257,
+        "confidence": null
+      },
+      {
+        "text": "six",
+        "startMs": 964,
+        "endMs": 1329,
+        "timestampMs": 964,
+        "confidence": null
+      },
+      {
+        "text": "is",
+        "startMs": 1402,
+        "endMs": 1524,
+        "timestampMs": 1402,
+        "confidence": null
+      },
+      {
+        "text": "laughing",
+        "startMs": 1524,
+        "endMs": 1999,
+        "timestampMs": 1524,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "at you.",
+    "startMs": 2011,
+    "endMs": 2448,
+    "timestampMs": 2011,
+    "confidence": null,
+    "words": [
+      {
+        "text": "at",
+        "startMs": 2011,
+        "endMs": 2109,
+        "timestampMs": 2011,
+        "confidence": null
+      },
+      {
+        "text": "you.",
+        "startMs": 2109,
+        "endMs": 2328,
+        "timestampMs": 2109,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "And the giveaway is",
+    "startMs": 2717,
+    "endMs": 3582,
+    "timestampMs": 2717,
+    "confidence": null,
+    "words": [
+      {
+        "text": "And",
+        "startMs": 2717,
+        "endMs": 2778,
+        "timestampMs": 2717,
+        "confidence": null
+      },
+      {
+        "text": "the",
+        "startMs": 2778,
+        "endMs": 2864,
+        "timestampMs": 2778,
+        "confidence": null
+      },
+      {
+        "text": "giveaway",
+        "startMs": 2876,
+        "endMs": 3387,
+        "timestampMs": 2876,
+        "confidence": null
+      },
+      {
+        "text": "is",
+        "startMs": 3448,
+        "endMs": 3582,
+        "timestampMs": 3448,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "the phone.",
+    "startMs": 3582,
+    "endMs": 4226,
+    "timestampMs": 3582,
+    "confidence": null,
+    "words": [
+      {
+        "text": "the",
+        "startMs": 3582,
+        "endMs": 3643,
+        "timestampMs": 3582,
+        "confidence": null
+      },
+      {
+        "text": "phone.",
+        "startMs": 3655,
+        "endMs": 4106,
+        "timestampMs": 3655,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "Look past Leonida's neon",
+    "startMs": 4496,
+    "endMs": 6187,
+    "timestampMs": 4496,
+    "confidence": null,
+    "words": [
+      {
+        "text": "Look",
+        "startMs": 4496,
+        "endMs": 4629,
+        "timestampMs": 4496,
+        "confidence": null
+      },
+      {
+        "text": "past",
+        "startMs": 4642,
+        "endMs": 4995,
+        "timestampMs": 4642,
+        "confidence": null
+      },
+      {
+        "text": "Leonida's",
+        "startMs": 4995,
+        "endMs": 5482,
+        "timestampMs": 4995,
+        "confidence": null
+      },
+      {
+        "text": "neon",
+        "startMs": 5482,
+        "endMs": 6067,
+        "timestampMs": 5482,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "and chaos.",
+    "startMs": 6225,
+    "endMs": 7246,
+    "timestampMs": 6225,
+    "confidence": null,
+    "words": [
+      {
+        "text": "and",
+        "startMs": 6225,
+        "endMs": 6359,
+        "timestampMs": 6225,
+        "confidence": null
+      },
+      {
+        "text": "chaos.",
+        "startMs": 6359,
+        "endMs": 7126,
+        "timestampMs": 6359,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "Rockstar's version of Florida",
+    "startMs": 7528,
+    "endMs": 8988,
+    "timestampMs": 7528,
+    "confidence": null,
+    "words": [
+      {
+        "text": "Rockstar's",
+        "startMs": 7528,
+        "endMs": 7979,
+        "timestampMs": 7528,
+        "confidence": null
+      },
+      {
+        "text": "version",
+        "startMs": 7979,
+        "endMs": 8259,
+        "timestampMs": 7979,
+        "confidence": null
+      },
+      {
+        "text": "of",
+        "startMs": 8259,
+        "endMs": 8307,
+        "timestampMs": 8259,
+        "confidence": null
+      },
+      {
+        "text": "Florida",
+        "startMs": 8307,
+        "endMs": 8868,
+        "timestampMs": 8307,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "turns ordinary life into",
+    "startMs": 9087,
+    "endMs": 10719,
+    "timestampMs": 9087,
+    "confidence": null,
+    "words": [
+      {
+        "text": "turns",
+        "startMs": 9087,
+        "endMs": 9513,
+        "timestampMs": 9087,
+        "confidence": null
+      },
+      {
+        "text": "ordinary",
+        "startMs": 9525,
+        "endMs": 10000,
+        "timestampMs": 9525,
+        "confidence": null
+      },
+      {
+        "text": "life",
+        "startMs": 10000,
+        "endMs": 10487,
+        "timestampMs": 10000,
+        "confidence": null
+      },
+      {
+        "text": "into",
+        "startMs": 10560,
+        "endMs": 10706,
+        "timestampMs": 10560,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "something to watch, judge,",
+    "startMs": 10719,
+    "endMs": 12751,
+    "timestampMs": 10719,
+    "confidence": null,
+    "words": [
+      {
+        "text": "something",
+        "startMs": 10719,
+        "endMs": 11242,
+        "timestampMs": 10719,
+        "confidence": null
+      },
+      {
+        "text": "to",
+        "startMs": 11255,
+        "endMs": 11364,
+        "timestampMs": 11255,
+        "confidence": null
+      },
+      {
+        "text": "watch,",
+        "startMs": 11376,
+        "endMs": 11961,
+        "timestampMs": 11376,
+        "confidence": null
+      },
+      {
+        "text": "judge,",
+        "startMs": 12131,
+        "endMs": 12631,
+        "timestampMs": 12131,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "and share.",
+    "startMs": 13020,
+    "endMs": 13786,
+    "timestampMs": 13020,
+    "confidence": null,
+    "words": [
+      {
+        "text": "and",
+        "startMs": 13020,
+        "endMs": 13118,
+        "timestampMs": 13020,
+        "confidence": null
+      },
+      {
+        "text": "share.",
+        "startMs": 13130,
+        "endMs": 13666,
+        "timestampMs": 13130,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "But the joke goes",
+    "startMs": 14068,
+    "endMs": 15030,
+    "timestampMs": 14068,
+    "confidence": null,
+    "words": [
+      {
+        "text": "But",
+        "startMs": 14068,
+        "endMs": 14129,
+        "timestampMs": 14068,
+        "confidence": null
+      },
+      {
+        "text": "the",
+        "startMs": 14129,
+        "endMs": 14189,
+        "timestampMs": 14129,
+        "confidence": null
+      },
+      {
+        "text": "joke",
+        "startMs": 14202,
+        "endMs": 14567,
+        "timestampMs": 14202,
+        "confidence": null
+      },
+      {
+        "text": "goes",
+        "startMs": 14677,
+        "endMs": 14969,
+        "timestampMs": 14677,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "deeper than wild people",
+    "startMs": 15030,
+    "endMs": 16162,
+    "timestampMs": 15030,
+    "confidence": null,
+    "words": [
+      {
+        "text": "deeper",
+        "startMs": 15030,
+        "endMs": 15322,
+        "timestampMs": 15030,
+        "confidence": null
+      },
+      {
+        "text": "than",
+        "startMs": 15322,
+        "endMs": 15456,
+        "timestampMs": 15322,
+        "confidence": null
+      },
+      {
+        "text": "wild",
+        "startMs": 15456,
+        "endMs": 15846,
+        "timestampMs": 15456,
+        "confidence": null
+      },
+      {
+        "text": "people",
+        "startMs": 15846,
+        "endMs": 16162,
+        "timestampMs": 15846,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "doing wild things.",
+    "startMs": 16162,
+    "endMs": 17488,
+    "timestampMs": 16162,
+    "confidence": null,
+    "words": [
+      {
+        "text": "doing",
+        "startMs": 16162,
+        "endMs": 16430,
+        "timestampMs": 16162,
+        "confidence": null
+      },
+      {
+        "text": "wild",
+        "startMs": 16430,
+        "endMs": 16820,
+        "timestampMs": 16430,
+        "confidence": null
+      },
+      {
+        "text": "things.",
+        "startMs": 16820,
+        "endMs": 17368,
+        "timestampMs": 16820,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "Take Real Dimez.",
+    "startMs": 17770,
+    "endMs": 18974,
+    "timestampMs": 17770,
+    "confidence": null,
+    "words": [
+      {
+        "text": "Take",
+        "startMs": 17770,
+        "endMs": 17965,
+        "timestampMs": 17770,
+        "confidence": null
+      },
+      {
+        "text": "Real",
+        "startMs": 17977,
+        "endMs": 18281,
+        "timestampMs": 17977,
+        "confidence": null
+      },
+      {
+        "text": "Dimez.",
+        "startMs": 18281,
+        "endMs": 18854,
+        "timestampMs": 18281,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "Rockstar describes a rap",
+    "startMs": 19256,
+    "endMs": 20741,
+    "timestampMs": 19256,
+    "confidence": null,
+    "words": [
+      {
+        "text": "Rockstar",
+        "startMs": 19256,
+        "endMs": 19731,
+        "timestampMs": 19256,
+        "confidence": null
+      },
+      {
+        "text": "describes",
+        "startMs": 19731,
+        "endMs": 20181,
+        "timestampMs": 19731,
+        "confidence": null
+      },
+      {
+        "text": "a",
+        "startMs": 20181,
+        "endMs": 20230,
+        "timestampMs": 20181,
+        "confidence": null
+      },
+      {
+        "text": "rap",
+        "startMs": 20230,
+        "endMs": 20644,
+        "timestampMs": 20230,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "duo turning street hustles,",
+    "startMs": 20741,
+    "endMs": 22822,
+    "timestampMs": 20741,
+    "confidence": null,
+    "words": [
+      {
+        "text": "duo",
+        "startMs": 20741,
+        "endMs": 21192,
+        "timestampMs": 20741,
+        "confidence": null
+      },
+      {
+        "text": "turning",
+        "startMs": 21192,
+        "endMs": 21545,
+        "timestampMs": 21192,
+        "confidence": null
+      },
+      {
+        "text": "street",
+        "startMs": 21557,
+        "endMs": 22032,
+        "timestampMs": 21557,
+        "confidence": null
+      },
+      {
+        "text": "hustles,",
+        "startMs": 22045,
+        "endMs": 22702,
+        "timestampMs": 22045,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "catchy tracks, and relentless",
+    "startMs": 22946,
+    "endMs": 24748,
+    "timestampMs": 22946,
+    "confidence": null,
+    "words": [
+      {
+        "text": "catchy",
+        "startMs": 22946,
+        "endMs": 23311,
+        "timestampMs": 22946,
+        "confidence": null
+      },
+      {
+        "text": "tracks,",
+        "startMs": 23311,
+        "endMs": 23969,
+        "timestampMs": 23311,
+        "confidence": null
+      },
+      {
+        "text": "and",
+        "startMs": 24164,
+        "endMs": 24261,
+        "timestampMs": 24164,
+        "confidence": null
+      },
+      {
+        "text": "relentless",
+        "startMs": 24273,
+        "endMs": 24748,
+        "timestampMs": 24273,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "social media into a",
+    "startMs": 24748,
+    "endMs": 26015,
+    "timestampMs": 24748,
+    "confidence": null,
+    "words": [
+      {
+        "text": "social",
+        "startMs": 24748,
+        "endMs": 25089,
+        "timestampMs": 24748,
+        "confidence": null
+      },
+      {
+        "text": "media",
+        "startMs": 25089,
+        "endMs": 25528,
+        "timestampMs": 25089,
+        "confidence": null
+      },
+      {
+        "text": "into",
+        "startMs": 25771,
+        "endMs": 25966,
+        "timestampMs": 25771,
+        "confidence": null
+      },
+      {
+        "text": "a",
+        "startMs": 25966,
+        "endMs": 26015,
+        "timestampMs": 25966,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "shot at fame.",
+    "startMs": 26015,
+    "endMs": 26914,
+    "timestampMs": 26015,
+    "confidence": null,
+    "words": [
+      {
+        "text": "shot",
+        "startMs": 26015,
+        "endMs": 26356,
+        "timestampMs": 26015,
+        "confidence": null
+      },
+      {
+        "text": "at",
+        "startMs": 26356,
+        "endMs": 26429,
+        "timestampMs": 26356,
+        "confidence": null
+      },
+      {
+        "text": "fame.",
+        "startMs": 26441,
+        "endMs": 26794,
+        "timestampMs": 26441,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "Attention is part of",
+    "startMs": 27184,
+    "endMs": 28256,
+    "timestampMs": 27184,
+    "confidence": null,
+    "words": [
+      {
+        "text": "Attention",
+        "startMs": 27184,
+        "endMs": 27695,
+        "timestampMs": 27184,
+        "confidence": null
+      },
+      {
+        "text": "is",
+        "startMs": 27805,
+        "endMs": 27915,
+        "timestampMs": 27805,
+        "confidence": null
+      },
+      {
+        "text": "part",
+        "startMs": 27927,
+        "endMs": 28207,
+        "timestampMs": 27927,
+        "confidence": null
+      },
+      {
+        "text": "of",
+        "startMs": 28207,
+        "endMs": 28256,
+        "timestampMs": 28207,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "the hustle.",
+    "startMs": 28256,
+    "endMs": 28887,
+    "timestampMs": 28256,
+    "confidence": null,
+    "words": [
+      {
+        "text": "the",
+        "startMs": 28256,
+        "endMs": 28304,
+        "timestampMs": 28256,
+        "confidence": null
+      },
+      {
+        "text": "hustle.",
+        "startMs": 28304,
+        "endMs": 28767,
+        "timestampMs": 28304,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "Then there's Cal Hampton.",
+    "startMs": 29169,
+    "endMs": 30239,
+    "timestampMs": 29169,
+    "confidence": null,
+    "words": [
+      {
+        "text": "Then",
+        "startMs": 29169,
+        "endMs": 29266,
+        "timestampMs": 29169,
+        "confidence": null
+      },
+      {
+        "text": "there's",
+        "startMs": 29279,
+        "endMs": 29412,
+        "timestampMs": 29279,
+        "confidence": null
+      },
+      {
+        "text": "Cal",
+        "startMs": 29412,
+        "endMs": 29644,
+        "timestampMs": 29412,
+        "confidence": null
+      },
+      {
+        "text": "Hampton.",
+        "startMs": 29656,
+        "endMs": 30119,
+        "timestampMs": 29656,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "He hides at home,",
+    "startMs": 30533,
+    "endMs": 31481,
+    "timestampMs": 30533,
+    "confidence": null,
+    "words": [
+      {
+        "text": "He",
+        "startMs": 30533,
+        "endMs": 30606,
+        "timestampMs": 30533,
+        "confidence": null
+      },
+      {
+        "text": "hides",
+        "startMs": 30618,
+        "endMs": 30910,
+        "timestampMs": 30618,
+        "confidence": null
+      },
+      {
+        "text": "at",
+        "startMs": 30910,
+        "endMs": 30971,
+        "timestampMs": 30910,
+        "confidence": null
+      },
+      {
+        "text": "home,",
+        "startMs": 30984,
+        "endMs": 31361,
+        "timestampMs": 30984,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "monitoring Coast Guard communications,",
+    "startMs": 31787,
+    "endMs": 33917,
+    "timestampMs": 31787,
+    "confidence": null,
+    "words": [
+      {
+        "text": "monitoring",
+        "startMs": 31787,
+        "endMs": 32347,
+        "timestampMs": 31787,
+        "confidence": null
+      },
+      {
+        "text": "Coast",
+        "startMs": 32360,
+        "endMs": 32749,
+        "timestampMs": 32360,
+        "confidence": null
+      },
+      {
+        "text": "Guard",
+        "startMs": 32749,
+        "endMs": 32956,
+        "timestampMs": 32749,
+        "confidence": null
+      },
+      {
+        "text": "communications,",
+        "startMs": 32969,
+        "endMs": 33797,
+        "timestampMs": 32969,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "with private browser tabs",
+    "startMs": 34016,
+    "endMs": 35587,
+    "timestampMs": 34016,
+    "confidence": null,
+    "words": [
+      {
+        "text": "with",
+        "startMs": 34016,
+        "endMs": 34162,
+        "timestampMs": 34016,
+        "confidence": null
+      },
+      {
+        "text": "private",
+        "startMs": 34174,
+        "endMs": 34649,
+        "timestampMs": 34174,
+        "confidence": null
+      },
+      {
+        "text": "browser",
+        "startMs": 34649,
+        "endMs": 35063,
+        "timestampMs": 34649,
+        "confidence": null
+      },
+      {
+        "text": "tabs",
+        "startMs": 35063,
+        "endMs": 35502,
+        "timestampMs": 35063,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "open.",
+    "startMs": 35587,
+    "endMs": 36048,
+    "timestampMs": 35587,
+    "confidence": null,
+    "words": [
+      {
+        "text": "open.",
+        "startMs": 35587,
+        "endMs": 35928,
+        "timestampMs": 35587,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "He's the other side",
+    "startMs": 36354,
+    "endMs": 37268,
+    "timestampMs": 36354,
+    "confidence": null,
+    "words": [
+      {
+        "text": "He's",
+        "startMs": 36354,
+        "endMs": 36488,
+        "timestampMs": 36354,
+        "confidence": null
+      },
+      {
+        "text": "the",
+        "startMs": 36488,
+        "endMs": 36610,
+        "timestampMs": 36488,
+        "confidence": null
+      },
+      {
+        "text": "other",
+        "startMs": 36622,
+        "endMs": 36866,
+        "timestampMs": 36622,
+        "confidence": null
+      },
+      {
+        "text": "side",
+        "startMs": 36866,
+        "endMs": 37268,
+        "timestampMs": 36866,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "of internet culture: suspicion",
+    "startMs": 37268,
+    "endMs": 39143,
+    "timestampMs": 37268,
+    "confidence": null,
+    "words": [
+      {
+        "text": "of",
+        "startMs": 37268,
+        "endMs": 37365,
+        "timestampMs": 37268,
+        "confidence": null
+      },
+      {
+        "text": "internet",
+        "startMs": 37377,
+        "endMs": 37694,
+        "timestampMs": 37377,
+        "confidence": null
+      },
+      {
+        "text": "culture:",
+        "startMs": 37694,
+        "endMs": 38120,
+        "timestampMs": 37694,
+        "confidence": null
+      },
+      {
+        "text": "suspicion",
+        "startMs": 38498,
+        "endMs": 39131,
+        "timestampMs": 38498,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "instead of celebrity.",
+    "startMs": 39143,
+    "endMs": 40347,
+    "timestampMs": 39143,
+    "confidence": null,
+    "words": [
+      {
+        "text": "instead",
+        "startMs": 39143,
+        "endMs": 39594,
+        "timestampMs": 39143,
+        "confidence": null
+      },
+      {
+        "text": "of",
+        "startMs": 39594,
+        "endMs": 39642,
+        "timestampMs": 39594,
+        "confidence": null
+      },
+      {
+        "text": "celebrity.",
+        "startMs": 39654,
+        "endMs": 40227,
+        "timestampMs": 39654,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "Here's my read.",
+    "startMs": 40617,
+    "endMs": 41358,
+    "timestampMs": 40617,
+    "confidence": null,
+    "words": [
+      {
+        "text": "Here's",
+        "startMs": 40617,
+        "endMs": 40763,
+        "timestampMs": 40617,
+        "confidence": null
+      },
+      {
+        "text": "my",
+        "startMs": 40775,
+        "endMs": 40921,
+        "timestampMs": 40775,
+        "confidence": null
+      },
+      {
+        "text": "read.",
+        "startMs": 40921,
+        "endMs": 41238,
+        "timestampMs": 40921,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "These aren't just jokes",
+    "startMs": 41640,
+    "endMs": 42638,
+    "timestampMs": 41640,
+    "confidence": null,
+    "words": [
+      {
+        "text": "These",
+        "startMs": 41640,
+        "endMs": 41810,
+        "timestampMs": 41640,
+        "confidence": null
+      },
+      {
+        "text": "aren't",
+        "startMs": 41822,
+        "endMs": 41968,
+        "timestampMs": 41822,
+        "confidence": null
+      },
+      {
+        "text": "just",
+        "startMs": 41968,
+        "endMs": 42236,
+        "timestampMs": 41968,
+        "confidence": null
+      },
+      {
+        "text": "jokes",
+        "startMs": 42248,
+        "endMs": 42626,
+        "timestampMs": 42248,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "about Florida.",
+    "startMs": 42638,
+    "endMs": 43562,
+    "timestampMs": 42638,
+    "confidence": null,
+    "words": [
+      {
+        "text": "about",
+        "startMs": 42638,
+        "endMs": 42882,
+        "timestampMs": 42638,
+        "confidence": null
+      },
+      {
+        "text": "Florida.",
+        "startMs": 42894,
+        "endMs": 43442,
+        "timestampMs": 42894,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "They're two ways of",
+    "startMs": 43832,
+    "endMs": 44526,
+    "timestampMs": 43832,
+    "confidence": null,
+    "words": [
+      {
+        "text": "They're",
+        "startMs": 43832,
+        "endMs": 43917,
+        "timestampMs": 43832,
+        "confidence": null
+      },
+      {
+        "text": "two",
+        "startMs": 43929,
+        "endMs": 44136,
+        "timestampMs": 43929,
+        "confidence": null
+      },
+      {
+        "text": "ways",
+        "startMs": 44148,
+        "endMs": 44477,
+        "timestampMs": 44148,
+        "confidence": null
+      },
+      {
+        "text": "of",
+        "startMs": 44477,
+        "endMs": 44526,
+        "timestampMs": 44477,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "getting trapped by the",
+    "startMs": 44526,
+    "endMs": 45451,
+    "timestampMs": 44526,
+    "confidence": null,
+    "words": [
+      {
+        "text": "getting",
+        "startMs": 44526,
+        "endMs": 44709,
+        "timestampMs": 44526,
+        "confidence": null
+      },
+      {
+        "text": "trapped",
+        "startMs": 44721,
+        "endMs": 45208,
+        "timestampMs": 44721,
+        "confidence": null
+      },
+      {
+        "text": "by",
+        "startMs": 45208,
+        "endMs": 45354,
+        "timestampMs": 45208,
+        "confidence": null
+      },
+      {
+        "text": "the",
+        "startMs": 45366,
+        "endMs": 45451,
+        "timestampMs": 45366,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "same screen.",
+    "startMs": 45451,
+    "endMs": 46326,
+    "timestampMs": 45451,
+    "confidence": null,
+    "words": [
+      {
+        "text": "same",
+        "startMs": 45451,
+        "endMs": 45780,
+        "timestampMs": 45451,
+        "confidence": null
+      },
+      {
+        "text": "screen.",
+        "startMs": 45792,
+        "endMs": 46206,
+        "timestampMs": 45792,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "One person needs everyone",
+    "startMs": 46596,
+    "endMs": 48033,
+    "timestampMs": 46596,
+    "confidence": null,
+    "words": [
+      {
+        "text": "One",
+        "startMs": 46596,
+        "endMs": 46742,
+        "timestampMs": 46596,
+        "confidence": null
+      },
+      {
+        "text": "person",
+        "startMs": 46742,
+        "endMs": 47071,
+        "timestampMs": 46742,
+        "confidence": null
+      },
+      {
+        "text": "needs",
+        "startMs": 47083,
+        "endMs": 47510,
+        "timestampMs": 47083,
+        "confidence": null
+      },
+      {
+        "text": "everyone",
+        "startMs": 47680,
+        "endMs": 48033,
+        "timestampMs": 47680,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "watching.",
+    "startMs": 48033,
+    "endMs": 48616,
+    "timestampMs": 48033,
+    "confidence": null,
+    "words": [
+      {
+        "text": "watching.",
+        "startMs": 48033,
+        "endMs": 48496,
+        "timestampMs": 48033,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "Another can't stop looking.",
+    "startMs": 48886,
+    "endMs": 50053,
+    "timestampMs": 48886,
+    "confidence": null,
+    "words": [
+      {
+        "text": "Another",
+        "startMs": 48886,
+        "endMs": 49081,
+        "timestampMs": 48886,
+        "confidence": null
+      },
+      {
+        "text": "can't",
+        "startMs": 49081,
+        "endMs": 49312,
+        "timestampMs": 49081,
+        "confidence": null
+      },
+      {
+        "text": "stop",
+        "startMs": 49312,
+        "endMs": 49592,
+        "timestampMs": 49312,
+        "confidence": null
+      },
+      {
+        "text": "looking.",
+        "startMs": 49592,
+        "endMs": 49933,
+        "timestampMs": 49592,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "And us?",
+    "startMs": 50335,
+    "endMs": 50979,
+    "timestampMs": 50335,
+    "confidence": null,
+    "words": [
+      {
+        "text": "And",
+        "startMs": 50335,
+        "endMs": 50445,
+        "timestampMs": 50335,
+        "confidence": null
+      },
+      {
+        "text": "us?",
+        "startMs": 50445,
+        "endMs": 50859,
+        "timestampMs": 50445,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "We turn their world",
+    "startMs": 51261,
+    "endMs": 52162,
+    "timestampMs": 51261,
+    "confidence": null,
+    "words": [
+      {
+        "text": "We",
+        "startMs": 51261,
+        "endMs": 51346,
+        "timestampMs": 51261,
+        "confidence": null
+      },
+      {
+        "text": "turn",
+        "startMs": 51346,
+        "endMs": 51577,
+        "timestampMs": 51346,
+        "confidence": null
+      },
+      {
+        "text": "their",
+        "startMs": 51589,
+        "endMs": 51760,
+        "timestampMs": 51589,
+        "confidence": null
+      },
+      {
+        "text": "world",
+        "startMs": 51760,
+        "endMs": 52150,
+        "timestampMs": 51760,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "into clips, then scroll",
+    "startMs": 52162,
+    "endMs": 53867,
+    "timestampMs": 52162,
+    "confidence": null,
+    "words": [
+      {
+        "text": "into",
+        "startMs": 52162,
+        "endMs": 52320,
+        "timestampMs": 52162,
+        "confidence": null
+      },
+      {
+        "text": "clips,",
+        "startMs": 52320,
+        "endMs": 52892,
+        "timestampMs": 52320,
+        "confidence": null
+      },
+      {
+        "text": "then",
+        "startMs": 53173,
+        "endMs": 53343,
+        "timestampMs": 53173,
+        "confidence": null
+      },
+      {
+        "text": "scroll",
+        "startMs": 53355,
+        "endMs": 53867,
+        "timestampMs": 53355,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "straight to the next",
+    "startMs": 53867,
+    "endMs": 54780,
+    "timestampMs": 53867,
+    "confidence": null,
+    "words": [
+      {
+        "text": "straight",
+        "startMs": 53867,
+        "endMs": 54354,
+        "timestampMs": 53867,
+        "confidence": null
+      },
+      {
+        "text": "to",
+        "startMs": 54354,
+        "endMs": 54427,
+        "timestampMs": 54354,
+        "confidence": null
+      },
+      {
+        "text": "the",
+        "startMs": 54439,
+        "endMs": 54512,
+        "timestampMs": 54439,
+        "confidence": null
+      },
+      {
+        "text": "next",
+        "startMs": 54512,
+        "endMs": 54780,
+        "timestampMs": 54512,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "one.",
+    "startMs": 54780,
+    "endMs": 55144,
+    "timestampMs": 54780,
+    "confidence": null,
+    "words": [
+      {
+        "text": "one.",
+        "startMs": 54780,
+        "endMs": 55024,
+        "timestampMs": 54780,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "So...",
+    "startMs": 55426,
+    "endMs": 55826,
+    "timestampMs": 55426,
+    "confidence": null,
+    "words": [
+      {
+        "text": "So...",
+        "startMs": 55426,
+        "endMs": 55706,
+        "timestampMs": 55426,
+        "confidence": null
+      }
+    ]
+  },
+  {
+    "text": "who's the punchline?",
+    "startMs": 56168,
+    "endMs": 57080,
+    "timestampMs": 56168,
+    "confidence": null,
+    "words": [
+      {
+        "text": "who's",
+        "startMs": 56168,
+        "endMs": 56327,
+        "timestampMs": 56168,
+        "confidence": null
+      },
+      {
+        "text": "the",
+        "startMs": 56327,
+        "endMs": 56412,
+        "timestampMs": 56327,
+        "confidence": null
+      },
+      {
+        "text": "punchline?",
+        "startMs": 56412,
+        "endMs": 56960,
+        "timestampMs": 56412,
+        "confidence": null
+      }
+    ]
+  }
+]

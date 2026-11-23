@@ -1,0 +1,1024 @@
+[
+  {
+    "text": "GTA",
+    "startMs": 92.583,
+    "endMs": 636.583,
+    "timestampMs": 92.583,
+    "confidence": null
+  },
+  {
+    "text": "six",
+    "startMs": 763.875,
+    "endMs": 1111.083,
+    "timestampMs": 763.875,
+    "confidence": null
+  },
+  {
+    "text": "is",
+    "startMs": 1180.541,
+    "endMs": 1296.291,
+    "timestampMs": 1180.541,
+    "confidence": null
+  },
+  {
+    "text": "laughing",
+    "startMs": 1296.291,
+    "endMs": 1747.666,
+    "timestampMs": 1296.291,
+    "confidence": null
+  },
+  {
+    "text": "at",
+    "startMs": 1759.25,
+    "endMs": 1851.833,
+    "timestampMs": 1759.25,
+    "confidence": null
+  },
+  {
+    "text": "you",
+    "startMs": 1851.833,
+    "endMs": 2060.166,
+    "timestampMs": 1851.833,
+    "confidence": null
+  },
+  {
+    "text": "And",
+    "startMs": 2430.541,
+    "endMs": 2488.416,
+    "timestampMs": 2430.541,
+    "confidence": null
+  },
+  {
+    "text": "the",
+    "startMs": 2488.416,
+    "endMs": 2569.416,
+    "timestampMs": 2488.416,
+    "confidence": null
+  },
+  {
+    "text": "giveaway",
+    "startMs": 2581.0,
+    "endMs": 3067.125,
+    "timestampMs": 2581.0,
+    "confidence": null
+  },
+  {
+    "text": "is",
+    "startMs": 3125.0,
+    "endMs": 3252.333,
+    "timestampMs": 3125.0,
+    "confidence": null
+  },
+  {
+    "text": "the",
+    "startMs": 3252.333,
+    "endMs": 3310.208,
+    "timestampMs": 3252.333,
+    "confidence": null
+  },
+  {
+    "text": "phone",
+    "startMs": 3321.75,
+    "endMs": 3750.0,
+    "timestampMs": 3321.75,
+    "confidence": null
+  },
+  {
+    "text": "Look",
+    "startMs": 4120.375,
+    "endMs": 4247.708,
+    "timestampMs": 4120.375,
+    "confidence": null
+  },
+  {
+    "text": "past",
+    "startMs": 4259.25,
+    "endMs": 4594.916,
+    "timestampMs": 4259.25,
+    "confidence": null
+  },
+  {
+    "text": "Leonida's",
+    "startMs": 4594.916,
+    "endMs": 5057.874,
+    "timestampMs": 4594.916,
+    "confidence": null
+  },
+  {
+    "text": "neon",
+    "startMs": 5057.875,
+    "endMs": 5613.416,
+    "timestampMs": 5057.875,
+    "confidence": null
+  },
+  {
+    "text": "and",
+    "startMs": 5763.875,
+    "endMs": 5891.208,
+    "timestampMs": 5763.875,
+    "confidence": null
+  },
+  {
+    "text": "chaos",
+    "startMs": 5891.208,
+    "endMs": 6620.374,
+    "timestampMs": 5891.208,
+    "confidence": null
+  },
+  {
+    "text": "Rockstar's",
+    "startMs": 7002.333,
+    "endMs": 7430.541,
+    "timestampMs": 7002.333,
+    "confidence": null
+  },
+  {
+    "text": "version",
+    "startMs": 7430.541,
+    "endMs": 7696.749,
+    "timestampMs": 7430.541,
+    "confidence": null
+  },
+  {
+    "text": "of",
+    "startMs": 7696.75,
+    "endMs": 7743.0409,
+    "timestampMs": 7696.75,
+    "confidence": null
+  },
+  {
+    "text": "Florida",
+    "startMs": 7743.041,
+    "endMs": 8275.457,
+    "timestampMs": 7743.041,
+    "confidence": null
+  },
+  {
+    "text": "turns",
+    "startMs": 8483.791,
+    "endMs": 8888.874,
+    "timestampMs": 8483.791,
+    "confidence": null
+  },
+  {
+    "text": "ordinary",
+    "startMs": 8900.458,
+    "endMs": 9351.833,
+    "timestampMs": 8900.458,
+    "confidence": null
+  },
+  {
+    "text": "life",
+    "startMs": 9351.833,
+    "endMs": 9814.791,
+    "timestampMs": 9351.833,
+    "confidence": null
+  },
+  {
+    "text": "into",
+    "startMs": 9884.25,
+    "endMs": 10023.125,
+    "timestampMs": 9884.25,
+    "confidence": null
+  },
+  {
+    "text": "something",
+    "startMs": 10034.708,
+    "endMs": 10532.374,
+    "timestampMs": 10034.708,
+    "confidence": null
+  },
+  {
+    "text": "to",
+    "startMs": 10544.0,
+    "endMs": 10648.166,
+    "timestampMs": 10544.0,
+    "confidence": null
+  },
+  {
+    "text": "watch",
+    "startMs": 10659.708,
+    "endMs": 11215.249,
+    "timestampMs": 10659.708,
+    "confidence": null
+  },
+  {
+    "text": "judge",
+    "startMs": 11377.333,
+    "endMs": 11851.874,
+    "timestampMs": 11377.333,
+    "confidence": null
+  },
+  {
+    "text": "and",
+    "startMs": 12222.208,
+    "endMs": 12314.791,
+    "timestampMs": 12222.208,
+    "confidence": null
+  },
+  {
+    "text": "share",
+    "startMs": 12326.375,
+    "endMs": 12835.625,
+    "timestampMs": 12326.375,
+    "confidence": null
+  },
+  {
+    "text": "But",
+    "startMs": 13217.583,
+    "endMs": 13275.458,
+    "timestampMs": 13217.583,
+    "confidence": null
+  },
+  {
+    "text": "the",
+    "startMs": 13275.458,
+    "endMs": 13333.333,
+    "timestampMs": 13275.458,
+    "confidence": null
+  },
+  {
+    "text": "joke",
+    "startMs": 13344.916,
+    "endMs": 13692.124,
+    "timestampMs": 13344.916,
+    "confidence": null
+  },
+  {
+    "text": "goes",
+    "startMs": 13796.291,
+    "endMs": 14074.082,
+    "timestampMs": 13796.291,
+    "confidence": null
+  },
+  {
+    "text": "deeper",
+    "startMs": 14131.958,
+    "endMs": 14409.708,
+    "timestampMs": 14131.958,
+    "confidence": null
+  },
+  {
+    "text": "than",
+    "startMs": 14409.708,
+    "endMs": 14537.041,
+    "timestampMs": 14409.708,
+    "confidence": null
+  },
+  {
+    "text": "wild",
+    "startMs": 14537.041,
+    "endMs": 14907.416,
+    "timestampMs": 14537.041,
+    "confidence": null
+  },
+  {
+    "text": "people",
+    "startMs": 14907.416,
+    "endMs": 15208.332,
+    "timestampMs": 14907.416,
+    "confidence": null
+  },
+  {
+    "text": "doing",
+    "startMs": 15208.333,
+    "endMs": 15462.958,
+    "timestampMs": 15208.333,
+    "confidence": null
+  },
+  {
+    "text": "wild",
+    "startMs": 15462.958,
+    "endMs": 15833.333,
+    "timestampMs": 15462.958,
+    "confidence": null
+  },
+  {
+    "text": "things",
+    "startMs": 15833.333,
+    "endMs": 16354.166,
+    "timestampMs": 15833.333,
+    "confidence": null
+  },
+  {
+    "text": "Take",
+    "startMs": 16736.125,
+    "endMs": 16921.291,
+    "timestampMs": 16736.125,
+    "confidence": null
+  },
+  {
+    "text": "Real",
+    "startMs": 16932.875,
+    "endMs": 17222.208,
+    "timestampMs": 16932.875,
+    "confidence": null
+  },
+  {
+    "text": "Dimez",
+    "startMs": 17222.208,
+    "endMs": 17766.208,
+    "timestampMs": 17222.208,
+    "confidence": null
+  },
+  {
+    "text": "Rockstar",
+    "startMs": 18148.166,
+    "endMs": 18599.541,
+    "timestampMs": 18148.166,
+    "confidence": null
+  },
+  {
+    "text": "describes",
+    "startMs": 18599.541,
+    "endMs": 19027.791,
+    "timestampMs": 18599.541,
+    "confidence": null
+  },
+  {
+    "text": "a",
+    "startMs": 19027.791,
+    "endMs": 19074.0819,
+    "timestampMs": 19027.791,
+    "confidence": null
+  },
+  {
+    "text": "rap",
+    "startMs": 19074.083,
+    "endMs": 19467.583,
+    "timestampMs": 19074.083,
+    "confidence": null
+  },
+  {
+    "text": "duo",
+    "startMs": 19560.166,
+    "endMs": 19988.416,
+    "timestampMs": 19560.166,
+    "confidence": null
+  },
+  {
+    "text": "turning",
+    "startMs": 19988.416,
+    "endMs": 20324.082,
+    "timestampMs": 19988.416,
+    "confidence": null
+  },
+  {
+    "text": "street",
+    "startMs": 20335.666,
+    "endMs": 20787.041,
+    "timestampMs": 20335.666,
+    "confidence": null
+  },
+  {
+    "text": "hustles",
+    "startMs": 20798.625,
+    "endMs": 21423.625,
+    "timestampMs": 20798.625,
+    "confidence": null
+  },
+  {
+    "text": "catchy",
+    "startMs": 21655.083,
+    "endMs": 22002.291,
+    "timestampMs": 21655.083,
+    "confidence": null
+  },
+  {
+    "text": "tracks",
+    "startMs": 22002.333,
+    "endMs": 22627.333,
+    "timestampMs": 22002.333,
+    "confidence": null
+  },
+  {
+    "text": "and",
+    "startMs": 22812.5,
+    "endMs": 22905.083,
+    "timestampMs": 22812.5,
+    "confidence": null
+  },
+  {
+    "text": "relentless",
+    "startMs": 22916.666,
+    "endMs": 23368.041,
+    "timestampMs": 22916.666,
+    "confidence": null
+  },
+  {
+    "text": "social",
+    "startMs": 23368.041,
+    "endMs": 23692.124,
+    "timestampMs": 23368.041,
+    "confidence": null
+  },
+  {
+    "text": "media",
+    "startMs": 23692.125,
+    "endMs": 24108.791,
+    "timestampMs": 23692.125,
+    "confidence": null
+  },
+  {
+    "text": "into",
+    "startMs": 24340.291,
+    "endMs": 24525.457,
+    "timestampMs": 24340.291,
+    "confidence": null
+  },
+  {
+    "text": "a",
+    "startMs": 24525.458,
+    "endMs": 24571.7489,
+    "timestampMs": 24525.458,
+    "confidence": null
+  },
+  {
+    "text": "shot",
+    "startMs": 24571.75,
+    "endMs": 24895.833,
+    "timestampMs": 24571.75,
+    "confidence": null
+  },
+  {
+    "text": "at",
+    "startMs": 24895.833,
+    "endMs": 24965.291,
+    "timestampMs": 24895.833,
+    "confidence": null
+  },
+  {
+    "text": "fame",
+    "startMs": 24976.833,
+    "endMs": 25312.499,
+    "timestampMs": 24976.833,
+    "confidence": null
+  },
+  {
+    "text": "Attention",
+    "startMs": 25682.875,
+    "endMs": 26169.0,
+    "timestampMs": 25682.875,
+    "confidence": null
+  },
+  {
+    "text": "is",
+    "startMs": 26273.166,
+    "endMs": 26377.332,
+    "timestampMs": 26273.166,
+    "confidence": null
+  },
+  {
+    "text": "part",
+    "startMs": 26388.875,
+    "endMs": 26655.083,
+    "timestampMs": 26388.875,
+    "confidence": null
+  },
+  {
+    "text": "of",
+    "startMs": 26655.083,
+    "endMs": 26701.3739,
+    "timestampMs": 26655.083,
+    "confidence": null
+  },
+  {
+    "text": "the",
+    "startMs": 26701.375,
+    "endMs": 26747.6659,
+    "timestampMs": 26701.375,
+    "confidence": null
+  },
+  {
+    "text": "hustle",
+    "startMs": 26747.666,
+    "endMs": 27187.499,
+    "timestampMs": 26747.666,
+    "confidence": null
+  },
+  {
+    "text": "Then",
+    "startMs": 27569.458,
+    "endMs": 27662.041,
+    "timestampMs": 27569.458,
+    "confidence": null
+  },
+  {
+    "text": "there's",
+    "startMs": 27673.625,
+    "endMs": 27800.916,
+    "timestampMs": 27673.625,
+    "confidence": null
+  },
+  {
+    "text": "Cal",
+    "startMs": 27800.916,
+    "endMs": 28020.832,
+    "timestampMs": 27800.916,
+    "confidence": null
+  },
+  {
+    "text": "Hampton",
+    "startMs": 28032.416,
+    "endMs": 28472.249,
+    "timestampMs": 28032.416,
+    "confidence": null
+  },
+  {
+    "text": "He",
+    "startMs": 28865.75,
+    "endMs": 28935.208,
+    "timestampMs": 28865.75,
+    "confidence": null
+  },
+  {
+    "text": "hides",
+    "startMs": 28946.75,
+    "endMs": 29224.541,
+    "timestampMs": 28946.75,
+    "confidence": null
+  },
+  {
+    "text": "at",
+    "startMs": 29224.541,
+    "endMs": 29282.416,
+    "timestampMs": 29224.541,
+    "confidence": null
+  },
+  {
+    "text": "home",
+    "startMs": 29294.0,
+    "endMs": 29652.791,
+    "timestampMs": 29294.0,
+    "confidence": null
+  },
+  {
+    "text": "monitoring",
+    "startMs": 30057.875,
+    "endMs": 30590.291,
+    "timestampMs": 30057.875,
+    "confidence": null
+  },
+  {
+    "text": "Coast",
+    "startMs": 30601.833,
+    "endMs": 30972.208,
+    "timestampMs": 30601.833,
+    "confidence": null
+  },
+  {
+    "text": "Guard",
+    "startMs": 30972.208,
+    "endMs": 31168.958,
+    "timestampMs": 30972.208,
+    "confidence": null
+  },
+  {
+    "text": "communications",
+    "startMs": 31180.541,
+    "endMs": 31967.582,
+    "timestampMs": 31180.541,
+    "confidence": null
+  },
+  {
+    "text": "with",
+    "startMs": 32175.916,
+    "endMs": 32314.791,
+    "timestampMs": 32175.916,
+    "confidence": null
+  },
+  {
+    "text": "private",
+    "startMs": 32326.375,
+    "endMs": 32777.75,
+    "timestampMs": 32326.375,
+    "confidence": null
+  },
+  {
+    "text": "browser",
+    "startMs": 32777.791,
+    "endMs": 33171.291,
+    "timestampMs": 32777.791,
+    "confidence": null
+  },
+  {
+    "text": "tabs",
+    "startMs": 33171.291,
+    "endMs": 33587.957,
+    "timestampMs": 33171.291,
+    "confidence": null
+  },
+  {
+    "text": "open",
+    "startMs": 33669.0,
+    "endMs": 33993.083,
+    "timestampMs": 33669.0,
+    "confidence": null
+  },
+  {
+    "text": "He's",
+    "startMs": 34398.166,
+    "endMs": 34525.457,
+    "timestampMs": 34398.166,
+    "confidence": null
+  },
+  {
+    "text": "the",
+    "startMs": 34525.458,
+    "endMs": 34641.208,
+    "timestampMs": 34525.458,
+    "confidence": null
+  },
+  {
+    "text": "other",
+    "startMs": 34652.791,
+    "endMs": 34884.249,
+    "timestampMs": 34652.791,
+    "confidence": null
+  },
+  {
+    "text": "side",
+    "startMs": 34884.25,
+    "endMs": 35266.208,
+    "timestampMs": 34884.25,
+    "confidence": null
+  },
+  {
+    "text": "of",
+    "startMs": 35266.208,
+    "endMs": 35358.791,
+    "timestampMs": 35266.208,
+    "confidence": null
+  },
+  {
+    "text": "internet",
+    "startMs": 35370.375,
+    "endMs": 35671.291,
+    "timestampMs": 35370.375,
+    "confidence": null
+  },
+  {
+    "text": "culture",
+    "startMs": 35671.291,
+    "endMs": 36076.374,
+    "timestampMs": 35671.291,
+    "confidence": null
+  },
+  {
+    "text": "suspicion",
+    "startMs": 36435.166,
+    "endMs": 37036.999,
+    "timestampMs": 36435.166,
+    "confidence": null
+  },
+  {
+    "text": "instead",
+    "startMs": 37048.625,
+    "endMs": 37476.833,
+    "timestampMs": 37048.625,
+    "confidence": null
+  },
+  {
+    "text": "of",
+    "startMs": 37476.833,
+    "endMs": 37523.1239,
+    "timestampMs": 37476.833,
+    "confidence": null
+  },
+  {
+    "text": "celebrity",
+    "startMs": 37534.708,
+    "endMs": 38078.708,
+    "timestampMs": 37534.708,
+    "confidence": null
+  },
+  {
+    "text": "Here's",
+    "startMs": 38449.083,
+    "endMs": 38587.958,
+    "timestampMs": 38449.083,
+    "confidence": null
+  },
+  {
+    "text": "my",
+    "startMs": 38599.541,
+    "endMs": 38738.416,
+    "timestampMs": 38599.541,
+    "confidence": null
+  },
+  {
+    "text": "read",
+    "startMs": 38738.416,
+    "endMs": 39039.332,
+    "timestampMs": 38738.416,
+    "confidence": null
+  },
+  {
+    "text": "These",
+    "startMs": 39421.291,
+    "endMs": 39583.332,
+    "timestampMs": 39421.291,
+    "confidence": null
+  },
+  {
+    "text": "aren't",
+    "startMs": 39594.916,
+    "endMs": 39733.791,
+    "timestampMs": 39594.916,
+    "confidence": null
+  },
+  {
+    "text": "just",
+    "startMs": 39733.791,
+    "endMs": 39988.416,
+    "timestampMs": 39733.791,
+    "confidence": null
+  },
+  {
+    "text": "jokes",
+    "startMs": 40000.0,
+    "endMs": 40358.791,
+    "timestampMs": 40000.0,
+    "confidence": null
+  },
+  {
+    "text": "about",
+    "startMs": 40370.375,
+    "endMs": 40601.875,
+    "timestampMs": 40370.375,
+    "confidence": null
+  },
+  {
+    "text": "Florida",
+    "startMs": 40613.416,
+    "endMs": 41134.249,
+    "timestampMs": 40613.416,
+    "confidence": null
+  },
+  {
+    "text": "They're",
+    "startMs": 41504.625,
+    "endMs": 41585.625,
+    "timestampMs": 41504.625,
+    "confidence": null
+  },
+  {
+    "text": "two",
+    "startMs": 41597.208,
+    "endMs": 41793.958,
+    "timestampMs": 41597.208,
+    "confidence": null
+  },
+  {
+    "text": "ways",
+    "startMs": 41805.541,
+    "endMs": 42118.041,
+    "timestampMs": 41805.541,
+    "confidence": null
+  },
+  {
+    "text": "of",
+    "startMs": 42118.041,
+    "endMs": 42164.3319,
+    "timestampMs": 42118.041,
+    "confidence": null
+  },
+  {
+    "text": "getting",
+    "startMs": 42164.333,
+    "endMs": 42337.958,
+    "timestampMs": 42164.333,
+    "confidence": null
+  },
+  {
+    "text": "trapped",
+    "startMs": 42349.541,
+    "endMs": 42812.499,
+    "timestampMs": 42349.541,
+    "confidence": null
+  },
+  {
+    "text": "by",
+    "startMs": 42812.5,
+    "endMs": 42951.375,
+    "timestampMs": 42812.5,
+    "confidence": null
+  },
+  {
+    "text": "the",
+    "startMs": 42962.958,
+    "endMs": 43043.958,
+    "timestampMs": 42962.958,
+    "confidence": null
+  },
+  {
+    "text": "same",
+    "startMs": 43044.0,
+    "endMs": 43356.5,
+    "timestampMs": 43044.0,
+    "confidence": null
+  },
+  {
+    "text": "screen",
+    "startMs": 43368.041,
+    "endMs": 43761.541,
+    "timestampMs": 43368.041,
+    "confidence": null
+  },
+  {
+    "text": "One",
+    "startMs": 44131.958,
+    "endMs": 44270.833,
+    "timestampMs": 44131.958,
+    "confidence": null
+  },
+  {
+    "text": "person",
+    "startMs": 44270.833,
+    "endMs": 44583.333,
+    "timestampMs": 44270.833,
+    "confidence": null
+  },
+  {
+    "text": "needs",
+    "startMs": 44594.916,
+    "endMs": 44999.999,
+    "timestampMs": 44594.916,
+    "confidence": null
+  },
+  {
+    "text": "everyone",
+    "startMs": 45162.041,
+    "endMs": 45497.666,
+    "timestampMs": 45162.041,
+    "confidence": null
+  },
+  {
+    "text": "watching",
+    "startMs": 45497.666,
+    "endMs": 45937.499,
+    "timestampMs": 45497.666,
+    "confidence": null
+  },
+  {
+    "text": "Another",
+    "startMs": 46307.875,
+    "endMs": 46493.041,
+    "timestampMs": 46307.875,
+    "confidence": null
+  },
+  {
+    "text": "can't",
+    "startMs": 46493.041,
+    "endMs": 46712.957,
+    "timestampMs": 46493.041,
+    "confidence": null
+  },
+  {
+    "text": "stop",
+    "startMs": 46712.958,
+    "endMs": 46979.166,
+    "timestampMs": 46712.958,
+    "confidence": null
+  },
+  {
+    "text": "looking",
+    "startMs": 46979.166,
+    "endMs": 47303.249,
+    "timestampMs": 46979.166,
+    "confidence": null
+  },
+  {
+    "text": "And",
+    "startMs": 47685.166,
+    "endMs": 47789.332,
+    "timestampMs": 47685.166,
+    "confidence": null
+  },
+  {
+    "text": "us",
+    "startMs": 47789.333,
+    "endMs": 48182.833,
+    "timestampMs": 47789.333,
+    "confidence": null
+  },
+  {
+    "text": "We",
+    "startMs": 48564.833,
+    "endMs": 48645.833,
+    "timestampMs": 48564.833,
+    "confidence": null
+  },
+  {
+    "text": "turn",
+    "startMs": 48645.833,
+    "endMs": 48865.749,
+    "timestampMs": 48645.833,
+    "confidence": null
+  },
+  {
+    "text": "their",
+    "startMs": 48877.333,
+    "endMs": 49039.333,
+    "timestampMs": 48877.333,
+    "confidence": null
+  },
+  {
+    "text": "world",
+    "startMs": 49039.333,
+    "endMs": 49409.708,
+    "timestampMs": 49039.333,
+    "confidence": null
+  },
+  {
+    "text": "into",
+    "startMs": 49421.291,
+    "endMs": 49571.749,
+    "timestampMs": 49421.291,
+    "confidence": null
+  },
+  {
+    "text": "clips",
+    "startMs": 49571.75,
+    "endMs": 50115.75,
+    "timestampMs": 49571.75,
+    "confidence": null
+  },
+  {
+    "text": "then",
+    "startMs": 50381.958,
+    "endMs": 50543.999,
+    "timestampMs": 50381.958,
+    "confidence": null
+  },
+  {
+    "text": "scroll",
+    "startMs": 50555.541,
+    "endMs": 51041.666,
+    "timestampMs": 50555.541,
+    "confidence": null
+  },
+  {
+    "text": "straight",
+    "startMs": 51041.666,
+    "endMs": 51504.624,
+    "timestampMs": 51041.666,
+    "confidence": null
+  },
+  {
+    "text": "to",
+    "startMs": 51504.625,
+    "endMs": 51574.083,
+    "timestampMs": 51504.625,
+    "confidence": null
+  },
+  {
+    "text": "the",
+    "startMs": 51585.666,
+    "endMs": 51655.082,
+    "timestampMs": 51585.666,
+    "confidence": null
+  },
+  {
+    "text": "next",
+    "startMs": 51655.083,
+    "endMs": 51909.708,
+    "timestampMs": 51655.083,
+    "confidence": null
+  },
+  {
+    "text": "one",
+    "startMs": 51909.708,
+    "endMs": 52141.208,
+    "timestampMs": 51909.708,
+    "confidence": null
+  },
+  {
+    "text": "So",
+    "startMs": 52523.166,
+    "endMs": 52789.374,
+    "timestampMs": 52523.166,
+    "confidence": null
+  },
+  {
+    "text": "who's",
+    "startMs": 53229.166,
+    "endMs": 53379.624,
+    "timestampMs": 53229.166,
+    "confidence": null
+  },
+  {
+    "text": "the",
+    "startMs": 53379.625,
+    "endMs": 53460.625,
+    "timestampMs": 53379.625,
+    "confidence": null
+  },
+  {
+    "text": "punchline",
+    "startMs": 53460.666,
+    "endMs": 53981.499,
+    "timestampMs": 53460.666,
+    "confidence": null
+  }
+]

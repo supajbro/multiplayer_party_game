@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_carPrefab: {fileID: 4713296498847513284, guid: a94d73f5c64db8943bab651301620ed2, type: 3}
   m_drivingSide: 0
-  m_maximumActiveVehicles: 100
+  m_maximumActiveVehicles: 50
   m_spawnInterval: 1
   m_minimumPlayerSpawnDistance: 24
   m_despawnDistance: 450

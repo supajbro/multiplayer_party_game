@@ -110,6 +110,27 @@ MonoBehaviour:
   m_minimumUpNormal: 0.55
   m_bounceCooldown: 0.2
   m_groundOffset: 0.01
+  m_jumpingSurface: {fileID: 2242276033648990313}
+  m_deformationEnabled: 1
+  m_playerDeformationRadius: 1.35
+  m_playerDepression: 0.16
+  m_landingDepressionPerSpeed: 0.025
+  m_maximumDepression: 0.65
+  m_maximumRebound: 0.08
+  m_springFrequency: 3
+  m_springDamping: 0.65
+  m_impactLifetime: 0.65
+  m_impactSpreadSpeed: 1.5
+  m_playerContactDistance: 0.25
+  m_vehicleBounceEnabled: 1
+  m_vehicleBounceHeight: 2.5
+  m_vehicleBounceCooldown: 0.8
+  m_vehicleMaximumUpwardSpeed: 0.5
+  m_vehicleContactDistance: 1
+  m_vehicleMaximumPenetration: 1.5
+  m_vehicleMinimumUpNormal: 0.5
+  m_vehicleDeformationRadius: 2.5
+  m_vehicleDepression: 0.35
 --- !u!114 &4923580153266723626
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -22,11 +22,14 @@ async def main():
     OUT.mkdir(parents=True,exist_ok=True);SRC.mkdir(parents=True,exist_ok=True)
     voice='en-US-AndrewMultilingualNeural'
     words=[]
-    speech=edge_tts.Communicate(SCRIPT,voice,rate='+8%',pitch='-2Hz',boundary='WordBoundary')
-    with (OUT/'narration.mp3').open('wb') as audio:
-        async for c in speech.stream():
-            if c['type']=='audio':audio.write(c['data'])
-            elif c['type']=='WordBoundary':words.append(dict(text=c['text'],startMs=c['offset']/10000,endMs=(c['offset']+c['duration'])/10000,timestampMs=c['offset']/10000,confidence=None))
+    if (OUT/'raw-words.json').exists():
+        words=json.loads((OUT/'raw-words.json').read_text())
+    else:
+        speech=edge_tts.Communicate(SCRIPT,voice,rate='+8%',pitch='-2Hz',boundary='WordBoundary')
+        with (OUT/'narration.mp3').open('wb') as audio:
+            async for c in speech.stream():
+                if c['type']=='audio':audio.write(c['data'])
+                elif c['type']=='WordBoundary':words.append(dict(text=c['text'],startMs=c['offset']/10000,endMs=(c['offset']+c['duration'])/10000,timestampMs=c['offset']/10000,confidence=None))
     (OUT/'raw-words.json').write_text(json.dumps(words,indent=2))
     # Fit within 58 seconds with a small initial impact and final breathing room.
     speed=words[-1]['endMs']/56800
@@ -39,7 +42,11 @@ async def main():
         for i in range(len(tokens)-len(target)+1):
             if tokens[i:i+len(target)]==target:return round(words[i]['startMs']*.03)
         raise ValueError(phrase)
-    cues={k:cue(p) for k,p in {'setup':'Look past','dimez':'Take Real Dimez','attention':'Attention is','cal':"Then there","interpretation":"Here's my read","two":"One person","audience":"And us","ending":"So"}.items()}
+    cues={k:cue(p) for k,p in {'setup':'Look past','dimez':'Take Real Dimez','attention':'Attention is','cal':"Then there's","interpretation":"Here's my read","two":"One person","audience":"And us","ending":"So"}.items()}
+    # Retain authored punctuation without altering provider word boundaries.
+    scripted=SCRIPT.split()
+    if len(scripted)==len(words) and all(norm(a)==norm(b['text']) for a,b in zip(scripted,words)):
+        for text,w in zip(scripted,words):w['text']=text
     groups=[];group=[]
     for i,w in enumerate(words):
         group.append(w)

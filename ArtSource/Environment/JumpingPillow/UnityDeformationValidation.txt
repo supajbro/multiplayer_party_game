@@ -1,0 +1,14 @@
+Local pillow deformation and vehicle bounce validation
+PASS: saved surface reference, existing Inspector bounce height preserved, no pillow NetworkObject.
+PASS: simultaneous local and disabled remote avatars depress separate regions; pinned edge, anchor, UVs, topology, colours and static collider preserved.
+PASS: landing impulse produces a deeper local depression then recovers to rest.
+PASS: TruckController (1800 kg) bounced, horizontal momentum retained; upward speed=4.756073
+PASS: TrafficVehicleController (100 kg) bounced, horizontal momentum retained; upward speed=6.807371
+PASS: MagneticHoverboardController (100 kg) bounced, horizontal momentum retained; upward speed=7.789099
+PASS: SledController (35 kg) bounced, horizontal momentum retained; upward speed=6.769249
+PASS: kinematic remote vehicle deforms locally without receiving a physics impulse.
+PASS: uninitialized/non-authoritative network vehicle receives no local physics impulse.
+PASS: ground-following vehicle entering the raised crown is detected and bounced.
+PASS: all local deformation and vehicle bounce checks.
+
+Validated in isolated Unity 6000.3.11f1 Play mode. Remote avatars were represented by disabled motors/controllers; vehicle tests used offline vehicle controllers and kinematic/uninitialized replicas. A live multi-client session and occupied/AI driving behavior were not exercised. Existing server vehicle launch state and transform replication are reused unchanged.

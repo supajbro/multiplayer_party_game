@@ -1,0 +1,4 @@
+Jumping pillow validation
+PASS: saved prefab, toon materials, source isolation, repeated fitting and collider alignment at -8 / 0 / 72 m on uneven slopes.
+PASS: two simultaneous CharacterControllers repeatedly bounced; rises=3.478355, 3.478355; side, underside, ascending and walking contacts rejected.
+PASS: all jumping pillow checks.

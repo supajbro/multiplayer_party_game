@@ -43,6 +43,7 @@ public static class ValidateJumpingPillow
     {
         File.WriteAllText(Report, "Jumping pillow validation\n");
         JumpingPillowAuthoring.Build();
+        JumpingPillowAuthoring.AssignDeformationSurface();
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(JumpingPillowAuthoring.PrefabPath);
         Require(prefab != null, "Saved prefab missing");
         Require(prefab.GetComponentsInChildren<MeshRenderer>().Length == 2, "Expected surface and anchor renderers");
@@ -109,6 +110,7 @@ public static class ValidateJumpingPillow
         var prefab=AssetDatabase.LoadAssetAtPath<GameObject>(JumpingPillowAuthoring.PrefabPath);
         var root=Object.Instantiate(prefab,new Vector3(0,12,0),Quaternion.identity);
         var pillow=root.GetComponent<JumpingPillow>();
+        Set(pillow,"m_bounceHeight",3.5f); // Isolate test tuning; preserve the user's saved bounce height.
         pillow.FitToTerrain(p=>12f);
         Physics.SyncTransforms();
         var players=new ThirdPersonPlayerController[2];

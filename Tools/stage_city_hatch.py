@@ -4,7 +4,22 @@ import shutil,re,uuid,json
 ROOT=Path(__file__).resolve().parents[1]
 STAGE=ROOT/'.utmp/cityhatch-unity'
 for folder in ['Packages','ProjectSettings','Assets/Editor']:(STAGE/folder).mkdir(parents=True,exist_ok=True)
-shutil.copy2(ROOT/'.utmp/fountain-unity/Packages/manifest.json',STAGE/'Packages/manifest.json')
+# Resolve the installed packages locally; no other task's scratch project needed.
+packages={}
+for manifest in (ROOT/'Library/PackageCache').glob('*/package.json'):
+    info=json.loads(manifest.read_text(encoding='utf-8-sig'))
+    packages[info['name']]=(manifest.parent,info)
+deps={};pending_packages=['com.unity.render-pipelines.universal','com.unity.modules.imageconversion','com.unity.modules.physics','com.unity.modules.imgui']
+while pending_packages:
+    name=pending_packages.pop()
+    if name in deps:continue
+    if name in packages:
+        folder,info=packages[name];deps[name]='file:'+folder.as_posix()
+        pending_packages.extend(info.get('dependencies',{}))
+    else:deps[name]='1.0.0'
+# Leave a running Unity project's package manifest undisturbed.
+if not (STAGE/'Packages/manifest.json').exists():
+    (STAGE/'Packages/manifest.json').write_text(json.dumps({'dependencies':deps},indent=2))
 shutil.copy2(ROOT/'ProjectSettings/ProjectVersion.txt',STAGE/'ProjectSettings/ProjectVersion.txt')
 model=ROOT/'Assets/_Project/Models/Vehicles/NPCTraffic'
 template=(model/'NPC_CityHatch.fbx.meta').read_text()
@@ -29,4 +44,39 @@ while pending:
     for g in re.findall(r'guid: ([a-f0-9]{32})',text):
         if g in index:pending.append(index[g])
 shutil.copy2(ROOT/'Tools/Unity/AuthorCityHatchLODs.cs',STAGE/'Assets/Editor/AuthorCityHatchLODs.cs')
+spec=ROOT/'ArtSource/Vehicles/NPCTraffic/NPC_CityHatch_PBRMaterials.json'
+if spec.exists():shutil.copy2(spec,STAGE/'CityHatchPBRMaterials.json')
+# Compile and exercise the actual production tint method against Unity Renderers,
+# without importing FishNet or the rest of gameplay into this visual-only project.
+controller=(ROOT/'Assets/_Project/Scripts/Gameplay/Traffic/TrafficVehicleController.cs').read_text()
+start=controller.index('private void SetVisualColour(Color colour)')
+brace=controller.index('{',start);depth=1;end=brace+1
+while depth:
+    depth+=(controller[end]=='{')-(controller[end]=='}');end+=1
+method=controller[start:end]
+probe='''using System;
+using UnityEngine;
+public static class CityHatchTintProbe {
+ class Driver {
+  public Renderer[] m_renderers; MaterialPropertyBlock m_propertyBlock;
+  public void Apply(Color color){SetVisualColour(color);}
+  METHOD
+ }
+ public static void Check(Renderer[] renderers){
+  var driver=new Driver{m_renderers=renderers};
+  foreach(var tint in new[]{new Color(.4f,.5f,.6f),Color.white}){
+   driver.Apply(tint);
+   foreach(var renderer in renderers){
+    var materials=renderer.sharedMaterials;
+    for(int i=0;i<materials.Length;i++){
+     var block=new MaterialPropertyBlock();renderer.GetPropertyBlock(block,i);
+     var original=materials[i].GetColor("_BaseColor");var expected=original*tint;expected.a=original.a;
+     if(Vector4.Distance(block.GetColor("_BaseColor"),expected)>.0001f)throw new Exception("Per-material damage/reset tint failed: "+materials[i].name);
+    }
+   }
+  }
+ }
+}
+'''.replace('METHOD',method)
+(STAGE/'Assets/Editor/CityHatchTintProbe.cs').write_text(probe)
 print('Staged',len(seen),'visual assets')

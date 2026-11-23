@@ -1,26 +1,35 @@
 [
   {
     "level": 0,
-    "triangles": 9998,
-    "vertices": 4953,
-    "boundary_edges": 0,
-    "nonmanifold_edges": 0,
-    "loose_vertices": 0
+    "triangles": 12272,
+    "vertices": 6378,
+    "materials": 9,
+    "bounds": [
+      2.2719998359680176,
+      3.7129998207092285,
+      2.055715322494507
+    ]
   },
   {
     "level": 1,
-    "triangles": 4498,
-    "vertices": 2203,
-    "boundary_edges": 0,
-    "nonmanifold_edges": 0,
-    "loose_vertices": 0
+    "triangles": 5662,
+    "vertices": 3027,
+    "materials": 9,
+    "bounds": [
+      2.2719998359680176,
+      3.7129998207092285,
+      2.0565993785858154
+    ]
   },
   {
     "level": 2,
-    "triangles": 1598,
-    "vertices": 753,
-    "boundary_edges": 0,
-    "nonmanifold_edges": 0,
-    "loose_vertices": 0
+    "triangles": 2345,
+    "vertices": 1282,
+    "materials": 9,
+    "bounds": [
+      2.259999990463257,
+      3.7208948135375977,
+      2.0565993785858154
+    ]
   }
 ]

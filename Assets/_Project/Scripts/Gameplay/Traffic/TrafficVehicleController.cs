@@ -612,13 +612,18 @@ namespace CouchGuys.Gameplay.Traffic
             {
                 Renderer renderer = m_renderers[index];
                 if (renderer == null) continue;
-                Material material = renderer.sharedMaterial;
-                Color original = material != null && material.HasProperty("_BaseColor")
-                    ? material.GetColor("_BaseColor") : Color.white;
-                Color tinted = original * colour;
-                tinted.a = original.a;
-                m_propertyBlock.SetColor("_BaseColor", tinted);
-                renderer.SetPropertyBlock(m_propertyBlock);
+                Material[] materials = renderer.sharedMaterials;
+                for (int materialIndex = 0; materialIndex < materials.Length; materialIndex++)
+                {
+                    Material material = materials[materialIndex];
+                    Color original = material != null && material.HasProperty("_BaseColor")
+                        ? material.GetColor("_BaseColor") : Color.white;
+                    Color tinted = original * colour;
+                    tinted.a = original.a;
+                    renderer.GetPropertyBlock(m_propertyBlock, materialIndex);
+                    m_propertyBlock.SetColor("_BaseColor", tinted);
+                    renderer.SetPropertyBlock(m_propertyBlock, materialIndex);
+                }
             }
         }
     }

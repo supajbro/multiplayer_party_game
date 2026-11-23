@@ -81,6 +81,7 @@ namespace CouchGuys.Editor
                 var references = so.FindProperty("m_visualMeshes");
                 references.arraySize = filters.Length;
                 for (int i = 0; i < filters.Length; i++) references.GetArrayElementAtIndex(i).objectReferenceValue = filters[i];
+                so.FindProperty("m_jumpingSurface").objectReferenceValue = filters.Single(f => f.name == "JumpingSurface");
                 so.FindProperty("m_surfaceCollider").objectReferenceValue = collider;
                 so.ApplyModifiedPropertiesWithoutUndo();
                 root.AddComponent<EnvironmentPlacementMetadata>().Configure(new Vector2(12.312f, 9.234f), 1f, true, true);
@@ -89,6 +90,22 @@ namespace CouchGuys.Editor
             finally { Object.DestroyImmediate(root); }
             AssetDatabase.SaveAssets();
             Debug.Log("Saved configurable JumpingPillow prefab.");
+        }
+
+        [MenuItem("Tools/Couch Guys/Jumping Pillow/Assign Deformation Surface")]
+        public static void AssignDeformationSurface()
+        {
+            var root = PrefabUtility.LoadPrefabContents(PrefabPath);
+            try
+            {
+                var so = new SerializedObject(root.GetComponent<JumpingPillow>());
+                var surface = so.FindProperty("m_jumpingSurface");
+                if (surface.objectReferenceValue != null) return;
+                surface.objectReferenceValue = root.GetComponentsInChildren<MeshFilter>().Single(f => f.name == "JumpingSurface");
+                so.ApplyModifiedPropertiesWithoutUndo();
+                PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
+            }
+            finally { Object.DestroyImmediate(root); }
         }
     }
 }

@@ -18,6 +18,8 @@ def copy(path):
     if meta.exists(): shutil.copy2(meta,str(target)+'.meta')
 
 for relative in ('Assets/_Project/Scripts/ProceduralGeneration/JumpingPillow.cs',
+                 'Assets/_Project/Scripts/ProceduralGeneration/JumpingPillow.Deformation.cs',
+                 'Assets/_Project/Scripts/ProceduralGeneration/JumpingPillow.Vehicles.cs',
                  'Assets/_Project/Scripts/Editor/JumpingPillowAuthoring.cs'):
     meta=ROOT/(relative+'.meta')
     if not meta.exists(): meta.write_text('fileFormatVersion: 2\nguid: '+uuid.uuid4().hex+'\n')
@@ -29,6 +31,9 @@ for path in (ROOT/'Assets').rglob('*'):
     copy(path)
 copy(ROOT/'Assets/_Project/Scripts/Editor/JumpingPillowAuthoring.cs')
 for path in (ROOT/'Assets/_Project/Models/JumpingPillow').glob('*.fbx'): copy(path)
+for relative in ('Assets/_Project/Prefabs/Environment/JumpingPillow', 'Assets/_Project/Materials/Environment/JumpingPillow'):
+    for path in (ROOT/relative).iterdir():
+        if path.is_file() and path.suffix != '.meta': copy(path)
 for path in (ROOT/'Tools/Unity').glob('*JumpingPillow*.cs'):
     shutil.copy2(path,PROJECT/'Assets/Editor'/path.name)
 for name in ('ProjectVersion.txt','ProjectSettings.asset','TagManager.asset'):

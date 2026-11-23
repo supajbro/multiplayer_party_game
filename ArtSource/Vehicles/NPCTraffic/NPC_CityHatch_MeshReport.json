@@ -1,24 +1,56 @@
 {
   "name": "NPC_CityHatch",
-  "triangles": 9998,
-  "vertices": 4953,
-  "paint_faces": 3475,
-  "size": [
-    2.212373733520508,
-    3.700000047683716,
-    2.0557873249053955
+  "surface": "Texture-free PBR; authored hard surfaces; opaque glass",
+  "lods_blender": [
+    {
+      "level": 0,
+      "triangles": 12272,
+      "vertices": 6378,
+      "materials": 9,
+      "bounds": [
+        2.2719998359680176,
+        3.7129998207092285,
+        2.055715322494507
+      ]
+    },
+    {
+      "level": 1,
+      "triangles": 5662,
+      "vertices": 3027,
+      "materials": 9,
+      "bounds": [
+        2.2719998359680176,
+        3.7129998207092285,
+        2.0565993785858154
+      ]
+    },
+    {
+      "level": 2,
+      "triangles": 2345,
+      "vertices": 1282,
+      "materials": 9,
+      "bounds": [
+        2.259999990463257,
+        3.7208948135375977,
+        2.0565993785858154
+      ]
+    }
   ],
-  "yaw": 0.6821795143877798,
-  "paint_color": [
-    0.094,
-    0.565,
-    1
+  "lods_unity_triangles": [
+    10430,
+    4846,
+    1881
   ],
   "materials": [
+    "NPC_CityHatch_BodyPaint",
+    "NPC_CityHatch_Glass",
+    "NPC_CityHatch_Rubber",
     "NPC_CityHatch_Details",
-    "NPC_CityHatch_BodyPaint"
+    "NPC_CityHatch_Alloy",
+    "NPC_CityHatch_Headlamp",
+    "NPC_CityHatch_TailLamp",
+    "NPC_CityHatch_Indicator",
+    "NPC_CityHatch_Stripe"
   ],
-  "nonmanifold_edges": 0,
-  "boundary_edges": 0,
-  "loose_vertices": 0
+  "original_prefab_identities_preserved": 12
 }

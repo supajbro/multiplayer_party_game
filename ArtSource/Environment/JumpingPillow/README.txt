@@ -18,7 +18,7 @@ No separated strips or seams across the upper surface. UV channel SurfaceUV.
 DeformationMask vertex RGB: 0 = fixed border, 1 = free interior, with a
 four-row falloff. Blender also has DeformableSurface/PinnedPerimeter groups.
 Bottom vertices are fixed. Surface is a closed manifold; anchor is separate.
-No animation, springs, gameplay logic, shader deformation or jumping physics.
+The source FBX has no baked animation or physics; the saved Unity prefab supplies runtime behavior.
 
 UNITY INTEGRATION
 Saved prefab: Assets/_Project/Prefabs/Environment/JumpingPillow/JumpingPillow.prefab
@@ -26,7 +26,21 @@ Both suburban region libraries use this asset in all three former park slots.
 JumpingPillow component: configure Bounce Height (3.5 m default), Minimum
 Landing Speed (3 m/s), contact normal threshold, cooldown and ground offset.
 The player motor bounces downward landings on the saved surface collider.
-No visual spring/depression animation is implemented.
+Local Visual Deformation settings control player depression, landing impact strength,
+spread radius/speed, maximum depression/rebound, spring frequency/damping and recovery.
+Each client independently detects all active avatars, including disabled remote motors.
+No deformation mesh data, impulses, RPCs or SyncVars are sent over the network.
+The pinned mask keeps the border/underside fixed, and the separate anchor is unchanged.
+Only the instance surface mesh deforms; physics collision stays at its terrain-fitted rest shape.
+
+Vehicle Bounce settings independently control enable, height, cooldown, allowed upward
+speed, contact reach/penetration tolerance and normal threshold. Vehicle deformation radius and depression
+are also exposed. Trucks (including occupied/getaway trucks), traffic/rogue enemy cars,
+hoverboards and sleds are recognized; other props are ignored. Dynamic vehicle impulses
+run only on the current vehicle physics authority. Client replicas contribute visual loads
+but never receive local launches. Existing vehicle transform replication is unchanged.
+Truck/car/hoverboard launches reuse the existing airborne launch state to suspend their
+motors until landing. Bounce impulses preserve horizontal momentum and are mass independent.
 
 At generation the existing surface, anchored edge and 864-triangle collider
 receive matching per-vertex terrain height offsets. Source meshes, material
