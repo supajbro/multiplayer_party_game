@@ -4,6 +4,7 @@ using CouchGuys.Networking;
 using CouchGuys.Player;
 using CouchGuys.ProceduralGeneration;
 using CouchGuys.Gameplay.Delivery;
+using CouchGuys.Gameplay.Couch;
 using FishNet;
 using FishNet.Object;
 using UnityEngine;
@@ -11,6 +12,44 @@ using UnityEngine.AI;
 
 namespace CouchGuys.Gameplay.Enemies
 {
+    [System.Serializable]
+    public sealed class CargoThreatSettings
+    {
+        [Tooltip("Easy, Medium and Hard couch threat weights.")]
+        public Vector3 TierWeights = new Vector3(1f, 2f, 3f);
+        [Range(0f, 1f)] public float AdditionalCouchContribution = .25f;
+        [Min(0f), Tooltip("Nearby unloaded cargo keeps sharing pressure. Separate vehicles also share within this distance.")]
+        public float EncounterMergeDistance = 25f;
+        [Min(1f), Tooltip("Only players near an encounter can attract its reinforcements.")]
+        public float PlayerDistance = 100f;
+        [Tooltip("Active cap for multiple grouped deliveries only. Single deliveries use Max Active Thieves.")]
+        public AnimationCurve ActiveEnemyCap = AnimationCurve.Linear(1f, 4f, 5.25f, 12f);
+        [Tooltip("Scales the hardest tier's minimum wave size by curve(combined threat) / curve(single tier weight).")]
+        public AnimationCurve MinimumWaveSize = AnimationCurve.Linear(1f, 1f, 5.25f, 3f);
+        [Tooltip("Scales the hardest tier's maximum wave size relative to its single-couch baseline.")]
+        public AnimationCurve MaximumWaveSize = AnimationCurve.Linear(1f, 2f, 5.25f, 5f);
+        [Tooltip("Scales the hardest tier's spawn interval range relative to its single-couch baseline. Does not replace tier timing.")]
+        public AnimationCurve WaveIntervalSeconds = AnimationCurve.Linear(1f, 20f, 5.25f, 10f);
+        [Tooltip("Additional shared limits apply only to multiple grouped deliveries. Tier limits still apply.")]
+        [Min(0)] public int MaximumRockets = 1;
+        [Min(0)] public int MaximumGrapplers = 1;
+
+        public float Weight(DeliveryTier tier) => Mathf.Max(.01f,
+            tier == DeliveryTier.Easy ? TierWeights.x : tier == DeliveryTier.Medium ? TierWeights.y : TierWeights.z);
+        public float Threat(float sum, float largest) => largest +
+            Mathf.Max(0f, sum - largest) * Mathf.Clamp01(AdditionalCouchContribution);
+        public int Cap(float threat) => Mathf.Max(1, Mathf.RoundToInt(ActiveEnemyCap.Evaluate(threat)));
+        private float Scale(AnimationCurve curve, float threat, DeliveryTierConfig tier) =>
+            Mathf.Max(.01f, curve.Evaluate(threat)) / Mathf.Max(.01f, curve.Evaluate(Weight(tier.Tier)));
+        public int MinWave(DeliveryTierConfig tier, float threat, int count) => count <= 1 ? tier.MinThievesPerWave :
+            Mathf.Max(1, Mathf.RoundToInt(tier.MinThievesPerWave * Scale(MinimumWaveSize, threat, tier)));
+        public int MaxWave(DeliveryTierConfig tier, float threat, int count) => count <= 1 ? tier.MaxThievesPerWave :
+            Mathf.Max(MinWave(tier, threat, count), Mathf.RoundToInt(tier.MaxThievesPerWave * Scale(MaximumWaveSize, threat, tier)));
+        public float Interval(DeliveryTierConfig tier, float threat, int count, float roll) =>
+            Mathf.Max(.1f, Mathf.Lerp(tier.MinSpawnInterval, tier.MaxSpawnInterval, Mathf.Clamp01(roll)) *
+                (count <= 1 ? 1f : Scale(WaveIntervalSeconds, threat, tier)));
+    }
+
     /// <summary>
     /// Server-authoritative, region-independent group spawner for weapon-equipped enemy prefabs.
     /// Individual enemy components remain responsible for targeting, combat, and navigation.
@@ -33,6 +72,9 @@ namespace CouchGuys.Gameplay.Enemies
         [SerializeField, Min(1)] private int m_memberPositionAttempts = 6;
         [SerializeField, Min(1)] private int m_maxActiveThieves = 15;
 
+        [Header("Shared Cargo Threat")]
+        [SerializeField] private CargoThreatSettings m_cargoThreat = new CargoThreatSettings();
+
         [Header("Debug")]
         [SerializeField] private bool m_drawSpawnGizmos;
 
@@ -43,7 +85,12 @@ namespace CouchGuys.Gameplay.Enemies
         private DeliveryManager m_deliveryManager;
         private readonly Dictionary<int, float> m_deliverySpawnTimes = new();
         private int m_spawningDeliveryId;
-        private int SpawningTierIndex => m_deliveryManager.TryGetDelivery(m_spawningDeliveryId, out var job) ? job.TierIndex : -1;
+        private CargoEncounter m_encounter;
+        private bool HasSharedCargo => m_encounter != null && m_encounter.Jobs.Count > 1;
+        private float m_nextEncounterUpdate;
+        private readonly List<CargoEncounter> m_encounters = new();
+        private int SpawningTierIndex => m_encounter != null ? m_encounter.TierIndex :
+            m_deliveryManager.TryGetDelivery(m_spawningDeliveryId, out var job) ? job.TierIndex : -1;
         public void RemoveDeliveryEnemiesServer(int id, bool departNaturally = false)
         {
             m_deliverySpawnTimes.Remove(id);
@@ -138,21 +185,27 @@ namespace CouchGuys.Gameplay.Enemies
                 return;
             }
 
-            foreach (var job in m_deliveryManager.Deliveries)
+            if (Time.time < m_nextEncounterUpdate) return;
+            m_nextEncounterUpdate = Time.time + .5f;
+            BuildCargoEncounters();
+            m_nextSpawnTime = float.PositiveInfinity;
+            foreach (CargoEncounter encounter in m_encounters)
             {
-                if (job.Status != DeliveryState.Transport) continue;
-                m_spawningDeliveryId = job.Id;
-                if (!m_deliverySpawnTimes.TryGetValue(job.Id, out float next))
+                m_encounter = encounter;
+                m_spawningDeliveryId = encounter.Jobs[Random.Range(0, encounter.Jobs.Count)].Id;
+                float next = EncounterDeadline(encounter);
+                if (float.IsNegativeInfinity(next) || Time.time >= next)
                 {
+                    if (!float.IsNegativeInfinity(next) && HasEnemyPrefabs()) TrySpawnGroup();
                     ScheduleNextSpawn();
-                    m_deliverySpawnTimes[job.Id] = m_nextSpawnTime;
-                    continue;
+                    next = m_nextSpawnTime;
                 }
-                if (Time.time < next) continue;
-                if (HasEnemyPrefabs()) TrySpawnGroup();
-                ScheduleNextSpawn();
-                m_deliverySpawnTimes[job.Id] = m_nextSpawnTime;
+                foreach (var job in encounter.Jobs) m_deliverySpawnTimes[job.Id] = next;
             }
+            m_encounter = null;
+            m_nextSpawnTime = float.PositiveInfinity;
+            foreach (var encounter in m_encounters)
+                m_nextSpawnTime = Mathf.Min(m_nextSpawnTime, m_deliverySpawnTimes[encounter.Jobs[0].Id]);
         }
 
         public void SetGenerator(NeighbourhoodGenerator generator)
@@ -192,6 +245,110 @@ namespace CouchGuys.Gameplay.Enemies
             DespawnAllThieves();
         }
 
+        private sealed class CargoJob
+        {
+            public int Id;
+            public int TierIndex;
+            public DeliveryTier Tier;
+            public float Weight;
+            public Vector3 Position;
+            public Transform Vehicle;
+        }
+
+        private sealed class CargoEncounter
+        {
+            public readonly List<CargoJob> Jobs = new();
+            public float Threat;
+            public int TierIndex;
+        }
+
+        private float EncounterDeadline(CargoEncounter encounter)
+        {
+            float next = float.NegativeInfinity;
+            // Preserve the latest existing deadline when encounters merge. Splits inherit it.
+            foreach (CargoJob job in encounter.Jobs)
+                if (m_deliverySpawnTimes.TryGetValue(job.Id, out float scheduled)) next = Mathf.Max(next, scheduled);
+            return next;
+        }
+
+        private void BuildCargoEncounters()
+        {
+            m_encounters.Clear();
+            foreach (var delivery in m_deliveryManager.Deliveries)
+            {
+                if (delivery.Status != DeliveryState.Transport || delivery.Couch == null ||
+                    !delivery.Couch.TryGetComponent(out CouchCarryController couch)) continue;
+                DeliveryTierConfig tier = m_deliveryManager.GetTierConfig(delivery.TierIndex);
+                if (tier == null) continue;
+                couch.TryGetDeliveryVehicle(out Transform vehicle);
+                var encounter = new CargoEncounter();
+                encounter.Jobs.Add(new CargoJob { Id = delivery.Id, TierIndex = delivery.TierIndex,
+                    Tier = tier.Tier, Weight = m_cargoThreat.Weight(tier.Tier),
+                    Position = couch.transform.position, Vehicle = vehicle });
+                // Merge connected cargo, including nearby couches just unloaded from a vehicle.
+                for (int i = 0; i < m_encounters.Count;)
+                {
+                    if (!EncountersTouch(encounter, m_encounters[i])) { i++; continue; }
+                    encounter.Jobs.AddRange(m_encounters[i].Jobs);
+                    m_encounters.RemoveAt(i);
+                    i = 0;
+                }
+                float sum = 0f, largest = 0f;
+                DeliveryTier hardest = DeliveryTier.Easy;
+                encounter.TierIndex = delivery.TierIndex;
+                foreach (CargoJob job in encounter.Jobs)
+                {
+                    sum += job.Weight;
+                    largest = Mathf.Max(largest, job.Weight);
+                    if (job.Tier >= hardest) { hardest = job.Tier; encounter.TierIndex = job.TierIndex; }
+                }
+                encounter.Threat = m_cargoThreat.Threat(sum, largest);
+                m_encounters.Add(encounter);
+            }
+        }
+
+        private bool EncountersTouch(CargoEncounter a, CargoEncounter b)
+        {
+            float distance = Mathf.Max(0f, m_cargoThreat.EncounterMergeDistance);
+            foreach (CargoJob first in a.Jobs)
+                foreach (CargoJob second in b.Jobs)
+                    if ((first.Vehicle != null && first.Vehicle == second.Vehicle) ||
+                        (first.Position - second.Position).sqrMagnitude <= distance * distance) return true;
+            return false;
+        }
+
+        private bool IsEncounterDelivery(int id)
+        {
+            if (m_encounter == null) return id == m_spawningDeliveryId;
+            foreach (CargoJob job in m_encounter.Jobs) if (job.Id == id) return true;
+            return false;
+        }
+
+        private bool IsNearEncounter(Vector3 position, float distance)
+        {
+            if (m_encounter == null) return true;
+            foreach (CargoJob job in m_encounter.Jobs)
+                if ((job.Position - position).sqrMagnitude <= distance * distance) return true;
+            return false;
+        }
+
+        private bool IsEncounterPlayer(NetworkPlayerOwnership player) => IsValidPlayer(player) &&
+            (!HasSharedCargo || IsNearEncounter(player.transform.position, Mathf.Max(1f, m_cargoThreat.PlayerDistance)));
+
+        private bool IsEncounterEnemy(NetworkObject enemy, ThiefSpawnMember member) =>
+            !(enemy.TryGetComponent(out ThiefNavigator navigator) && navigator.IsDeparting) &&
+            (IsEncounterDelivery(member.DeliveryId) || (HasSharedCargo &&
+                IsNearEncounter(enemy.transform.position, Mathf.Max(0f, m_cargoThreat.EncounterMergeDistance))));
+
+        private int CountEncounterEnemies()
+        {
+            int count = 0;
+            foreach (NetworkObject enemy in m_activeThieves)
+                if (enemy != null && enemy.IsSpawned && enemy.TryGetComponent(out ThiefSpawnMember member) &&
+                    IsEncounterEnemy(enemy, member) && enemy.TryGetComponent(out ThiefHealth health) && health.IsAlive) count++;
+            return count;
+        }
+
         private void TrySpawnGroup()
         {
             PruneMissingThieves();
@@ -199,7 +356,8 @@ namespace CouchGuys.Gameplay.Enemies
             {
                 return;
             }
-            int availableSlots = m_maxActiveThieves - m_activeThieves.Count;
+            int availableSlots = Mathf.Min(m_maxActiveThieves - m_activeThieves.Count,
+                HasSharedCargo ? m_cargoThreat.Cap(m_encounter.Threat) - CountEncounterEnemies() : m_maxActiveThieves);
             if (availableSlots < minimumGroupSize || !TrySelectPlayer(out NetworkPlayerOwnership target))
             {
                 return;
@@ -341,8 +499,13 @@ namespace CouchGuys.Gameplay.Enemies
 
             DeliveryTierConfig tier = m_deliveryManager.GetTierConfig(SpawningTierIndex);
             if (tier == null) return false;
-            minimum = tier.MinThievesPerWave;
-            maximum = tier.MaxThievesPerWave;
+            minimum = m_encounter != null ? m_cargoThreat.MinWave(tier, m_encounter.Threat, m_encounter.Jobs.Count) : tier.MinThievesPerWave;
+            maximum = m_encounter != null ? m_cargoThreat.MaxWave(tier, m_encounter.Threat, m_encounter.Jobs.Count) : tier.MaxThievesPerWave;
+            if (HasSharedCargo)
+            {
+                minimum = Mathf.Min(minimum, m_cargoThreat.Cap(m_encounter.Threat));
+                maximum = Mathf.Clamp(maximum, minimum, m_cargoThreat.Cap(m_encounter.Threat));
+            }
             return true;
         }
 
@@ -354,7 +517,7 @@ namespace CouchGuys.Gameplay.Enemies
             for (int index = m_players.Count - 1; index >= 0; index--)
             {
                 NetworkPlayerOwnership player = m_players[index];
-                if (!IsValidPlayer(player) || DepotSafeZone.Contains(player.transform.position))
+                if (!IsEncounterPlayer(player) || DepotSafeZone.Contains(player.transform.position))
                 {
                     if (player == null)
                     {
@@ -365,7 +528,7 @@ namespace CouchGuys.Gameplay.Enemies
                 }
 
                 validCount++;
-                if (player.TryGetComponent(out PlayerCouchCarrier carrier) && carrier.CarriedCouch != null && carrier.CarriedCouch.DeliveryId == m_spawningDeliveryId)
+                if (player.TryGetComponent(out PlayerCouchCarrier carrier) && carrier.CarriedCouch != null && IsEncounterDelivery(carrier.CarriedCouch.DeliveryId))
                 {
                     carryingCount++;
                 }
@@ -375,12 +538,12 @@ namespace CouchGuys.Gameplay.Enemies
             for (int index = 0; index < m_players.Count; index++)
             {
                 NetworkPlayerOwnership player = m_players[index];
-                if (!IsValidPlayer(player) || DepotSafeZone.Contains(player.transform.position))
+                if (!IsEncounterPlayer(player) || DepotSafeZone.Contains(player.transform.position))
                 {
                     continue;
                 }
 
-                bool carrying = player.TryGetComponent(out PlayerCouchCarrier carrier) && carrier.CarriedCouch != null && carrier.CarriedCouch.DeliveryId == m_spawningDeliveryId;
+                bool carrying = player.TryGetComponent(out PlayerCouchCarrier carrier) && carrier.CarriedCouch != null && IsEncounterDelivery(carrier.CarriedCouch.DeliveryId);
                 if (carryingCount > 0 && !carrying)
                 {
                     continue;
@@ -520,6 +683,12 @@ namespace CouchGuys.Gameplay.Enemies
             DeliveryTierConfig tier = SpawningEnabled
                 ? m_deliveryManager.GetTierConfig(SpawningTierIndex)
                 : null;
+            if (m_encounter != null)
+            {
+                m_nextSpawnTime = tier != null ? Time.time +
+                    m_cargoThreat.Interval(tier, m_encounter.Threat, m_encounter.Jobs.Count, Random.value) : float.PositiveInfinity;
+                return;
+            }
             m_nextSpawnTime = tier != null
                 ? Time.time + Random.Range(tier.MinSpawnInterval, tier.MaxSpawnInterval)
                 : float.PositiveInfinity;
@@ -547,9 +716,11 @@ namespace CouchGuys.Gameplay.Enemies
         {
             DeliveryTierConfig tier = m_deliveryManager != null
                 ? m_deliveryManager.GetTierConfig(SpawningTierIndex) : null;
-            if (tier != null && tier.ShouldReplaceWithRocketThief(CountActiveRocketThieves() + plannedRockets, Random.value))
+            if (tier != null && (!HasSharedCargo || CountActiveRocketThieves() + plannedRockets < Mathf.Max(0, m_cargoThreat.MaximumRockets)) &&
+                tier.ShouldReplaceWithRocketThief(CountActiveRocketThieves() + plannedRockets, Random.value))
                 return tier.RocketThiefPrefab;
-            if (tier != null && tier.ShouldReplaceWithGrappler(CountActiveGrapplers() + plannedGrapplers, Random.value))
+            if (tier != null && (!HasSharedCargo || CountActiveGrapplers() + plannedGrapplers < Mathf.Max(0, m_cargoThreat.MaximumGrapplers)) &&
+                tier.ShouldReplaceWithGrappler(CountActiveGrapplers() + plannedGrapplers, Random.value))
                 return tier.GrapplerThiefPrefab;
 
             if (!HasEnemyPrefabs())
@@ -575,7 +746,7 @@ namespace CouchGuys.Gameplay.Enemies
             int count = 0;
             foreach (NetworkObject thief in m_activeThieves)
                 if (thief != null && thief.IsSpawned && thief.TryGetComponent(out ThiefSpawnMember member) &&
-                    member.DeliveryId == m_spawningDeliveryId && thief.TryGetComponent(out EnemyWeapon weapon) &&
+                    IsEncounterEnemy(thief, member) && thief.TryGetComponent(out EnemyWeapon weapon) &&
                     weapon.IsRocketLauncher && thief.TryGetComponent(out ThiefHealth health) && health.IsAlive) count++;
             return count;
         }
@@ -585,7 +756,7 @@ namespace CouchGuys.Gameplay.Enemies
             int count = 0;
             foreach (NetworkObject thief in m_activeThieves)
                 if (thief != null && thief.IsSpawned && thief.TryGetComponent(out ThiefSpawnMember member) &&
-                    member.DeliveryId == m_spawningDeliveryId && thief.TryGetComponent(out GrapplerThief _) &&
+                    IsEncounterEnemy(thief, member) && thief.TryGetComponent(out GrapplerThief _) &&
                     thief.TryGetComponent(out ThiefHealth health) && health.IsAlive) count++;
             return count;
         }

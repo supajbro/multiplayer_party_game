@@ -37,7 +37,7 @@ namespace CouchGuys.Networking
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 return true;
 #else
-                return string.Equals(DisplayName, "supajbro", StringComparison.Ordinal);
+                return string.Equals(DisplayName, "supajbro", StringComparison.OrdinalIgnoreCase);
 #endif
             }
         }

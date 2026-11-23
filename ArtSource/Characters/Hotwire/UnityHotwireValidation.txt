@@ -1,0 +1,6 @@
+PASS: Shotgun Idle, 47 Animator poses, all four Hotwire LODs, finite geometry, saved bounds, original grip/muzzle alignment.
+PASS: Shotgun Walk, 24 Animator poses, all four Hotwire LODs, finite geometry, saved bounds, original grip/muzzle alignment.
+PASS: Shotgun Shoot, 24 Animator poses, all four Hotwire LODs, finite geometry, saved bounds, original grip/muzzle alignment.
+PASS: Shotgun Frustration, 30 Animator poses, all four Hotwire LODs, finite geometry, saved bounds, original grip/muzzle alignment.
+PASS: Shotgun Death, 51 Animator poses, all four Hotwire LODs, finite geometry, saved bounds, original grip/muzzle alignment.
+PASS: Original valid avatar, Shotgun controller, four saved mesh LODs, original mounts, Speed transition and Death priority retained.

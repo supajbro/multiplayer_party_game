@@ -1,0 +1,37 @@
+{
+  "height_m": 1.65,
+  "skeleton": "Original thief_enemy_01 22-bone rest skeleton",
+  "new_bones": 0,
+  "existing_preview_actions": 25,
+  "gameplay_animation_source": "Unchanged thief_enemy_01.fbx / Shotgun controller",
+  "source_triangles": 20000,
+  "original_surface_weight_transfer_max_distance_m": 0.15153299272060394,
+  "arm_center_correction_m": 0.03348478078842154,
+  "arm_depth_registration_m": -0.03433259576559067,
+  "lods": [
+    {
+      "lod": 0,
+      "triangles": 10000,
+      "vertices": 5002,
+      "max_influences": 4
+    },
+    {
+      "lod": 1,
+      "triangles": 4000,
+      "vertices": 2002,
+      "max_influences": 4
+    },
+    {
+      "lod": 2,
+      "triangles": 1500,
+      "vertices": 752,
+      "max_influences": 2
+    },
+    {
+      "lod": 3,
+      "triangles": 700,
+      "vertices": 352,
+      "max_influences": 2
+    }
+  ]
+}

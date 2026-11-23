@@ -1,0 +1,12 @@
+{
+  "changed_prefab": "Assets/_Project/Prefabs/Enemies/Thief_Shotgun.prefab",
+  "prefab_guid_retained": true,
+  "existing_object_component_ids_retained": 71,
+  "changed_blocks": {
+    "3986269745577947642": "PrefabInstance:"
+  },
+  "all_other_existing_asset_hashes_retained": true,
+  "other_preserved_files": 115,
+  "existing_gameplay_components_weapon_mounts_and_ragdoll_unchanged": true,
+  "existing_controller_avatar_and_25_animation_clips_unchanged": true
+}

@@ -105,7 +105,7 @@ MonoBehaviour:
   - {fileID: 3232277509760366420}
   - {fileID: 2242276033648990313}
   m_surfaceCollider: {fileID: 3425358502163206737}
-  m_bounceHeight: 3.5
+  m_bounceHeight: 10
   m_minimumLandingSpeed: 3
   m_minimumUpNormal: 0.55
   m_bounceCooldown: 0.2
