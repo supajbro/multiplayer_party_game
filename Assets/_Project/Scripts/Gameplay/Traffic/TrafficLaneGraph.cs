@@ -44,7 +44,9 @@ namespace CouchGuys.Gameplay.Traffic
             for (int index = 0; index < generator.GeneratedRoads.Count; index++)
             {
                 GeneratedRoad road = generator.GeneratedRoads[index];
-                if (road != null)
+                // The summit corridor is reserved for the flying couch. Excluding it
+                // here also keeps its waypoints out of traffic and rogue-car spawns.
+                if (road != null && road.Role != GeneratedRoadRole.UphillExit)
                 {
                     m_roads[road.Coordinate] = road;
                 }

@@ -1,24 +1,56 @@
 {
   "name": "NPC_UtilityPickup",
-  "triangles": 8664,
-  "vertices": 4208,
-  "paint_faces": 1389,
-  "size": [
-    2.8924560546875,
-    4.900000095367432,
-    2.895883560180664
+  "surface": "Texture-free PBR; authored hard surfaces; opaque glass",
+  "lods_blender": [
+    {
+      "level": 0,
+      "triangles": 16626,
+      "vertices": 8599,
+      "size": [
+        2.8438827991485596,
+        4.90000057220459,
+        2.8587465286254883
+      ],
+      "materials": 9
+    },
+    {
+      "level": 1,
+      "triangles": 8594,
+      "vertices": 4543,
+      "size": [
+        2.8438827991485596,
+        4.90000057220459,
+        2.8587465286254883
+      ],
+      "materials": 9
+    },
+    {
+      "level": 2,
+      "triangles": 3190,
+      "vertices": 1775,
+      "size": [
+        2.8438827991485596,
+        4.90000057220459,
+        2.8587465286254883
+      ],
+      "materials": 9
+    }
   ],
-  "yaw": 0.6897735811580612,
-  "paint_color": [
-    1,
-    0.029,
-    0.053
+  "lods_unity_triangles": [
+    15128,
+    8002,
+    3190
   ],
   "materials": [
+    "NPC_UtilityPickup_BodyPaint",
+    "NPC_UtilityPickup_Glass",
+    "NPC_UtilityPickup_Rubber",
     "NPC_UtilityPickup_Details",
-    "NPC_UtilityPickup_BodyPaint"
+    "NPC_UtilityPickup_Alloy",
+    "NPC_UtilityPickup_Headlamp",
+    "NPC_UtilityPickup_TailLamp",
+    "NPC_UtilityPickup_Indicator",
+    "NPC_UtilityPickup_Stripe"
   ],
-  "nonmanifold_edges": 0,
-  "boundary_edges": 0,
-  "loose_vertices": 0
+  "original_prefab_identities_preserved": 4
 }

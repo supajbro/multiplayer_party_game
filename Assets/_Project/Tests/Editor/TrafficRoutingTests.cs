@@ -69,6 +69,66 @@ namespace CouchGuys.Tests.Editor
         }
 
         [Test]
+        public void UphillExitIsExcludedFromRoutesAndSpawnWaypoints()
+        {
+            var graph = CreateGraph(new[] { (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0),
+                (0, 1), (0, 2), (0, 3) });
+            var roads = (Dictionary<GridCoordinate, GeneratedRoad>)typeof(TrafficLaneGraph)
+                .GetField("m_roads", Private).GetValue(graph);
+            for (int y = 1; y <= 3; y++)
+            {
+                var road = roads[new GridCoordinate(0, y)];
+                // Include a flat summit tile: eligibility depends on road purpose,
+                // rather than its current slope or elevation.
+                road.Initialise(road.Coordinate, road.Connections, SuburbZone.Easy,
+                    GeneratedRoadRole.UphillExit, 0f, 0f);
+            }
+
+            var generator = m_root.AddComponent<NeighbourhoodGenerator>();
+            var generatedRoads = (List<GeneratedRoad>)typeof(NeighbourhoodGenerator)
+                .GetField("m_generatedRoads", Private).GetValue(generator);
+            generatedRoads.AddRange(roads.Values);
+            var portals = (List<TrafficRoadPortal>)typeof(NeighbourhoodGenerator)
+                .GetField("m_trafficRoadPortals", Private).GetValue(generator);
+            portals.Add(new TrafficRoadPortal(new GridCoordinate(-2, 0), CardinalDirection.West,
+                Vector3.left * 20f, Vector3.left));
+            portals.Add(new TrafficRoadPortal(new GridCoordinate(2, 0), CardinalDirection.East,
+                Vector3.right * 20f, Vector3.right));
+            var settings = ScriptableObject.CreateInstance<TrafficSettings>();
+            try
+            {
+                graph.Build(generator, settings);
+                Assert.That(graph.BuildFailureReason, Is.Null);
+                Assert.That(graph.Routes.Count, Is.GreaterThan(0));
+                Assert.That(Find(graph, "TryFindPath", (-2, 0), (0, 3), out _), Is.False);
+                foreach (var route in graph.Routes)
+                {
+                    AssertOnlyStreetWaypoints(route);
+                    for (int seed = 0; seed < 32; seed++)
+                    {
+                        Assert.That(graph.TryCreateRandomRoute(route, settings,
+                            new System.Random(seed), out var trip), Is.True);
+                        AssertOnlyStreetWaypoints(trip);
+                    }
+                }
+                Assert.That(Find(graph, "TryFindPath", (-2, 0), (2, 0), out var street), Is.True);
+                Assert.That(street, Does.Contain(GridCoordinate.Zero),
+                    "The junction at the foot of the hill stays open to traffic.");
+            }
+            finally { UnityEngine.Object.DestroyImmediate(settings); }
+        }
+
+        private static void AssertOnlyStreetWaypoints(TrafficRoute route)
+        {
+            foreach (var coordinate in route.Coordinates)
+                Assert.That(coordinate.Y, Is.Zero, "Routes must not enter the uphill exit.");
+            // Both normal and rogue traffic choose spawn poses from these waypoints.
+            foreach (var waypoint in route.Waypoints)
+                Assert.That(Mathf.Abs(waypoint.z), Is.LessThan(10f),
+                    "Spawn waypoints must stay below the first hill tile and summit.");
+        }
+
+        [Test]
         public void FallbackEscapesStraightFirstLoopWithoutReversingAtJunctions()
         {
             var graph = CreateGraph(new[] { (0, 0), (1, 0), (2, 0), (3, 0), (3, -1),

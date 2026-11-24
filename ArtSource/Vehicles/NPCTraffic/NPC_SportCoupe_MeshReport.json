@@ -1,24 +1,56 @@
 {
   "name": "NPC_SportCoupe",
-  "triangles": 10000,
-  "vertices": 4996,
-  "paint_faces": 4114,
-  "size": [
-    2.532576322555542,
-    4.300000190734863,
-    2.176217794418335
+  "surface": "Texture-free PBR; authored hard surfaces; opaque glass",
+  "lods_blender": [
+    {
+      "level": 0,
+      "triangles": 13002,
+      "vertices": 6749,
+      "size": [
+        2.535027027130127,
+        4.300000190734863,
+        2.1453258991241455
+      ],
+      "materials": 9
+    },
+    {
+      "level": 1,
+      "triangles": 6458,
+      "vertices": 3437,
+      "size": [
+        2.535027027130127,
+        4.300000190734863,
+        2.1453258991241455
+      ],
+      "materials": 9
+    },
+    {
+      "level": 2,
+      "triangles": 2628,
+      "vertices": 1456,
+      "size": [
+        2.5192816257476807,
+        4.304586410522461,
+        2.1453258991241455
+      ],
+      "materials": 9
+    }
   ],
-  "yaw": 0.7046690962705062,
-  "paint_color": [
-    0.511,
-    0.039,
-    1
+  "lods_unity_triangles": [
+    11688,
+    5974,
+    2164
   ],
   "materials": [
+    "NPC_SportCoupe_BodyPaint",
+    "NPC_SportCoupe_Glass",
+    "NPC_SportCoupe_Rubber",
     "NPC_SportCoupe_Details",
-    "NPC_SportCoupe_BodyPaint"
+    "NPC_SportCoupe_Alloy",
+    "NPC_SportCoupe_Headlamp",
+    "NPC_SportCoupe_TailLamp",
+    "NPC_SportCoupe_Indicator",
+    "NPC_SportCoupe_Stripe"
   ],
-  "nonmanifold_edges": 0,
-  "boundary_edges": 0,
-  "loose_vertices": 0
+  "original_prefab_identities_preserved": 4
 }

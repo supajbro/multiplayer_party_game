@@ -1,24 +1,56 @@
 {
   "name": "NPC_FamilySUV",
-  "triangles": 9996,
-  "vertices": 4915,
-  "paint_faces": 1853,
-  "size": [
-    2.689973831176758,
-    4.500000476837158,
-    2.509979248046875
+  "surface": "Texture-free PBR; authored hard surfaces; opaque glass",
+  "lods_blender": [
+    {
+      "level": 0,
+      "triangles": 13132,
+      "vertices": 6820,
+      "size": [
+        2.6672351360321045,
+        4.5,
+        2.495565891265869
+      ],
+      "materials": 9
+    },
+    {
+      "level": 1,
+      "triangles": 6386,
+      "vertices": 3407,
+      "size": [
+        2.6672351360321045,
+        4.506913185119629,
+        2.4963324069976807
+      ],
+      "materials": 9
+    },
+    {
+      "level": 2,
+      "triangles": 2614,
+      "vertices": 1459,
+      "size": [
+        2.64937424659729,
+        4.501952171325684,
+        2.4963324069976807
+      ],
+      "materials": 9
+    }
   ],
-  "yaw": 0.7062525396600703,
-  "paint_color": [
-    1,
-    0.58,
-    0.035
+  "lods_unity_triangles": [
+    11862,
+    5934,
+    2162
   ],
   "materials": [
+    "NPC_FamilySUV_BodyPaint",
+    "NPC_FamilySUV_Glass",
+    "NPC_FamilySUV_Rubber",
     "NPC_FamilySUV_Details",
-    "NPC_FamilySUV_BodyPaint"
+    "NPC_FamilySUV_Alloy",
+    "NPC_FamilySUV_Headlamp",
+    "NPC_FamilySUV_TailLamp",
+    "NPC_FamilySUV_Indicator",
+    "NPC_FamilySUV_Accent"
   ],
-  "nonmanifold_edges": 0,
-  "boundary_edges": 0,
-  "loose_vertices": 0
+  "original_prefab_identities_preserved": 4
 }

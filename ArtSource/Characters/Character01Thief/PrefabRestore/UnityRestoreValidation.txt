@@ -1,0 +1,8 @@
+PASS: Thief uses Character01_Thief meshes, valid materials/avatar/controller; five states sampled at five times; gameplay, ragdoll and weapon/prop references resolve.
+PASS: Thief_Pistol uses Character01_Thief meshes, valid materials/avatar/controller; five states sampled at five times; gameplay, ragdoll and weapon/prop references resolve.
+PASS: Thief_AssaultRifle uses Character01_Thief meshes, valid materials/avatar/controller; five states sampled at five times; gameplay, ragdoll and weapon/prop references resolve.
+PASS: Thief_Shotgun uses Character01_Thief meshes, valid materials/avatar/controller; five states sampled at five times; gameplay, ragdoll and weapon/prop references resolve.
+PASS: Thief_RocketLauncher uses Character01_Thief meshes, valid materials/avatar/controller; five states sampled at five times; gameplay, ragdoll and weapon/prop references resolve.
+PASS: GrapplerThief uses Character01_Thief meshes, valid materials/avatar/controller; five states sampled at five times; gameplay, ragdoll and weapon/prop references resolve.
+PASS: SpeakerThief uses Character01_Thief meshes, valid materials/avatar/controller; five states sampled at five times; gameplay, ragdoll and weapon/prop references resolve.
+PASS: thief_enemy_01 uses Character01_Thief meshes, valid materials/avatar/controller; five states sampled at five times; gameplay, ragdoll and weapon/prop references resolve.

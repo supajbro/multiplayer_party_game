@@ -1,0 +1,24 @@
+{
+  "name": "NPC_SportCoupe",
+  "triangles": 10000,
+  "vertices": 4996,
+  "paint_faces": 4114,
+  "size": [
+    2.532576322555542,
+    4.300000190734863,
+    2.176217794418335
+  ],
+  "yaw": 0.7046690962705062,
+  "paint_color": [
+    0.511,
+    0.039,
+    1
+  ],
+  "materials": [
+    "NPC_SportCoupe_Details",
+    "NPC_SportCoupe_BodyPaint"
+  ],
+  "nonmanifold_edges": 0,
+  "boundary_edges": 0,
+  "loose_vertices": 0
+}

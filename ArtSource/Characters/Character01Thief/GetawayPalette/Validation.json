@@ -1,0 +1,29 @@
+{
+  "palette": {
+    "burgundy": "8E203D",
+    "plum": "381A32",
+    "charcoal": "1A181F",
+    "gold": "FFB615",
+    "white": "E5E0D6"
+  },
+  "variants": {
+    "Unarmed": {
+      "fbx_faces_updated": 4299,
+      "all_non_uv_fbx_data_identical": true
+    },
+    "Pistol": {
+      "fbx_faces_updated": 4299,
+      "all_non_uv_fbx_data_identical": true
+    },
+    "AssaultRifle": {
+      "fbx_faces_updated": 4299,
+      "all_non_uv_fbx_data_identical": true
+    },
+    "Shotgun": {
+      "fbx_faces_updated": 4299,
+      "all_non_uv_fbx_data_identical": true
+    }
+  },
+  "geometry_weights_rigs_and_animations_preserved": true,
+  "all_unity_metadata_unchanged": true
+}

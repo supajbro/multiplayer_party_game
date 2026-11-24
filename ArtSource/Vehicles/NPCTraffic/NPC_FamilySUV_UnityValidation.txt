@@ -1,0 +1,4 @@
+PASS: LOD0; triangles=11862; screen height=0.22; bounds=Center: (0.00, 0.93, 0.00), Extents: (0.99, 0.93, 1.67)
+PASS: LOD1; triangles=5934; screen height=0.09; bounds=Center: (0.00, 0.93, 0.00), Extents: (0.99, 0.93, 1.68)
+PASS: LOD2; triangles=2162; screen height=0.018; bounds=Center: (0.00, 0.93, 0.00), Extents: (0.98, 0.93, 1.67)
+PASS: saved LODGroup, texture-free PBR materials and shaders resolve; original scale and ground pivot preserved; damage/reset tint verified independently for every material slot and LOD.

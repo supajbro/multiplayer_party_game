@@ -1,0 +1,66 @@
+{
+  "Thief": {
+    "preserved_common_component_blocks": 10,
+    "restored_references": [
+      "m_ragdoll",
+      "m_animator"
+    ],
+    "archive": "ArtSource\\Characters\\ThiefEnemy01\\PrefabUpgrade\\OriginalPrefabs\\Thief.prefab"
+  },
+  "Thief_Pistol": {
+    "preserved_common_component_blocks": 11,
+    "restored_references": [
+      "m_muzzle",
+      "m_heldWeaponRenderers",
+      "m_ragdoll",
+      "m_animator"
+    ],
+    "archive": "ArtSource\\Characters\\ThiefEnemy01\\PrefabUpgrade\\OriginalPrefabs\\Thief_Pistol.prefab"
+  },
+  "Thief_AssaultRifle": {
+    "preserved_common_component_blocks": 11,
+    "restored_references": [
+      "m_muzzle",
+      "m_heldWeaponRenderers",
+      "m_animator",
+      "m_ragdoll"
+    ],
+    "archive": "ArtSource\\Characters\\ThiefEnemy01\\PrefabUpgrade\\OriginalPrefabs\\Thief_AssaultRifle.prefab"
+  },
+  "Thief_Shotgun": {
+    "preserved_common_component_blocks": 11,
+    "restored_references": [
+      "m_animator",
+      "m_ragdoll",
+      "m_muzzle",
+      "m_heldWeaponRenderers"
+    ],
+    "archive": "ArtSource\\Characters\\ThiefEnemy01\\PrefabUpgrade\\OriginalPrefabs\\Thief_Shotgun.prefab"
+  },
+  "Thief_RocketLauncher": {
+    "preserved_common_component_blocks": 46,
+    "restored_references": [
+      "m_heldWeaponRenderers",
+      "m_ragdoll",
+      "m_animator"
+    ],
+    "archive": "ArtSource\\Characters\\ThiefEnemy01\\PrefabUpgrade\\OriginalPrefabs\\Thief_RocketLauncher.prefab"
+  },
+  "GrapplerThief": {
+    "preserved_common_component_blocks": 61,
+    "restored_references": [
+      "m_gun",
+      "m_animator",
+      "m_ragdoll"
+    ],
+    "archive": "ArtSource\\Characters\\ThiefEnemy01\\PrefabUpgrade\\OriginalPrefabs\\GrapplerThief.prefab"
+  },
+  "SpeakerThief": {
+    "preserved_common_component_blocks": 38,
+    "restored_references": [
+      "m_ragdoll",
+      "m_animator"
+    ],
+    "archive": "ArtSource\\Characters\\ThiefEnemy01\\PrefabUpgrade\\OriginalPrefabs\\SpeakerThief.prefab"
+  }
+}

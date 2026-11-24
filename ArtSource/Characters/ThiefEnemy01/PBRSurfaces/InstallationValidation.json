@@ -1,0 +1,15 @@
+{
+  "preserved_files": 34,
+  "all_preserved_hashes_match": true,
+  "fbx_geometry_rig_weights_uvs_25_clips_unchanged": true,
+  "all_prefabs_controllers_weapon_mounts_and_guids_unchanged": true,
+  "source_geometry_animation_fingerprint_identical": true,
+  "unity_validation": "UnityPBRValidation.txt",
+  "installed": {
+    "Assets/_Project/Textures/Thieves/ThiefEnemy01/thief_enemy_01_BaseColor.png": "6e8aa961a3191cc3f04827c113fcc03b410e673202035ab06e4dc76a6341ddef",
+    "Assets/_Project/Textures/Thieves/ThiefEnemy01/thief_enemy_01_Normal.png": "9f434a0f8f97d5cd291c118eceb20bcaff796e8ba49034620802353fdbf77242",
+    "Assets/_Project/Textures/Thieves/ThiefEnemy01/thief_enemy_01_MetallicOcclusionSmoothness.png": "4cecaf24c7af0c3ed5b2c306b42395f604d8a8a15618600c8f2fb2608092fc25",
+    "Assets/_Project/Materials/Thieves/ThiefEnemy01/thief_enemy_01.mat": "b3b2e157cb2c6a171a9f6472d247eadbf0098be1e65eabe7e9d2673ed6c125e7",
+    "ArtSource/Characters/ThiefEnemy01/thief_enemy_01.blend": "884f86a70a814cff7702b4344df6b1dea505c96faf64487b2307c403f0120266"
+  }
+}

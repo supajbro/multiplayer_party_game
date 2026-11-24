@@ -1,0 +1,14 @@
+{
+  "ArtSource/Vehicles/NPCTraffic/NPC_SportCoupe.blend": "3ad5740b95a7d633756490ec17b018c967ad6e5f0f503b395f083c09da6c0637",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/NPC_SportCoupe.fbx": "4a45ba7436bf86044a1871b08b9100d58a60b0d34329f0ef7ab6b4da70d76595",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/NPC_SportCoupe.fbx.meta": "bd231a65fd0e695a6f24e03954fa9b8cc2c53ac295c1e1e871f70f61d6647185",
+  "Assets/_Project/Prefabs/Vehicles/NPCTraffic/NPC_SportCoupe.prefab": "7fbd6095e9a6571161dfb9e42ba31ddbb62d0be9ca773be43db74a9b203dff06",
+  "Assets/_Project/Prefabs/Vehicles/NPCTraffic/NPC_SportCoupe.prefab.meta": "dfc70e058d8be1838b89d2ee652d8dcc031cda9b2b70585c7b655502a9d7c32e",
+  "ArtSource/Vehicles/NPCTraffic/NPC_SportCoupe_MeshReport.json": "30cf26097e9aac9752b90d302aac1d9c0ee7b7064d92d504c5a07e7af2d5cf5a",
+  "ArtSource/Vehicles/NPCTraffic/NPC_SportCoupe_Front.png": "1f1cd201cbe94baefdd3922d64879a6fcc99a275e1aafe0a94ef6910d6bf968a",
+  "ArtSource/Vehicles/NPCTraffic/NPC_SportCoupe_Rear.png": "29e8dcbc89adbd1273b68acdefcd538229c843452369f3d76732817bb0571d9c",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/Materials/NPC_SportCoupe_BodyPaint.mat": "c6e7c33b1f07da93c918c4df2583f40d2413d59e77930cd4b075c86a0507be5c",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/Materials/NPC_SportCoupe_BodyPaint.mat.meta": "49cdc81f36dcfe710cd7210f8f2f152929f0868d038e1c8ac923bcff4ed8da6c",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/Materials/NPC_SportCoupe_Details.mat": "d315607ecbb38f679b349e0184d16dc2ce2baa9eccf0fdb38964bfbec73baa67",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/Materials/NPC_SportCoupe_Details.mat.meta": "b1eade9e82568a235e073a6534d8536d90dca83b7781dc3880df22fe34ec6e0e"
+}

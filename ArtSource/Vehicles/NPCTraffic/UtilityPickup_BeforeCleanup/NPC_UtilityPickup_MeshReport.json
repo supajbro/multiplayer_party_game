@@ -1,0 +1,24 @@
+{
+  "name": "NPC_UtilityPickup",
+  "triangles": 8664,
+  "vertices": 4208,
+  "paint_faces": 1389,
+  "size": [
+    2.8924560546875,
+    4.900000095367432,
+    2.895883560180664
+  ],
+  "yaw": 0.6897735811580612,
+  "paint_color": [
+    1,
+    0.029,
+    0.053
+  ],
+  "materials": [
+    "NPC_UtilityPickup_Details",
+    "NPC_UtilityPickup_BodyPaint"
+  ],
+  "nonmanifold_edges": 0,
+  "boundary_edges": 0,
+  "loose_vertices": 0
+}

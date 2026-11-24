@@ -1,0 +1,12 @@
+PASS model Unarmed: 7541 imported vertices, valid bones/materials, 0 clips
+PASS model Pistol: 7541 imported vertices, valid bones/materials, 5 clips
+PASS model AssaultRifle: 7541 imported vertices, valid bones/materials, 5 clips
+PASS model Shotgun: 7541 imported vertices, valid bones/materials, 5 clips
+PASS prefab Thief: existing model, bone and material references resolve
+PASS prefab Thief_Pistol: existing model, bone and material references resolve
+PASS prefab Thief_AssaultRifle: existing model, bone and material references resolve
+PASS prefab Thief_Shotgun: existing model, bone and material references resolve
+PASS prefab Thief_RocketLauncher: existing model, bone and material references resolve
+PASS prefab GrapplerThief: existing model, bone and material references resolve
+PASS prefab SpeakerThief: existing model, bone and material references resolve
+PASS prefab thief_enemy_01: existing model, bone and material references resolve

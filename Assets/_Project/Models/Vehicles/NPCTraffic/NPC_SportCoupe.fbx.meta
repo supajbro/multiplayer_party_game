@@ -7,6 +7,11 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: NPC_SportCoupe_Alloy
+    second: {fileID: 2100000, guid: 638ea20a0d14557498b85e1c1a402c91, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: NPC_SportCoupe_BodyPaint
     second: {fileID: 2100000, guid: 24c78b01b275e6e4f9026b11ef703255, type: 2}
   - first:
@@ -14,6 +19,36 @@ ModelImporter:
       assembly: UnityEngine.CoreModule
       name: NPC_SportCoupe_Details
     second: {fileID: 2100000, guid: 096116faec010fd4dabf68beb3c9bee4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_SportCoupe_Glass
+    second: {fileID: 2100000, guid: 78deaeeb606297145ac389b87bb8f877, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_SportCoupe_Headlamp
+    second: {fileID: 2100000, guid: 2be2312a7d4406e4a9c62eea1080a917, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_SportCoupe_Indicator
+    second: {fileID: 2100000, guid: d3ce5975dfcf9624683c13061bbb4943, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_SportCoupe_Rubber
+    second: {fileID: 2100000, guid: d3279023fa0314f43b8814c6339604d4, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_SportCoupe_Stripe
+    second: {fileID: 2100000, guid: 0ccb4642623b1bd4195c1c2c66d32862, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_SportCoupe_TailLamp
+    second: {fileID: 2100000, guid: f1ef66e5863312f468a1765eadaac2c9, type: 2}
   materials:
     materialImportMode: 1
     materialName: 0

@@ -7,6 +7,16 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: NPC_FamilySUV_Accent
+    second: {fileID: 2100000, guid: 697647612dfec5b409de43e4aa904b25, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_FamilySUV_Alloy
+    second: {fileID: 2100000, guid: 752b3a6aa8b69a54fba0f4cdf0544c76, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: NPC_FamilySUV_BodyPaint
     second: {fileID: 2100000, guid: d0a907fdf38d88046b3231b3570c341a, type: 2}
   - first:
@@ -14,6 +24,31 @@ ModelImporter:
       assembly: UnityEngine.CoreModule
       name: NPC_FamilySUV_Details
     second: {fileID: 2100000, guid: 5bda284af2765ea4a891a55dc225dd30, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_FamilySUV_Glass
+    second: {fileID: 2100000, guid: 3f478d4df3bb23d47ac5cfe498146c4e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_FamilySUV_Headlamp
+    second: {fileID: 2100000, guid: f44f1f4ca3eb77443962323659629749, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_FamilySUV_Indicator
+    second: {fileID: 2100000, guid: 0cdc43da63d458540bd124e67d521b62, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_FamilySUV_Rubber
+    second: {fileID: 2100000, guid: 1a041d472e043b54f8f64640e6fe9ea2, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: NPC_FamilySUV_TailLamp
+    second: {fileID: 2100000, guid: 343eef985af00e04c8f02fd89d465b91, type: 2}
   materials:
     materialImportMode: 1
     materialName: 0

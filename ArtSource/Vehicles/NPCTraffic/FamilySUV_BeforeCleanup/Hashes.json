@@ -1,0 +1,14 @@
+{
+  "ArtSource/Vehicles/NPCTraffic/NPC_FamilySUV.blend": "3cd4261d5e214ad3428dd6afda0f21b52163fb57d407962ae4972b5a8f100010",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/NPC_FamilySUV.fbx": "caa0ffeeedd75bcab695ee9a15fc493f306248fa25983660bf8f9106efb7d331",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/NPC_FamilySUV.fbx.meta": "c130de381aa9e39912133f53f44306a4ee4835ccffcf618dedc93b35b17bfa1c",
+  "Assets/_Project/Prefabs/Vehicles/NPCTraffic/NPC_FamilySUV.prefab": "8ba493d003115a044abf8a2ae7f8e10f85cb21f15a64e39c388ccb599b5b3681",
+  "Assets/_Project/Prefabs/Vehicles/NPCTraffic/NPC_FamilySUV.prefab.meta": "e02e839b77caeae0c69294088d577ed3de494ca32011efe5ca864eb4b10a9d34",
+  "ArtSource/Vehicles/NPCTraffic/NPC_FamilySUV_MeshReport.json": "6fb1523a6bf689a2ff1321257d859faee3d9ca3ab97ad06b90c26305aacbc9e1",
+  "ArtSource/Vehicles/NPCTraffic/NPC_FamilySUV_Front.png": "671b23909741be0113b3ec09f4047cc2d6885309a086f23a63c4810b7acf74fb",
+  "ArtSource/Vehicles/NPCTraffic/NPC_FamilySUV_Rear.png": "529aa9a8fa7c2c97d7e64a10f3289f1f1f90a18573d1e543d60d731d2d1df26f",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/Materials/NPC_FamilySUV_BodyPaint.mat": "3a906dda526f8c2837145c77731cd3c7a6bb899a11957659f4f66d5123b0c511",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/Materials/NPC_FamilySUV_BodyPaint.mat.meta": "65397389aa3f52570d7262167d33b4b8a57de40ed3c39e4cf14c1b882676343e",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/Materials/NPC_FamilySUV_Details.mat": "d0029916f23bd421973dc248b324487c52f37d781361f3eacd9297ac0bcc7c9e",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/Materials/NPC_FamilySUV_Details.mat.meta": "9a0ea9e81ffc3f1f87bc9f1f1f4f1485146bc23b1151c73334bf7f8333a9ce48"
+}

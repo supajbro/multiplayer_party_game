@@ -1,0 +1,8 @@
+Generated with built-in image_gen. Clothing colour concept only; no Unity assets changed.
+
+Use case: precise-object-edit.
+Asset type: clothing-colour concept sheet for the existing Character01_Thief game model.
+Input image 1 is the EDIT TARGET: original four-view Character01_Thief sheet. Input image 2 is a PALETTE REFERENCE ONLY: rogue car. Do not include any vehicles.
+Edit image 1, preserving its four-panel layout, front / three-quarter / side / back views, exact same model, pose, head, face, eyes, eyebrows, hair, skin tone, exposed skin, ears, long neck, lanky body proportions, silhouette, garment shapes and low-poly 3D rendering. Change ONLY colours of the existing clothing and wearable backpack, consistently in all four views. Do not redesign geometry or add new items.
+Clothing palette derived from rogue car and getaway truck materials: burgundy #A62D49 for main jacket fabric; deep plum #48213F for trousers and backpack main fabric; charcoal #25222B for mask, gloves, socks, jacket cuffs, central placket, hem, backpack straps and shoe uppers. Beanie burgundy with its existing folded brim charcoal. Small golden-yellow #FFB615 accents on existing jacket buttons, existing chest pocket edge, backpack small pocket edge and a narrow existing sneaker trim. Existing sneaker soles and laces remain warm off-white. Preserve the jacket's existing pocket, rolled sleeves, collar, buttons and straps exactly. The yellow is restrained accent colour rather than large new graphics. No armour, no new logos, no new lightning motif, no weapons.
+Maintain identical neutral gray studio background, lighting, framing, and panel labels. This is a faithful recolour concept of this particular original model, not a new character design.

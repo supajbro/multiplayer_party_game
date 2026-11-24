@@ -16,8 +16,6 @@ namespace CouchGuys.ProceduralGeneration
         private Material m_trunkMaterial;
         private Material m_leafMaterial;
         private Material m_rockMaterial;
-        private Material m_barrierMaterial;
-        private Material m_warningMaterial;
 
         public int PerimeterColliderCount { get; private set; }
         public int ProtectedPerimeterEdgeCount { get; private set; }
@@ -52,7 +50,6 @@ namespace CouchGuys.ProceduralGeneration
             CreateTunnels(generator, settings);
             CreateScenery(generator, edges, settings, random);
             CreateRearHillForest(generator, playableBounds, outerOffset, settings, random);
-            CreateRoadClosures(generator, playableBounds, settings, random);
 
             float recoveryMaximumZ = playableBounds.yMax + outerOffset - settings.ColliderThickness;
             if (generator.HasSummitExit)
@@ -393,8 +390,7 @@ namespace CouchGuys.ProceduralGeneration
                     fallback = CreateFallbackRock(parent, localPosition, rotation, random, true);
                     break;
                 case NeighbourhoodBorderType.Construction:
-                    fallback = CreateFallbackBarrier(parent, localPosition, rotation, random, false);
-                    break;
+                    return false;
                 default:
                     fallback = CreateFallbackTree(parent, localPosition, rotation, random);
                     break;
@@ -516,61 +512,6 @@ namespace CouchGuys.ProceduralGeneration
                 colliders[colliderIndex].enabled = false;
         }
 
-        private void CreateRoadClosures(
-            NeighbourhoodGenerator generator,
-            Rect playableBounds,
-            NeighbourhoodBorderSettings settings,
-            System.Random random)
-        {
-            Transform closureRoot = new GameObject("RoadClosures").transform;
-            closureRoot.SetParent(transform, false);
-            float edgeTolerance = generator.TileSize * 0.65f;
-            for (int index = 0; index < generator.GeneratedRoads.Count; index++)
-            {
-                GeneratedRoad road = generator.GeneratedRoads[index];
-                if (generator.IsTrafficGatewayRoad(road.Coordinate)) continue;
-                Vector3 local = transform.InverseTransformPoint(road.transform.position);
-                Vector3 outward;
-                if (Mathf.Abs(local.x - playableBounds.xMin) <= edgeTolerance) outward = Vector3.left;
-                else if (Mathf.Abs(local.x - playableBounds.xMax) <= edgeTolerance) outward = Vector3.right;
-                else if (Mathf.Abs(local.z - playableBounds.yMin) <= edgeTolerance) outward = Vector3.back;
-                else if (Mathf.Abs(local.z - playableBounds.yMax) <= edgeTolerance) outward = Vector3.forward;
-                else continue;
-                if (generator.HasSummitExit && road.Role == GeneratedRoadRole.Primary &&
-                    Vector3.Dot(outward, Vector3.forward) > 0.9f)
-                    continue;
-
-                Vector3 barrierLocal = local + outward * (generator.TileSize * 0.48f);
-                Vector3 world = transform.TransformPoint(barrierLocal);
-                world.y = generator.SampleTerrainHeight(world) + 0.65f;
-                barrierLocal = transform.InverseTransformPoint(world);
-                Quaternion rotation = Quaternion.LookRotation(outward, Vector3.up);
-                GameObject prefab = SelectPrefab(settings.RoadClosurePrefabs, random);
-                GameObject closure;
-                if (prefab != null)
-                {
-                    closure = Instantiate(prefab, closureRoot);
-                    closure.name = $"RoadClosed_{road.Coordinate.X}_{road.Coordinate.Y}";
-                    closure.transform.localPosition = barrierLocal;
-                    closure.transform.localRotation = rotation;
-                }
-                else
-                {
-                    closure = CreateFallbackBarrier(
-                        closureRoot,
-                        barrierLocal,
-                        rotation,
-                        random,
-                        true);
-                }
-
-                BoxCollider collider = closure.GetComponent<BoxCollider>();
-                if (collider == null) collider = closure.AddComponent<BoxCollider>();
-                collider.size = new Vector3(generator.TileSize * 0.9f, 2.2f, 0.8f);
-                RoadClosureCount++;
-            }
-        }
-
         private GameObject CreateFallbackTree(
             Transform parent,
             Vector3 position,
@@ -615,31 +556,6 @@ namespace CouchGuys.ProceduralGeneration
                     ? new Vector3(RandomRange(random, 5f, 9f), height, RandomRange(random, 4f, 7f))
                     : new Vector3(1.8f, height, 1.5f),
                 GetMaterial(ref m_rockMaterial, "Border Stone", new Color(0.38f, 0.36f, 0.31f)));
-            return root;
-        }
-
-        private GameObject CreateFallbackBarrier(
-            Transform parent,
-            Vector3 position,
-            Quaternion rotation,
-            System.Random random,
-            bool roadClosure)
-        {
-            GameObject root = new GameObject(roadClosure ? "RoadClosedBarrier" : "ConstructionBarrier");
-            root.transform.SetParent(parent, false);
-            root.transform.localPosition = position;
-            root.transform.localRotation = rotation;
-            float width = roadClosure ? 7.5f : RandomRange(random, 3f, 5f);
-            CreatePrimitive(root.transform, PrimitiveType.Cube, "Barrier",
-                Vector3.zero, new Vector3(width, 0.8f, 0.65f),
-                GetMaterial(ref m_barrierMaterial, "Border Barriers", new Color(0.85f, 0.86f, 0.79f)));
-            for (int stripe = -2; stripe <= 2; stripe++)
-            {
-                CreatePrimitive(root.transform, PrimitiveType.Cube, "WarningStripe",
-                    new Vector3(stripe * width * 0.18f, 0f, -0.34f),
-                    new Vector3(width * 0.09f, 0.82f, 0.04f),
-                    GetMaterial(ref m_warningMaterial, "Border Warning Orange", new Color(1f, 0.28f, 0.03f)));
-            }
             return root;
         }
 

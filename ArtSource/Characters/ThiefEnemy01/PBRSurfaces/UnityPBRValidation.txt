@@ -1,0 +1,7 @@
+PASS: Unarmed; five states, 13 poses each, all four unchanged LODs; valid 22-bone skinning and saved bounds.
+PASS: Pistol; five states, 13 poses each, all four unchanged LODs; valid 22-bone skinning and saved bounds.
+PASS: AssaultRifle; five states, 13 poses each, all four unchanged LODs; valid 22-bone skinning and saved bounds.
+PASS: Shotgun; five states, 13 poses each, all four unchanged LODs; valid 22-bone skinning and saved bounds.
+PASS: Speaker; five states, 13 poses each, all four unchanged LODs; valid 22-bone skinning and saved bounds.
+PASS: 25 clips, UVs and mesh budgets retained; standard lit surfaces, generated normal map disabled, no emission or baked occlusion.
+PASS: actual URP renders respond to light direction (mean pixel change=0.1692) and intensity (brightness increase=0.2210); no emission; LOD0 casts and receives shadows.

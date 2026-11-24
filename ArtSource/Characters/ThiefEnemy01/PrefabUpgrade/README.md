@@ -1,6 +1,8 @@
 # Production thief prefab upgrade
 
-Updated the seven character prefabs under `Assets/_Project/Prefabs/Enemies/`: Thief, Thief_Pistol, Thief_AssaultRifle, Thief_Shotgun, Thief_RocketLauncher, GrapplerThief and SpeakerThief. RogueCar and the shared thief_enemy_01 visual prefab were left intact.
+Historical migration: the gameplay prefabs and shared visual have since been restored to `Character01_Thief`. See `ArtSource/Characters/Character01Thief/PrefabRestore/` for current restoration checks and backups. The original snapshots here supplied the Character01 visual, rig and attachments; current gameplay component settings were retained.
+
+The earlier upgrade updated seven character prefabs under `Assets/_Project/Prefabs/Enemies/`: Thief, Thief_Pistol, Thief_AssaultRifle, Thief_Shotgun, Thief_RocketLauncher, GrapplerThief and SpeakerThief. RogueCar and the shared thief_enemy_01 visual prefab were left intact during that earlier migration.
 
 Each uses the saved thief_enemy_01 visual prefab with its four body LODs and retargeted controller. Following the expressive-pose revision, base Thief uses Unarmed, SpeakerThief uses Speaker, pistol/grappler use Pistol, AssaultRifle/rocket use AssaultRifle, and Shotgun uses Shotgun. Original visual height is retained independently of customized gameplay collider sizes. All prefab GUIDs and gameplay-root component IDs are preserved. Root serialized gameplay fields retain their original values, changing only visual, muzzle, renderer and ragdoll references. Current animation and posed-preview evidence is in the sibling ExpressivePoses folder; this folder retains the original visual-migration history.
 

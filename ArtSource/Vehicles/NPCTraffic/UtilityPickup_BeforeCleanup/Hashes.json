@@ -1,0 +1,14 @@
+{
+  "ArtSource/Vehicles/NPCTraffic/NPC_UtilityPickup.blend": "4666cc3c9c874acf93bd63004f02d21bcc43cee3c71450945d8d36d3ed9a340c",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/NPC_UtilityPickup.fbx": "5e68c15f1692b2ae5e283094baa5bbb58d0fda19be0f9f783cc8acf323c661a0",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/NPC_UtilityPickup.fbx.meta": "156f6d867ef1419d0b8c7c1ab61e7f817f56ea8b339d8d57fc29aae478654837",
+  "Assets/_Project/Prefabs/Vehicles/NPCTraffic/NPC_UtilityPickup.prefab": "0aa1089166b1bc93ef8afdf08e3d085507136b663d03380088c131556309202b",
+  "Assets/_Project/Prefabs/Vehicles/NPCTraffic/NPC_UtilityPickup.prefab.meta": "7e7c64aa97c50794bc5ea80331254c73fcd24c8192655d810e523bb72ef4b7c9",
+  "ArtSource/Vehicles/NPCTraffic/NPC_UtilityPickup_MeshReport.json": "39d5f8d167b8e813e8fdda2c804179c71cfa313726757c9fc4b155c29934bb73",
+  "ArtSource/Vehicles/NPCTraffic/NPC_UtilityPickup_Front.png": "3fd51422cad1c879e6ffc3b1c850e0bef9328cb0c83a383949ec4fd5a306d677",
+  "ArtSource/Vehicles/NPCTraffic/NPC_UtilityPickup_Rear.png": "45f07a5469235ce5b89446b5511846f4619832bea0052d4b8defb3c6acf53ff0",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/Materials/NPC_UtilityPickup_BodyPaint.mat": "98a61cfcd6c09b55ebf7e42c4f08f0f53664c2a8ef4ffc5babb936d8d873936e",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/Materials/NPC_UtilityPickup_BodyPaint.mat.meta": "b0415f059f7fecee542255b8a60f751b970cdb2899b47f51037807fbbeaa9ef7",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/Materials/NPC_UtilityPickup_Details.mat": "83ed4cf6e14670151fe18a6233a6fb337abd2631fd435704f61265a8d7067146",
+  "Assets/_Project/Models/Vehicles/NPCTraffic/Materials/NPC_UtilityPickup_Details.mat.meta": "9ae242033acb61f52a9811048a5bf3a723b915cfef6e716d0f7840587d39f982"
+}

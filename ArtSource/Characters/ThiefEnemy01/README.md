@@ -1,6 +1,8 @@
 ﻿# thief_enemy_01 — optimized LODs and animations
 
-Use `Assets/_Project/Prefabs/Enemies/thief_enemy_01.prefab` for gameplay. Its Inspector-configurable LODGroup selects one skinned mesh at a time. The FBX at `Assets/_Project/Models/Thieves/thief_enemy_01.fbx` contains all four meshes and all 15 clips. The editable Blender master and saved prefab retain a T-pose.
+Current production status: all eight thief prefabs in `Assets/_Project/Prefabs/Enemies/` have been restored to `Character01_Thief`. The shared visual retains the `thief_enemy_01.prefab` path and GUID for compatibility, but now supplies Character01 too. This folder preserves the alternate model and its authoring history. See `ArtSource/Characters/Character01Thief/PrefabRestore/README.txt` for the restoration, preserved gameplay settings and Unity validation.
+
+The notes below describe the earlier alternate-model configuration. Its FBX at `Assets/_Project/Models/Thieves/thief_enemy_01.fbx` and editable Blender master remain available with their existing LODs and animations.
 
 | LOD | Triangles | Unity vertices (including seams) | Bone influences | Screen-height cutoff | Cast shadows |
 | --- | ---: | ---: | ---: | ---: | --- |
@@ -53,3 +55,9 @@ Explicit offline workflow:
 5. `Tools/install_thief_enemy_01_lods.py`: install validated outputs while preserving the model GUID; refuses to overwrite the delivered prefab/controller folder.
 
 No builder is installed in Unity Assets or runs on import, script reload or Play mode. Preserve later Inspector/source changes before deliberately reauthoring. Older prepare/finish scripts document the original generation stage and are not part of this final workflow.
+
+## Current PBR surface revision
+
+`PBRSurfaces/README.txt` documents the current material pass. It keeps the Getaway Crew costume and replaces generated skin/leather shading and normal relief with a clean Blender surface palette: skin, matte cloth, gold graphics, satin mask, leather, rubber and eyes. The Unity material remains standard URP Lit; colour and physical surface parameters use the existing single-material atlas, with no emission or baked shadow/AO darkening. Actual Unity renders verify response to light direction and intensity. This supersedes the earlier Getaway Crew material/maps while retaining its design.
+
+The gameplay FBX, all 25 clips, four LOD meshes, rig, UVs, weights, enemy prefabs, controllers, mounts and metadata remain byte-identical. The Blender material-only save has an identical geometry/rig/animation fingerprint. See `PBRSurfaces/InstallationValidation.json`, `SourcePreservationValidation.json` and `UnityPBRValidation.txt` for the checks. Current previews are in `PBRSurfaces/`; older root and GetawayCrew previews document earlier appearances.
