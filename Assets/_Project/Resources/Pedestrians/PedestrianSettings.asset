@@ -17,6 +17,13 @@ MonoBehaviour:
   WalkingSpeed: 1.35
   RunningSpeed: 4.5
   GunshotDetectionRadius: 30
+  InjuryDetectionRadius: 15
+  ScreamVoicePrefab: {fileID: 8200000, guid: fc1e212e3f1d4679baae4e09affef9e7, type: 3}
+  ScreamClips:
+  - {fileID: 8300000, guid: f465a240872c4ffe8e2a8f9721884dc2, type: 3}
+  - {fileID: 8300000, guid: 846134b3dad148928ab3c148616f81a2, type: 3}
+  - {fileID: 8300000, guid: b5435ae8759543fea7d0bb1745e5930c, type: 3}
+  - {fileID: 8300000, guid: bb6f29bb074244bdb3395ae59b8acd0a, type: 3}
   FrightenedDuration: 7
   CorpseDuration: 12
   LethalVehicleSpeed: 3

@@ -23,6 +23,7 @@ namespace CouchGuys.UI
         [SerializeField] private Slider m_volumeSlider;
         [SerializeField] private Button m_settingsBackButton;
         [SerializeField] private MultiplayerMenuController m_multiplayerMenu;
+        [SerializeField] private MainMenuIntro m_menuIntro;
 
         private bool m_launching;
 
@@ -84,6 +85,7 @@ namespace CouchGuys.UI
 
         public void StartHost() => m_multiplayerMenu?.OpenHost();
         public void JoinGame() => m_multiplayerMenu?.OpenJoin();
+        public void OpenCustomise() => m_menuIntro?.OpenCustomise();
 
         public void Initialise(Button soloButton, Button multiplayerButton, Button settingsButton)
         {
@@ -99,6 +101,7 @@ namespace CouchGuys.UI
             m_soloButton?.onClick.AddListener(StartHost);
             m_multiplayerButton?.onClick.AddListener(JoinGame);
             m_settingsButton?.onClick.AddListener(OpenSettings);
+            m_customiseButton?.onClick.AddListener(OpenCustomise);
             m_settingsBackButton?.onClick.AddListener(CloseSettings);
         }
 
@@ -114,6 +117,7 @@ namespace CouchGuys.UI
             m_soloButton?.onClick.RemoveListener(StartHost);
             m_multiplayerButton?.onClick.RemoveListener(JoinGame);
             m_settingsButton?.onClick.RemoveListener(OpenSettings);
+            m_customiseButton?.onClick.RemoveListener(OpenCustomise);
             m_settingsBackButton?.onClick.RemoveListener(CloseSettings);
         }
 

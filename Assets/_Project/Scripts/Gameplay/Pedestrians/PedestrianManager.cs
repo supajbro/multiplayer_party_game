@@ -112,6 +112,20 @@ namespace CouchGuys.Gameplay.Pedestrians
             }
         }
 
+        internal static void ReportInjuryServer(Vector3 origin, PedestrianController victim)
+        {
+            if (!ServerStarted) return;
+            foreach (PedestrianManager manager in s_managers)
+            {
+                if (manager.m_settings == null) continue;
+                float radius = Mathf.Max(0f, manager.m_settings.InjuryDetectionRadius);
+                foreach (PedestrianController npc in manager.m_active)
+                    if (npc != null && npc != victim &&
+                        (npc.transform.position - origin).sqrMagnitude <= radius * radius)
+                        npc.FrightenServer(origin);
+            }
+        }
+
         internal void Despawn(PedestrianController npc)
         {
             m_active.Remove(npc);

@@ -1,0 +1,24 @@
+{
+  "vertices": 14314,
+  "triangles": 27686,
+  "bones": 35,
+  "materials": [
+    "Wheelie_Tyre",
+    "Wheelie_Mechanics",
+    "Wheelie_Cyan",
+    "Wheelie_Armour",
+    "Wheelie_Screen"
+  ],
+  "root": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "axle": [
+    0.0,
+    0.0,
+    0.20249998569488525
+  ],
+  "unweighted": 0,
+  "face_uv": "UVMap existing rotated island; Screen01 normalized"
+}

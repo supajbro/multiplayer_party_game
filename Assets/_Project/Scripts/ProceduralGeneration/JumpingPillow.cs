@@ -15,6 +15,10 @@ namespace CouchGuys.ProceduralGeneration
         [SerializeField, Min(0f)] private float m_minimumLandingSpeed = 3f;
         [SerializeField, Range(0f, 1f)] private float m_minimumUpNormal = 0.55f;
         [SerializeField, Min(0.05f)] private float m_bounceCooldown = 0.2f;
+        [Header("Bounce Audio")]
+        [SerializeField] private AudioSource m_bounceAudioSource;
+        [SerializeField] private AudioClip m_bounceClip;
+        [SerializeField, Range(0f, 1f)] private float m_bounceVolume = 1f;
         [Header("Terrain Placement")]
         [SerializeField] private float m_groundOffset = 0.01f;
 
@@ -37,6 +41,12 @@ namespace CouchGuys.ProceduralGeneration
         public float MinimumLandingSpeed => m_minimumLandingSpeed;
         public float MinimumUpNormal => m_minimumUpNormal;
         public float BounceCooldown => m_bounceCooldown;
+
+        private void PlayBounceSound()
+        {
+            if (m_bounceAudioSource != null && m_bounceClip != null)
+                m_bounceAudioSource.PlayOneShot(m_bounceClip, m_bounceVolume);
+        }
 
         public void FitToTerrain(Func<Vector3, float> sampleHeight)
         {

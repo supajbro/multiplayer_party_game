@@ -1,0 +1,26 @@
+{
+  "palette_matches_character01": true,
+  "variants": {
+    "Unarmed": {
+      "faces_updated": 3886,
+      "all_non_uv_fbx_data_identical": true,
+      "source_saved_in_t_pose": true
+    },
+    "Pistol": {
+      "faces_updated": 3886,
+      "all_non_uv_fbx_data_identical": true,
+      "source_saved_in_t_pose": true
+    },
+    "AssaultRifle": {
+      "faces_updated": 3886,
+      "all_non_uv_fbx_data_identical": true,
+      "source_saved_in_t_pose": true
+    },
+    "Shotgun": {
+      "faces_updated": 3886,
+      "all_non_uv_fbx_data_identical": true,
+      "source_saved_in_t_pose": true
+    }
+  },
+  "metadata_preserved": true
+}

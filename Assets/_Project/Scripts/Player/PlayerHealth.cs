@@ -20,6 +20,7 @@ namespace CouchGuys.Player
 
         [Header("Health")]
         [SerializeField, Min(1f)] private float m_maxHealth = 100f;
+        [SerializeField] private WheelieSettings m_wheelieSettings;
         [Tooltip("One damage event at or above this fraction of maximum health causes a knockdown.")]
         [SerializeField, Range(0.01f, 1f)] private float m_knockdownDamageFraction = 0.25f;
 
@@ -86,19 +87,19 @@ namespace CouchGuys.Player
         public bool TryHealPercentageServer(float percentage)
         {
             if (!CanHeal || float.IsNaN(percentage) || float.IsInfinity(percentage) || percentage <= 0f) return false;
-            m_currentHealth.Value = Mathf.Min(m_maxHealth, m_currentHealth.Value + m_maxHealth * Mathf.Clamp(percentage, 0f, 100f) / 100f);
+            m_currentHealth.Value = Mathf.Min(MaximumHealth, m_currentHealth.Value + MaximumHealth * Mathf.Clamp(percentage, 0f, 100f) / 100f);
             return true;
         }
 
         public float CurrentHealth => m_currentHealth.Value;
-        public float MaximumHealth => m_maxHealth;
+        public float MaximumHealth => m_wheelieSettings != null ? m_wheelieSettings.MaximumHealth : m_maxHealth;
         public bool IsAlive => m_currentHealth.Value > 0f;
         public bool IsDowned => !IsAlive && m_knockedDown.Value;
         /// <summary>Presentation reads the existing replicated revive lease; no extra traffic.</summary>
         public bool IsBeingRevived => IsDowned && m_reviver.Value != null;
         public bool HasPendingRespawn => IsDowned && !IsAiTeammate;
         public float DownedRemaining => m_downedRemaining.Value;
-        public bool CanRevive => IsSpawned && IsAlive && !IsKnockedDown &&
+        public bool CanRevive => m_wheelieSettings == null && IsSpawned && IsAlive && !IsKnockedDown &&
             !(TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.IsMounted) &&
             ((IsAiTeammate && IsServerInitialized && !Owner.IsValid) ||
              (!IsAiTeammate && Owner.IsValid && Owner.IsActive)) &&
@@ -155,7 +156,7 @@ namespace CouchGuys.Player
         public override void OnStartServer()
         {
             base.OnStartServer();
-            m_currentHealth.Value = m_maxHealth;
+            m_currentHealth.Value = MaximumHealth;
             m_knockedDown.Value = false;
             m_returningToRing.Value = false;
             m_respawnAtServerTime = float.PositiveInfinity;
@@ -166,6 +167,8 @@ namespace CouchGuys.Player
             m_activeReviveTarget = null;
             DebugCouchBotController bot = GetComponent<DebugCouchBotController>();
             m_aiTeammateIndex.Value = bot != null && bot.IsAiTeammate ? bot.BotIndex : -1;
+            if (m_wheelieSettings != null && TryGetComponent(out WheelieController wheelie))
+                m_aiTeammateIndex.Value = wheelie.InitialMemberIndex;
         }
 
         public override void OnStartClient()
@@ -173,7 +176,7 @@ namespace CouchGuys.Player
             base.OnStartClient();
             ApplyKnockdownState(m_knockedDown.Value);
             OnReturningToRingChanged(false, m_returningToRing.Value, false);
-            HealthChanged?.Invoke(m_currentHealth.Value, m_maxHealth);
+            HealthChanged?.Invoke(m_currentHealth.Value, MaximumHealth);
             UpdateDownedSmoke();
         }
 
@@ -393,7 +396,7 @@ namespace CouchGuys.Player
                 ClearReviveServer();
                 m_respawnAtServerTime = float.PositiveInfinity;
                 m_downedRemaining.Value = 0f;
-                m_currentHealth.Value = m_maxHealth * 0.5f;
+                m_currentHealth.Value = MaximumHealth * 0.5f;
                 BeginRingRecoveryServer();
                 return;
             }
@@ -495,7 +498,7 @@ namespace CouchGuys.Player
             }
 
             horizontalDirection.Normalize();
-            bool severeHit = forceKnockdown || appliedDamage >= m_maxHealth * m_knockdownDamageFraction || died;
+            bool severeHit = forceKnockdown || appliedDamage >= MaximumHealth * m_knockdownDamageFraction || died;
             float appliedForce = severeHit || useFullKnockback
                 ? knockbackForce
                 : knockbackForce * 0.3f;
@@ -538,6 +541,7 @@ namespace CouchGuys.Player
             {
                 if (explosionLaunch) GetComponent<DebugCouchBotController>()?.ApplyEnemyGrappleThrowServer(impulse, 2f);
                 else GetComponent<DebugCouchBotController>()?.ApplyExternalImpulseServer(impulse, directionalKnockback);
+                GetComponent<WheelieController>()?.ApplyImpulseServer(impulse);
             }
 
             if (appliedDamage > 0f) PlayHitObserversRpc();
@@ -665,7 +669,7 @@ namespace CouchGuys.Player
                 m_playerController?.Teleport(spawnPoint.position, spawnPoint.rotation);
             }
 
-            m_currentHealth.Value = m_maxHealth;
+            m_currentHealth.Value = MaximumHealth;
             m_returningToRing.Value = false;
             m_knockedDown.Value = false;
             m_recoverAtServerTime = 0f;
@@ -681,7 +685,7 @@ namespace CouchGuys.Player
 
         private void OnHealthChanged(float previous, float next, bool asServer)
         {
-            HealthChanged?.Invoke(next, m_maxHealth);
+            HealthChanged?.Invoke(next, MaximumHealth);
             UpdateDownedSmoke();
         }
 

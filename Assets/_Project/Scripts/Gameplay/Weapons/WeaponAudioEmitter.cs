@@ -48,7 +48,8 @@ namespace CouchGuys.Gameplay.Weapons
             {
                 foreach (Voice voice in voices)
                 {
-                    voice.Source.Stop();
+                    // Network teardown can destroy detached voices before their emitter.
+                    if (voice.Source != null) voice.Source.Stop();
                 }
             }
 

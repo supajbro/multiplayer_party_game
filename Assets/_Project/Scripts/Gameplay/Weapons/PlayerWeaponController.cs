@@ -18,7 +18,8 @@ namespace CouchGuys.Gameplay.Weapons
     // The orbit camera finalises its pose in LateUpdate. Run afterwards so a shot
     // uses the same camera orientation that renders the centre-screen reticle.
     [DefaultExecutionOrder(100)]
-    [RequireComponent(typeof(PlayerInputReader), typeof(PlayerHealth), typeof(PlayerCouchCarrier))]
+    // Input and couch interaction are optional for server-owned combat-only teammates.
+    [RequireComponent(typeof(PlayerHealth))]
     [DisallowMultipleComponent]
     public sealed partial class PlayerWeaponController : NetworkBehaviour
     {
@@ -94,6 +95,7 @@ namespace CouchGuys.Gameplay.Weapons
         private bool m_serverRifleBurstActive;
 
         public event System.Action<PlayerWeaponType> LocalShotFired;
+        public event System.Action<PlayerWeaponType> ShotPresented;
         public event System.Action<bool> LocalHitConfirmed;
         public event System.Action<ReticleSettings> LocalReticleChanged;
 
@@ -112,7 +114,7 @@ namespace CouchGuys.Gameplay.Weapons
             get
             {
                 if (!IsReloading) return 0f;
-                float duration = IsServerInitialized ? GetWeapon(m_reloadingIndex).ReloadDuration : m_localReloadDuration;
+                float duration = IsServerInitialized ? ReloadDuration(GetWeapon(m_reloadingIndex)) : m_localReloadDuration;
                 float deadline = IsServerInitialized ? m_reloadCompleteAt : m_localReloadCompleteAt;
                 return duration > 0f ? Mathf.Clamp01(1f - (deadline - Time.time) / duration) : 1f;
             }
@@ -120,7 +122,7 @@ namespace CouchGuys.Gameplay.Weapons
         public bool HasEquippedWeapon => ValidIndex(m_equippedIndex.Value);
         public bool EmoteIncompatibleAction => IsReloading || m_grappleAttached.Value || m_punchStage != 0 ||
             m_batSwinging || Time.time < m_switchCompleteAt;
-        public bool CanHandleWeaponServer => IsServerInitialized && m_health != null && m_health.IsAlive &&
+        public bool CanHandleWeaponServer => m_wheelieSettings == null && IsServerInitialized && m_health != null && m_health.IsAlive &&
             !(TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.IsMounted) &&
             !m_health.IsKnockedDown && !(m_couchCarrier != null && m_couchCarrier.IsCarrying) &&
             !(TryGetComponent(out PlayerTruckInteractor truck) && truck.CurrentTruck != null);
@@ -192,7 +194,7 @@ namespace CouchGuys.Gameplay.Weapons
             if (IsServerInitialized && m_serverRifleBurstActive)
             {
                 WeaponDefinition rifle = GetWeapon((int)PlayerWeaponType.AssaultRifle);
-                float silenceTimeout = rifle != null ? rifle.FireInterval * 1.75f : 0.2f;
+                float silenceTimeout = rifle != null ? FireInterval(rifle) * 1.75f : 0.2f;
                 if (m_health == null || !m_health.IsAlive || m_health.IsKnockedDown ||
                     Time.time >= m_lastServerRifleShotTime + silenceTimeout)
                 {
@@ -530,13 +532,15 @@ namespace CouchGuys.Gameplay.Weapons
             if (TryGetComponent(out PlayerHoverboardInteractor hoverboard) && hoverboard.IsMounted) return;
             int index = m_equippedIndex.Value;
             WeaponDefinition weapon = GetWeapon(index);
+            if (m_wheelieSettings != null && m_wheelieSettings.UnlimitedReserveAmmo && weapon != null && m_reserve[index] <= 0)
+                m_reserve[index] = weapon.MagazineCapacity;
             if (weapon == null || weapon.Type == PlayerWeaponType.GrappleGun || weapon.Type == PlayerWeaponType.BaseballBat || m_reloadingIndex >= 0 || Time.time < m_switchCompleteAt ||
                 m_magazine[index] >= weapon.MagazineCapacity || m_reserve[index] <= 0 ||
                 !m_health.IsAlive || (m_couchCarrier != null && m_couchCarrier.IsCarrying)) return;
 
             EndRifleBurstServer();
             m_reloadingIndex = index;
-            m_reloadCompleteAt = Time.time + weapon.ReloadDuration;
+            m_reloadCompleteAt = Time.time + ReloadDuration(weapon);
             if (Owner.IsValid)
             {
                 SendWeaponStateTargetRpc(
@@ -606,7 +610,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         internal void ConfigureAiWeaponServer(PlayerWeaponType weaponType)
         {
-            if (!IsServerInitialized || Owner.IsValid ||
+            if (!IsServerInitialized || Owner.IsValid || (m_wheelieSettings != null && HasEquippedWeapon) ||
                 !ValidIndex((int)weaponType) || !m_health.IsAlive)
             {
                 return;
@@ -686,7 +690,7 @@ namespace CouchGuys.Gameplay.Weapons
                 (weapon.BulletPrefab == null || weapon.BulletPrefab.GetComponent<RocketProjectile>() == null))
                 return false;
 
-            m_nextServerFireTime[index] = Time.time + weapon.FireInterval;
+            m_nextServerFireTime[index] = Time.time + FireInterval(weapon);
             m_magazine[index]--;
             Vector3 muzzle = GetMuzzlePosition(index, m_health.AimPoint);
             CouchGuys.Gameplay.Pedestrians.PedestrianManager.ReportGunshotServer(muzzle);
@@ -778,7 +782,10 @@ namespace CouchGuys.Gameplay.Weapons
                 ends[pellet] = nearest.point;
                 normals[pellet] = nearest.normal;
                 surfaces[pellet] = (byte)ClassifySurface(nearest.collider);
-                float damage = weapon.DamageAtDistance(nearest.distance);
+                // Wheelie pellets stop on intervening friendlies/world geometry but only damage hostiles.
+                // This is per-instance; normal players and existing teammates keep their existing rules.
+                if (m_wheelieSettings != null && nearest.collider.GetComponentInParent<ThiefHealth>() == null) continue;
+                float damage = weapon.DamageAtDistance(nearest.distance) * (m_wheelieSettings != null ? m_wheelieSettings.DamageMultiplier : 1f);
                 var dispatcher = nearest.collider.GetComponentInParent<DeliveryNPC>();
                 if (dispatcher != null)
                 {
@@ -966,7 +973,7 @@ namespace CouchGuys.Gameplay.Weapons
         private void SendWeaponStateTargetRpc(NetworkConnection connection, int index, int magazine,
             int reserve, bool reloading)
         {
-            float duration = reloading ? GetWeapon(index).ReloadDuration : 0f;
+            float duration = reloading ? ReloadDuration(GetWeapon(index)) : 0f;
             ReceiveWeaponStateTargetRpc(connection, index, magazine, reserve, reloading,
                 reloading ? Mathf.Max(0f, m_reloadCompleteAt - Time.time) : 0f, duration);
         }
@@ -1036,6 +1043,7 @@ namespace CouchGuys.Gameplay.Weapons
             m_faceExpression ??= GetComponent<RobotFaceExpressionController>();
             m_faceExpression?.NotifyShot((PlayerWeaponType)weaponIndex);
             if (IsOwner) LocalShotFired?.Invoke((PlayerWeaponType)weaponIndex);
+            ShotPresented?.Invoke((PlayerWeaponType)weaponIndex);
             if (weapon != null)
             {
                 m_visualRecoil = Mathf.Min(weapon.Recoil * 1.8f, m_visualRecoil + weapon.Recoil);
@@ -1159,7 +1167,7 @@ namespace CouchGuys.Gameplay.Weapons
             return m_weaponModels[index] != null ? m_weaponModels[index].position - visualOffset : fallback;
         }
 
-        private WeaponDefinition GetWeapon(int index) =>
+        private WeaponDefinition GetWeapon(int index) => m_wheelieSettings != null ? m_wheelieSettings.GetWeapon(index) :
             ValidIndex(index) && m_weapons != null && index < m_weapons.Length ? m_weapons[index] : null;
 
         private ReticleSettings GetWeaponReticle(int index) => GetWeapon(index)?.ReticleSettings ??
@@ -1167,6 +1175,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void EnsureWeaponDefinitions()
         {
+            if (m_wheelieSettings != null) return;
             WeaponDefinition[] defaults = WeaponDefinition.CreateDefaults();
             if (m_weapons == null || m_weapons.Length != WeaponCount)
                 System.Array.Resize(ref m_weapons, WeaponCount);

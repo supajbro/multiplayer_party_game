@@ -99,6 +99,7 @@ namespace CouchGuys.Gameplay.Weapons
 
         private void EnsureGrappleModel()
         {
+            if (m_wheelieSettings != null) return;
             if (m_weaponModels[(int)PlayerWeaponType.GrappleGun] != null) return;
             if (FindDescendant(transform, "Weapon_GrappleGun") != null) return;
             Transform pistol = m_weaponModels[0] != null ? m_weaponModels[0] : FindDescendant(transform, "Weapon_Pistol");

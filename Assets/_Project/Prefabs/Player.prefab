@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 100001}
+  - component: {fileID: 8886201800000000001}
   - component: {fileID: 8886201400000000001}
   - component: {fileID: 100002}
   - component: {fileID: 9000000000000000001}
@@ -65,6 +66,103 @@ Transform:
   - {fileID: 8886201500000000002}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!82 &8886201800000000001
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 100000}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 64
+  DopplerLevel: 0
+  MinDistance: 3
+  MaxDistance: 35
+  Pan2D: 0
+  rolloffMode: 1
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
 --- !u!114 &8886201400000000001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -79,6 +177,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.MagneticCarryAura
   m_carrier: {fileID: 6842772898105403012}
   m_animation: {fileID: 7262616249922094815}
+  m_thief: {fileID: 0}
   m_auraPrefab: {fileID: 15874004329490329, guid: fb06f42f6b771f244aaac9e894949e4b, type: 3}
   m_handClearance: 0.22
   m_movementLean: 4
@@ -171,6 +270,10 @@ MonoBehaviour:
   m_gravity: -25
   m_groundedForce: 2
   m_terminalVelocity: 50
+  m_jumpAudioSource: {fileID: 8886201800000000001}
+  m_jumpClip: {fileID: 8300000, guid: 2af00355d532525429a8a2d1f0a025d6, type: 3}
+  m_jumpVolume: 1
+  m_jumpPitchVariation: 0.15
   m_knockbackDamping: 8
 --- !u!114 &4753475039817145927
 MonoBehaviour:
@@ -258,6 +361,7 @@ MonoBehaviour:
   m_playerController: {fileID: 100004}
   m_interactionRange: 1.8
   m_serverRangeTolerance: 0.35
+  m_interactionPromptRefreshInterval: 0.1
   m_intentSendInterval: 0.1
   m_intentHeartbeatInterval: 0.5
   m_intentTimeout: 0.6
@@ -314,6 +418,7 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 4753475039817145927}
   _networkObjectCache: {fileID: 4753475039817145927}
   m_maxHealth: 100
+  m_wheelieSettings: {fileID: 0}
   m_knockdownDamageFraction: 0.25
   m_respawnDelay: 30
   m_reviveDuration: 3
@@ -400,15 +505,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03031e9f7a755f441a700e11056a4d9d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Networking.NetworkPlayerOwnership
+  _componentIndexCache: 1
+  _addedNetworkObject: {fileID: 4753475039817145927}
+  _networkObjectCache: {fileID: 4753475039817145927}
   m_pingPrefab: {fileID: 102, guid: 25df1d17878f4e8eaec608cd1aae6148, type: 3}
   m_pingLifetime: 10
   m_pingRange: 1000
   m_pingLayers:
     serializedVersion: 2
     m_Bits: 4294967291
-  _componentIndexCache: 1
-  _addedNetworkObject: {fileID: 4753475039817145927}
-  _networkObjectCache: {fileID: 4753475039817145927}
   m_input: {fileID: 100003}
   m_playerController: {fileID: 100004}
   m_cameraController: {fileID: 400002}
@@ -421,6 +526,7 @@ MonoBehaviour:
     - {r: 1, g: 0.25, b: 0.2, a: 1}
     - {r: 0.2, g: 0.85, b: 0.35, a: 1}
     - {r: 1, g: 0.72, b: 0.12, a: 1}
+  m_wheelieSettings: {fileID: 11400000, guid: 3f8abceb5a09e6f4181fcc8c28213211, type: 2}
 --- !u!114 &3016622510690859693
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -528,6 +634,10 @@ MonoBehaviour:
   - {fileID: 8499466985445968672}
   - {fileID: 3071162490348441032}
   - {fileID: 4499122481938437602}
+  m_throwHoldDuration: 0.75
+  m_throwSpeed: 12
+  m_throwLift: 3
+  m_wheelieSettings: {fileID: 0}
   m_input: {fileID: 0}
   m_health: {fileID: 0}
   m_couchCarrier: {fileID: 0}
@@ -758,9 +868,6 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   m_switchDuration: 0.18
-  m_throwHoldDuration: 0.75
-  m_throwSpeed: 12
-  m_throwLift: 3
   m_maximumAimOriginDistance: 6
   m_punchDamage: 25
   m_punchRange: 1.65
@@ -828,7 +935,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 49b1e3edba294a9b92b972e39fdbcb7b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Gameplay.Delivery.NeighbourhoodMap
-  m_pingMarkerPrefab: {fileID: 102, guid: 9c96cab3089b44fa8e90fbe0527871fd, type: 3}
   m_visibleRadiusMetres: 65
   m_textureResolution: 512
   m_actorRefreshInterval: 0.5
@@ -838,6 +944,7 @@ MonoBehaviour:
   m_curbWidth: 0.25
   m_houseIconFill: 0.95
   m_deliveryMarkerPrefab: {fileID: 101, guid: 8cd2766a89a242a49a0253b04bd2281c, type: 3}
+  m_pingMarkerPrefab: {fileID: 102, guid: 9c96cab3089b44fa8e90fbe0527871fd, type: 3}
   m_cycleDestination:
     m_Name: Cycle Delivery Destination
     m_Type: 1
@@ -921,7 +1028,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.RobotFaceExpressionController
   m_displaySettings: {fileID: 11400000, guid: 28897eeea9e4467383b3cbd9b3787a6b, type: 2}
-  m_faceRenderer: {fileID: 812246501234567890}
+  m_faceRenderer: {fileID: 420400379792782252}
   m_materialIndex: 0
   m_legacyGraphics: []
   m_useCRT: 1
@@ -16953,14 +17060,9 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1877960483454365629, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
   m_PrefabInstance: {fileID: 1884959408463409528}
   m_PrefabAsset: {fileID: 0}
---- !u!137 &812246501234567890 stripped
+--- !u!137 &420400379792782252 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -6918312484143037740, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-  m_PrefabInstance: {fileID: 1884959408463409528}
-  m_PrefabAsset: {fileID: 0}
---- !u!137 &433027592038251367 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: -7193703444885272033, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
   m_PrefabInstance: {fileID: 1884959408463409528}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &1032020975972173508 stripped

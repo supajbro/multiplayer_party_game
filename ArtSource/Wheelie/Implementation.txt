@@ -1,0 +1,89 @@
+WHEELIE COMBAT TEAMMATE
+
+Use: Start a normal solo host or multiplayer session. Press F2, choose Spawnables,
+then Spawn Wheelie Squad. Each successful press requests four server-owned
+members assigned to the requesting player. Multiple squads are supported.
+If navigation cannot provide four clear reachable positions, nothing is spawned.
+
+Balance asset: Assets/_Project/Settings/AI/Wheelie.asset
+Saved prefab: Assets/_Project/Prefabs/AI/Wheelie.prefab
+The player debug reference, network registry, model, face display, weapon models,
+muzzles and presentation bones are assigned in the saved assets.
+
+Initial balance: health 80; movement 5.5 m/s; acceleration 14; braking 20;
+turning 400 degrees/s; detection 24 m; engagement 18 m; leader leash 24 m;
+following distance 2.75 m; spacing 1.2 m; accuracy .78; reaction .35 s;
+damage .65x; fire rate .85x; reload speed 1x.
+Weapon weights: pistol 35%, rifle 45%, shotgun 20%. Weights need not sum to one.
+Only these three weapon types are accepted. Squad size is currently fixed at four.
+Unlimited reserve ammunition defaults on; magazines and reload timing still apply.
+Disable it in the asset to use the existing weapons' finite starting reserves.
+
+Architecture: WheelieController is a combat/follow adapter over the existing
+NavMeshAgent, PlayerHealth, PlayerWeaponController and FishNet NetworkTransform.
+PlayerHealth and the weapon controller have optional Wheelie configuration
+references; their existing behaviour is retained when these references are empty.
+No player input, couch carrier, delivery role or vehicle interactor is installed
+on Wheelie. Inventory acquisition is explicitly rejected. The starting weapon
+is selected once by the server and cannot subsequently be replaced.
+
+Authority: owned-player DebugSpawnServerRpc validates the request; the server
+chooses positions/weapons and spawns unowned members. FishNet synchronizes the
+assigned player's NetworkObject, squad/index, health, equipment and combat state.
+The existing NetworkTransform carries server movement/rotation. Clients keep
+navigation disabled and pose the saved rig using that movement and combat state.
+Members retain their exact leader while downed/in vehicles; they never choose a
+replacement leader. They follow vehicles on the ground and despawn if the leader
+disconnects. The existing health system handles damage, knockdown and revival;
+Wheelies cannot perform revives. Unrevived bodies despawn after the configured
+corpse lifetime. Individual health, ammunition, target and deadlines are per-instance.
+The shared ScriptableObject is never mutated by runtime code.
+
+Target safety: only living spawned ThiefHealth hostiles in the same scene are
+eligible. Threats targeting the assigned player receive a selection bonus.
+Sight is required at target selection and firing; nearest non-self physics hits
+block shots. Shotgun pellets stop on friendly/civilian colliders without damaging
+them. Engagement uses the lower of configured engagement and actual weapon range.
+Endpoints and combat path corners must stay within the leader leash.
+
+Presentation: saved Wheel axle bone rolls from movement; waist leans with changes
+in velocity and heading; head, torso and arms blend toward replicated aim state.
+Reloading lowers the aiming pose. Existing observer shot effects drive recoil and
+the existing RobotFaceExpressionController/CRT material provides runtime faces.
+The underlying FaceDisplay mesh remains blank and retains the compatible UV island.
+
+Editor tools under Couch Guys > Wheelie are explicitly invoked only. Create Saved
+Assets fills missing assets/references and preserves existing Inspector edits.
+There is no import, script-reload or Play-mode prefab generation.
+Validate Saved Assets checks configuration and weighted selection.
+Build Multiplayer Validation creates a controlled saved test scene and executable
+under Temp/WheelieValidationBuild. Run one copy with --wheelie-validation and a
+second with --wheelie-validation --wheelie-client. Both use loopback port 18473.
+Host/client text reports are written beside the executable. The explicit test flag
+skips Steam startup only for this validation run; normal startup is unchanged.
+
+JUMPING PILLOW REWARD CUBES
+Prefab: Assets/_Project/Prefabs/AI/WheelieRewardCube.prefab
+The saved JumpingPillow prefab has a JumpingPillowRewards component. Set Spawn
+Chance Percent there to control rarity. Initial values: 8% per qualifying bounce,
+up to 12% for high jumps, 60-second spawn cooldown, and one active cube per pillow.
+Rewards Enabled disables the feature. A zero chance also disables spawning.
+Minimum Jump Height, High Jump Chance Multiplier, Cube Height Fraction and
+Horizontal Spawn Radius are configurable in that same component.
+
+The server observes each player's feet contacting the real pillow collider and
+then ascending. It rolls once after the minimum height, estimates apex from
+vertical motion and the existing player gravity, and places a saved cyan cube at
+a reachable height with a small random horizontal offset. It never rolls every
+frame or independently on clients. Grounded players, AI, vehicle riders, and low
+hops do not qualify. No gameplay prefab hierarchy is constructed at runtime.
+
+The cube has a BoxCollider trigger and kinematic Rigidbody. OnTriggerEnter awards
+exactly four Wheelies to the touching human through the same squad spawner used
+by the debug menu. OnTriggerStay retries after a short delay only if no clear
+four-member navigation placement was available; unsuccessful awards do not
+consume the cube. Ground-level placement works while the collector is airborne.
+Successful collection consumes the network cube once. Uncollected cubes expire
+after 90 seconds; lifetime is editable on the cube prefab. Pillow removal also
+cleans up its active cube. Weapon configuration is now saved centrally on the
+Wheelie asset; the Wheelie prefab no longer duplicates weapon definitions.

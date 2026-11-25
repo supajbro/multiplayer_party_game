@@ -1,0 +1,9 @@
+{
+  "rig_tests": "PASS: wheel rotates at axle; housing stationary; head, arms, hand and finger move independently",
+  "height_m": 1.131691813468933,
+  "ground_m": 5.8273446512657756e-08,
+  "screen_normals": "front facing -Y",
+  "renderers": 2,
+  "material_slots": 5,
+  "fbx_roundtrip": "PASS: 2 meshes, 35 bones, sockets, skin weights and screen retained"
+}

@@ -352,6 +352,24 @@ namespace CouchGuys.Gameplay.Pedestrians
                 m_nextThink = Time.time + Random.value * Mathf.Max(0.05f, m_settings.ThinkInterval);
             }
             m_state.Value = MovementState.Frightened;
+            if (entering && m_settings.ScreamClips != null && m_settings.ScreamClips.Length > 0)
+                PlayScreamObserversRpc(Random.Range(0, m_settings.ScreamClips.Length));
+        }
+
+        // Unbuffered: observers hear each new fright once, without replaying it on late join.
+        [ObserversRpc]
+        private void PlayScreamObserversRpc(int clipIndex)
+        {
+            var settings = m_settings != null ? m_settings :
+                Resources.Load<PedestrianSettings>("Pedestrians/PedestrianSettings");
+            if (settings == null || settings.ScreamVoicePrefab == null || settings.ScreamClips == null ||
+                clipIndex < 0 || clipIndex >= settings.ScreamClips.Length) return;
+            AudioClip clip = settings.ScreamClips[clipIndex];
+            if (clip == null) return;
+            Transform model = m_animator != null ? m_animator.transform : transform;
+            AudioSource voice = Instantiate(settings.ScreamVoicePrefab, model, false);
+            voice.PlayOneShot(clip);
+            Destroy(voice.gameObject, clip.length / Mathf.Max(0.01f, Mathf.Abs(voice.pitch)) + 0.1f);
         }
 
         public bool ApplyVehicleImpactServer(float speed, Vector3? impactPosition = null, Vector3? direction = null)
@@ -369,6 +387,11 @@ namespace CouchGuys.Gameplay.Pedestrians
             if (!IsServerInitialized || !m_initialised || m_state.Value == MovementState.Dead || damage <= 0f) return;
             m_health = Mathf.Max(0f, m_health - damage);
             if (m_health <= 0f) DieServer();
+            else
+            {
+                FrightenServer(transform.position - transform.forward);
+                PedestrianManager.ReportInjuryServer(transform.position, this);
+            }
         }
 
         public void ApplyBulletDamageServer(float damage, Vector3 position, Vector3 direction)
@@ -385,6 +408,7 @@ namespace CouchGuys.Gameplay.Pedestrians
         private void DieServer()
         {
             m_state.Value = MovementState.Dead;
+            PedestrianManager.ReportInjuryServer(transform.position, this);
             PlayDeathAudioObserversRpc(transform.position);
             m_despawnAt = Time.time + Mathf.Max(0.1f, m_settings.CorpseDuration);
             m_deliveryManager?.RecipientDiedServer(this);

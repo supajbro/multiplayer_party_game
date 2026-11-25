@@ -122,6 +122,7 @@ namespace CouchGuys.Networking
         }
 
         private float m_nextDebugActionTime;
+        [SerializeField] private WheelieSettings m_wheelieSettings;
 
         // Ownership is required by FishNet: each client can request actions only for its own player.
         [ServerRpc]
@@ -130,6 +131,11 @@ namespace CouchGuys.Networking
             if (!CanUseDebugFeatures) return;
             if (GameplaySessionController.IsServerGameOver || Time.unscaledTime < m_nextDebugActionTime) return;
             m_nextDebugActionTime = Time.unscaledTime + 0.25f;
+            if (spawnIndex == 8)
+            {
+                WheelieSquadSpawner.TrySpawnServer(this, m_wheelieSettings);
+                return;
+            }
             bool hoverboard = spawnIndex == 7;
             bool vehicle = spawnIndex == 3 || hoverboard;
             if (spawnIndex < 0 || spawnIndex > 7) return;

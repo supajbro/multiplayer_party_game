@@ -1,0 +1,9 @@
+{
+  "prefab": "Assets/_Project/Prefabs/Enemies/Thief_Pistol.prefab",
+  "prefab_guid_retained": true,
+  "root_gameplay_components_preserved": 8,
+  "other_enemy_prefabs_unchanged": true,
+  "default_t_pose_verified": true,
+  "clip_override": "Assets/_Project/Animations/Thieves/Character02/Character02_Thief_Pistol.overrideController",
+  "prefab_sha256": "4c81643bdaceccaa1638f5c17828f64e06700e8ee2d7d64ec0464bc9991db3c6"
+}

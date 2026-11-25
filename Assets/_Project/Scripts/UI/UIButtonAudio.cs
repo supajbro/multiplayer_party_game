@@ -22,6 +22,10 @@ namespace CouchGuys.UI
         [SerializeField] private AudioClip m_deliveryFailure;
         [SerializeField, Range(0f, 1f)] private float m_deliveryVolume = 1f;
 
+        [Header("Dispatcher and Shop Interaction")]
+        [SerializeField] private AudioClip m_interaction;
+        [SerializeField, Range(0f, 1f)] private float m_interactionVolume = 1f;
+
         private static UIButtonAudio s_instance;
         private Selectable[] m_selectables = new Selectable[64];
         private UnityAction m_playClick;
@@ -79,6 +83,14 @@ namespace CouchGuys.UI
             // One-shots overlap, including several deliveries resolved in the same network tick.
             // A separate UI source keeps button pitch variation from affecting result sounds.
             if (clip != null) s_instance.m_deliverySource.PlayOneShot(clip, s_instance.m_deliveryVolume);
+        }
+
+        public static void PlayInteraction()
+        {
+            if (s_instance == null) Initialise();
+            if (s_instance == null || s_instance.m_deliverySource == null || s_instance.m_interaction == null) return;
+            // Reuse the normal-pitch UI source so button click pitch does not affect this sound.
+            s_instance.m_deliverySource.PlayOneShot(s_instance.m_interaction, s_instance.m_interactionVolume);
         }
 
         private void Update()

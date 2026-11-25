@@ -11,6 +11,9 @@ namespace CouchGuys.Gameplay.Pedestrians
         [Min(0.1f)] public float WalkingSpeed = 1.35f;
         [Min(0.1f)] public float RunningSpeed = 4.5f;
         [Min(0f)] public float GunshotDetectionRadius = 30f;
+        [Min(0f)] public float InjuryDetectionRadius = 15f;
+        public AudioSource ScreamVoicePrefab;
+        public AudioClip[] ScreamClips = System.Array.Empty<AudioClip>();
         [Min(0.1f)] public float FrightenedDuration = 7f;
         [Min(0.1f)] public float CorpseDuration = 12f;
         [Min(0.1f)] public float LethalVehicleSpeed = 3f;

@@ -1,0 +1,3 @@
+PASS: saved Character02 pistol model/prefab defaults to T-pose.
+PASS: Character02 meshes, materials, bone references and existing gameplay/weapon links resolve.
+PASS: matching Character02 clips run all five existing controller states; walk deformation=0.2377; no nonfinite skinning.

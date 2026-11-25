@@ -12,6 +12,8 @@ namespace CouchGuys.Networking
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void LoadBootstrap()
         {
+            // Explicit loopback validation owns its own transport and persistent services.
+            if (System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "--wheelie-validation") >= 0) return;
             if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "AITest") return;
 
             if (Object.FindFirstObjectByType<SteamLobbyController>() != null)

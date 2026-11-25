@@ -23,6 +23,8 @@ namespace CouchGuys.ProceduralGeneration
         private Collider[] m_vehicleQuery = new Collider[64];
         private readonly HashSet<Rigidbody> m_seenBodies = new();
         private readonly Dictionary<Rigidbody, float> m_nextVehicleBounce = new();
+        private readonly Dictionary<Rigidbody, float> m_nextVehicleBounceSound = new();
+        private readonly Dictionary<Rigidbody, Vector3> m_previousVehiclePositions = new();
         private readonly List<Rigidbody> m_expiredBodies = new();
         private readonly List<Load> m_vehicleLoads = new(16);
         private float m_nextVehicleCleanup;
@@ -56,14 +58,24 @@ namespace CouchGuys.ProceduralGeneration
                 if ((traffic != null && traffic.IsDestroyed) || (truck != null && truck.IsDestroyed) || (board != null && board.IsDestroyed)) continue;
                 if (!TryVehicleContact(other.bounds, out var hit)) continue;
                 m_seenBodies.Add(body);
+                float observedUpSpeed = m_previousVehiclePositions.TryGetValue(body, out var previousPosition)
+                    ? (body.position.y - previousPosition.y) / Time.fixedDeltaTime : body.linearVelocity.y;
+                m_previousVehiclePositions[body] = body.position;
                 m_vehicleLoads.Add(new Load { Point = hit.point, Radius = m_vehicleDeformationRadius, Depth = m_vehicleDepression });
+                // Client replicas do not apply the impulse. Hear the replicated upward launch locally,
+                // including when the local player is riding or standing on the vehicle.
+                var replica = body.GetComponent<FishNet.Object.NetworkObject>();
+                if (m_vehicleBounceEnabled && hit.normal.y >= m_vehicleMinimumUpNormal &&
+                    replica != null && replica.GetIsNetworked() && !replica.IsServerInitialized &&
+                    observedUpSpeed > Mathf.Max(1f, m_vehicleMaximumUpwardSpeed))
+                    PlayVehicleBounceSound(body);
                 if (!m_vehicleBounceEnabled || hit.normal.y < m_vehicleMinimumUpNormal ||
                     body.linearVelocity.y > m_vehicleMaximumUpwardSpeed ||
                     (m_nextVehicleBounce.TryGetValue(body, out float next) && Time.time < next)) continue;
 
                 // Only the existing authoritative simulation may launch a networked vehicle.
                 // Kinematic client replicas still contribute local visual loads above.
-                var networkObject = body.GetComponent<FishNet.Object.NetworkObject>();
+                var networkObject = replica;
                 bool networked = networkObject != null && networkObject.GetIsNetworked();
                 bool server = networked && networkObject.IsServerInitialized;
                 if (networked && !server) continue;
@@ -76,6 +88,7 @@ namespace CouchGuys.ProceduralGeneration
                 else body.AddForce(impulse, ForceMode.VelocityChange);
                 m_nextVehicleBounce[body] = Time.time + Mathf.Max(.05f, m_vehicleBounceCooldown);
                 AddVisualImpact(hit.point, speed, m_vehicleDeformationRadius);
+                PlayVehicleBounceSound(body);
             }
             if (Time.time >= m_nextVehicleCleanup)
             {
@@ -84,7 +97,22 @@ namespace CouchGuys.ProceduralGeneration
                 foreach (var item in m_nextVehicleBounce)
                     if (item.Key == null || !item.Key.gameObject.activeInHierarchy || Time.time >= item.Value) m_expiredBodies.Add(item.Key);
                 foreach (var body in m_expiredBodies) m_nextVehicleBounce.Remove(body);
+                m_expiredBodies.Clear();
+                foreach (var item in m_nextVehicleBounceSound)
+                    if (item.Key == null || Time.time >= item.Value) m_expiredBodies.Add(item.Key);
+                foreach (var body in m_expiredBodies) m_nextVehicleBounceSound.Remove(body);
+                m_expiredBodies.Clear();
+                foreach (var item in m_previousVehiclePositions)
+                    if (item.Key == null || !m_seenBodies.Contains(item.Key)) m_expiredBodies.Add(item.Key);
+                foreach (var body in m_expiredBodies) m_previousVehiclePositions.Remove(body);
             }
+        }
+
+        private void PlayVehicleBounceSound(Rigidbody body)
+        {
+            if (m_nextVehicleBounceSound.TryGetValue(body, out float next) && Time.time < next) return;
+            m_nextVehicleBounceSound[body] = Time.time + Mathf.Max(.05f, m_vehicleBounceCooldown);
+            PlayBounceSound();
         }
 
         private bool TryVehicleContact(Bounds bounds, out RaycastHit hit)

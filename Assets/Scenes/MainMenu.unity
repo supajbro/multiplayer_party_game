@@ -1084,6 +1084,7 @@ MonoBehaviour:
   m_volumeSlider: {fileID: 240808412}
   m_settingsBackButton: {fileID: 240808411}
   m_multiplayerMenu: {fileID: 240808410}
+  m_menuIntro: {fileID: 1277187853}
 --- !u!4 &1277187852
 Transform:
   m_ObjectHideFlags: 0
@@ -1123,6 +1124,14 @@ MonoBehaviour:
   m_robotEntranceDuration: 2.2
   m_robotTurnDuration: 0.3
   m_firstSelectedButton: {fileID: 240808407}
+  m_menuCamera: {fileID: 786446213}
+  m_customiseArrows: {fileID: 761099037}
+  m_settingsButton: {fileID: 761099038}
+  m_settingsExitOffset: {x: 0, y: 160}
+  m_playerFocusOffset: {x: 0, y: 2.2, z: 0}
+  m_customiseFieldOfView: 42
+  m_cameraTurnDuration: 1.14
+  m_arrowFadeDuration: 0.3
 --- !u!1 &1314066200
 GameObject:
   m_ObjectHideFlags: 0
@@ -1805,3 +1814,13 @@ SceneRoots:
   - {fileID: 1862269299}
   - {fileID: 1016070803}
   - {fileID: 1994785709}
+--- !u!225 &761099037 stripped
+CanvasGroup:
+  m_CorrespondingSourceObject: {fileID: 910020000000000003, guid: e7ad8395d37184541ae19bd5da9ec23f, type: 3}
+  m_PrefabInstance: {fileID: 240808406}
+  m_PrefabAsset: {fileID: 0}
+--- !u!224 &761099038 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 7525764207434733250, guid: e7ad8395d37184541ae19bd5da9ec23f, type: 3}
+  m_PrefabInstance: {fileID: 240808406}
+  m_PrefabAsset: {fileID: 0}

@@ -123,6 +123,7 @@ namespace CouchGuys.UI
             UpdateButtonColors();
             m_cameraController.FocusDispatcher(m_cameraFocusPoint, m_transitionSeconds, m_focusFieldOfView);
             Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
+            UIButtonAudio.PlayInteraction();
             return true;
         }
 
@@ -222,6 +223,7 @@ namespace CouchGuys.UI
         {
             if (s_active != this) return;
             if (IsClosing && !immediate) return;
+            if (!IsClosing) UIButtonAudio.PlayInteraction();
             IsClosing = true;
             s_closedFrame = Time.frameCount;
             if (m_ui != null) { m_ui.SetInteractive(false); Destroy(m_ui.gameObject); m_ui = null; }

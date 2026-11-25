@@ -46,6 +46,12 @@ namespace CouchGuys.Player
         [SerializeField, Min(0f)] private float m_groundedForce = 2f;
         [SerializeField, Min(0f)] private float m_terminalVelocity = 50f;
 
+        [Header("Jump Audio")]
+        [SerializeField] private AudioSource m_jumpAudioSource;
+        [SerializeField] private AudioClip m_jumpClip;
+        [SerializeField, Range(0f, 1f)] private float m_jumpVolume = 1f;
+        [SerializeField, Range(0f, 0.5f)] private float m_jumpPitchVariation = 0.15f;
+
         [Header("External Impacts")]
         [SerializeField, Min(0f)] private float m_knockbackDamping = 8f;
 
@@ -85,6 +91,7 @@ namespace CouchGuys.Player
         public float WalkSpeed { get => m_walkSpeed; set => m_walkSpeed = Mathf.Clamp(value, 0f, 30f); }
         public float RunSpeed { get => m_runSpeed; set => m_runSpeed = Mathf.Clamp(value, 0f, 50f); }
         public float JumpHeight { get => m_jumpHeight; set => m_jumpHeight = Mathf.Clamp(value, 0f, 15f); }
+        public float Gravity => m_gravity;
 
         public void SetMovementLocked(bool locked)
         {
@@ -361,6 +368,12 @@ namespace CouchGuys.Player
             if (!m_movementLocked && IsGrounded && m_input.JumpPressedThisFrame)
             {
                 m_verticalVelocity = Mathf.Sqrt(m_jumpHeight * -2f * m_gravity);
+                if (m_jumpAudioSource != null && m_jumpClip != null)
+                {
+                    float variation = Mathf.Clamp(m_jumpPitchVariation, 0f, 0.5f);
+                    m_jumpAudioSource.pitch = Random.Range(1f - variation, 1f + variation);
+                    m_jumpAudioSource.PlayOneShot(m_jumpClip, m_jumpVolume);
+                }
             }
 
             if (m_verticalVelocity > -m_terminalVelocity)

@@ -113,7 +113,11 @@ namespace CouchGuys.ProceduralGeneration
         }
 
         /// <summary>A local landing cue. Observers also infer impacts from replicated avatar motion.</summary>
-        public void NotifyPlayerLanding(Vector3 point, float speed) => AddVisualImpact(point, speed, m_playerDeformationRadius);
+        public void NotifyPlayerLanding(Vector3 point, float speed)
+        {
+            AddVisualImpact(point, speed, m_playerDeformationRadius);
+            PlayBounceSound();
+        }
 
         private void AddVisualImpact(Vector3 point, float speed, float radius)
         {
