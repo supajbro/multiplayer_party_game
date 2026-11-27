@@ -109,7 +109,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Networking.NeighbourhoodPlayerSpawner
   m_playerPrefab: {fileID: 4234474516272835632, guid: 00c6e2535756bb34d8a5f289a7455499, type: 3}
-  m_characterCatalog: {fileID: 0}
+  m_characterCatalog: {fileID: 11400000, guid: 93408949377f5264ca726f192811a7f7, type: 2}
   m_addToDefaultScene: 1
   m_aiTeammateCount: 0
   m_aiSpawnRadius: 3

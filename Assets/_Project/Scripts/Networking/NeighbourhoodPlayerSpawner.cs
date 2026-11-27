@@ -90,8 +90,12 @@ namespace CouchGuys.Networking
         {
             if (m_spawnedConnections.Contains(connection.ClientId) || m_characterCatalog == null || m_characterCatalog.Count == 0) return;
             // Only resolve known saved assets; clients never supply prefab paths or object references.
-            var character = m_characterCatalog[m_characterCatalog.FindIndex(message.CharacterId)];
-            m_characterPrefabs[connection.ClientId] = character.PlayerPrefab != null ? character.PlayerPrefab : m_playerPrefab;
+            int characterIndex = m_characterCatalog.FindIndex(message.CharacterId);
+            // The default character uses the prefab configured for this game mode.
+            NetworkObject characterPrefab = characterIndex == 0
+                ? m_playerPrefab
+                : m_characterCatalog[characterIndex].PlayerPrefab;
+            m_characterPrefabs[connection.ClientId] = characterPrefab != null ? characterPrefab : m_playerPrefab;
         }
 
         public void SetPlayerPrefab(NetworkObject playerPrefab)
