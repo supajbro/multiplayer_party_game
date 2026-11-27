@@ -87,7 +87,7 @@ namespace CouchGuys.Editor
                     pillow = instance.GetComponent<JumpingPillowRewards>();
                     var data = new SerializedObject(pillow);
                     data.FindProperty("m_spawnChancePercent").floatValue = 100f;
-                    data.FindProperty("m_highJumpChanceMultiplier").floatValue = 1f;
+                    data.FindProperty("m_spawnCheckInterval").floatValue = 1f;
                     data.FindProperty("m_horizontalSpawnRadius").floatValue = .6f;
                     data.ApplyModifiedPropertiesWithoutUndo();
                 }
@@ -123,9 +123,8 @@ namespace CouchGuys.Editor
                 !cube.GetComponent<Rigidbody>().isKinematic || cube.GetComponent<Rigidbody>().useGravity ||
                 pillow.CubePrefab != cube.GetComponent<WheelieSquadReward>() || cube.GetComponent<WheelieSquadReward>().Settings == null)
                 throw new InvalidOperationException("Saved pillow/cube references or trigger physics are invalid.");
-            if (!Mathf.Approximately(pillow.ChanceForHeight(.5f), 0f) ||
-                pillow.ChanceForHeight(4f) < pillow.ChanceForHeight(1.25f) || pillow.ChanceForHeight(100f) > 100f)
-                throw new InvalidOperationException("Height-dependent probability is invalid.");
+            if (pillow.SpawnChancePercent < 0f || pillow.SpawnChancePercent > 100f || pillow.SpawnCheckInterval <= 0f)
+                throw new InvalidOperationException("Pillow reward spawn settings are invalid.");
             foreach (string path in new[] { "Assets/_Project/Settings/NetworkSpawnablePrefabs.asset", "Assets/_Project/Tests/Wheelie/Spawnables.asset" })
             {
                 var registry = AssetDatabase.LoadAssetAtPath<SinglePrefabObjects>(path);
@@ -135,7 +134,7 @@ namespace CouchGuys.Editor
                 if (count != 1) throw new InvalidOperationException("Cube must have exactly one network registration: " + path);
             }
             WheelieValidation.ValidateAssets();
-            File.WriteAllText("Temp/WheeliePillowAssetValidation.txt", "PASS: trigger physics, saved references, probability threshold/bonus/clamp, and centralized Wheelie weapon configuration.\n");
+            File.WriteAllText("Temp/WheeliePillowAssetValidation.txt", "PASS: trigger physics, saved references, timed spawn settings, and centralized Wheelie weapon configuration.\n");
         }
     }
 }

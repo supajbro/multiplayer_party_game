@@ -1,0 +1,117 @@
+11 rigid mesh sections, 32916 triangles.
+Shared Animator Controller: 46 distinct clips.
+Bat_Ready | 1.000s | 8 bound transforms | 9 samples
+Bat_Swing | 0.850s | 8 bound transforms | 9 samples
+CouchGuy_Rig|AssaultRifle_Backward | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|AssaultRifle_Idle | 1.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|AssaultRifle_Raise | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|AssaultRifle_Reload | 1.867s | 12 bound transforms | 9 samples
+CouchGuy_Rig|AssaultRifle_Run | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|AssaultRifle_Sprint | 0.767s | 12 bound transforms | 9 samples
+CouchGuy_Rig|AssaultRifle_Strafe_L | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|AssaultRifle_Strafe_R | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|AssaultRifle_Walk | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Carry_Idle | 1.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Carry_Move | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Carry_Sprint | 0.767s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Drop | 0.767s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Hit_Reaction | 0.833s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Hold_Item | 1.567s | 12 bound transforms | 9 samples
+CouchGuy_Rig|HoverMove | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|HoverMove_Backward | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Idle | 3.167s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Jump | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Pickup | 1.167s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Pistol_Backward | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Pistol_Idle | 1.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Pistol_Raise | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Pistol_Reload | 1.567s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Pistol_Run | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Pistol_Sprint | 0.767s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Pistol_Strafe_L | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Pistol_Strafe_R | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Pistol_Walk | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Point | 1.367s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Punch_Left | 0.400s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Punch_Right | 0.467s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Shotgun_Backward | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Shotgun_Idle | 1.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Shotgun_Raise | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Shotgun_Reload | 2.567s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Shotgun_Run | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Shotgun_Sprint | 0.767s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Shotgun_Strafe_L | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Shotgun_Strafe_R | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Shotgun_Walk | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Sprint | 0.767s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Strafe_L | 0.967s | 12 bound transforms | 9 samples
+CouchGuy_Rig|Strafe_R | 0.967s | 12 bound transforms | 9 samples
+FBX takes:
+CouchGuy_Rig|AssaultRifle_Backward
+CouchGuy_Rig|AssaultRifle_Idle
+CouchGuy_Rig|AssaultRifle_Raise
+CouchGuy_Rig|AssaultRifle_Reload
+CouchGuy_Rig|AssaultRifle_Run
+CouchGuy_Rig|AssaultRifle_Shoot
+CouchGuy_Rig|AssaultRifle_Sprint
+CouchGuy_Rig|AssaultRifle_Strafe_L
+CouchGuy_Rig|AssaultRifle_Strafe_R
+CouchGuy_Rig|AssaultRifle_Walk
+CouchGuy_Rig|Backflip
+CouchGuy_Rig|Bat_Ready
+CouchGuy_Rig|Bat_Swing
+CouchGuy_Rig|Carry_Idle
+CouchGuy_Rig|Carry_Move
+CouchGuy_Rig|Carry_Sprint
+CouchGuy_Rig|Carry_Struggle
+CouchGuy_Rig|Celebrate
+CouchGuy_Rig|Celebration Wiggle
+CouchGuy_Rig|Death
+CouchGuy_Rig|Drop
+CouchGuy_Rig|Exhausted
+CouchGuy_Rig|Finger Guns
+CouchGuy_Rig|Hit_Reaction
+CouchGuy_Rig|Hit_Reaction_Left
+CouchGuy_Rig|Hold_Item
+CouchGuy_Rig|HoverMove
+CouchGuy_Rig|HoverMove_Backward
+CouchGuy_Rig|Idle
+CouchGuy_Rig|Idle_LookAround
+CouchGuy_Rig|Idle_Playful
+CouchGuy_Rig|Idle_Wave
+CouchGuy_Rig|Jump
+CouchGuy_Rig|Landing
+CouchGuy_Rig|MagneticCarry_Carry_Idle
+CouchGuy_Rig|MagneticCarry_Carry_Move
+CouchGuy_Rig|MagneticCarry_Carry_Release
+CouchGuy_Rig|MagneticCarry_Carry_Start
+CouchGuy_Rig|Moonwalk Shuffle
+CouchGuy_Rig|Pickup
+CouchGuy_Rig|Pistol_Backward
+CouchGuy_Rig|Pistol_Idle
+CouchGuy_Rig|Pistol_Raise
+CouchGuy_Rig|Pistol_Reload
+CouchGuy_Rig|Pistol_Run
+CouchGuy_Rig|Pistol_Shoot
+CouchGuy_Rig|Pistol_Sprint
+CouchGuy_Rig|Pistol_Strafe_L
+CouchGuy_Rig|Pistol_Strafe_R
+CouchGuy_Rig|Pistol_Walk
+CouchGuy_Rig|Point
+CouchGuy_Rig|Punch_Left
+CouchGuy_Rig|Punch_Right
+CouchGuy_Rig|Shotgun_Backward
+CouchGuy_Rig|Shotgun_Idle
+CouchGuy_Rig|Shotgun_Raise
+CouchGuy_Rig|Shotgun_Reload
+CouchGuy_Rig|Shotgun_Run
+CouchGuy_Rig|Shotgun_Shoot
+CouchGuy_Rig|Shotgun_Sprint
+CouchGuy_Rig|Shotgun_Strafe_L
+CouchGuy_Rig|Shotgun_Strafe_R
+CouchGuy_Rig|Shotgun_Walk
+CouchGuy_Rig|Silly Dance
+CouchGuy_Rig|Spin
+CouchGuy_Rig|Sprint
+CouchGuy_Rig|Strafe_L
+CouchGuy_Rig|Strafe_R

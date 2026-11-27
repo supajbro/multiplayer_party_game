@@ -263,17 +263,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.ProceduralGeneration.JumpingPillowRewards
   m_rewardsEnabled: 1
   m_cubePrefab: {fileID: 674077478599912704, guid: 5830865bf3a04674a9de79a43db8711a, type: 3}
-  m_spawnChancePercent: 8
-  m_spawnCooldown: 60
-  m_minimumJumpHeight: 1.25
-  m_fullBonusJumpHeight: 4
-  m_highJumpChanceMultiplier: 1.5
-  m_cubeHeightFraction: 0.85
+  m_spawnChancePercent: 5
+  m_spawnCheckInterval: 15
+  m_spawnHeightAboveSurface: 2.5
   m_horizontalSpawnRadius: 1.5
   m_cubeClearance: 0.4
-  m_observationInterval: 0.05
-  m_contactTolerance: 0.45
-  m_maximumFlightDuration: 6
 --- !u!1001 &887216411149227296
 PrefabInstance:
   m_ObjectHideFlags: 0

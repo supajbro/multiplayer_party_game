@@ -19,3 +19,6 @@ MonoBehaviour:
   - Id: wheelie
     PlayerPrefab: {fileID: 9162198169699341224, guid: 6801410a1c2f94049ad43ce929b652b4, type: 3}
     MenuVisualPrefab: {fileID: 5943717551031116967, guid: 8e133e50af27abd44a151588cc2ea36e, type: 3}
+  - Id: hover-delivery
+    PlayerPrefab: {fileID: 4175588851070051412, guid: 8905512990b9bc9459243bc550ff5d5b, type: 3}
+    MenuVisualPrefab: {fileID: 3808563181969947254, guid: 2eb914cd12e0f8149980bc263477689a, type: 3}

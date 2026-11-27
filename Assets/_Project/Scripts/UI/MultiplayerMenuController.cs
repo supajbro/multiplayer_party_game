@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CouchGuys.Networking;
 using Steamworks;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CouchGuys.UI
@@ -12,7 +13,9 @@ namespace CouchGuys.UI
     public sealed class MultiplayerMenuController : MonoBehaviour
     {
         private SteamLobbyController m_lobby;
-        [SerializeField] private GameObject m_root;
+        [SerializeField] private CanvasGroup m_panel;
+        [SerializeField] private Vector2 m_slideOffset = new Vector2(-220f, 0f);
+        [SerializeField, Min(0f)] private float m_slideDuration = 0.4f;
         [SerializeField] private GameObject m_homePage;
         [SerializeField] private GameObject m_hostPage;
         [SerializeField] private GameObject m_browserPage;
@@ -29,10 +32,24 @@ namespace CouchGuys.UI
         [SerializeField] private Button m_browserRowPrefab;
         [SerializeField] private Text m_emptyBrowserLabel;
         private float m_nextRefresh;
+        private MainMenuIntro m_menuIntro;
+        private GameObject m_currentPage;
+        private Vector2 m_panelPosition;
+        private bool m_transitioning;
+        private bool m_lobbyOpenPending;
+
+        private void Awake()
+        {
+            if (m_panel != null) m_panelPosition = ((RectTransform)m_panel.transform).anchoredPosition;
+        }
 
         private void Start() => StartCoroutine(BindLobby());
 
-        public void InitialiseMainButtons(params Button[] mainButtons) => m_mainButtons = mainButtons;
+        public void Initialise(MainMenuIntro menuIntro, params Button[] mainButtons)
+        {
+            m_menuIntro = menuIntro;
+            m_mainButtons = mainButtons;
+        }
 
         private IEnumerator BindLobby()
         {
@@ -55,16 +72,46 @@ namespace CouchGuys.UI
 
         public void Open(params Button[] mainButtons)
         {
-            if (m_root == null) { Debug.LogError("Assign the saved multiplayer menu view.", this); return; }
             if (mainButtons != null && mainButtons.Length > 0) m_mainButtons = mainButtons;
-            if (m_mainButtons != null) foreach (Button button in m_mainButtons) if (button != null) button.gameObject.SetActive(false);
-            m_root.SetActive(true);
-            ShowPage(m_lobby != null && m_lobby.IsInLobby ? m_lobbyPage : m_homePage);
+            TryOpen(m_homePage);
+        }
+
+        private bool TryOpen(GameObject page)
+        {
+            if (m_panel == null || page == null || m_transitioning || m_panel.gameObject.activeSelf) return false;
+            if (m_menuIntro != null && !m_menuIntro.TryBeginMultiplayer()) return false;
+            m_lobbyOpenPending = false;
+            StartCoroutine(OpenPanel(page));
+            return true;
+        }
+
+        private IEnumerator OpenPanel(GameObject page)
+        {
+            m_transitioning = true;
+            EventSystem.current?.SetSelectedGameObject(null);
+            if (m_menuIntro != null) yield return m_menuIntro.SlideMainMenu(false);
+            else SetLegacyMainButtonsVisible(false);
+
+            SetPanelInput(false);
+            SamplePanel(0f);
+            ShowPage(m_lobby != null && m_lobby.IsInLobby ? m_lobbyPage : page);
+            m_panel.gameObject.SetActive(true);
+            if (m_currentPage == m_browserPage) Refresh();
+            yield return SlidePanel(true);
+            SetPanelInput(true);
+            m_transitioning = false;
+            SelectCurrentPage();
         }
 
         private void Update()
         {
-            if (LoadingScreenController.BlocksGameplayInput || m_root == null || !m_root.activeSelf) return;
+            if (LoadingScreenController.BlocksGameplayInput || m_panel == null || m_transitioning) return;
+            if (!m_panel.gameObject.activeSelf)
+            {
+                if (m_lobbyOpenPending && (m_lobby == null || !m_lobby.IsInLobby || TryOpen(m_lobbyPage)))
+                    m_lobbyOpenPending = false;
+                return;
+            }
             if ((UnityEngine.InputSystem.Keyboard.current?.escapeKey.wasPressedThisFrame ?? false) ||
                 (UnityEngine.InputSystem.Gamepad.current?.buttonEast.wasPressedThisFrame ?? false))
             {
@@ -86,15 +133,14 @@ namespace CouchGuys.UI
 
         private void OnLobbyStateChanged()
         {
-            if (m_lobby == null) return;
-            if (m_root == null) return;
-            if (!m_root.activeSelf && m_lobby.IsInLobby) Open();
+            if (m_lobby == null || m_panel == null) return;
             m_status.text = m_lobby.Status;
-            if (m_lobby.IsInLobby) ShowPage(m_lobbyPage);
+            m_lobbyOpenPending = m_lobby.IsInLobby && !m_panel.gameObject.activeSelf && !m_transitioning;
+            if (m_lobby.IsInLobby && m_panel.gameObject.activeSelf) ShowPage(m_lobbyPage);
         }
 
-        public void OpenHost() { Open(); if (m_lobby == null || !m_lobby.IsInLobby) ShowPage(m_hostPage); }
-        public void OpenJoin() { Open(); if (m_lobby == null || !m_lobby.IsInLobby) OpenBrowser(); }
+        public void OpenHost() => TryOpen(m_hostPage);
+        public void OpenJoin() => TryOpen(m_browserPage);
         public void ShowHome() => ShowPage(m_homePage);
         public void ShowHost() => ShowPage(m_hostPage);
         public void InviteFriends() => m_lobby?.InviteFriends();
@@ -112,9 +158,60 @@ namespace CouchGuys.UI
 
         public void Close()
         {
-            m_root.SetActive(false);
-            if (m_mainButtons != null) foreach (Button button in m_mainButtons) if (button != null) button.gameObject.SetActive(true);
-            UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(m_mainButtons != null && m_mainButtons.Length > 0 ? m_mainButtons[0]?.gameObject : null);
+            if (m_transitioning || m_panel == null || !m_panel.gameObject.activeSelf) return;
+            StartCoroutine(ClosePanel());
+        }
+
+        private IEnumerator ClosePanel()
+        {
+            m_transitioning = true;
+            SetPanelInput(false);
+            EventSystem.current?.SetSelectedGameObject(null);
+            yield return SlidePanel(false);
+            m_panel.gameObject.SetActive(false);
+
+            if (m_menuIntro != null)
+            {
+                yield return m_menuIntro.SlideMainMenu(true);
+                m_menuIntro.FinishMultiplayer();
+            }
+            else
+            {
+                SetLegacyMainButtonsVisible(true);
+                EventSystem.current?.SetSelectedGameObject(m_mainButtons is { Length: > 0 } ? m_mainButtons[0]?.gameObject : null);
+            }
+            m_transitioning = false;
+        }
+
+        private IEnumerator SlidePanel(bool visible)
+        {
+            for (float elapsed = 0f; elapsed < m_slideDuration; elapsed += Time.unscaledDeltaTime)
+            {
+                float progress = elapsed / m_slideDuration;
+                SamplePanel(visible ? progress : 1f - progress);
+                yield return null;
+            }
+            SamplePanel(visible ? 1f : 0f);
+        }
+
+        private void SamplePanel(float progress)
+        {
+            float blend = Mathf.SmoothStep(0f, 1f, progress);
+            ((RectTransform)m_panel.transform).anchoredPosition = m_panelPosition + m_slideOffset * (1f - blend);
+            m_panel.alpha = blend;
+        }
+
+        private void SetPanelInput(bool enabled)
+        {
+            m_panel.interactable = enabled;
+            m_panel.blocksRaycasts = enabled;
+        }
+
+        private void SetLegacyMainButtonsVisible(bool visible)
+        {
+            if (m_mainButtons == null) return;
+            foreach (Button button in m_mainButtons)
+                if (button != null) button.gameObject.SetActive(visible);
         }
 
         private void RebuildBrowser()
@@ -138,15 +235,19 @@ namespace CouchGuys.UI
 
         private void ShowPage(GameObject page)
         {
-            if (page == null) return;
-            if (page.activeSelf) return;
+            if (page == null || page == m_currentPage) return;
+            m_currentPage = page;
             if (m_homePage != null) m_homePage.SetActive(page == m_homePage);
             if (m_hostPage != null) m_hostPage.SetActive(page == m_hostPage);
             if (m_browserPage != null) m_browserPage.SetActive(page == m_browserPage);
             if (m_lobbyPage != null) m_lobbyPage.SetActive(page == m_lobbyPage);
-            var first = page.GetComponentInChildren<Selectable>();
-            UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(first != null ? first.gameObject : null);
+            if (!m_transitioning) SelectCurrentPage();
         }
 
+        private void SelectCurrentPage()
+        {
+            var first = m_currentPage.GetComponentInChildren<Selectable>();
+            EventSystem.current?.SetSelectedGameObject(first != null ? first.gameObject : null);
+        }
     }
 }

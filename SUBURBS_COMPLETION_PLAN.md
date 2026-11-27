@@ -385,7 +385,7 @@ Automated/compile checks already completed:
 **Priority:** High  
 **Estimated Time:** 3.5 hours  
 **Day:** 5  
-**Relevant Files:** `Region_Suburbs.asset`, `NeighbourhoodGenerator.Environment.cs`, `NeighbourhoodEnvironmentAssetBuilder.cs`, environment placeholder prefabs, `street_light_01.fbx`, house/road/mansion models and prefabs, toon material presets.
+**Relevant Files:** `Region_Suburbs.asset`, `NeighbourhoodGenerator.Environment.cs`, `NeighbourhoodEnvironmentAssetBuilder.cs`, `street_light_01.fbx`, house/road/mansion models and prefabs, toon material presets.
 
 **Current State:** Authored roads, houses, lighting configuration, environment placement, parks, landmarks, and decorations exist. The depot, ground/mansion assignment, and most detail prefabs remain simple generated primitives despite an authored street-light model being available.
 

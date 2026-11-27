@@ -28,9 +28,10 @@ namespace CouchGuys.Gameplay.Depot
         [SerializeField] private BoxCollider m_safetyVolume;
         [SerializeField] private GameObject m_animationRoot;
         [SerializeField] private AnimationClip m_authoredAnimation;
+        [SerializeField] private AudioSource m_movementAudio;
 
         [NonSerialized] public float Progress;
-        [NonSerialized] public bool TargetOpen;
+        public bool TargetOpen { get; private set; }
         [NonSerialized] private PlayableGraph m_graph;
         [NonSerialized] private AnimationClipPlayable m_clipPlayable;
 
@@ -63,6 +64,14 @@ namespace CouchGuys.Gameplay.Depot
             TargetOpen = open;
             Progress = open ? 1f : 0f;
             ApplyPose();
+        }
+
+        public void SetTarget(bool open)
+        {
+            if (TargetOpen == open) return;
+            TargetOpen = open;
+            if (Progress != (open ? 1f : 0f) && m_movementAudio != null)
+                m_movementAudio.Play();
         }
 
         public void Tick(float speed, float deltaTime)
@@ -463,7 +472,7 @@ namespace CouchGuys.Gameplay.Depot
         {
             if (rig == null) return;
             if (immediate) rig.SetImmediate(open);
-            else rig.TargetOpen = open;
+            else rig.SetTarget(open);
         }
 
         private static Vector3 Abs(Vector3 value) =>

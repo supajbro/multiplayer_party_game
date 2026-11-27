@@ -52,11 +52,12 @@ namespace CouchGuys.Editor
                 if (generator.GeneratedRoads.Count == 0 || generator.GeneratedProperties.Count == 0 ||
                     generator.DeliveryDestinations.Count == 0)
                     throw new InvalidOperationException($"Seed {seed} lost core roads/properties/destinations.");
-                if (generator.GeneratedParkCount < 1 || generator.GeneratedParkCount > 2 ||
+                int pillowCount = generator.GetComponentsInChildren<JumpingPillow>(true).Length;
+                if (pillowCount < 2 || generator.GeneratedParkCount != pillowCount ||
                     generator.GeneratedParkBlockCount != generator.GeneratedParkCount)
                     throw new InvalidOperationException(
                         $"Seed {seed} generated an invalid park allocation: " +
-                        $"{generator.GeneratedParkCount} parks across " +
+                        $"{pillowCount} jumping pillows in {generator.GeneratedParkCount} parks across " +
                         $"{generator.GeneratedParkBlockCount} reserved blocks.");
                 foreach (GeneratedProperty property in generator.GeneratedProperties)
                     if (generator.IsCoordinateInParkBlock(property.AnchorCoordinate))

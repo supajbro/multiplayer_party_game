@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using CouchGuys.ProceduralGeneration;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -10,31 +9,27 @@ using UnityEngine.SceneManagement;
 
 namespace CouchGuys.Editor
 {
-    /// <summary>Builds the lightweight cube-only environment library and wires it into Suburbs.</summary>
+    /// <summary>Configures the saved environment prefabs and atmosphere for Suburbs.</summary>
     public static class NeighbourhoodEnvironmentAssetBuilder
     {
-        private const string PrefabFolder = "Assets/_Project/Prefabs/Environment/Placeholders";
         private const string TreePrefabFolder = "Assets/_Project/Prefabs/Environment/Trees";
         private const string MaterialFolder = "Assets/_Project/Materials/Environment";
         private const string SettingsFolder = "Assets/_Project/Settings/Environment";
         private const string RegionPath = "Assets/_Project/Settings/Regions/Region_Suburbs.asset";
         private const string ScenePath = "Assets/Scenes/SampleScene.unity";
 
-        private static readonly Dictionary<string, Material> Materials = new Dictionary<string, Material>();
-
         [MenuItem("Couch Guys/World/Create or Refresh Neighbourhood Environment")]
         public static void BuildAll()
         {
-            EnsureFolder(PrefabFolder);
             EnsureFolder(MaterialFolder);
             EnsureFolder(SettingsFolder);
             CreateMaterials();
-            EnvironmentPrefabLibrary library = CreatePrefabLibrary();
-            ConfigureSuburbs(library);
+            StreetLightPrefabBuilder.EnsurePrefab();
+            ConfigureSuburbs();
             ConfigureGameplayScene();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("Created and wired the Couch Guys cube-placeholder environment library.");
+            Debug.Log("Configured the Couch Guys neighbourhood environment.");
         }
 
         public static void BuildFromCommandLine() => BuildAll();
@@ -74,137 +69,34 @@ namespace CouchGuys.Editor
             if (material.HasProperty("_ShadowStrength")) material.SetFloat("_ShadowStrength", 0.55f);
             if (material.HasProperty("_EmissionColor")) material.SetColor("_EmissionColor", emission ?? Color.black);
             EditorUtility.SetDirty(material);
-            Materials[name] = material;
         }
 
-        private static EnvironmentPrefabLibrary CreatePrefabLibrary()
+        private static void ConfigureSuburbs()
         {
-            GameObject streetlight = StreetLightPrefabBuilder.EnsurePrefab();
-            GameObject bin = CreatePrefab("Bin_Placeholder", new Vector2(0.75f, 0.75f), 0.2f, root =>
-            {
-                Cube(root, "Body", new Vector3(0f, 0.55f, 0f), new Vector3(0.68f, 1.1f, 0.62f), "GrassDark");
-                Cube(root, "Lid", new Vector3(0f, 1.13f, -0.02f), new Vector3(0.76f, 0.12f, 0.68f), "Yellow");
-                Cube(root, "Handle", new Vector3(0f, 1.24f, 0.16f), new Vector3(0.35f, 0.08f, 0.1f), "MetalDark");
-            });
-            GameObject flowers = CreatePrefab("FlowerCluster_Placeholder", new Vector2(1.6f, 1.1f), 0.2f, root =>
-            {
-                Cube(root, "Bed", new Vector3(0f, 0.12f, 0f), new Vector3(1.6f, 0.24f, 1.05f), "Wood");
-                for (int i = 0; i < 7; i++)
-                {
-                    float x = -0.62f + (i % 4) * 0.4f;
-                    float z = -0.25f + (i / 4) * 0.5f;
-                    Cube(root, $"Stem_{i}", new Vector3(x, 0.38f, z), new Vector3(0.09f, 0.38f, 0.09f), "GrassDark");
-                    Cube(root, $"Flower_{i}", new Vector3(x, 0.62f, z), Vector3.one * 0.22f, i % 3 == 0 ? "Yellow" : i % 3 == 1 ? "Pink" : "Purple");
-                }
-            });
-            GameObject bench = CreatePrefab("Bench_Placeholder", new Vector2(2.4f, 0.95f), 0.35f, root =>
-            {
-                Cube(root, "Seat", new Vector3(0f, 0.55f, 0f), new Vector3(2.35f, 0.22f, 0.72f), "Wood");
-                Cube(root, "Back", new Vector3(0f, 1.02f, 0.3f), new Vector3(2.35f, 0.7f, 0.18f), "Wood");
-                Cube(root, "LegL", new Vector3(-0.82f, 0.27f, 0f), new Vector3(0.2f, 0.55f, 0.55f), "MetalDark");
-                Cube(root, "LegR", new Vector3(0.82f, 0.27f, 0f), new Vector3(0.2f, 0.55f, 0.55f), "MetalDark");
-            });
+            RegionDefinition region = AssetDatabase.LoadAssetAtPath<RegionDefinition>(RegionPath);
+            if (region == null) throw new InvalidOperationException($"Missing region asset at {RegionPath}.");
+            RegionEnvironmentSettings settings = RegionEnvironmentSettings.SuburbsDefault;
+            settings.Parks.MinimumParks = 2;
+            settings.DrivewayMaterial = AssetDatabase.LoadAssetAtPath<Material>(
+                $"{MaterialFolder}/Driveway_Pebbles.mat");
+            EnvironmentPrefabLibrary library = region.Environment.Prefabs;
             GameObject fountain = AssetDatabase.LoadAssetAtPath<GameObject>(WaterFountainAuthoring.PrefabPath);
             if (fountain == null)
-                throw new System.InvalidOperationException("Create the saved water_fountain prefab using Tools > Couch Guys > Water Fountain first.");
-            GameObject statue = CreatePrefab("Statue_Placeholder", new Vector2(3.2f, 3.2f), 0.8f, root =>
-            {
-                Cube(root, "Pedestal", new Vector3(0f, 0.65f, 0f), new Vector3(2.7f, 1.3f, 2.7f), "Concrete");
-                Cube(root, "Statue", new Vector3(0f, 2.65f, 0f), new Vector3(1.15f, 2.8f, 1.15f), "Blue");
-                Cube(root, "Head", new Vector3(0f, 4.35f, 0f), Vector3.one * 0.85f, "Blue");
-            });
-            GameObject gazebo = CreatePrefab("Gazebo_Placeholder", new Vector2(6f, 6f), 0.8f, root =>
-            {
-                Cube(root, "Floor", new Vector3(0f, 0.18f, 0f), new Vector3(5.8f, 0.36f, 5.8f), "Wood");
-                for (int i = 0; i < 4; i++)
-                {
-                    float x = i % 2 == 0 ? -2.25f : 2.25f;
-                    float z = i < 2 ? -2.25f : 2.25f;
-                    Cube(root, $"Post_{i}", new Vector3(x, 1.8f, z), new Vector3(0.3f, 3.3f, 0.3f), "Wood");
-                }
-                Cube(root, "Roof", new Vector3(0f, 3.65f, 0f), new Vector3(6.4f, 0.55f, 6.4f), "Red");
-            });
-            GameObject parkSign = SignPrefab("ParkSign_Placeholder", "GrassDark", new Vector2(2.3f, 0.65f));
-            GameObject noticeBoard = SignPrefab("NoticeBoard_Placeholder", "Yellow", new Vector2(2.8f, 0.9f));
-            GameObject picnic = CreatePrefab("PicnicArea_Placeholder", new Vector2(4.2f, 3.2f), 0.65f, root =>
-            {
-                Cube(root, "Table", new Vector3(0f, 0.85f, 0f), new Vector3(3.2f, 0.25f, 1.35f), "Wood");
-                Cube(root, "BenchL", new Vector3(-1.85f, 0.5f, 0f), new Vector3(0.55f, 0.2f, 3.2f), "Wood");
-                Cube(root, "BenchR", new Vector3(1.85f, 0.5f, 0f), new Vector3(0.55f, 0.2f, 3.2f), "Wood");
-            });
-            GameObject path = CreatePrefab("ParkPath_Placeholder", new Vector2(2.2f, 1f), 0f, root =>
-                Cube(root, "Path", new Vector3(0f, 0.035f, 0f), new Vector3(2.2f, 0.07f, 1f), "Path"), false);
-            GameObject boundary = CreatePrefab("ParkBoundary_Placeholder", new Vector2(0.35f, 2f), 0f, root =>
-                Cube(root, "Boundary", new Vector3(0f, 0.28f, 0f), new Vector3(0.35f, 0.56f, 2f), "Wood"), false);
+                throw new InvalidOperationException("Create the saved water fountain prefab using Tools > Couch Guys > Water Fountain first.");
             GameObject jumpingPillow = AssetDatabase.LoadAssetAtPath<GameObject>(JumpingPillowAuthoring.PrefabPath);
             if (jumpingPillow == null)
                 throw new InvalidOperationException("Create the saved jumping pillow prefab first.");
-            GameObject[] treePrefabs =
+
+            library.SmallPark = jumpingPillow;
+            library.MediumPark = jumpingPillow;
+            library.LargePark = jumpingPillow;
+            library.Fountain = fountain;
+            library.TreePrefabs = new[]
             {
                 AssetDatabase.LoadAssetAtPath<GameObject>($"{TreePrefabFolder}/tree_01.prefab"),
                 AssetDatabase.LoadAssetAtPath<GameObject>($"{TreePrefabFolder}/tree_02.prefab"),
                 AssetDatabase.LoadAssetAtPath<GameObject>($"{TreePrefabFolder}/tree_03.prefab")
             };
-
-            return new EnvironmentPrefabLibrary
-            {
-                SmallPark = jumpingPillow, MediumPark = jumpingPillow, LargePark = jumpingPillow,
-                TreePrefabs = treePrefabs, Bench = bench, Bin = bin,
-                FlowerCluster = flowers, Fountain = fountain, Statue = statue,
-                Gazebo = gazebo, ParkSign = parkSign,
-                ParkPath = path, ParkBoundary = boundary, NoticeBoard = noticeBoard, PicnicArea = picnic
-            };
-        }
-
-        private static GameObject SignPrefab(string name, string panelMaterial, Vector2 footprint) =>
-            CreatePrefab(name, footprint, 0.25f, root =>
-            {
-                Cube(root, "PostL", new Vector3(-footprint.x * 0.32f, 0.85f, 0f), new Vector3(0.16f, 1.7f, 0.16f), "Wood");
-                Cube(root, "PostR", new Vector3(footprint.x * 0.32f, 0.85f, 0f), new Vector3(0.16f, 1.7f, 0.16f), "Wood");
-                Cube(root, "Panel", new Vector3(0f, 1.65f, 0f), new Vector3(footprint.x, 0.9f, 0.2f), panelMaterial);
-            });
-
-        private static GameObject CreatePrefab(
-            string name,
-            Vector2 footprint,
-            float clearance,
-            Action<GameObject> build,
-            bool blocksPlacement = true)
-        {
-            GameObject root = new GameObject(name);
-            EnvironmentPlacementMetadata metadata = root.AddComponent<EnvironmentPlacementMetadata>();
-            metadata.Configure(footprint, clearance, true, blocksPlacement);
-            build(root);
-            string path = $"{PrefabFolder}/{name}.prefab";
-            GameObject prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
-            UnityEngine.Object.DestroyImmediate(root);
-            return prefab;
-        }
-
-        private static GameObject Cube(
-            GameObject root,
-            string name,
-            Vector3 localPosition,
-            Vector3 localScale,
-            string material)
-        {
-            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            cube.name = name;
-            cube.transform.SetParent(root.transform, false);
-            cube.transform.localPosition = localPosition;
-            cube.transform.localScale = localScale;
-            UnityEngine.Object.DestroyImmediate(cube.GetComponent<Collider>());
-            cube.GetComponent<Renderer>().sharedMaterial = Materials[material];
-            return cube;
-        }
-
-        private static void ConfigureSuburbs(EnvironmentPrefabLibrary library)
-        {
-            RegionDefinition region = AssetDatabase.LoadAssetAtPath<RegionDefinition>(RegionPath);
-            if (region == null) throw new InvalidOperationException($"Missing region asset at {RegionPath}.");
-            RegionEnvironmentSettings settings = RegionEnvironmentSettings.SuburbsDefault;
-            settings.DrivewayMaterial = AssetDatabase.LoadAssetAtPath<Material>(
-                $"{MaterialFolder}/Driveway_Pebbles.mat");
             settings.Prefabs = library;
             settings.Lighting.SkyboxMaterial = CreateOrUpdateSkybox();
             settings.Lighting.PostProcessingProfile = CreateOrUpdatePostProfile();
@@ -212,9 +104,6 @@ namespace CouchGuys.Editor
             settings.Landmarks.Prefabs = new[]
             {
                 new WeightedEnvironmentPrefab { Prefab = library.Fountain, Weight = 1.2f, AllowedInParks = true },
-                new WeightedEnvironmentPrefab { Prefab = library.Statue, Weight = 0.8f, AllowedInParks = true },
-                new WeightedEnvironmentPrefab { Prefab = library.Gazebo, Weight = 0.75f, AllowedInParks = true },
-                new WeightedEnvironmentPrefab { Prefab = library.NoticeBoard, Weight = 0.5f, AllowedRoadside = true },
             };
             region.ConfigureEnvironment(settings);
             EditorUtility.SetDirty(region);

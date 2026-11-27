@@ -14,7 +14,6 @@ namespace CouchGuys.Editor
     public static class WaterFountainAuthoring
     {
         public const string PrefabPath = "Assets/_Project/Prefabs/Environment/WaterFountain/water_fountain.prefab";
-        const string Legacy = "Assets/_Project/Prefabs/Environment/Placeholders/Fountain_Placeholder.prefab";
         const string Model = "Assets/_Project/Models/Environment/WaterFountain/water_fountain.fbx";
         const string Materials = "Assets/_Project/Materials/Environment/WaterFountain";
 
@@ -42,15 +41,10 @@ namespace CouchGuys.Editor
             var droplets = Material("Fountain_Droplets", new Color(.04f,.8f,1,.85f),0,0,"CouchGuys/Environment/FountainParticle");
             var ripples = Material("Fountain_ImpactRipples", new Color(.3f,.95f,1,.6f),0,0,"CouchGuys/Environment/FountainParticle");
             ripples.SetFloat("_Ring",1);
-            bool migrated = AssetDatabase.LoadAssetAtPath<GameObject>(Legacy);
-            if (!migrated) throw new InvalidOperationException("Expected the original prefab to preserve its GUID and root fileID.");
-            string error = AssetDatabase.MoveAsset(Legacy, PrefabPath);
-            if (!string.IsNullOrEmpty(error)) throw new InvalidOperationException(error);
-            var root = PrefabUtility.LoadPrefabContents(PrefabPath);
+            var root = new GameObject("water_fountain");
             try
             {
-                root.name = "water_fountain";
-                for (int i=root.transform.childCount-1;i>=0;i--) Object.DestroyImmediate(root.transform.GetChild(i).gameObject);
+                root.AddComponent<EnvironmentPlacementMetadata>().Configure(new Vector2(5.5f, 5.5f), 1f, true, true);
                 var model = (GameObject)PrefabUtility.InstantiatePrefab(imported,root.transform);
                 model.name = "water_fountain_model";
                 foreach (var automaticLOD in model.GetComponentsInChildren<LODGroup>()) Object.DestroyImmediate(automaticLOD);
@@ -109,9 +103,9 @@ namespace CouchGuys.Editor
                 so.ApplyModifiedPropertiesWithoutUndo();
                 PrefabUtility.SaveAsPrefabAsset(root,PrefabPath);
             }
-            finally { PrefabUtility.UnloadPrefabContents(root); }
+            finally { Object.DestroyImmediate(root); }
             AssetDatabase.SaveAssets();
-            Validate();
+            ValidatePrefab();
             Selection.activeObject=AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             Debug.Log("WATER_FOUNTAIN_BUILD_OK");
         }
@@ -155,6 +149,16 @@ namespace CouchGuys.Editor
         [MenuItem("Tools/Couch Guys/Water Fountain/Validate and Render %#&v")]
         public static void Validate()
         {
+            var region = AssetDatabase.LoadAssetAtPath<RegionDefinition>("Assets/_Project/Settings/Regions/Region_Suburbs.asset");
+            var fountain = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            if (region == null || fountain == null || region.Environment.Prefabs.Fountain != fountain)
+                throw new InvalidOperationException("Suburbs is missing its saved fountain reference.");
+
+            ValidatePrefab();
+        }
+
+        private static void ValidatePrefab()
+        {
             var asset=AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             if(!asset) throw new InvalidOperationException("Missing fountain prefab");
             if(AssetDatabase.AssetPathToGUID(PrefabPath)!="5f073b482531af8439406b2a846e3004") throw new InvalidOperationException("Original GUID lost");
@@ -168,9 +172,6 @@ namespace CouchGuys.Editor
             var meta=asset.GetComponent<EnvironmentPlacementMetadata>();
             if(meta.Footprint!=new Vector2(5.5f,5.5f) || meta.Clearance!=1)throw new InvalidOperationException("Placement changed");
             if(asset.GetComponents<BoxCollider>().Length!=7)throw new InvalidOperationException("Missing structure colliders");
-            // Verify the serialized region reference, independent of region settings implementation.
-            string regionText=File.ReadAllText("Assets/_Project/Settings/Regions/Region_Suburbs.asset");
-            if(!regionText.Contains("Fountain: {fileID: 7539993096332369416, guid: 5f073b482531af8439406b2a846e3004"))throw new InvalidOperationException("Generator reference changed");
             var preview=EditorSceneManager.NewPreviewScene();
             RenderTexture rt=null; Texture2D image=null;
             try

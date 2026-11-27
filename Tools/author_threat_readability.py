@@ -103,9 +103,9 @@ def author(prefab, kind, y):
         next_id += 1
         return next_id
 
-    bench = blocks((ASSETS / 'Prefabs/Environment/Placeholders/Bench_Placeholder.prefab').read_text())
-    renderer_template = next(b for b in bench if b.startswith('--- !u!23 '))
-    audio_template = next(b for b in blocks((ASSETS / 'Prefabs/World/depot_02.prefab').read_text()) if b.startswith('--- !u!82 '))
+    depot = blocks((ASSETS / 'Prefabs/World/depot_02.prefab').read_text())
+    renderer_template = next(b for b in depot if b.startswith('--- !u!23 '))
+    audio_template = next(b for b in depot if b.startswith('--- !u!82 '))
 
     def node(name, parent, pos=(0, 0, 0), scale=(1, 1, 1), angle=0, material=None, active=True, cylinder=False, voice=False, yaw=0):
         go, tr = allocate(), allocate()
@@ -125,6 +125,7 @@ def author(prefab, kind, y):
             mesh = re.sub(r'm_GameObject: \{fileID: \d+}', f'm_GameObject: {{fileID: {go}}}', mesh)
             mesh = re.sub(r'guid: [a-f0-9]{32}', f'guid: {material}', mesh)
             mesh = mesh.replace('m_CastShadows: 1', 'm_CastShadows: 0')
+            mesh = mesh.replace('m_PreserveUVs: 0', 'm_PreserveUVs: 1')
             generated.append(mesh)
         if voice:
             source = re.sub(r'&\d+\n', f'&{extra[0]}\n', audio_template, count=1)

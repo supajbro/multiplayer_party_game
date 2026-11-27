@@ -32,7 +32,7 @@ namespace CouchGuys.UI
             GameLaunchContext.EnterMainMenu();
             SteamLobbyDebugInterface.IsVisible = false;
             if (m_multiplayerMenu == null) m_multiplayerMenu = GetComponent<MultiplayerMenuController>();
-            m_multiplayerMenu?.InitialiseMainButtons(m_soloButton, m_multiplayerButton, m_customiseButton, m_settingsButton);
+            m_multiplayerMenu?.Initialise(m_menuIntro, m_soloButton, m_multiplayerButton, m_customiseButton, m_settingsButton);
             if (m_settingsPanel != null) m_settingsPanel.SetActive(false);
             if (m_volumeSlider != null)
             {

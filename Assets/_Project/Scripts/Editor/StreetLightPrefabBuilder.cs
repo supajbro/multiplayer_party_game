@@ -9,14 +9,7 @@ namespace CouchGuys.Editor
     {
         public const string PrefabPath = "Assets/_Project/Prefabs/Environment/StreetLights/StreetLight.prefab";
         private const string PreviousPath = "Assets/_Project/Prefabs/Environment/StreetLight.prefab";
-        private const string LegacyPath = "Assets/_Project/Prefabs/Environment/Placeholders/StreetLight_Placeholder.prefab";
         private const string ModelPath = "Assets/_Project/Models/StreetLights/street_light_02.fbx";
-
-        [InitializeOnLoadMethod]
-        private static void BuildAfterImport() => EditorApplication.delayCall += () =>
-        {
-            if (!EditorApplication.isPlayingOrWillChangePlaymode) EnsurePrefab();
-        };
 
         public static GameObject EnsurePrefab()
         {
@@ -35,25 +28,11 @@ namespace CouchGuys.Editor
                 return AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             }
 
-            // Move the original asset to preserve its GUID and existing region references.
-            bool migrating = AssetDatabase.LoadAssetAtPath<GameObject>(LegacyPath) != null;
-            if (migrating)
-            {
-                string error = AssetDatabase.MoveAsset(LegacyPath, PrefabPath);
-                if (!string.IsNullOrEmpty(error)) throw new System.InvalidOperationException(error);
-            }
-
-            GameObject root = migrating ? PrefabUtility.LoadPrefabContents(PrefabPath) : new GameObject("StreetLight");
+            GameObject root = new GameObject("StreetLight");
             try
             {
-                root.name = "StreetLight";
-                for (int i = root.transform.childCount - 1; i >= 0; i--)
-                    Object.DestroyImmediate(root.transform.GetChild(i).gameObject);
-                if (!migrating)
-                {
-                    root.AddComponent<EnvironmentPlacementMetadata>().Configure(new Vector2(1.1f, 1.1f), 0.35f, true, true);
-                    root.AddComponent<StreetlightPlaceholder>();
-                }
+                root.AddComponent<EnvironmentPlacementMetadata>().Configure(new Vector2(1.1f, 1.1f), 0.35f, true, true);
+                root.AddComponent<StreetlightPlaceholder>();
 
                 var alignment = new GameObject("ModelAlignment").transform;
                 alignment.SetParent(root.transform, false);
@@ -97,8 +76,7 @@ namespace CouchGuys.Editor
             }
             finally
             {
-                if (migrating) PrefabUtility.UnloadPrefabContents(root);
-                else Object.DestroyImmediate(root);
+                Object.DestroyImmediate(root);
             }
         }
     }

@@ -197,50 +197,37 @@ namespace CouchGuys.Testing
         {
             if (!Check(m_rewardPillow != null, "Saved pillow reward fixture exists.")) yield break;
             var initial = WheelieController.Instances.ToArray();
-            var surface = m_rewardPillow.GetComponent<JumpingPillow>().SurfaceCollider;
-            Vector3 point = surface.bounds.center; point.y = surface.bounds.max.y + 1f;
-            if (!surface.Raycast(new Ray(point, Vector3.down), out RaycastHit ground, surface.bounds.size.y + 2f))
-            { Finish(false, "Cannot sample reward pillow surface."); yield break; }
+            float checkInterval = m_rewardPillow.SpawnCheckInterval;
+            float deadline = Time.time + checkInterval * 3f;
+            while (m_rewardPillow.ActiveCube == null && Time.time < deadline) yield return null;
+            var cube = m_rewardPillow.ActiveCube;
+            if (!Check(cube != null && m_leaders.Values.All(player =>
+                Vector3.Distance(player.transform.position, m_rewardPillow.transform.position) > 5f),
+                "Pillow spawns a cube while both players are away.")) yield break;
+
+            yield return new WaitForSeconds(checkInterval * 2f);
+            if (!Check(m_rewardPillow.ActiveCube == cube &&
+                FindObjectsByType<WheelieSquadReward>(FindObjectsSortMode.None).Count(reward => reward.IsSpawned) == 1,
+                "Repeated checks leave exactly one active cube on the pillow.")) yield break;
+
+            bool rejectedAi = !cube.TryCollectServer(initial[0].GetComponent<Collider>());
             var capsule = leader.GetComponent<CharacterController>();
             var motor = leader.GetComponent<ThirdPersonPlayerController>();
-            Vector3 launch = ground.point - Vector3.up * (capsule.center.y - capsule.height * .5f) + Vector3.up * .08f;
-            motor.Teleport(launch, Quaternion.identity);
-            yield return new WaitForSeconds(.2f);
-            bool sawCube = false, rejectedAi = false;
-            float gravity = -motor.Gravity, height = m_rewardPillow.GetComponent<JumpingPillow>().BounceHeight;
-            float speed = Mathf.Sqrt(2f * gravity * height), duration = 2f * speed / gravity;
-            float t = 0f;
-            while (t < duration)
-            {
-                t += Time.deltaTime;
-                Vector3 position = launch + Vector3.up * Mathf.Max(0f, speed * t - .5f * gravity * t * t);
-                var cube = m_rewardPillow.ActiveCube;
-                if (cube != null)
-                {
-                    sawCube = true;
-                    if (!rejectedAi) rejectedAi = !cube.TryCollectServer(initial[0].GetComponent<Collider>());
-                    Vector3 horizontal = Vector3.MoveTowards(new Vector3(leader.transform.position.x, 0f, leader.transform.position.z),
-                        new Vector3(cube.transform.position.x, 0f, cube.transform.position.z), m_settings.MovementSpeed * Time.deltaTime);
-                    position.x = horizontal.x; position.z = horizontal.z;
-                }
-                else { position.x = leader.transform.position.x; position.z = leader.transform.position.z; }
-                motor.Teleport(position, Quaternion.identity);
-                yield return null;
-            }
-            yield return new WaitForSeconds(.4f);
+            Vector3 returnPosition = leader.transform.position;
+            Vector3 capsuleCenterOffset = Vector3.Scale(capsule.center, capsule.transform.lossyScale);
+            motor.Teleport(cube.transform.position - capsuleCenterOffset, Quaternion.identity);
+            deadline = Time.time + 2f;
+            while (cube != null && Time.time < deadline) yield return null;
             var awarded = WheelieController.Instances.Where(w => !initial.Contains(w)).ToArray();
-            if (!Check(sawCube && rejectedAi && awarded.Length == m_settings.SquadSize &&
-                awarded.All(w => w.AssignedPlayer == leader.NetworkObject) && m_rewardPillow.ActiveCube == null,
-                $"Real cube trigger awards exactly four to the jumping player, rejects AI and consumes once (cube={sawCube}, aiRejected={rejectedAi}, awarded={awarded.Length}).")) yield break;
-            // A second qualifying bounce inside the cooldown cannot produce another cube/squad.
-            motor.Teleport(launch, Quaternion.identity); yield return new WaitForSeconds(.2f);
-            for (t = 0f; t < duration; t += Time.deltaTime)
-            {
-                motor.Teleport(launch + Vector3.up * Mathf.Max(0f, speed * t - .5f * gravity * t * t), Quaternion.identity);
-                yield return null;
-            }
-            if (!Check(m_rewardPillow.ActiveCube == null && WheelieController.Instances.Count == initial.Length + m_settings.SquadSize,
-                "Pillow cooldown prevents repeated rewards on consecutive bounces.")) yield break;
+            if (!Check(cube == null && rejectedAi && awarded.Length == m_settings.SquadSize &&
+                awarded.All(w => w.AssignedPlayer == leader.NetworkObject),
+                $"Cube trigger awards one squad to the collecting player and rejects AI (aiRejected={rejectedAi}, awarded={awarded.Length}).")) yield break;
+
+            motor.Teleport(returnPosition, Quaternion.identity);
+            deadline = Time.time + checkInterval * 3f;
+            while (m_rewardPillow.ActiveCube == null && Time.time < deadline) yield return null;
+            Check(m_rewardPillow.ActiveCube != null && WheelieController.Instances.Count == initial.Length + m_settings.SquadSize,
+                "An empty pillow can spawn another cube after collection.");
         }
         private bool Check(bool condition, string detail)
         { if (condition) { Log("PASS: " + detail); return true; } Finish(false, detail); return false; }

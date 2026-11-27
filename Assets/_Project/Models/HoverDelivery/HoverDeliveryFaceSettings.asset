@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ceaf7d2c9f9f83499ce8c9449779fea, type: 3}
+  m_Name: HoverDeliveryFaceSettings
+  m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Player.RobotFaceDisplaySettings
+  m_material: {fileID: 2100000, guid: da56e922754a405a89a696e0e79fb22b, type: 2}
+  m_cyan: {r: 0.04, g: 0.85, b: 1, a: 1}
+  m_brightness: 2.6
+  m_scanlineIntensity: 0.16
+  m_pixelDensity: 128
+  m_animationSpeed: 1
+  m_glitchIntensity: 0.45
+  m_curvature: 0.035
+  m_staticIntensity: 0.0015
+  m_lowHealthFraction: 0.3
+  m_transitionDuration: 0.16
+  m_blinkInterval: {x: 2.4, y: 5.6}
+  m_blinkDuration: 0.12
+  m_screenUVRect: {x: 0, y: 0, z: 1, w: 1}
+  m_rotateScreenUV: 0

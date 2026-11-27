@@ -735,7 +735,7 @@ PrefabInstance:
       value: 0.6
       objectReference: {fileID: 0}
     - target: {fileID: 6601188237490578452, guid: bc8423e0867d9c443b221a23aa31ddb1, type: 3}
-      propertyPath: m_highJumpChanceMultiplier
+      propertyPath: m_spawnCheckInterval
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8500776512651561806, guid: bc8423e0867d9c443b221a23aa31ddb1, type: 3}

@@ -112,9 +112,10 @@ namespace CouchGuys.Editor
         {
             var root = Rect("Multiplayer Navigation", parent, Vector2.zero, Vector2.zero); Stretch(root);
             var c = root.gameObject.AddComponent<MultiplayerMenuController>();
-            var shade = ImageRect("Multiplayer Panel", root, new Color(.025f, .06f, .1f, .97f)); Stretch(shade.rectTransform); Assign(c, "m_root", shade.gameObject);
-            Label(shade.transform, "MULTIPLAYER", 530, 100, 860, 90, 58);
-            Assign(c, "m_status", LegacyLabel(shade.transform, "Starting Steam...", 530, 960, 860, 80, 26));
+            var panel = Rect("Multiplayer Panel", root, Vector2.zero, Vector2.zero); Stretch(panel);
+            var group = panel.gameObject.AddComponent<CanvasGroup>(); group.ignoreParentGroups = true; Assign(c, "m_panel", group);
+            Label(panel, "MULTIPLAYER", 530, 100, 860, 90, 58);
+            Assign(c, "m_status", LegacyLabel(panel, "Starting Steam...", 530, 960, 860, 80, 26));
             var home = Page("Multiplayer Home"); var host = Page("Host Options"); var browser = Page("Lobby Browser"); var lobby = Page("Lobby");
             Assign(c, "m_homePage", home.gameObject); Assign(c, "m_hostPage", host.gameObject); Assign(c, "m_browserPage", browser.gameObject); Assign(c, "m_lobbyPage", lobby.gameObject);
             Action(home, "Host Game", 300, c.ShowHost); Action(home, "Join Game", 460, c.OpenBrowser); Action(home, "Back", 660, c.Close);
@@ -136,8 +137,8 @@ namespace CouchGuys.Editor
             var rowAsset = PrefabUtility.SaveAsPrefabAsset(row.gameObject, "Assets/_Project/Prefabs/UI/MainMenuLobbyRow.prefab"); Assign(c, "m_browserRowPrefab", rowAsset.GetComponent<Button>()); Object.DestroyImmediate(row.gameObject);
             Assign(c, "m_lobbyPlayers", LegacyLabel(lobby, "PLAYERS", 580, 230, 760, 310, 36));
             Action(lobby, "Invite Friends", 560, c.InviteFriends); Assign(c, "m_startButton", Action(lobby, "Start Game", 700, c.StartGame)); Action(lobby, "Leave Lobby", 840, c.LeaveLobby);
-            foreach (var page in new[] { host, browser, lobby }) page.gameObject.SetActive(false); shade.gameObject.SetActive(false);
-            RectTransform Page(string name) { var p = Rect(name, shade.transform, Vector2.zero, Vector2.zero); Stretch(p); return p; }
+            foreach (var page in new[] { host, browser, lobby }) page.gameObject.SetActive(false); panel.gameObject.SetActive(false);
+            RectTransform Page(string name) { var p = Rect(name, panel, Vector2.zero, Vector2.zero); Stretch(p); return p; }
         }
 
         static Button Action(Transform parent, string text, float y, UnityEngine.Events.UnityAction callback)

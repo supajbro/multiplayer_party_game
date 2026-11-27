@@ -155,6 +155,38 @@ namespace CouchGuys.UI
             StartCoroutine(TransitionCustomise(true));
         }
 
+        internal bool TryBeginMultiplayer()
+        {
+            if (!m_menuReady || m_customising || m_transitioning) return false;
+            m_transitioning = true;
+            m_menu.interactable = false;
+            m_menu.blocksRaycasts = false;
+            EventSystem.current?.SetSelectedGameObject(null);
+            return true;
+        }
+
+        internal IEnumerator SlideMainMenu(bool visible)
+        {
+            float duration = m_menuEntrance.length;
+            m_menuAnimator.speed = 0f;
+            for (float elapsed = 0f; elapsed < duration; elapsed += Time.unscaledDeltaTime)
+            {
+                float progress = elapsed / duration;
+                SampleMainMenu(visible ? progress : 1f - progress);
+                yield return null;
+            }
+            SampleMainMenu(visible ? 1f : 0f);
+        }
+
+        internal void FinishMultiplayer()
+        {
+            m_menuAnimator.speed = 1f;
+            m_menu.interactable = true;
+            m_menu.blocksRaycasts = true;
+            m_transitioning = false;
+            EventSystem.current?.SetSelectedGameObject(m_firstSelectedButton);
+        }
+
         public void SelectPreviousCharacter() => ChangeCharacter(-1);
         public void SelectNextCharacter() => ChangeCharacter(1);
 
@@ -244,16 +276,21 @@ namespace CouchGuys.UI
             void ApplyTransition(float menuProgress, float cameraProgress)
             {
                 float menuTime = opening ? 1f - Mathf.Clamp01(menuProgress) : Mathf.Clamp01(menuProgress);
-                m_menuAnimator.Play("Slide In", 0, menuTime);
-                m_menuAnimator.Update(0f);
-                // The settings cog is outside the entrance clip; slide it through the top edge.
-                if (m_settingsButton != null)
-                    m_settingsButton.anchoredPosition = m_settingsPosition +
-                        m_settingsExitOffset * Mathf.SmoothStep(1f, 0f, menuTime);
+                SampleMainMenu(menuTime);
                 float cameraBlend = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(cameraProgress));
                 m_menuCamera.transform.rotation = Quaternion.Slerp(startRotation, endRotation, cameraBlend);
                 m_menuCamera.fieldOfView = Mathf.Lerp(startFieldOfView, endFieldOfView, cameraBlend);
             }
+        }
+
+        private void SampleMainMenu(float time)
+        {
+            m_menuAnimator.Play("Slide In", 0, time);
+            m_menuAnimator.Update(0f);
+            // The settings cog is outside the entrance clip; slide it through the top edge.
+            if (m_settingsButton != null)
+                m_settingsButton.anchoredPosition = m_settingsPosition +
+                    m_settingsExitOffset * Mathf.SmoothStep(1f, 0f, time);
         }
 
         private IEnumerator FadeArrows(bool visible)

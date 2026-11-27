@@ -19,7 +19,7 @@ namespace CouchGuys.ProceduralGeneration
         public ResidentialDecorationSettings ResidentialDecorations;
         [Header("Driveways")]
         public Material DrivewayMaterial;
-        [Header("Shared Placeholder Prefabs")]
+        [Header("Shared Environment Prefabs")]
         public EnvironmentPrefabLibrary Prefabs;
 
         public static RegionEnvironmentSettings SuburbsDefault => new RegionEnvironmentSettings

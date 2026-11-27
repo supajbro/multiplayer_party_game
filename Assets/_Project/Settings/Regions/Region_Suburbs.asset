@@ -168,7 +168,7 @@ MonoBehaviour:
       LightRange: 11
     Parks:
       Enabled: 1
-      MinimumParks: 1
+      MinimumParks: 2
       MaximumParks: 2
       SmallProbability: 0.45
       MediumProbability: 0.4
@@ -191,18 +191,6 @@ MonoBehaviour:
         Weight: 1.2
         AllowedInParks: 1
         AllowedRoadside: 0
-      - Prefab: {fileID: 7611975954099184691, guid: f5211013f5d4a484f92be819e122e4b7, type: 3}
-        Weight: 0.8
-        AllowedInParks: 1
-        AllowedRoadside: 0
-      - Prefab: {fileID: 6479280250502734365, guid: b2e6e2822fa5a3043b0b6ca32475bc26, type: 3}
-        Weight: 0.75
-        AllowedInParks: 1
-        AllowedRoadside: 0
-      - Prefab: {fileID: 8504114683684851983, guid: 7aa0eb70acc483a418fda28d1ff75823, type: 3}
-        Weight: 0.5
-        AllowedInParks: 0
-        AllowedRoadside: 1
     ResidentialDecorations:
       Enabled: 1
       BinProbability: 0.7
@@ -223,22 +211,22 @@ MonoBehaviour:
       - {fileID: 1001001, guid: f19c7a1d8e23456789abcdef01234567, type: 3}
       - {fileID: 1001001, guid: a27d8b2e9f34567890abcdef12345678, type: 3}
       - {fileID: 1001001, guid: b38e9c3fa045678901bcdef234567890, type: 3}
-      Bench: {fileID: 4910921757220290626, guid: bea4b1ee7af8c9648ac0a649b7bac297, type: 3}
-      Bin: {fileID: 4903883153855092555, guid: 6c9ef0645a455124aa614fec96b02fac, type: 3}
+      Bench: {fileID: 0}
+      Bin: {fileID: 0}
       PublicBin: {fileID: 0}
       Mailbox: {fileID: 0}
-      FlowerCluster: {fileID: 2554265449759307080, guid: 8b7ce3d1fb733954986ac1bde39cc435, type: 3}
+      FlowerCluster: {fileID: 0}
       Bush: {fileID: 0}
       Fountain: {fileID: 7539993096332369416, guid: 5f073b482531af8439406b2a846e3004, type: 3}
-      Statue: {fileID: 7611975954099184691, guid: f5211013f5d4a484f92be819e122e4b7, type: 3}
+      Statue: {fileID: 0}
       Playground: {fileID: 0}
-      Gazebo: {fileID: 6479280250502734365, guid: b2e6e2822fa5a3043b0b6ca32475bc26, type: 3}
+      Gazebo: {fileID: 0}
       BusStop: {fileID: 0}
-      ParkSign: {fileID: 3481702279890179335, guid: 271ce85012773244083f886731aa8639, type: 3}
-      ParkPath: {fileID: 2339326659669230358, guid: b2ec6dbd325637b4d82606220c728e5a, type: 3}
-      ParkBoundary: {fileID: 8168994977871789672, guid: 246fbd308f21a454dac9263eb764dfe9, type: 3}
-      NoticeBoard: {fileID: 8504114683684851983, guid: 7aa0eb70acc483a418fda28d1ff75823, type: 3}
-      PicnicArea: {fileID: 8223794025572331755, guid: a27426b64db352943a9285f75f6ad2d4, type: 3}
+      ParkSign: {fileID: 0}
+      ParkPath: {fileID: 0}
+      ParkBoundary: {fileID: 0}
+      NoticeBoard: {fileID: 0}
+      PicnicArea: {fileID: 0}
       Plaza: {fileID: 0}
       FireHydrant: {fileID: 0}
       StreetSign: {fileID: 0}

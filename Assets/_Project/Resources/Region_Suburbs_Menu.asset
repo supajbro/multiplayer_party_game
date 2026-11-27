@@ -165,7 +165,7 @@ MonoBehaviour:
       LightRange: 11
     Parks:
       Enabled: 1
-      MinimumParks: 1
+      MinimumParks: 2
       MaximumParks: 2
       SmallProbability: 0.45
       MediumProbability: 0.4
