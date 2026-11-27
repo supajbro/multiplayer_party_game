@@ -97,8 +97,6 @@ MonoBehaviour:
   _port: 7770
   _maximumClients: 1
   _clientAddress: localhost
-  _clientTimeout: 1800
-  _serverTimeout: 1800
 --- !u!114 &8419171927557267565
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -112,6 +110,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Networking.NeighbourhoodPlayerSpawner
   m_playerPrefab: {fileID: 4753475039817145927, guid: f6f46f4c366e46d4969817a026491b76, type: 3}
+  m_characterCatalog: {fileID: 11400000, guid: 93408949377f5264ca726f192811a7f7, type: 2}
   m_addToDefaultScene: 1
   m_aiTeammateCount: 1
   m_aiSpawnRadius: 3
@@ -126,7 +125,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8e24c39e5cb227c46b1d02fa7766ba8a, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Networking.GameplaySessionController
   m_pauseMenuPrefab: {fileID: 136, guid: 48d111ada58dc004293ba6869e5ae0f6, type: 3}
   m_gameOverMenuPrefab: {fileID: 144, guid: 4b0d19fc17e681448a6e90db7f925193, type: 3}

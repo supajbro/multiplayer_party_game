@@ -43,7 +43,6 @@ namespace CouchGuys.UI
             }
             m_lobby.StateChanged += OnLobbyStateChanged;
             m_lobby.LobbiesChanged += RebuildBrowser;
-            m_lobby.GameStartRequested += OnGameStartRequested;
             OnLobbyStateChanged();
         }
 
@@ -52,7 +51,6 @@ namespace CouchGuys.UI
             if (m_lobby == null) return;
             m_lobby.StateChanged -= OnLobbyStateChanged;
             m_lobby.LobbiesChanged -= RebuildBrowser;
-            m_lobby.GameStartRequested -= OnGameStartRequested;
         }
 
         public void Open(params Button[] mainButtons)
@@ -66,7 +64,7 @@ namespace CouchGuys.UI
 
         private void Update()
         {
-            if (m_root == null || !m_root.activeSelf) return;
+            if (LoadingScreenController.BlocksGameplayInput || m_root == null || !m_root.activeSelf) return;
             if ((UnityEngine.InputSystem.Keyboard.current?.escapeKey.wasPressedThisFrame ?? false) ||
                 (UnityEngine.InputSystem.Gamepad.current?.buttonEast.wasPressedThisFrame ?? false))
             {
@@ -93,12 +91,6 @@ namespace CouchGuys.UI
             if (!m_root.activeSelf && m_lobby.IsInLobby) Open();
             m_status.text = m_lobby.Status;
             if (m_lobby.IsInLobby) ShowPage(m_lobbyPage);
-        }
-
-        private void OnGameStartRequested()
-        {
-            GameLaunchContext.BeginMultiplayer();
-            LoadingScreenController.Show("Building Neighbourhood...");
         }
 
         public void OpenHost() { Open(); if (m_lobby == null || !m_lobby.IsInLobby) ShowPage(m_hostPage); }

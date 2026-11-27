@@ -25,6 +25,7 @@ namespace CouchGuys.Player
         private static readonly int EquippedWeaponHash = Animator.StringToHash("EquippedWeapon");
         private static readonly int WeaponShootHash = Animator.StringToHash("WeaponShoot");
         private static readonly int WeaponAimHash = Animator.StringToHash("WeaponAim");
+        private static readonly int ReloadProgressHash = Animator.StringToHash("ReloadProgress");
 
         [Header("References")]
         [SerializeField] private Animator m_animator;
@@ -47,13 +48,18 @@ namespace CouchGuys.Player
         private int m_equippedWeapon;
         private float m_weaponAimUntil;
         private PlayerWeaponType m_recoilWeapon;
-        private Transform m_torsoBone;
-        private Transform m_headBone;
-        private Transform m_upperArmLeft;
-        private Transform m_lowerArmLeft;
-        private Transform m_upperArmRight;
-        private Transform m_lowerArmRight;
-        private Transform m_weaponHand;
+        [Header("Animation Rig")]
+        [SerializeField] private Transform m_rigRoot;
+        [SerializeField] private Transform m_torsoBone;
+        [SerializeField] private Transform m_headBone;
+        [SerializeField] private Transform m_upperArmLeft;
+        [SerializeField] private Transform m_lowerArmLeft;
+        [SerializeField] private Transform m_upperArmRight;
+        [SerializeField] private Transform m_lowerArmRight;
+        [SerializeField] private Transform m_weaponHand;
+        [SerializeField] private PlayerWeaponController m_weaponController;
+        private bool m_wasReloading;
+        private int m_reloadWeapon = -1;
         private float m_recoilAmount;
         private float m_recoilRecovery = 12f;
         private float m_recoilRoll;
@@ -68,7 +74,7 @@ namespace CouchGuys.Player
         private bool m_vehicleSeated;
         private bool m_vehicleDriver;
         private Transform m_hoverLeftGrip, m_hoverRightGrip;
-        private Transform m_handLeft, m_handRight;
+        [SerializeField] private Transform m_handLeft, m_handRight;
         private Transform m_turretLeftGrip, m_turretRightGrip;
 
         public void SetTurretGrips(Transform left, Transform right)
@@ -114,6 +120,7 @@ namespace CouchGuys.Player
 
         private void Update()
         {
+            UpdateReloadLayer();
             UpdateBaseballBatLayer();
             if (m_animator != null && m_punchLayer >= 0)
             {
@@ -379,22 +386,43 @@ namespace CouchGuys.Player
             m_playerController ??= GetComponent<ThirdPersonPlayerController>();
             m_couchCarrier ??= GetComponent<PlayerCouchCarrier>();
             m_animator ??= GetComponentInChildren<Animator>(true);
-            if (m_animator != null && m_torsoBone == null)
+            m_weaponController ??= GetComponent<PlayerWeaponController>();
+            if (m_animator != null)
             {
                 // Mesh objects share these names with the bones. Recoil must act
                 // on the animated skeleton, not accumulate on static mesh pivots.
-                Transform skeleton = FindDescendant(m_animator.transform, "CouchGuy_Rig") ?? m_animator.transform;
-                m_torsoBone = FindDescendant(skeleton, "Torso");
-                m_headBone = FindDescendant(skeleton, "Head");
-                m_upperArmLeft = FindDescendant(skeleton, "UpperArm_L");
-                m_lowerArmLeft = FindDescendant(skeleton, "LowerArm_L");
-                m_upperArmRight = FindDescendant(skeleton, "UpperArm_R");
-                m_lowerArmRight = FindDescendant(skeleton, "LowerArm_R");
-                m_handLeft = FindDescendant(skeleton, "Hand_L");
-                m_handRight = FindDescendant(skeleton, "Hand_R");
+                Transform skeleton = m_rigRoot ?? FindDescendant(m_animator.transform, "CouchGuy_Rig") ?? m_animator.transform;
+                m_torsoBone ??= FindDescendant(skeleton, "Torso");
+                m_headBone ??= FindDescendant(skeleton, "Head");
+                m_upperArmLeft ??= FindDescendant(skeleton, "UpperArm_L");
+                m_lowerArmLeft ??= FindDescendant(skeleton, "LowerArm_L");
+                m_upperArmRight ??= FindDescendant(skeleton, "UpperArm_R");
+                m_lowerArmRight ??= FindDescendant(skeleton, "LowerArm_R");
+                m_handLeft ??= FindDescendant(skeleton, "Hand_L");
+                m_handRight ??= FindDescendant(skeleton, "Hand_R");
                 // Imported FBX Hand_L is on the player's physical right side.
-                m_weaponHand = FindDescendant(skeleton, "Hand_L");
+                m_weaponHand ??= m_handLeft;
             }
+        }
+
+        private void UpdateReloadLayer()
+        {
+            if (m_animator == null || m_weaponController == null) return;
+            int layer = m_animator.GetLayerIndex("Reloads");
+            if (layer < 0) return;
+            bool reloading = m_weaponController.IsReloading && !m_vehicleSeated &&
+                !(m_couchCarrier != null && m_couchCarrier.IsCarrying);
+            m_animator.SetFloat(ReloadProgressHash, m_weaponController.ReloadProgress);
+            int weapon = (int)m_weaponController.EquippedWeapon;
+            if (reloading && (!m_wasReloading || m_reloadWeapon != weapon))
+            {
+                string state = weapon == 0 ? "Pistol_Reload" : weapon == 1 ? "AssaultRifle_Reload" : "Shotgun_Reload";
+                m_animator.CrossFadeInFixedTime(state, .08f, layer, 0f);
+                m_reloadWeapon = weapon;
+            }
+            m_wasReloading = reloading;
+            m_animator.SetLayerWeight(layer, Mathf.MoveTowards(m_animator.GetLayerWeight(layer),
+                reloading ? 1f : 0f, Time.deltaTime * 12f));
         }
 
         private void ApplyProceduralRecoil()

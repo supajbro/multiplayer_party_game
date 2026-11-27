@@ -11,6 +11,13 @@ namespace CouchGuys.Player
         [SerializeField] private Transform m_visualRoot;
         [SerializeField] private Vector3 m_visualCentre = new(0, 1.4f, 0);
         [SerializeField] private Transform[] m_bones;
+        [System.Serializable]
+        private struct ClipOverride
+        {
+            public AnimationClip Source;
+            public AnimationClip Replacement;
+        }
+        [SerializeField] private ClipOverride[] m_clipOverrides;
         private Vector3[] m_positions;
         private Quaternion[] m_rotations;
         private Vector3 m_visualPosition;
@@ -58,7 +65,11 @@ namespace CouchGuys.Player
             }
             m_visualPosition = m_visualRoot.localPosition;
             m_visualRotation = m_visualRoot.localRotation;
-            emote.Clip.SampleAnimation(m_animator.gameObject, t);
+            AnimationClip clip = emote.Clip;
+            if (m_clipOverrides != null)
+                foreach (var entry in m_clipOverrides)
+                    if (entry.Source == clip && entry.Replacement != null) { clip = entry.Replacement; break; }
+            clip.SampleAnimation(m_animator.gameObject, t);
             for (int i = 0; i < m_bones.Length; i++)
             {
                 if (m_bones[i] == null) continue;

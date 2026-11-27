@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Utilities;
+using UnityEngine.UI;
+using CouchGuys.Player;
 
 namespace CouchGuys.UI
 {
@@ -32,6 +34,9 @@ namespace CouchGuys.UI
         [SerializeField, Range(10f, 90f)] private float m_customiseFieldOfView = 42f;
         [SerializeField, Min(0.01f)] private float m_cameraTurnDuration = 1.14f;
         [SerializeField, Min(0f)] private float m_arrowFadeDuration = 0.3f;
+        [SerializeField] private PlayerCharacterCatalog m_characterCatalog;
+        [SerializeField] private Button m_previousCharacterButton;
+        [SerializeField] private Button m_nextCharacterButton;
 
         private IDisposable m_inputSubscription;
         private bool m_waiting;
@@ -41,6 +46,9 @@ namespace CouchGuys.UI
         private Quaternion m_originalCameraRotation;
         private float m_originalFieldOfView;
         private Vector2 m_settingsPosition;
+        private GameObject m_originalRobot;
+        private Animator m_originalRobotAnimator;
+        private GameObject m_characterPreview;
 
         private void Awake()
         {
@@ -51,6 +59,11 @@ namespace CouchGuys.UI
             m_menu.blocksRaycasts = false;
             m_menuAnimator.enabled = false;
             m_robotAnchor.gameObject.SetActive(false);
+            m_originalRobotAnimator = m_robotAnimator;
+            m_originalRobot = m_robotAnimator != null ? m_robotAnimator.gameObject : null;
+            m_previousCharacterButton?.onClick.AddListener(SelectPreviousCharacter);
+            m_nextCharacterButton?.onClick.AddListener(SelectNextCharacter);
+            ShowSelectedCharacter();
             if (m_customiseArrows != null)
             {
                 m_customiseArrows.alpha = 0f;
@@ -89,8 +102,11 @@ namespace CouchGuys.UI
 
             m_robotAnchor.SetPositionAndRotation(m_robotStart.position, m_robotStart.rotation);
             m_robotAnchor.gameObject.SetActive(true);
-            m_robotAnimator.updateMode = AnimatorUpdateMode.UnscaledTime;
-            m_robotAnimator.Play("Walk", 0, 0f);
+            if (m_robotAnimator != null)
+            {
+                m_robotAnimator.updateMode = AnimatorUpdateMode.UnscaledTime;
+                m_robotAnimator.Play("Walk", 0, 0f);
+            }
             float duration = Mathf.Max(0.01f, m_robotEntranceDuration);
             for (float elapsed = 0f; elapsed < duration; elapsed += Time.unscaledDeltaTime)
             {
@@ -98,7 +114,7 @@ namespace CouchGuys.UI
                 yield return null;
             }
             m_robotAnchor.position = m_robotEnd.position;
-            m_robotAnimator.CrossFadeInFixedTime("Idle", 0.2f);
+            if (m_robotAnimator != null) m_robotAnimator.CrossFadeInFixedTime("Idle", 0.2f);
             Quaternion rotation = m_robotAnchor.rotation;
             for (float elapsed = 0f; elapsed < m_robotTurnDuration; elapsed += Time.unscaledDeltaTime)
             {
@@ -139,6 +155,45 @@ namespace CouchGuys.UI
             StartCoroutine(TransitionCustomise(true));
         }
 
+        public void SelectPreviousCharacter() => ChangeCharacter(-1);
+        public void SelectNextCharacter() => ChangeCharacter(1);
+
+        private void ChangeCharacter(int direction)
+        {
+            if (!m_customising || m_transitioning || m_characterCatalog == null || m_characterCatalog.Count < 2) return;
+            m_characterCatalog.Select(m_characterCatalog.SelectedIndex + direction);
+            ShowSelectedCharacter();
+        }
+
+        private void ShowSelectedCharacter()
+        {
+            if (m_characterCatalog == null || m_characterCatalog.Count == 0) return;
+            if (m_characterPreview != null)
+            {
+                m_characterPreview.SetActive(false);
+                Destroy(m_characterPreview);
+            }
+            var character = m_characterCatalog[m_characterCatalog.SelectedIndex];
+            bool original = m_characterCatalog.SelectedIndex == 0;
+            if (m_originalRobot != null) m_originalRobot.SetActive(original);
+            m_robotAnimator = original ? m_originalRobotAnimator : null;
+            if (!original && character.MenuVisualPrefab != null)
+            {
+                m_characterPreview = Instantiate(character.MenuVisualPrefab, m_robotAnchor, false);
+                m_robotAnimator = m_characterPreview.GetComponentInChildren<Animator>(true);
+            }
+        }
+
+        private void SetArrowInput(bool enabled)
+        {
+            if (m_customiseArrows == null) return;
+            bool available = enabled && m_characterCatalog != null && m_characterCatalog.Count > 1;
+            // The main menu remains blocked while this independent group accepts input.
+            m_customiseArrows.ignoreParentGroups = true;
+            m_customiseArrows.interactable = available;
+            m_customiseArrows.blocksRaycasts = available;
+        }
+
         private IEnumerator TransitionCustomise(bool opening)
         {
             m_transitioning = true;
@@ -146,6 +201,7 @@ namespace CouchGuys.UI
             m_menu.interactable = false;
             m_menu.blocksRaycasts = false;
             EventSystem.current?.SetSelectedGameObject(null);
+            SetArrowInput(false);
 
             if (!opening) yield return FadeArrows(false);
 
@@ -179,6 +235,11 @@ namespace CouchGuys.UI
                 EventSystem.current?.SetSelectedGameObject(m_firstSelectedButton);
             }
             m_transitioning = false;
+            if (opening)
+            {
+                SetArrowInput(true);
+                EventSystem.current?.SetSelectedGameObject(m_nextCharacterButton?.gameObject);
+            }
 
             void ApplyTransition(float menuProgress, float cameraProgress)
             {
@@ -208,6 +269,11 @@ namespace CouchGuys.UI
             m_customiseArrows.alpha = end;
         }
 
-        private void OnDestroy() => m_inputSubscription?.Dispose();
+        private void OnDestroy()
+        {
+            m_inputSubscription?.Dispose();
+            m_previousCharacterButton?.onClick.RemoveListener(SelectPreviousCharacter);
+            m_nextCharacterButton?.onClick.RemoveListener(SelectNextCharacter);
+        }
     }
 }

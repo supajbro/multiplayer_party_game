@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using FishNet.Connection;
 using FishNet.Managing;
@@ -62,7 +63,6 @@ namespace CouchGuys.Networking
 
         public event Action StateChanged;
         public event Action LobbiesChanged;
-        public event Action GameStartRequested;
 
         private void Awake()
         {
@@ -197,14 +197,21 @@ namespace CouchGuys.Networking
             SteamMatchmaking.SetLobbyMemberData(m_currentLobby, ReadyKey, "0");
             SetStatus("Loading the neighbourhood...");
             GameLaunchContext.BeginMultiplayer(worldSeed);
-            LoadingScreenController.Show("Building Neighbourhood...");
-            GameStartRequested?.Invoke();
+            StartCoroutine(LaunchGameplay(worldSeed));
+        }
 
-            SceneLoadData loadData = new SceneLoadData("SampleScene")
+        private IEnumerator LaunchGameplay(int worldSeed)
+        {
+            yield return LoadingScreenController.WaitForEntrance();
+            if (!m_loadingRequested || !IsLocalLobbyOwner || !m_networkManager.ServerManager.Started)
+                yield break;
+
+            // Keep each client's local menu and loading scene until its fade and reveal finish.
+            m_networkManager.SceneManager.LoadGlobalScenes(new SceneLoadData("SampleScene")
             {
-                ReplaceScenes = ReplaceOption.All
-            };
-            m_networkManager.SceneManager.LoadGlobalScenes(loadData);
+                ReplaceScenes = ReplaceOption.OnlineOnly,
+                Params = new LoadParams { ClientParams = BitConverter.GetBytes(worldSeed) },
+            });
         }
 
         public void BeginRetryLoading()
@@ -360,6 +367,7 @@ namespace CouchGuys.Networking
 
             UnsubscribeNetworkEvents();
             m_networkManager.ClientManager.OnClientConnectionState += OnClientConnectionState;
+            m_networkManager.SceneManager.OnLoadStart += OnNetworkSceneLoadStart;
             m_networkManager.ServerManager.OnServerConnectionState += OnServerConnectionState;
             m_networkManager.ServerManager.OnRemoteConnectionState += OnRemoteConnectionState;
         }
@@ -372,6 +380,7 @@ namespace CouchGuys.Networking
             }
 
             m_networkManager.ClientManager.OnClientConnectionState -= OnClientConnectionState;
+            m_networkManager.SceneManager.OnLoadStart -= OnNetworkSceneLoadStart;
             m_networkManager.ServerManager.OnServerConnectionState -= OnServerConnectionState;
             m_networkManager.ServerManager.OnRemoteConnectionState -= OnRemoteConnectionState;
         }
@@ -486,13 +495,35 @@ namespace CouchGuys.Networking
             string state = SteamMatchmaking.GetLobbyData(m_currentLobby, StateKey);
             if (state == LoadingState && !m_loadingRequested)
             {
-                m_loadingRequested = true;
                 int.TryParse(SteamMatchmaking.GetLobbyData(m_currentLobby, WorldSeedKey), out int worldSeed);
-                GameLaunchContext.BeginMultiplayer(worldSeed);
-                LoadingScreenController.Show("Joining the neighbourhood...");
-                GameStartRequested?.Invoke();
+                BeginClientLoading(worldSeed);
             }
             StateChanged?.Invoke();
+        }
+
+        private void OnNetworkSceneLoadStart(SceneLoadStartEventArgs args)
+        {
+            if (args.QueueData.AsServer || !IsInLobby) return;
+            SceneLoadData load = args.QueueData.SceneLoadData;
+            if (load.ReplaceScenes != ReplaceOption.OnlineOnly || load.Params.ClientParams.Length != sizeof(int))
+                return;
+
+            foreach (SceneLookupData scene in load.SceneLookupDatas)
+            {
+                if (scene.NameOnly != "SampleScene") continue;
+                // The network load carries the seed even if Steam's lobby update arrives later.
+                BeginClientLoading(BitConverter.ToInt32(load.Params.ClientParams, 0));
+                break;
+            }
+        }
+
+        private void BeginClientLoading(int worldSeed)
+        {
+            GameLaunchContext.BeginMultiplayer(worldSeed);
+            if (m_loadingRequested) return;
+
+            m_loadingRequested = true;
+            LoadingScreenController.Show();
         }
 
         private void OnGameLobbyJoinRequested(GameLobbyJoinRequested_t request)

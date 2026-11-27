@@ -72,6 +72,7 @@ namespace CouchGuys.Player
             m_serverStamina = m_maximumStamina;
             m_currentStamina.Value = m_maximumStamina;
             m_exhausted.Value = false;
+            m_lastServerMovementTime = float.NegativeInfinity;
             m_previousServerPosition = transform.position;
         }
 
@@ -119,7 +120,7 @@ namespace CouchGuys.Player
             bool sprinting = moving && m_serverSprintRequested && !m_exhausted.Value;
             float drain = 0f;
 
-            if (carrying)
+            if (carrying && moving)
             {
                 CouchCarryController couch = m_carrier.GetCarriedCouchServer();
                 int carrierCount = Mathf.Max(1, couch != null ? couch.ValidServerCarrierCount : 1);

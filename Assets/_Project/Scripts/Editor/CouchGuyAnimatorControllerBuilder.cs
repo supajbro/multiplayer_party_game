@@ -14,9 +14,7 @@ namespace CouchGuys.Editor
     {
         public const string ModelPath = "Assets/_Project/Models/CouchGuy/CouchGuy_Redesigned.fbx";
         public const string ControllerPath = "Assets/_Project/Animations/CouchGuy.controller";
-        private const string PlayerPrefabPath = "Assets/_Project/Prefabs/Player.prefab";
-
-        private static bool s_installScheduled;
+        private const string PlayerPrefabPath = "Assets/_Project/Prefabs/Players/Player.prefab";
 
         private static readonly HashSet<string> LoopingClips = new(StringComparer.Ordinal)
         {
@@ -36,48 +34,8 @@ namespace CouchGuys.Editor
             , "Pistol_Raise", "AssaultRifle_Raise", "Shotgun_Raise"
         };
 
-        [InitializeOnLoadMethod]
-        private static void InstallMissingAnimationSetupAfterReload()
-        {
-            EditorApplication.playModeStateChanged -= UpgradeWeaponHoldingAfterPlayMode;
-            EditorApplication.playModeStateChanged += UpgradeWeaponHoldingAfterPlayMode;
-            if (s_installScheduled || AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath) == null)
-            {
-                return;
-            }
-
-            GameObject playerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
-            AnimatorController existingController = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
-            bool controllerMissing = existingController == null;
-            bool controllerNeedsDirectionalUpgrade = existingController != null &&
-                (!ContainsBlendTree(existingController, "Pistol Carry and Aim") || !HasSprintRaiseWaypoints());
-            bool modelMissingFromPlayer = playerPrefab == null ||
-                playerPrefab.transform.Find("Visual/CouchGuy") == null ||
-                playerPrefab.GetComponent<CouchGuys.Player.CouchGuyAnimationDriver>() == null;
-            if (!controllerMissing && !controllerNeedsDirectionalUpgrade && !modelMissingFromPlayer)
-            {
-                return;
-            }
-
-            s_installScheduled = true;
-            EditorApplication.delayCall += () =>
-            {
-                s_installScheduled = false;
-                if (EditorApplication.isPlayingOrWillChangePlaymode)
-                {
-                    return;
-                }
-
-                if (controllerMissing || modelMissingFromPlayer) BuildAndInstall();
-                else UpgradeWeaponHolding();
-            };
-        }
-
-        private static void UpgradeWeaponHoldingAfterPlayMode(PlayModeStateChange state)
-        {
-            if (state == PlayModeStateChange.EnteredEditMode)
-                EditorApplication.delayCall += UpgradeWeaponHolding;
-        }
+        // Animation authoring runs only through explicit menu commands. Never rebuild
+        // controllers or saved prefab customizations on import, reload or Play mode.
 
         private static bool HasSprintRaiseWaypoints()
         {
@@ -637,15 +595,4 @@ namespace CouchGuys.Editor
         }
     }
 
-    // Importing the edited existing FBX also upgrades its weapon motions without
-    // reinstalling the robot prefab or touching any camera/controller settings.
-    internal sealed class CouchGuyWeaponAnimationImport : AssetPostprocessor
-    {
-        private static void OnPostprocessAllAssets(string[] imported, string[] deleted,
-            string[] moved, string[] movedFrom)
-        {
-            if (Array.IndexOf(imported, CouchGuyAnimatorControllerBuilder.ModelPath) >= 0)
-                EditorApplication.delayCall += CouchGuyAnimatorControllerBuilder.UpgradeWeaponHolding;
-        }
-    }
 }

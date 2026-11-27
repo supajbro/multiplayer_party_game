@@ -123,8 +123,15 @@ namespace CouchGuys.UI
 
         public void StartSolo()
         {
-            if (m_launching)
+            if (m_launching || LoadingScreenController.BlocksGameplayInput)
             {
+                return;
+            }
+
+            GameObject soloBootstrap = Resources.Load<GameObject>("SoloNetworkBootstrap");
+            if (soloBootstrap == null)
+            {
+                Debug.LogError("Solo network bootstrap resource is missing.", this);
                 return;
             }
 
@@ -132,9 +139,8 @@ namespace CouchGuys.UI
             SetButtonsInteractable(false);
             SteamLobbyDebugInterface.IsVisible = false;
             GameLaunchContext.BeginSolo();
-            LoadingScreenController.Show("Building Neighbourhood...");
             DontDestroyOnLoad(gameObject);
-            StartCoroutine(BeginSoloLaunch());
+            StartCoroutine(BeginSoloLaunch(soloBootstrap));
         }
 
         public void StartMultiplayer()
@@ -154,8 +160,10 @@ namespace CouchGuys.UI
             StartCoroutine(StartLocalSession());
         }
 
-        private IEnumerator BeginSoloLaunch()
+        private IEnumerator BeginSoloLaunch(GameObject soloBootstrap)
         {
+            yield return LoadingScreenController.WaitForEntrance();
+
             // Replace the persistent Steam transport with the same FishNet setup using
             // its local UDP transport. This keeps solo independent from Steam entirely.
             NetworkManager multiplayerManager = InstanceFinder.NetworkManager;
@@ -165,19 +173,10 @@ namespace CouchGuys.UI
                 yield return null;
             }
 
-            GameObject soloBootstrap = Resources.Load<GameObject>("SoloNetworkBootstrap");
-            if (soloBootstrap == null)
-            {
-                Debug.LogError("Solo network bootstrap resource is missing.", this);
-                m_launching = false;
-                SetButtonsInteractable(true);
-                yield break;
-            }
-
             Instantiate(soloBootstrap);
             yield return null;
             SceneManager.sceneLoaded += OnSoloSceneLoaded;
-            SceneManager.LoadScene(GameplaySceneName, LoadSceneMode.Single);
+            yield return SceneManager.LoadSceneAsync(GameplaySceneName, LoadSceneMode.Additive);
         }
 
         private IEnumerator StartLocalSession()

@@ -1,136 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!206 &-9215898161997579530
-BlendTree:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Pistol Directional Locomotion
-  m_Childs:
-  - serializedVersion: 2
-    m_Motion: {fileID: -7660953224585933297, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: -7660953224585933297, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: 0, y: 1}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: 6249538387823140596, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: 0, y: -1}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: -777823918716259586, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: -1, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: 2905303002324425922, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: 1, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  m_BlendParameter: MoveX
-  m_BlendParameterY: MoveY
-  m_MinThreshold: 0
-  m_MaxThreshold: 1
-  m_UseAutomaticThresholds: 0
-  m_NormalizedBlendValues: 0
-  m_BlendType: 3
---- !u!1107 &-9059495408805761516
-AnimatorStateMachine:
-  serializedVersion: 6
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Baseball Bat
-  m_ChildStates:
-  - serializedVersion: 1
-    m_State: {fileID: -708843055778693003}
-    m_Position: {x: 200, y: 0, z: 0}
-  - serializedVersion: 1
-    m_State: {fileID: -7994699734452618537}
-    m_Position: {x: 235, y: 65, z: 0}
-  m_ChildStateMachines: []
-  m_AnyStateTransitions: []
-  m_EntryTransitions: []
-  m_StateMachineTransitions: {}
-  m_StateMachineBehaviours: []
-  m_AnyStatePosition: {x: 50, y: 20, z: 0}
-  m_EntryPosition: {x: 50, y: 120, z: 0}
-  m_ExitPosition: {x: 800, y: 120, z: 0}
-  m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
-  m_DefaultState: {fileID: -708843055778693003}
---- !u!1101 &-8706635591165026035
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 6
-    m_ConditionEvent: EquippedWeapon
-    m_EventTreshold: 2
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -3085921228405765910}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1101 &-8600792312629925253
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 6
-    m_ConditionEvent: EquippedWeapon
-    m_EventTreshold: 3
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -7069069465566753957}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1101 &-8538653973985627198
+--- !u!1101 &-8979425087656295947
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
@@ -139,232 +9,58 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 1
-    m_ConditionEvent: HoldingItem
+    m_ConditionEvent: IsCarrying
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -5043555365671017605}
+  m_DstState: {fileID: 3630903997080838232}
   m_Solo: 0
   m_Mute: 0
   m_IsExit: 0
   serializedVersion: 3
   m_TransitionDuration: 0.16
   m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1102 &-8435357206350116393
-AnimatorState:
-  serializedVersion: 6
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Locomotion
-  m_Speed: 1
-  m_CycleOffset: 0
-  m_Transitions:
-  - {fileID: 7691485118638522157}
-  - {fileID: -4321886795312561720}
-  - {fileID: -8538653973985627198}
-  - {fileID: 1706248345148787208}
-  - {fileID: 1111391993819236789}
-  - {fileID: -1489898844447332121}
-  - {fileID: -249330518354703655}
-  - {fileID: -8600792312629925253}
-  m_StateMachineBehaviours: []
-  m_Position: {x: 50, y: 50, z: 0}
-  m_IKOnFeet: 0
-  m_WriteDefaultValues: 1
-  m_Mirror: 0
-  m_SpeedParameterActive: 0
-  m_MirrorParameterActive: 0
-  m_CycleOffsetParameterActive: 0
-  m_TimeParameterActive: 0
-  m_Motion: {fileID: -8101664191068621039}
-  m_Tag: 
-  m_SpeedParameter: 
-  m_MirrorParameter: 
-  m_CycleOffsetParameter: 
-  m_TimeParameter: 
---- !u!1102 &-8353166937751400671
-AnimatorState:
-  serializedVersion: 6
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Carry_Release
-  m_Speed: 1
-  m_CycleOffset: 0
-  m_Transitions:
-  - {fileID: -4808675865291540786}
-  - {fileID: -8092048335231824782}
-  m_StateMachineBehaviours: []
-  m_Position: {x: 50, y: 50, z: 0}
-  m_IKOnFeet: 0
-  m_WriteDefaultValues: 1
-  m_Mirror: 0
-  m_SpeedParameterActive: 0
-  m_MirrorParameterActive: 0
-  m_CycleOffsetParameterActive: 0
-  m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 2988975c214e12f41a983d363bf75d52, type: 2}
-  m_Tag: 
-  m_SpeedParameter: 
-  m_MirrorParameter: 
-  m_CycleOffsetParameter: 
-  m_TimeParameter: 
---- !u!206 &-8260962188145166621
-BlendTree:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: AssaultRifle Directional Locomotion
-  m_Childs:
-  - serializedVersion: 2
-    m_Motion: {fileID: -7626808101395491918, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: -7626808101395491918, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: 0, y: 1}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: -8248296507552948647, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: 0, y: -1}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: 8457048067529614853, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: -1, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: -6434144635999537448, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: 1, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  m_BlendParameter: MoveX
-  m_BlendParameterY: MoveY
-  m_MinThreshold: 0
-  m_MaxThreshold: 1
-  m_UseAutomaticThresholds: 0
-  m_NormalizedBlendValues: 0
-  m_BlendType: 3
---- !u!206 &-8101664191068621039
-BlendTree:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Locomotion 2D
-  m_Childs:
-  - serializedVersion: 2
-    m_Motion: {fileID: 4017369852977333157, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: -4276106860293247607, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: 0, y: 1}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: -4386769017079765384, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: 0, y: -1}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: 4269766045047983340, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: -1, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: -3265505942767641434, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: 1, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: 2922029995684817829, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: 0, y: 1.65}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  m_BlendParameter: MoveX
-  m_BlendParameterY: MoveY
-  m_MinThreshold: 0
-  m_MaxThreshold: 1
-  m_UseAutomaticThresholds: 0
-  m_NormalizedBlendValues: 0
-  m_BlendType: 3
---- !u!1101 &-8092048335231824782
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions: []
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -8435357206350116393}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0.85
+  m_ExitTime: 0.72
   m_HasExitTime: 1
   m_HasFixedDuration: 1
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 0
---- !u!1102 &-7994699734452618537
+--- !u!1102 &-8695325690106041514
 AnimatorState:
   serializedVersion: 6
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Bat_Swing
+  m_Name: Pickup
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions:
+  - {fileID: -8979425087656295947}
+  - {fileID: 7673534197669615183}
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: -1781805697113551781, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
+--- !u!1102 &-8227546627200364555
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Shotgun_Reload
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions: []
@@ -376,311 +72,14 @@ AnimatorState:
   m_SpeedParameterActive: 0
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
-  m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 069d276211341cf4eb7c2ed6248c7cb4, type: 2}
+  m_TimeParameterActive: 1
+  m_Motion: {fileID: -1677100058952878662, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
-  m_TimeParameter: 
---- !u!1102 &-7210695466381752416
-AnimatorState:
-  serializedVersion: 6
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Hit Reaction
-  m_Speed: 1
-  m_CycleOffset: 0
-  m_Transitions:
-  - {fileID: -1050781123328408752}
-  - {fileID: 2229820636682885590}
-  m_StateMachineBehaviours: []
-  m_Position: {x: 50, y: 50, z: 0}
-  m_IKOnFeet: 0
-  m_WriteDefaultValues: 1
-  m_Mirror: 0
-  m_SpeedParameterActive: 0
-  m_MirrorParameterActive: 0
-  m_CycleOffsetParameterActive: 0
-  m_TimeParameterActive: 0
-  m_Motion: {fileID: 998263797508382967, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-  m_Tag: 
-  m_SpeedParameter: 
-  m_MirrorParameter: 
-  m_CycleOffsetParameter: 
-  m_TimeParameter: 
---- !u!1102 &-7069069465566753957
-AnimatorState:
-  serializedVersion: 6
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Shotgun
-  m_Speed: 1
-  m_CycleOffset: 0
-  m_Transitions:
-  - {fileID: 5859546380195788848}
-  - {fileID: 1294606175050403911}
-  - {fileID: -2232119359431687293}
-  - {fileID: 6368955947204788767}
-  m_StateMachineBehaviours: []
-  m_Position: {x: 50, y: 50, z: 0}
-  m_IKOnFeet: 0
-  m_WriteDefaultValues: 1
-  m_Mirror: 0
-  m_SpeedParameterActive: 0
-  m_MirrorParameterActive: 0
-  m_CycleOffsetParameterActive: 0
-  m_TimeParameterActive: 0
-  m_Motion: {fileID: 7218335163786167889}
-  m_Tag: 
-  m_SpeedParameter: 
-  m_MirrorParameter: 
-  m_CycleOffsetParameter: 
-  m_TimeParameter: 
---- !u!206 &-6807277532069096940
-BlendTree:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: AssaultRifle Carry and Aim
-  m_Childs:
-  - serializedVersion: 2
-    m_Motion: {fileID: -5903173061676127427}
-    m_Threshold: 0
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: 5443384423805333909, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 1
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  m_BlendParameter: WeaponAim
-  m_BlendParameterY: Blend
-  m_MinThreshold: 0
-  m_MaxThreshold: 1
-  m_UseAutomaticThresholds: 0
-  m_NormalizedBlendValues: 0
-  m_BlendType: 0
---- !u!206 &-5903173061676127427
-BlendTree:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: AssaultRifle Carry Speed
-  m_Childs:
-  - serializedVersion: 2
-    m_Motion: {fileID: 5443384423805333909, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: -8260962188145166621}
-    m_Threshold: 1
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: 2042421882959274573, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 1.3
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: -5028479036281246304, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 1.48
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: 393411001095015497, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 1.65
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  m_BlendParameter: Speed
-  m_BlendParameterY: Blend
-  m_MinThreshold: 0
-  m_MaxThreshold: 1
-  m_UseAutomaticThresholds: 0
-  m_NormalizedBlendValues: 0
-  m_BlendType: 0
---- !u!1101 &-5703253310931939177
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 6
-    m_ConditionEvent: EquippedWeapon
-    m_EventTreshold: 3
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -7069069465566753957}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1102 &-5043555365671017605
-AnimatorState:
-  serializedVersion: 6
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Hold Item
-  m_Speed: 1
-  m_CycleOffset: 0
-  m_Transitions:
-  - {fileID: -1603817182788810997}
-  m_StateMachineBehaviours: []
-  m_Position: {x: 50, y: 50, z: 0}
-  m_IKOnFeet: 0
-  m_WriteDefaultValues: 1
-  m_Mirror: 0
-  m_SpeedParameterActive: 0
-  m_MirrorParameterActive: 0
-  m_CycleOffsetParameterActive: 0
-  m_TimeParameterActive: 0
-  m_Motion: {fileID: 2863649811085625971, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-  m_Tag: 
-  m_SpeedParameter: 
-  m_MirrorParameter: 
-  m_CycleOffsetParameter: 
-  m_TimeParameter: 
---- !u!1102 &-4854657570951460889
-AnimatorState:
-  serializedVersion: 6
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Punch_Right
-  m_Speed: 1
-  m_CycleOffset: 0
-  m_Transitions: []
-  m_StateMachineBehaviours: []
-  m_Position: {x: 50, y: 50, z: 0}
-  m_IKOnFeet: 0
-  m_WriteDefaultValues: 0
-  m_Mirror: 0
-  m_SpeedParameterActive: 0
-  m_MirrorParameterActive: 0
-  m_CycleOffsetParameterActive: 0
-  m_TimeParameterActive: 0
-  m_Motion: {fileID: 5762691267198575098, guid: 36a11ca57fb29314980190ca18f433d2, type: 3}
-  m_Tag: 
-  m_SpeedParameter: 
-  m_MirrorParameter: 
-  m_CycleOffsetParameter: 
-  m_TimeParameter: 
---- !u!1101 &-4808675865291540786
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 1
-    m_ConditionEvent: IsCarrying
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: 945341144591859764}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.1
-  m_TransitionOffset: 0
-  m_ExitTime: 0.9
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 1
---- !u!1101 &-4485285860041933296
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 1
-    m_ConditionEvent: Hit
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -7210695466381752416}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1101 &-4321886795312561720
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 1
-    m_ConditionEvent: IsCarrying
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: 945341144591859764}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1102 &-4202743879193133074
+  m_TimeParameter: ReloadProgress
+--- !u!1102 &-7593155712937307324
 AnimatorState:
   serializedVersion: 6
   m_ObjectHideFlags: 1
@@ -706,270 +105,7 @@ AnimatorState:
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
   m_TimeParameter: 
---- !u!1102 &-3085921228405765910
-AnimatorState:
-  serializedVersion: 6
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Assault Rifle
-  m_Speed: 1
-  m_CycleOffset: 0
-  m_Transitions:
-  - {fileID: 4304712855066819101}
-  - {fileID: 681616036052638235}
-  - {fileID: 1275447351517398779}
-  - {fileID: 1309376598090190300}
-  m_StateMachineBehaviours: []
-  m_Position: {x: 50, y: 50, z: 0}
-  m_IKOnFeet: 0
-  m_WriteDefaultValues: 1
-  m_Mirror: 0
-  m_SpeedParameterActive: 0
-  m_MirrorParameterActive: 0
-  m_CycleOffsetParameterActive: 0
-  m_TimeParameterActive: 0
-  m_Motion: {fileID: -6807277532069096940}
-  m_Tag: 
-  m_SpeedParameter: 
-  m_MirrorParameter: 
-  m_CycleOffsetParameter: 
-  m_TimeParameter: 
---- !u!1102 &-2976216638278371071
-AnimatorState:
-  serializedVersion: 6
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Punch_Left
-  m_Speed: 1
-  m_CycleOffset: 0
-  m_Transitions: []
-  m_StateMachineBehaviours: []
-  m_Position: {x: 50, y: 50, z: 0}
-  m_IKOnFeet: 0
-  m_WriteDefaultValues: 0
-  m_Mirror: 0
-  m_SpeedParameterActive: 0
-  m_MirrorParameterActive: 0
-  m_CycleOffsetParameterActive: 0
-  m_TimeParameterActive: 0
-  m_Motion: {fileID: 8091849441328058791, guid: 36a11ca57fb29314980190ca18f433d2, type: 3}
-  m_Tag: 
-  m_SpeedParameter: 
-  m_MirrorParameter: 
-  m_CycleOffsetParameter: 
-  m_TimeParameter: 
---- !u!1101 &-2232119359431687293
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 6
-    m_ConditionEvent: EquippedWeapon
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -8435357206350116393}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1102 &-2193353037133734204
-AnimatorState:
-  serializedVersion: 6
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Point
-  m_Speed: 1
-  m_CycleOffset: 0
-  m_Transitions:
-  - {fileID: 4980368901450482978}
-  m_StateMachineBehaviours: []
-  m_Position: {x: 50, y: 50, z: 0}
-  m_IKOnFeet: 0
-  m_WriteDefaultValues: 1
-  m_Mirror: 0
-  m_SpeedParameterActive: 0
-  m_MirrorParameterActive: 0
-  m_CycleOffsetParameterActive: 0
-  m_TimeParameterActive: 0
-  m_Motion: {fileID: 5189160997369742405, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-  m_Tag: 
-  m_SpeedParameter: 
-  m_MirrorParameter: 
-  m_CycleOffsetParameter: 
-  m_TimeParameter: 
---- !u!1101 &-1869628176070029999
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 1
-    m_ConditionEvent: Grounded
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -8435357206350116393}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1101 &-1603817182788810997
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 2
-    m_ConditionEvent: HoldingItem
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -8435357206350116393}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1101 &-1489898844447332121
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 6
-    m_ConditionEvent: EquippedWeapon
-    m_EventTreshold: 1
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: 2000208943166948552}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!206 &-1274708022587697576
-BlendTree:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Shotgun Carry Speed
-  m_Childs:
-  - serializedVersion: 2
-    m_Motion: {fileID: 5124815917221881849, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 0
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: 2077751135079967135}
-    m_Threshold: 1
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: -1656252287111168143, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 1.3
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: 7989842099146057071, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 1.48
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: 7831328191650792450, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
-    m_Threshold: 1.65
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  m_BlendParameter: Speed
-  m_BlendParameterY: Blend
-  m_MinThreshold: 0
-  m_MaxThreshold: 1
-  m_UseAutomaticThresholds: 0
-  m_NormalizedBlendValues: 0
-  m_BlendType: 0
---- !u!1101 &-1050781123328408752
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 1
-    m_ConditionEvent: IsCarrying
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: 945341144591859764}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0.82
-  m_HasExitTime: 1
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1102 &-889710727307397090
+--- !u!1102 &-7391737397350959206
 AnimatorState:
   serializedVersion: 6
   m_ObjectHideFlags: 1
@@ -980,7 +116,7 @@ AnimatorState:
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions:
-  - {fileID: -1869628176070029999}
+  - {fileID: -1527435495598994755}
   m_StateMachineBehaviours: []
   m_Position: {x: 50, y: 50, z: 0}
   m_IKOnFeet: 0
@@ -996,14 +132,286 @@ AnimatorState:
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
   m_TimeParameter: 
---- !u!1102 &-708843055778693003
+--- !u!1102 &-6896007734233800683
 AnimatorState:
   serializedVersion: 6
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Bat_Ready
+  m_Name: Pistol
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions:
+  - {fileID: 1417893134504366485}
+  - {fileID: -2764073875643434933}
+  - {fileID: 3539354698091650075}
+  - {fileID: -1229162044967619449}
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: -2812021291925845287}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
+--- !u!1102 &-6630470516265915872
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Locomotion
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions:
+  - {fileID: 5175980193845420373}
+  - {fileID: 3393753406084441979}
+  - {fileID: -1015290109656178622}
+  - {fileID: 3077579555937299821}
+  - {fileID: -4528816576325908851}
+  - {fileID: 8619253012329810893}
+  - {fileID: 3510344843450488239}
+  - {fileID: -4311935246263376345}
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 3855984840673934591}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
+--- !u!1101 &-6287885426780102341
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 6
+    m_ConditionEvent: EquippedWeapon
+    m_EventTreshold: 1
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -6896007734233800683}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1102 &-5069841895376228442
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Shotgun
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions:
+  - {fileID: -6287885426780102341}
+  - {fileID: -3607424993001467593}
+  - {fileID: -1634408073342997203}
+  - {fileID: 6982530158519135583}
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: -322005697581308463}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
+--- !u!1101 &-4933761977517276909
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 2
+    m_ConditionEvent: IsCarrying
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -6630470516265915872}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0.82
+  m_HasExitTime: 1
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1101 &-4528816576325908851
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 2
+    m_ConditionEvent: Grounded
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -7391737397350959206}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1101 &-4311935246263376345
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 6
+    m_ConditionEvent: EquippedWeapon
+    m_EventTreshold: 3
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -5069841895376228442}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1107 &-4158636166178929927
+AnimatorStateMachine:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Reloads
+  m_ChildStates:
+  - serializedVersion: 1
+    m_State: {fileID: 6227991609330077562}
+    m_Position: {x: 200, y: 0, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: 8334515263797632018}
+    m_Position: {x: 235, y: 65, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: -8227546627200364555}
+    m_Position: {x: 270, y: 130, z: 0}
+  m_ChildStateMachines: []
+  m_AnyStateTransitions: []
+  m_EntryTransitions: []
+  m_StateMachineTransitions: {}
+  m_StateMachineBehaviours: []
+  m_AnyStatePosition: {x: 50, y: 20, z: 0}
+  m_EntryPosition: {x: 50, y: 120, z: 0}
+  m_ExitPosition: {x: 800, y: 120, z: 0}
+  m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
+  m_DefaultState: {fileID: 6227991609330077562}
+--- !u!1101 &-3720790461136870663
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 1
+    m_ConditionEvent: Drop
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: 4342857684910650104}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1101 &-3607424993001467593
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 6
+    m_ConditionEvent: EquippedWeapon
+    m_EventTreshold: 2
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: 6517321319078591054}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1102 &-3287593376026012672
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Punch_Right
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions: []
@@ -1016,442 +424,63 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 8a67c1c061dcd2a42a27901b97398ecd, type: 2}
+  m_Motion: {fileID: 5762691267198575098, guid: 36a11ca57fb29314980190ca18f433d2, type: 3}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
   m_CycleOffsetParameter: 
   m_TimeParameter: 
---- !u!1101 &-249330518354703655
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 6
-    m_ConditionEvent: EquippedWeapon
-    m_EventTreshold: 2
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -3085921228405765910}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!91 &9100000
-AnimatorController:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: CouchGuy
-  serializedVersion: 5
-  m_AnimatorParameters:
-  - m_Name: Speed
-    m_Type: 1
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
-  - m_Name: MoveX
-    m_Type: 1
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
-  - m_Name: MoveY
-    m_Type: 1
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
-  - m_Name: Grounded
-    m_Type: 4
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
-  - m_Name: IsCarrying
-    m_Type: 4
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
-  - m_Name: HoldingItem
-    m_Type: 4
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
-  - m_Name: Pointing
-    m_Type: 4
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
-  - m_Name: Pickup
-    m_Type: 9
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
-  - m_Name: Drop
-    m_Type: 9
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
-  - m_Name: Hit
-    m_Type: 9
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
-  - m_Name: EquippedWeapon
-    m_Type: 3
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
-  - m_Name: WeaponShoot
-    m_Type: 9
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
-  - m_Name: WeaponAim
-    m_Type: 1
-    m_DefaultFloat: 0
-    m_DefaultInt: 0
-    m_DefaultBool: 0
-    m_Controller: {fileID: 9100000}
-  m_AnimatorLayers:
-  - serializedVersion: 5
-    m_Name: Base Layer
-    m_StateMachine: {fileID: 6605404431174827895}
-    m_Mask: {fileID: 0}
-    m_Motions: []
-    m_Behaviours: []
-    m_BlendingMode: 0
-    m_SyncedLayerIndex: -1
-    m_DefaultWeight: 0
-    m_IKPass: 0
-    m_SyncedLayerAffectsTiming: 0
-    m_Controller: {fileID: 9100000}
-  - serializedVersion: 5
-    m_Name: Punches
-    m_StateMachine: {fileID: 2432054331057059705}
-    m_Mask: {fileID: 4413079113161980746}
-    m_Motions: []
-    m_Behaviours: []
-    m_BlendingMode: 0
-    m_SyncedLayerIndex: -1
-    m_DefaultWeight: 0
-    m_IKPass: 0
-    m_SyncedLayerAffectsTiming: 0
-    m_Controller: {fileID: 9100000}
---- !u!1101 &681616036052638235
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 6
-    m_ConditionEvent: EquippedWeapon
-    m_EventTreshold: 3
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -7069069465566753957}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1102 &945341144591859764
-AnimatorState:
-  serializedVersion: 6
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Carry_Start
-  m_Speed: 1
-  m_CycleOffset: 0
-  m_Transitions:
-  - {fileID: 7766804088434258443}
-  - {fileID: 6356675661393090606}
-  m_StateMachineBehaviours: []
-  m_Position: {x: 50, y: 50, z: 0}
-  m_IKOnFeet: 0
-  m_WriteDefaultValues: 1
-  m_Mirror: 0
-  m_SpeedParameterActive: 0
-  m_MirrorParameterActive: 0
-  m_CycleOffsetParameterActive: 0
-  m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 03b09fb552e7f474980c6bb9d2de50ab, type: 2}
-  m_Tag: 
-  m_SpeedParameter: 
-  m_MirrorParameter: 
-  m_CycleOffsetParameter: 
-  m_TimeParameter: 
---- !u!1101 &1111391993819236789
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 2
-    m_ConditionEvent: Grounded
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -889710727307397090}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1101 &1275447351517398779
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 6
-    m_ConditionEvent: EquippedWeapon
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -8435357206350116393}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1101 &1294606175050403911
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 6
-    m_ConditionEvent: EquippedWeapon
-    m_EventTreshold: 2
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -3085921228405765910}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1101 &1309376598090190300
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 1
-    m_ConditionEvent: IsCarrying
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: 945341144591859764}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1101 &1706248345148787208
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 1
-    m_ConditionEvent: Pointing
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -2193353037133734204}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1101 &1764646211065197428
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 6
-    m_ConditionEvent: EquippedWeapon
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -8435357206350116393}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!206 &1836437743447016439
-BlendTree:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Carrying 1D
-  m_Childs:
-  - serializedVersion: 2
-    m_Motion: {fileID: 7400000, guid: 31e314e247018a34c89176d9b2455c6e, type: 2}
-    m_Threshold: 0
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: 7400000, guid: 23acd84195d9fdf4e93163944c1fdd70, type: 2}
-    m_Threshold: 1
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  - serializedVersion: 2
-    m_Motion: {fileID: 7400000, guid: 23acd84195d9fdf4e93163944c1fdd70, type: 2}
-    m_Threshold: 1.65
-    m_Position: {x: 0, y: 0}
-    m_TimeScale: 1
-    m_CycleOffset: 0
-    m_DirectBlendParameter: Blend
-    m_Mirror: 0
-  m_BlendParameter: Speed
-  m_BlendParameterY: Blend
-  m_MinThreshold: 0
-  m_MaxThreshold: 1
-  m_UseAutomaticThresholds: 0
-  m_NormalizedBlendValues: 0
-  m_BlendType: 0
---- !u!319 &1898268853047015741
+--- !u!319 &-3167883238366852880
 AvatarMask:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Bat Upper Body
+  m_Name: Reloads Upper Body
   m_Mask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
   m_Elements:
   - m_Path: 
     m_Weight: 0
   - m_Path: Arm_L
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_L/ElbowGlow_L
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_L/ElbowJoint_L
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_L/Forearm_L
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_L/ForearmLight_L
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_L/Hand_L
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_L/ShoulderArmour_L
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_L/ShoulderJoint_L
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_L/UpperArm_L
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_L/WristJoint_L
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_R
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_R/ElbowGlow_R
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_R/ElbowJoint_R
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_R/Forearm_R
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_R/ForearmLight_R
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_R/Hand_R
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_R/ShoulderArmour_R
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_R/ShoulderJoint_R
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_R/UpperArm_R
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Arm_R/WristJoint_R
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: ChestIndicator
     m_Weight: 0
   - m_Path: ChestPanel
@@ -1465,9 +494,9 @@ AvatarMask:
   - m_Path: CouchGuy_Rig/Root/Torso/Head
     m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/Head/Eye_L
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/Head/Eye_R
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L
     m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L
@@ -1475,445 +504,491 @@ AvatarMask:
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L
     m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Muzzle.001
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Accent
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Barrel
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Body
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Bore
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CarryRail
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_-1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_-1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_-1_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_1_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_-1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_-1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_-1_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_1_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Fastener_-1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Fastener_-1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Fastener_1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Fastener_1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Grip
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripHeel
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_-1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_-1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_-1_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_1_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Magazine
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_MagazineFoot
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_MuzzleCollar
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_MuzzleRim
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_RailPillar_-0.4
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_RailPillar_-0.08
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_SidePlate_-1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_SidePlate_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_SideStripe_-1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_SideStripe_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Stock
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_StockBridge
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_StockPad
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Trigger
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_TriggerGuard
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_UnderRail
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Wing_-1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Wing_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Muzzle
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Accent
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Barrel
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Body
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Bore
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Fastener_-1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Fastener_-1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Fastener_1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Fastener_1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_FrontSight
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Grip
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripHeel
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_-1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_-1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_-1_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_1_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_MuzzleCollar
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_MuzzleRim
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_RearSight
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_SidePlate_-1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_SidePlate_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_SideStripe_-1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_SideStripe_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Trigger
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_TriggerGuard
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Muzzle.002
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Accent
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Barrel
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Body
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Bore
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_CarryRail
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Fastener_-1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Fastener_-1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Fastener_1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Fastener_1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Grip
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripHeel
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_-1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_-1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_-1_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_1_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_MagazineTube
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_MuzzleCollar
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_MuzzleRim
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Pump
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_PumpRib_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_PumpRib_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_PumpRib_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_PumpRib_3
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_RailPillar_-0.4
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_RailPillar_-0.08
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_-1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_-1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_-1_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_1_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_-1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_-1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_-1_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_1_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellRack_-1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellRack_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_SidePlate_-1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_SidePlate_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_SideStripe_-1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_SideStripe_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Stock
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_StockBridge
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_StockPad
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Trigger
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_TriggerGuard
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Body_LOD1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Body_LOD2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Claw_LOD1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Claw_LOD2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0/Body_LOD0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0/Claw_LOD0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0/Spool_LOD0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0/Trigger_LOD0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Spool_LOD1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Spool_LOD2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Trigger_LOD1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Trigger_LOD2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/Muzzle
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_-1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_-1.001
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_-1.002
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_1.001
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_1.002
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Barrel_BlueShell
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Barrel_TopRedLug
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Bore_ShadowBack
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_-1_-1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_-1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_-1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_1_-1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_RedPorthole_-1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_RedPorthole_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/EmblemArmour_-1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/EmblemArmour_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/FrontVentArmour_L
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/FrontVentArmour_R
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Grip_Navy
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Grip_YellowBase
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Muzzle_InnerLiner
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Muzzle_YellowRim
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Receiver_LowerBlueRail
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Receiver_NavyCore
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Receiver_TopBlueRail
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketEmblem_-1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketEmblem_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketFinA_-1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketFinA_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketFinB_-1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketFinB_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_AmberInset
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_NavyApertureFrame
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_NavyRearHousing
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_RedMount
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_ReticleHorizontal
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_ReticleVertical
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_YellowReticleRing
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Stock_BlueExtension
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Stock_RedCollar
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Stock_ShoulderPad
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Trigger_Yellow
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/TriggerGuard_Blue
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_-1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_-1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_-1_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_1_0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_1_1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_1_2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/Muzzle
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Blue_LOD0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Blue_LOD1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Blue_LOD2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Navy_LOD0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Navy_LOD1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Navy_LOD2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Red_LOD0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Red_LOD1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Red_LOD2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Rubber_LOD0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Rubber_LOD1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Rubber_LOD2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Steel_LOD0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Yellow_LOD0
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Yellow_LOD1
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Yellow_LOD2
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/Muzzle
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/BlueSwingTrail
-    m_Weight: 0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_EmergencyDuctTape
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_EmergencyDuctTape/BlueTapeRoll
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_EmergencyDuctTape/CardboardInnerCore
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_EmergencyDuctTape/CardboardRim
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_EmergencyDuctTape/CardboardRim.001
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray/GreenCan
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray/NozzleAperture
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray/RolledMetalRim
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray/RolledMetalRim.001
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray/SilverShoulder
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray/ValveSocket
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray/WhiteMedicalCross
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray/WhiteSprayNozzle
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil/AngledPouringSpout
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil/DarkGreenInsetPanel
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil/IntegratedHandle
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil/LimePlasticBody
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil/RecessedPanelBorder
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil/SilverSpoutBase
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil/SpoutCollar
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil/SpoutTip
+    m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_R
     m_Weight: 1
   - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_R/LowerArm_R
@@ -2014,7 +1089,84 @@ AvatarMask:
     m_Weight: 0
   - m_Path: TorsoVent_R_3
     m_Weight: 0
---- !u!206 &1982904889771437092
+--- !u!1101 &-2966892850132053931
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions: []
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -6630470516265915872}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0.85
+  m_HasExitTime: 1
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!206 &-2816711818103525422
+BlendTree:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Pistol Directional Locomotion
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: -7660953224585933297, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: -7660953224585933297, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 1}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 6249538387823140596, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: 0, y: -1}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: -777823918716259586, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: -1, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 2905303002324425922, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: 1, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  m_BlendParameter: MoveX
+  m_BlendParameterY: MoveY
+  m_MinThreshold: 0
+  m_MaxThreshold: 1
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 3
+--- !u!206 &-2812021291925845287
 BlendTree:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2023,7 +1175,7 @@ BlendTree:
   m_Name: Pistol Carry and Aim
   m_Childs:
   - serializedVersion: 2
-    m_Motion: {fileID: 3790866935322921841}
+    m_Motion: {fileID: -1176587504867957959}
     m_Threshold: 0
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
@@ -2045,37 +1197,215 @@ BlendTree:
   m_UseAutomaticThresholds: 0
   m_NormalizedBlendValues: 0
   m_BlendType: 0
---- !u!1102 &2000208943166948552
-AnimatorState:
+--- !u!1101 &-2764073875643434933
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 6
+    m_ConditionEvent: EquippedWeapon
+    m_EventTreshold: 3
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -5069841895376228442}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1107 &-2488736548649855424
+AnimatorStateMachine:
   serializedVersion: 6
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Pistol
-  m_Speed: 1
-  m_CycleOffset: 0
-  m_Transitions:
-  - {fileID: -8706635591165026035}
-  - {fileID: -5703253310931939177}
-  - {fileID: 1764646211065197428}
-  - {fileID: 5001690944446019468}
+  m_Name: Couch Guy Base Layer
+  m_ChildStates:
+  - serializedVersion: 1
+    m_State: {fileID: -6630470516265915872}
+    m_Position: {x: 260, y: 60, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: -8695325690106041514}
+    m_Position: {x: 520, y: -20, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: 3630903997080838232}
+    m_Position: {x: 770, y: 60, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: 4342857684910650104}
+    m_Position: {x: 520, y: 150, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: 3457139744578097432}
+    m_Position: {x: 260, y: 270, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: 6727641350327646466}
+    m_Position: {x: 20, y: 270, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: -7391737397350959206}
+    m_Position: {x: 20, y: 60, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: 6124414318126258576}
+    m_Position: {x: 520, y: 300, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: -6896007734233800683}
+    m_Position: {x: 1020, y: -120, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: 6517321319078591054}
+    m_Position: {x: 1020, y: 20, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: -5069841895376228442}
+    m_Position: {x: 1020, y: 160, z: 0}
+  m_ChildStateMachines: []
+  m_AnyStateTransitions:
+  - {fileID: 334550418849406674}
+  m_EntryTransitions: []
+  m_StateMachineTransitions: {}
   m_StateMachineBehaviours: []
-  m_Position: {x: 50, y: 50, z: 0}
-  m_IKOnFeet: 0
-  m_WriteDefaultValues: 1
-  m_Mirror: 0
-  m_SpeedParameterActive: 0
-  m_MirrorParameterActive: 0
-  m_CycleOffsetParameterActive: 0
-  m_TimeParameterActive: 0
-  m_Motion: {fileID: 1982904889771437092}
-  m_Tag: 
-  m_SpeedParameter: 
-  m_MirrorParameter: 
-  m_CycleOffsetParameter: 
-  m_TimeParameter: 
---- !u!206 &2077751135079967135
+  m_AnyStatePosition: {x: 50, y: 20, z: 0}
+  m_EntryPosition: {x: 50, y: 120, z: 0}
+  m_ExitPosition: {x: 800, y: 120, z: 0}
+  m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
+  m_DefaultState: {fileID: -6630470516265915872}
+--- !u!1101 &-1634408073342997203
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 6
+    m_ConditionEvent: EquippedWeapon
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -6630470516265915872}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1101 &-1527435495598994755
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 1
+    m_ConditionEvent: Grounded
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -6630470516265915872}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1101 &-1229162044967619449
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 1
+    m_ConditionEvent: IsCarrying
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: 3630903997080838232}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!206 &-1176587504867957959
+BlendTree:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Pistol Carry Speed
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: -7188930547458410786, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: -2816711818103525422}
+    m_Threshold: 1
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 159653981619210113, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 1.3
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7383173111939880688, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 1.48
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: -7216088633107727220, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 1.65
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  m_BlendParameter: Speed
+  m_BlendParameterY: Blend
+  m_MinThreshold: 0
+  m_MaxThreshold: 1
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 0
+--- !u!206 &-1163784411567373207
 BlendTree:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2130,7 +1460,7 @@ BlendTree:
   m_UseAutomaticThresholds: 0
   m_NormalizedBlendValues: 0
   m_BlendType: 3
---- !u!1101 &2229820636682885590
+--- !u!1101 &-1035490738049911971
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2142,7 +1472,1025 @@ AnimatorStateTransition:
     m_ConditionEvent: IsCarrying
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -8435357206350116393}
+  m_DstState: {fileID: -6630470516265915872}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1101 &-1015290109656178622
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 1
+    m_ConditionEvent: HoldingItem
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: 3457139744578097432}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!206 &-378299572838690469
+BlendTree:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: AssaultRifle Directional Locomotion
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: -7626808101395491918, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: -7626808101395491918, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 1}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: -8248296507552948647, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: 0, y: -1}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 8457048067529614853, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: -1, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: -6434144635999537448, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: 1, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  m_BlendParameter: MoveX
+  m_BlendParameterY: MoveY
+  m_MinThreshold: 0
+  m_MaxThreshold: 1
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 3
+--- !u!206 &-322005697581308463
+BlendTree:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Shotgun Carry and Aim
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: 8977276518629295465}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 5124815917221881849, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 1
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  m_BlendParameter: WeaponAim
+  m_BlendParameterY: Blend
+  m_MinThreshold: 0
+  m_MaxThreshold: 1
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 0
+--- !u!91 &9100000
+AnimatorController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: CouchGuy
+  serializedVersion: 5
+  m_AnimatorParameters:
+  - m_Name: Speed
+    m_Type: 1
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: MoveX
+    m_Type: 1
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: MoveY
+    m_Type: 1
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: Grounded
+    m_Type: 4
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: IsCarrying
+    m_Type: 4
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: HoldingItem
+    m_Type: 4
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: Pointing
+    m_Type: 4
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: Pickup
+    m_Type: 9
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: Drop
+    m_Type: 9
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: Hit
+    m_Type: 9
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: EquippedWeapon
+    m_Type: 3
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: WeaponShoot
+    m_Type: 9
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: WeaponAim
+    m_Type: 1
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: ReloadProgress
+    m_Type: 1
+    m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  m_AnimatorLayers:
+  - serializedVersion: 5
+    m_Name: Base Layer
+    m_StateMachine: {fileID: -2488736548649855424}
+    m_Mask: {fileID: 0}
+    m_Motions: []
+    m_Behaviours: []
+    m_BlendingMode: 0
+    m_SyncedLayerIndex: -1
+    m_DefaultWeight: 0
+    m_IKPass: 0
+    m_SyncedLayerAffectsTiming: 0
+    m_Controller: {fileID: 9100000}
+  - serializedVersion: 5
+    m_Name: Punches
+    m_StateMachine: {fileID: 5505506868721430812}
+    m_Mask: {fileID: 8841332648761835790}
+    m_Motions: []
+    m_Behaviours: []
+    m_BlendingMode: 0
+    m_SyncedLayerIndex: -1
+    m_DefaultWeight: 0
+    m_IKPass: 0
+    m_SyncedLayerAffectsTiming: 0
+    m_Controller: {fileID: 9100000}
+  - serializedVersion: 5
+    m_Name: Baseball Bat
+    m_StateMachine: {fileID: 3454620841567188890}
+    m_Mask: {fileID: 1468613157612034626}
+    m_Motions: []
+    m_Behaviours: []
+    m_BlendingMode: 0
+    m_SyncedLayerIndex: -1
+    m_DefaultWeight: 0
+    m_IKPass: 0
+    m_SyncedLayerAffectsTiming: 0
+    m_Controller: {fileID: 9100000}
+  - serializedVersion: 5
+    m_Name: Reloads
+    m_StateMachine: {fileID: -4158636166178929927}
+    m_Mask: {fileID: -3167883238366852880}
+    m_Motions: []
+    m_Behaviours: []
+    m_BlendingMode: 0
+    m_SyncedLayerIndex: -1
+    m_DefaultWeight: 0
+    m_IKPass: 0
+    m_SyncedLayerAffectsTiming: 0
+    m_Controller: {fileID: 9100000}
+--- !u!1101 &334550418849406674
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 1
+    m_ConditionEvent: Hit
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: 6124414318126258576}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1101 &1417893134504366485
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 6
+    m_ConditionEvent: EquippedWeapon
+    m_EventTreshold: 2
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: 6517321319078591054}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!206 &1468588345841545739
+BlendTree:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: AssaultRifle Carry and Aim
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: 2927237301303752707}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 5443384423805333909, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 1
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  m_BlendParameter: WeaponAim
+  m_BlendParameterY: Blend
+  m_MinThreshold: 0
+  m_MaxThreshold: 1
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 0
+--- !u!319 &1468613157612034626
+AvatarMask:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Baseball Bat Upper Body
+  m_Mask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+  m_Elements:
+  - m_Path: 
+    m_Weight: 0
+  - m_Path: Arm_L
+    m_Weight: 1
+  - m_Path: Arm_L/ElbowGlow_L
+    m_Weight: 1
+  - m_Path: Arm_L/ElbowJoint_L
+    m_Weight: 1
+  - m_Path: Arm_L/Forearm_L
+    m_Weight: 1
+  - m_Path: Arm_L/ForearmLight_L
+    m_Weight: 1
+  - m_Path: Arm_L/Hand_L
+    m_Weight: 1
+  - m_Path: Arm_L/ShoulderArmour_L
+    m_Weight: 1
+  - m_Path: Arm_L/ShoulderJoint_L
+    m_Weight: 1
+  - m_Path: Arm_L/UpperArm_L
+    m_Weight: 1
+  - m_Path: Arm_L/WristJoint_L
+    m_Weight: 1
+  - m_Path: Arm_R
+    m_Weight: 1
+  - m_Path: Arm_R/ElbowGlow_R
+    m_Weight: 1
+  - m_Path: Arm_R/ElbowJoint_R
+    m_Weight: 1
+  - m_Path: Arm_R/Forearm_R
+    m_Weight: 1
+  - m_Path: Arm_R/ForearmLight_R
+    m_Weight: 1
+  - m_Path: Arm_R/Hand_R
+    m_Weight: 1
+  - m_Path: Arm_R/ShoulderArmour_R
+    m_Weight: 1
+  - m_Path: Arm_R/ShoulderJoint_R
+    m_Weight: 1
+  - m_Path: Arm_R/UpperArm_R
+    m_Weight: 1
+  - m_Path: Arm_R/WristJoint_R
+    m_Weight: 1
+  - m_Path: ChestIndicator
+    m_Weight: 0
+  - m_Path: ChestPanel
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root
+    m_Weight: 0
+  - m_Path: CouchGuy_Rig/Root/Torso
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/Head
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/Head/Eye_L
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/Head/Eye_R
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Muzzle.001
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Accent
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Barrel
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Body
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Bore
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CarryRail
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_-1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_-1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_-1_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_CoolingVent_1_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_-1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_-1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_-1_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_EnergyCell_1_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Fastener_-1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Fastener_-1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Fastener_1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Fastener_1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Grip
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripHeel
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_-1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_-1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_-1_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_GripRib_1_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Magazine
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_MagazineFoot
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_MuzzleCollar
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_MuzzleRim
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_RailPillar_-0.4
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_RailPillar_-0.08
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_SidePlate_-1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_SidePlate_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_SideStripe_-1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_SideStripe_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Stock
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_StockBridge
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_StockPad
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Trigger
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_TriggerGuard
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_UnderRail
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Wing_-1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_AssaultRifle/Weapon_AssaultRifle_Wing_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Muzzle
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Accent
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Barrel
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Body
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Bore
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Fastener_-1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Fastener_-1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Fastener_1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Fastener_1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_FrontSight
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Grip
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripHeel
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_-1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_-1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_-1_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_GripRib_1_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_MuzzleCollar
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_MuzzleRim
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_RearSight
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_SidePlate_-1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_SidePlate_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_SideStripe_-1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_SideStripe_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_Trigger
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Pistol/Weapon_Pistol_TriggerGuard
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Muzzle.002
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Accent
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Barrel
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Body
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Bore
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_CarryRail
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Fastener_-1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Fastener_-1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Fastener_1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Fastener_1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Grip
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripHeel
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_-1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_-1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_-1_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_GripRib_1_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_MagazineTube
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_MuzzleCollar
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_MuzzleRim
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Pump
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_PumpRib_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_PumpRib_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_PumpRib_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_PumpRib_3
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_RailPillar_-0.4
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_RailPillar_-0.08
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_-1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_-1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_-1_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Shell_1_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_-1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_-1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_-1_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellBrass_1_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellRack_-1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_ShellRack_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_SidePlate_-1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_SidePlate_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_SideStripe_-1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_SideStripe_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Stock
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_StockBridge
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_StockPad
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_Trigger
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_Shotgun/Weapon_Shotgun_TriggerGuard
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Body_LOD1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Body_LOD2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Claw_LOD1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Claw_LOD2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0/Body_LOD0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0/Claw_LOD0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0/Spool_LOD0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Grapple_LOD0/Trigger_LOD0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Spool_LOD1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Spool_LOD2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Trigger_LOD1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/CG_GrappleGun/Trigger_LOD2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_GrappleGun/Muzzle
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_-1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_-1.001
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_-1.002
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_1.001
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/ArmourFastener_1.002
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Barrel_BlueShell
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Barrel_TopRedLug
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Bore_ShadowBack
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_-1_-1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_-1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_-1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_1_-1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_Exhaust_1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_RedPorthole_-1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Emblem_RedPorthole_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/EmblemArmour_-1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/EmblemArmour_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/FrontVentArmour_L
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/FrontVentArmour_R
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Grip_Navy
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Grip_YellowBase
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Muzzle_InnerLiner
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Muzzle_YellowRim
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Receiver_LowerBlueRail
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Receiver_NavyCore
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Receiver_TopBlueRail
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketEmblem_-1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketEmblem_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketFinA_-1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketFinA_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketFinB_-1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/RocketFinB_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_AmberInset
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_NavyApertureFrame
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_NavyRearHousing
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_RedMount
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_ReticleHorizontal
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_ReticleVertical
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Sight_YellowReticleRing
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Stock_BlueExtension
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Stock_RedCollar
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Stock_ShoulderPad
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Trigger_Yellow
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/TriggerGuard_Blue
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_-1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_-1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_-1_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_1_0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_1_1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/RocketLauncher/Vent_DarkInset_1_2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_RocketLauncher/Muzzle
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Blue_LOD0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Blue_LOD1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Blue_LOD2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Navy_LOD0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Navy_LOD1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Navy_LOD2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Red_LOD0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Red_LOD1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Red_LOD2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Rubber_LOD0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Rubber_LOD1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Rubber_LOD2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Steel_LOD0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Yellow_LOD0
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Yellow_LOD1
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/baseball_bat/BaseballBat_Yellow_LOD2
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/Muzzle
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Weapon_BaseballBat/BlueSwingTrail
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_EmergencyDuctTape
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_EmergencyDuctTape/BlueTapeRoll
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_EmergencyDuctTape/CardboardInnerCore
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_EmergencyDuctTape/CardboardRim
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_EmergencyDuctTape/CardboardRim.001
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray/GreenCan
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray/NozzleAperture
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray/RolledMetalRim
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray/RolledMetalRim.001
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray/SilverShoulder
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray/ValveSocket
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray/WhiteMedicalCross
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_ProbablyFineRepairSpray/WhiteSprayNozzle
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil/AngledPouringSpout
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil/DarkGreenInsetPanel
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil/IntegratedHandle
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil/LimePlasticBody
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil/RecessedPanelBorder
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil/SilverSpoutBase
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil/SpoutCollar
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_L/LowerArm_L/Hand_L/Held_PremiumRobotOil/SpoutTip
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_R
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_R/LowerArm_R
+    m_Weight: 1
+  - m_Path: CouchGuy_Rig/Root/Torso/UpperArm_R/LowerArm_R/Hand_R
+    m_Weight: 1
+  - m_Path: EarHub_L
+    m_Weight: 0
+  - m_Path: EarHub_R
+    m_Weight: 0
+  - m_Path: EarLightRing_L
+    m_Weight: 0
+  - m_Path: EarLightRing_R
+    m_Weight: 0
+  - m_Path: EarMount_L
+    m_Weight: 0
+  - m_Path: EarMount_R
+    m_Weight: 0
+  - m_Path: EarShell_L
+    m_Weight: 0
+  - m_Path: EarShell_R
+    m_Weight: 0
+  - m_Path: FaceBezel
+    m_Weight: 0
+  - m_Path: FaceDisplay
+    m_Weight: 0
+  - m_Path: FaceGraphic_L
+    m_Weight: 0
+  - m_Path: FaceGraphic_R
+    m_Weight: 0
+  - m_Path: Head
+    m_Weight: 0
+  - m_Path: Head_RearLight
+    m_Weight: 0
+  - m_Path: Head_RearPanel
+    m_Weight: 0
+  - m_Path: Head_TopLight
+    m_Weight: 0
+  - m_Path: Head_TopPanel
+    m_Weight: 0
+  - m_Path: HoverAssembly
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Inner
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Inner/HoverProjector_01
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Inner/HoverProjector_02
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Inner/HoverProjector_03
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Inner/HoverProjector_04
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Inner/HoverRing_InnerGlow
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverRing
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_01
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_02
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_03
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_04
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_05
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_06
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_07
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_08
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_09
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_10
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_11
+    m_Weight: 0
+  - m_Path: HoverAssembly/HoverRotor_Outer/HoverSegment_12
+    m_Weight: 0
+  - m_Path: NeckJoint
+    m_Weight: 0
+  - m_Path: Torso
+    m_Weight: 0
+  - m_Path: TorsoLowerLight
+    m_Weight: 0
+  - m_Path: TorsoVent_L_1
+    m_Weight: 0
+  - m_Path: TorsoVent_L_2
+    m_Weight: 0
+  - m_Path: TorsoVent_L_3
+    m_Weight: 0
+  - m_Path: TorsoVent_R_1
+    m_Weight: 0
+  - m_Path: TorsoVent_R_2
+    m_Weight: 0
+  - m_Path: TorsoVent_R_3
+    m_Weight: 0
+--- !u!1101 &1735187169498756272
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 1
+    m_ConditionEvent: IsCarrying
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: 3630903997080838232}
   m_Solo: 0
   m_Mute: 0
   m_IsExit: 0
@@ -2155,44 +2503,67 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 0
---- !u!1107 &2432054331057059705
-AnimatorStateMachine:
+--- !u!1102 &1947442241316989360
+AnimatorState:
   serializedVersion: 6
-  m_ObjectHideFlags: 0
+  m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Punches
-  m_ChildStates:
-  - serializedVersion: 1
-    m_State: {fileID: -4202743879193133074}
-    m_Position: {x: 200, y: 0, z: 0}
-  - serializedVersion: 1
-    m_State: {fileID: -2976216638278371071}
-    m_Position: {x: 235, y: 65, z: 0}
-  - serializedVersion: 1
-    m_State: {fileID: -4854657570951460889}
-    m_Position: {x: 270, y: 130, z: 0}
-  m_ChildStateMachines: []
-  m_AnyStateTransitions: []
-  m_EntryTransitions: []
-  m_StateMachineTransitions: {}
+  m_Name: Bat_Swing
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions: []
   m_StateMachineBehaviours: []
-  m_AnyStatePosition: {x: 50, y: 20, z: 0}
-  m_EntryPosition: {x: 50, y: 120, z: 0}
-  m_ExitPosition: {x: 800, y: 120, z: 0}
-  m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
-  m_DefaultState: {fileID: -4202743879193133074}
---- !u!206 &3790866935322921841
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 0
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 7400000, guid: 069d276211341cf4eb7c2ed6248c7cb4, type: 2}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
+--- !u!1101 &2095614492643400946
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 2
+    m_ConditionEvent: Pointing
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -6630470516265915872}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!206 &2927237301303752707
 BlendTree:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Pistol Carry Speed
+  m_Name: AssaultRifle Carry Speed
   m_Childs:
   - serializedVersion: 2
-    m_Motion: {fileID: -7188930547458410786, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Motion: {fileID: 5443384423805333909, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
     m_Threshold: 0
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
@@ -2200,7 +2571,7 @@ BlendTree:
     m_DirectBlendParameter: Blend
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: -9215898161997579530}
+    m_Motion: {fileID: -378299572838690469}
     m_Threshold: 1
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
@@ -2208,7 +2579,7 @@ BlendTree:
     m_DirectBlendParameter: Blend
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: 159653981619210113, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Motion: {fileID: 2042421882959274573, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
     m_Threshold: 1.3
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
@@ -2216,7 +2587,7 @@ BlendTree:
     m_DirectBlendParameter: Blend
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: 7383173111939880688, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Motion: {fileID: -5028479036281246304, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
     m_Threshold: 1.48
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
@@ -2224,7 +2595,7 @@ BlendTree:
     m_DirectBlendParameter: Blend
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: -7216088633107727220, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Motion: {fileID: 393411001095015497, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
     m_Threshold: 1.65
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
@@ -2238,7 +2609,7 @@ BlendTree:
   m_UseAutomaticThresholds: 0
   m_NormalizedBlendValues: 0
   m_BlendType: 0
---- !u!1101 &4304712855066819101
+--- !u!1101 &3077579555937299821
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2246,11 +2617,11 @@ AnimatorStateTransition:
   m_PrefabAsset: {fileID: 0}
   m_Name: 
   m_Conditions:
-  - m_ConditionMode: 6
-    m_ConditionEvent: EquippedWeapon
-    m_EventTreshold: 1
+  - m_ConditionMode: 1
+    m_ConditionEvent: Pointing
+    m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: 2000208943166948552}
+  m_DstState: {fileID: 6727641350327646466}
   m_Solo: 0
   m_Mute: 0
   m_IsExit: 0
@@ -2263,7 +2634,708 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 0
---- !u!319 &4413079113161980746
+--- !u!1101 &3205011725189564041
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 2
+    m_ConditionEvent: HoldingItem
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -6630470516265915872}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1101 &3393753406084441979
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 1
+    m_ConditionEvent: IsCarrying
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: 3630903997080838232}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1107 &3454620841567188890
+AnimatorStateMachine:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Baseball Bat
+  m_ChildStates:
+  - serializedVersion: 1
+    m_State: {fileID: 7531001539167783841}
+    m_Position: {x: 200, y: 0, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: 1947442241316989360}
+    m_Position: {x: 235, y: 65, z: 0}
+  m_ChildStateMachines: []
+  m_AnyStateTransitions: []
+  m_EntryTransitions: []
+  m_StateMachineTransitions: {}
+  m_StateMachineBehaviours: []
+  m_AnyStatePosition: {x: 50, y: 20, z: 0}
+  m_EntryPosition: {x: 50, y: 120, z: 0}
+  m_ExitPosition: {x: 800, y: 120, z: 0}
+  m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
+  m_DefaultState: {fileID: 7531001539167783841}
+--- !u!1102 &3457139744578097432
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Hold Item
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions:
+  - {fileID: 3205011725189564041}
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 2863649811085625971, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
+--- !u!1101 &3510344843450488239
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 6
+    m_ConditionEvent: EquippedWeapon
+    m_EventTreshold: 2
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: 6517321319078591054}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1101 &3539354698091650075
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 6
+    m_ConditionEvent: EquippedWeapon
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -6630470516265915872}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1102 &3630903997080838232
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Carrying
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions:
+  - {fileID: -3720790461136870663}
+  - {fileID: -1035490738049911971}
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 7759339242311282410}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
+--- !u!206 &3855984840673934591
+BlendTree:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Locomotion 2D
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: 4017369852977333157, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: -4276106860293247607, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 1}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: -4386769017079765384, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: 0, y: -1}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 4269766045047983340, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: -1, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: -3265505942767641434, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: 1, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 2922029995684817829, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 1.65}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  m_BlendParameter: MoveX
+  m_BlendParameterY: MoveY
+  m_MinThreshold: 0
+  m_MaxThreshold: 1
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 3
+--- !u!1102 &4342857684910650104
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Drop
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions:
+  - {fileID: -2966892850132053931}
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 6541335088232811308, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
+--- !u!1101 &4675401106130114291
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 6
+    m_ConditionEvent: EquippedWeapon
+    m_EventTreshold: 1
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -6896007734233800683}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1101 &5175980193845420373
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 1
+    m_ConditionEvent: Pickup
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -8695325690106041514}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1107 &5505506868721430812
+AnimatorStateMachine:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Punches
+  m_ChildStates:
+  - serializedVersion: 1
+    m_State: {fileID: -7593155712937307324}
+    m_Position: {x: 200, y: 0, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: 7984098697216244528}
+    m_Position: {x: 235, y: 65, z: 0}
+  - serializedVersion: 1
+    m_State: {fileID: -3287593376026012672}
+    m_Position: {x: 270, y: 130, z: 0}
+  m_ChildStateMachines: []
+  m_AnyStateTransitions: []
+  m_EntryTransitions: []
+  m_StateMachineTransitions: {}
+  m_StateMachineBehaviours: []
+  m_AnyStatePosition: {x: 50, y: 20, z: 0}
+  m_EntryPosition: {x: 50, y: 120, z: 0}
+  m_ExitPosition: {x: 800, y: 120, z: 0}
+  m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
+  m_DefaultState: {fileID: -7593155712937307324}
+--- !u!1102 &6124414318126258576
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Hit Reaction
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions:
+  - {fileID: 1735187169498756272}
+  - {fileID: -4933761977517276909}
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 998263797508382967, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
+--- !u!1102 &6227991609330077562
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Pistol_Reload
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions: []
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 0
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 1
+  m_Motion: {fileID: 6008844081831604768, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: ReloadProgress
+--- !u!1102 &6517321319078591054
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Assault Rifle
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions:
+  - {fileID: 4675401106130114291}
+  - {fileID: 8822572847842412741}
+  - {fileID: 6974681661802224787}
+  - {fileID: 9021965017475844491}
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 1468588345841545739}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
+--- !u!1102 &6727641350327646466
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Point
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions:
+  - {fileID: 2095614492643400946}
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 1
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 5189160997369742405, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
+--- !u!1101 &6974681661802224787
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 6
+    m_ConditionEvent: EquippedWeapon
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -6630470516265915872}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1101 &6982530158519135583
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 1
+    m_ConditionEvent: IsCarrying
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: 3630903997080838232}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1102 &7531001539167783841
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Bat_Ready
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions: []
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 0
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 7400000, guid: 8a67c1c061dcd2a42a27901b97398ecd, type: 2}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
+--- !u!1101 &7673534197669615183
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 2
+    m_ConditionEvent: IsCarrying
+    m_EventTreshold: 0
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -6630470516265915872}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0.72
+  m_HasExitTime: 1
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!206 &7759339242311282410
+BlendTree:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Carrying 1D
+  m_Childs:
+  - serializedVersion: 2
+    m_Motion: {fileID: -4574601142001050469, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 0
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: -812514573135560244, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 1
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: -8556228548441719239, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 1.65
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  m_BlendParameter: Speed
+  m_BlendParameterY: Blend
+  m_MinThreshold: 0
+  m_MaxThreshold: 1
+  m_UseAutomaticThresholds: 0
+  m_NormalizedBlendValues: 0
+  m_BlendType: 0
+--- !u!1102 &7984098697216244528
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Punch_Left
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions: []
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 0
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 0
+  m_Motion: {fileID: 8091849441328058791, guid: 36a11ca57fb29314980190ca18f433d2, type: 3}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: 
+--- !u!1102 &8334515263797632018
+AnimatorState:
+  serializedVersion: 6
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: AssaultRifle_Reload
+  m_Speed: 1
+  m_CycleOffset: 0
+  m_Transitions: []
+  m_StateMachineBehaviours: []
+  m_Position: {x: 50, y: 50, z: 0}
+  m_IKOnFeet: 0
+  m_WriteDefaultValues: 0
+  m_Mirror: 0
+  m_SpeedParameterActive: 0
+  m_MirrorParameterActive: 0
+  m_CycleOffsetParameterActive: 0
+  m_TimeParameterActive: 1
+  m_Motion: {fileID: 7857319505351640885, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+  m_Tag: 
+  m_SpeedParameter: 
+  m_MirrorParameter: 
+  m_CycleOffsetParameter: 
+  m_TimeParameter: ReloadProgress
+--- !u!1101 &8619253012329810893
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 6
+    m_ConditionEvent: EquippedWeapon
+    m_EventTreshold: 1
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -6896007734233800683}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!1101 &8822572847842412741
+AnimatorStateTransition:
+  m_ObjectHideFlags: 1
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  m_Conditions:
+  - m_ConditionMode: 6
+    m_ConditionEvent: EquippedWeapon
+    m_EventTreshold: 3
+  m_DstStateMachine: {fileID: 0}
+  m_DstState: {fileID: -5069841895376228442}
+  m_Solo: 0
+  m_Mute: 0
+  m_IsExit: 0
+  serializedVersion: 3
+  m_TransitionDuration: 0.16
+  m_TransitionOffset: 0
+  m_ExitTime: 0
+  m_HasExitTime: 0
+  m_HasFixedDuration: 1
+  m_InterruptionSource: 0
+  m_OrderedInterruption: 1
+  m_CanTransitionToSelf: 0
+--- !u!319 &8841332648761835790
 AvatarMask:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2625,7 +3697,7 @@ AvatarMask:
   - m_Path: FaceGraphic_R
     m_Weight: 0
   - m_Path: Head
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: Head_RearLight
     m_Weight: 0
   - m_Path: Head_RearPanel
@@ -2679,7 +3751,7 @@ AvatarMask:
   - m_Path: NeckJoint
     m_Weight: 0
   - m_Path: Torso
-    m_Weight: 0
+    m_Weight: 1
   - m_Path: TorsoLowerLight
     m_Weight: 0
   - m_Path: TorsoVent_L_1
@@ -2694,244 +3766,16 @@ AvatarMask:
     m_Weight: 0
   - m_Path: TorsoVent_R_3
     m_Weight: 0
---- !u!1101 &4737042419352898190
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 1
-    m_ConditionEvent: Drop
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -8353166937751400671}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1101 &4980368901450482978
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 2
-    m_ConditionEvent: Pointing
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -8435357206350116393}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1101 &5001690944446019468
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 1
-    m_ConditionEvent: IsCarrying
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: 945341144591859764}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1101 &5692860376215634215
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 2
-    m_ConditionEvent: IsCarrying
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -8353166937751400671}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1101 &5859546380195788848
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 6
-    m_ConditionEvent: EquippedWeapon
-    m_EventTreshold: 1
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: 2000208943166948552}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1101 &6356675661393090606
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 2
-    m_ConditionEvent: IsCarrying
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: -8353166937751400671}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0.72
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1101 &6368955947204788767
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 1
-    m_ConditionEvent: IsCarrying
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: 945341144591859764}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0
-  m_HasExitTime: 0
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1107 &6605404431174827895
-AnimatorStateMachine:
-  serializedVersion: 6
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Couch Guy Base Layer
-  m_ChildStates:
-  - serializedVersion: 1
-    m_State: {fileID: -8435357206350116393}
-    m_Position: {x: 260, y: 60, z: 0}
-  - serializedVersion: 1
-    m_State: {fileID: 945341144591859764}
-    m_Position: {x: 520, y: -20, z: 0}
-  - serializedVersion: 1
-    m_State: {fileID: 9153158073660695506}
-    m_Position: {x: 770, y: 60, z: 0}
-  - serializedVersion: 1
-    m_State: {fileID: -8353166937751400671}
-    m_Position: {x: 520, y: 150, z: 0}
-  - serializedVersion: 1
-    m_State: {fileID: -5043555365671017605}
-    m_Position: {x: 260, y: 270, z: 0}
-  - serializedVersion: 1
-    m_State: {fileID: -2193353037133734204}
-    m_Position: {x: 20, y: 270, z: 0}
-  - serializedVersion: 1
-    m_State: {fileID: -889710727307397090}
-    m_Position: {x: 20, y: 60, z: 0}
-  - serializedVersion: 1
-    m_State: {fileID: -7210695466381752416}
-    m_Position: {x: 520, y: 300, z: 0}
-  - serializedVersion: 1
-    m_State: {fileID: 2000208943166948552}
-    m_Position: {x: 1020, y: -120, z: 0}
-  - serializedVersion: 1
-    m_State: {fileID: -3085921228405765910}
-    m_Position: {x: 1020, y: 20, z: 0}
-  - serializedVersion: 1
-    m_State: {fileID: -7069069465566753957}
-    m_Position: {x: 1020, y: 160, z: 0}
-  m_ChildStateMachines: []
-  m_AnyStateTransitions:
-  - {fileID: -4485285860041933296}
-  m_EntryTransitions: []
-  m_StateMachineTransitions: {}
-  m_StateMachineBehaviours: []
-  m_AnyStatePosition: {x: 50, y: 20, z: 0}
-  m_EntryPosition: {x: 50, y: 120, z: 0}
-  m_ExitPosition: {x: 800, y: 120, z: 0}
-  m_ParentStateMachinePosition: {x: 800, y: 20, z: 0}
-  m_DefaultState: {fileID: -8435357206350116393}
---- !u!206 &7218335163786167889
+--- !u!206 &8977276518629295465
 BlendTree:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Shotgun Carry and Aim
+  m_Name: Shotgun Carry Speed
   m_Childs:
   - serializedVersion: 2
-    m_Motion: {fileID: -1274708022587697576}
+    m_Motion: {fileID: 5124815917221881849, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
     m_Threshold: 0
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
@@ -2939,21 +3783,45 @@ BlendTree:
     m_DirectBlendParameter: Blend
     m_Mirror: 0
   - serializedVersion: 2
-    m_Motion: {fileID: 5124815917221881849, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Motion: {fileID: -1163784411567373207}
     m_Threshold: 1
     m_Position: {x: 0, y: 0}
     m_TimeScale: 1
     m_CycleOffset: 0
     m_DirectBlendParameter: Blend
     m_Mirror: 0
-  m_BlendParameter: WeaponAim
+  - serializedVersion: 2
+    m_Motion: {fileID: -1656252287111168143, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 1.3
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7989842099146057071, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 1.48
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  - serializedVersion: 2
+    m_Motion: {fileID: 7831328191650792450, guid: 06d302d6992a99d41bedc8f9340b55ea, type: 3}
+    m_Threshold: 1.65
+    m_Position: {x: 0, y: 0}
+    m_TimeScale: 1
+    m_CycleOffset: 0
+    m_DirectBlendParameter: Blend
+    m_Mirror: 0
+  m_BlendParameter: Speed
   m_BlendParameterY: Blend
   m_MinThreshold: 0
   m_MaxThreshold: 1
   m_UseAutomaticThresholds: 0
   m_NormalizedBlendValues: 0
   m_BlendType: 0
---- !u!1101 &7691485118638522157
+--- !u!1101 &9021965017475844491
 AnimatorStateTransition:
   m_ObjectHideFlags: 1
   m_CorrespondingSourceObject: {fileID: 0}
@@ -2962,10 +3830,10 @@ AnimatorStateTransition:
   m_Name: 
   m_Conditions:
   - m_ConditionMode: 1
-    m_ConditionEvent: Pickup
+    m_ConditionEvent: IsCarrying
     m_EventTreshold: 0
   m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: 945341144591859764}
+  m_DstState: {fileID: 3630903997080838232}
   m_Solo: 0
   m_Mute: 0
   m_IsExit: 0
@@ -2978,56 +3846,3 @@ AnimatorStateTransition:
   m_InterruptionSource: 0
   m_OrderedInterruption: 1
   m_CanTransitionToSelf: 0
---- !u!1101 &7766804088434258443
-AnimatorStateTransition:
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  m_Conditions:
-  - m_ConditionMode: 1
-    m_ConditionEvent: IsCarrying
-    m_EventTreshold: 0
-  m_DstStateMachine: {fileID: 0}
-  m_DstState: {fileID: 9153158073660695506}
-  m_Solo: 0
-  m_Mute: 0
-  m_IsExit: 0
-  serializedVersion: 3
-  m_TransitionDuration: 0.16
-  m_TransitionOffset: 0
-  m_ExitTime: 0.9
-  m_HasExitTime: 1
-  m_HasFixedDuration: 1
-  m_InterruptionSource: 0
-  m_OrderedInterruption: 1
-  m_CanTransitionToSelf: 0
---- !u!1102 &9153158073660695506
-AnimatorState:
-  serializedVersion: 6
-  m_ObjectHideFlags: 1
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: Carrying
-  m_Speed: 1
-  m_CycleOffset: 0
-  m_Transitions:
-  - {fileID: 4737042419352898190}
-  - {fileID: 5692860376215634215}
-  m_StateMachineBehaviours: []
-  m_Position: {x: 50, y: 50, z: 0}
-  m_IKOnFeet: 0
-  m_WriteDefaultValues: 1
-  m_Mirror: 0
-  m_SpeedParameterActive: 0
-  m_MirrorParameterActive: 0
-  m_CycleOffsetParameterActive: 0
-  m_TimeParameterActive: 0
-  m_Motion: {fileID: 1836437743447016439}
-  m_Tag: 
-  m_SpeedParameter: 
-  m_MirrorParameter: 
-  m_CycleOffsetParameter: 
-  m_TimeParameter: 

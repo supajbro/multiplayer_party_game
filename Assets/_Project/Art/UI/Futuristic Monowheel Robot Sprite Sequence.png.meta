@@ -1,0 +1,695 @@
+fileFormatVersion: 2
+guid: 5566a618ba0118a4c8760906898cda57
+TextureImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 0
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Monowheel_01
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 768
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210001
+      internalID: 782530186136520201
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_02
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 768
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210002
+      internalID: 782530186136520202
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_03
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 768
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210003
+      internalID: 782530186136520203
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_04
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 768
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210004
+      internalID: 782530186136520204
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_05
+      rect:
+        serializedVersion: 2
+        x: 1024
+        y: 768
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210005
+      internalID: 782530186136520205
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_06
+      rect:
+        serializedVersion: 2
+        x: 1280
+        y: 768
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210006
+      internalID: 782530186136520206
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_07
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 512
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210007
+      internalID: 782530186136520207
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_08
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 512
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210008
+      internalID: 782530186136520208
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_09
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 512
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210009
+      internalID: 782530186136520209
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_10
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 512
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210010
+      internalID: 782530186136520210
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_11
+      rect:
+        serializedVersion: 2
+        x: 1024
+        y: 512
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210011
+      internalID: 782530186136520211
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_12
+      rect:
+        serializedVersion: 2
+        x: 1280
+        y: 512
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210012
+      internalID: 782530186136520212
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_13
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 256
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210013
+      internalID: 782530186136520213
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_14
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 256
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210014
+      internalID: 782530186136520214
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_15
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 256
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210015
+      internalID: 782530186136520215
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_16
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 256
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210016
+      internalID: 782530186136520216
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_17
+      rect:
+        serializedVersion: 2
+        x: 1024
+        y: 256
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210017
+      internalID: 782530186136520217
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_18
+      rect:
+        serializedVersion: 2
+        x: 1280
+        y: 256
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210018
+      internalID: 782530186136520218
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_19
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210019
+      internalID: 782530186136520219
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_20
+      rect:
+        serializedVersion: 2
+        x: 256
+        y: 0
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210020
+      internalID: 782530186136520220
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_21
+      rect:
+        serializedVersion: 2
+        x: 512
+        y: 0
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210021
+      internalID: 782530186136520221
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_22
+      rect:
+        serializedVersion: 2
+        x: 768
+        y: 0
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210022
+      internalID: 782530186136520222
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_23
+      rect:
+        serializedVersion: 2
+        x: 1024
+        y: 0
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210023
+      internalID: 782530186136520223
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Monowheel_24
+      rect:
+        serializedVersion: 2
+        x: 1280
+        y: 0
+        width: 256
+        height: 256
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData:
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ef8070cda8f44f9ad1c298195210024
+      internalID: 782530186136520224
+      vertices: []
+      indices:
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Monowheel_01: 782530186136520201
+      Monowheel_02: 782530186136520202
+      Monowheel_03: 782530186136520203
+      Monowheel_04: 782530186136520204
+      Monowheel_05: 782530186136520205
+      Monowheel_06: 782530186136520206
+      Monowheel_07: 782530186136520207
+      Monowheel_08: 782530186136520208
+      Monowheel_09: 782530186136520209
+      Monowheel_10: 782530186136520210
+      Monowheel_11: 782530186136520211
+      Monowheel_12: 782530186136520212
+      Monowheel_13: 782530186136520213
+      Monowheel_14: 782530186136520214
+      Monowheel_15: 782530186136520215
+      Monowheel_16: 782530186136520216
+      Monowheel_17: 782530186136520217
+      Monowheel_18: 782530186136520218
+      Monowheel_19: 782530186136520219
+      Monowheel_20: 782530186136520220
+      Monowheel_21: 782530186136520221
+      Monowheel_22: 782530186136520222
+      Monowheel_23: 782530186136520223
+      Monowheel_24: 782530186136520224
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

@@ -212,8 +212,8 @@ namespace CouchGuys.Gameplay.Delivery
             GetComponent<CouchGuys.Gameplay.Traffic.TrafficManager>()?.RemoveDeliveryRogueCarsServer(id);
             if (job.Couch != null && job.Couch.IsSpawned)
             {
-                if (vehicleDelivery)
-                    FloatDeliveredCouchObserversRpc(job.Couch, runtime?.Recipient != null
+                if (success)
+                    FloatDeliveredCouchObserversRpc(job.Couch, vehicleDelivery && runtime?.Recipient != null
                         ? runtime.Recipient.transform.position : GetDestination(job.DestinationIndex).DropPosition.position);
                 job.Couch.GetComponent<CouchCarryController>().ReleaseAllOccupantsServer();
                 Despawn(job.Couch);
@@ -293,8 +293,13 @@ namespace CouchGuys.Gameplay.Delivery
 
         private void ClearDeliveriesServer()
         {
-            if (!IsServerInitialized) return;
-            while (m_deliveries.Count > 0) ResolveDeliveryServer(m_deliveries[0].Id, false);
+            if (!IsServerStarted || !IsServerInitialized) return;
+            while (m_deliveries.Count > 0)
+            {
+                int count = m_deliveries.Count;
+                if (!ResolveDeliveryServer(m_deliveries[0].Id, false) || m_deliveries.Count >= count)
+                    break;
+            }
         }
     }
 }

@@ -1132,6 +1132,9 @@ MonoBehaviour:
   m_customiseFieldOfView: 42
   m_cameraTurnDuration: 1.14
   m_arrowFadeDuration: 0.3
+  m_characterCatalog: {fileID: 11400000, guid: 93408949377f5264ca726f192811a7f7, type: 2}
+  m_previousCharacterButton: {fileID: 761099039}
+  m_nextCharacterButton: {fileID: 761099040}
 --- !u!1 &1314066200
 GameObject:
   m_ObjectHideFlags: 0
@@ -1824,3 +1827,25 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 7525764207434733250, guid: e7ad8395d37184541ae19bd5da9ec23f, type: 3}
   m_PrefabInstance: {fileID: 240808406}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &761099039 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 910021000000000005, guid: e7ad8395d37184541ae19bd5da9ec23f, type: 3}
+  m_PrefabInstance: {fileID: 240808406}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+--- !u!114 &761099040 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 910022000000000005, guid: e7ad8395d37184541ae19bd5da9ec23f, type: 3}
+  m_PrefabInstance: {fileID: 240808406}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:

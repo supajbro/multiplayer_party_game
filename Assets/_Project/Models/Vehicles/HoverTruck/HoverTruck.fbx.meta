@@ -3,7 +3,112 @@ guid: 8bee9fb7edfb3f542811c31ded165bec
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Cobalt
+    second: {fileID: 2100000, guid: 2d8445b5b33a99549a5312b74b3b9b5b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Driver_panel_black_glass
+    second: {fileID: 2100000, guid: bdd1be65cabfdb2468f54e2f0139b126, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Driver_panel_blue_hand_contact
+    second: {fileID: 2100000, guid: dbfae082a56feee4ba9a0bf83df043f1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Driver_panel_chrome_bezel
+    second: {fileID: 2100000, guid: 2832c7588065eea4584fb567fc2a6c32, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Driver_panel_cyan_contact_outline
+    second: {fileID: 2100000, guid: 468119ba05c7fd14eb392dde6b6d3418, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Driver_panel_graphite_housing
+    second: {fileID: 2100000, guid: 4835ac8c2ae3bc8429d074da6091aca1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Graphite
+    second: {fileID: 2100000, guid: 9fecc208741eaa849b1f94506161f63c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Hazard
+    second: {fileID: 2100000, guid: de6763ccba835ed4db256153ae6e5dec, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_PixalHull
+    second: {fileID: 2100000, guid: 4839ffef25273434a898db7f6572c068, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Polished_chrome
+    second: {fileID: 2100000, guid: 09253e1131eccee4ea57ca4c3e927673, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Porcelain
+    second: {fileID: 2100000, guid: 7ea4a2e5f19ff52498352401033bb909, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Rider_pad_blue_locking_lights
+    second: {fileID: 2100000, guid: 543c7386fc3d2eb4da4b26cc2933fef5, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Rider_pad_blue_traction_surface
+    second: {fileID: 2100000, guid: b9d8c9ecd977ee64690f71fc3f0f5c46, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Rider_pad_cobalt_enamel
+    second: {fileID: 2100000, guid: 15a03cc380c6913428026879723fee05, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Rider_pad_cyan_sole_marks
+    second: {fileID: 2100000, guid: b15db9c16b8cc204cab99d2225a373ab, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Rider_pad_graphite_mount
+    second: {fileID: 2100000, guid: 2bb25db4275331a499a897eef2cdad4a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Rider_pad_traction_plates
+    second: {fileID: 2100000, guid: eba09d40a3c73fa4aaa00205196ad04b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Steel
+    second: {fileID: 2100000, guid: 2158afeb283118f4da0891dd3862764c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Taillight
+    second: {fileID: 2100000, guid: 058c79a959dca4b46b993543ca61142b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Trim_Cyan
+    second: {fileID: 2100000, guid: 515562a7c398f76418908c055fd7bf30, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Hover_Windscreen
+    second: {fileID: 2100000, guid: 96a1f3b1f16e115458e8e60ed5466691, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

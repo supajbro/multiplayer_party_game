@@ -16,7 +16,7 @@ GameObject:
   - component: {fileID: 5664892093772128710}
   - component: {fileID: 2253896816701610739}
   - component: {fileID: 3185735070200098747}
-  - component: {fileID: 6357365710602197945}
+  - component: {fileID: 7491991213603320246}
   m_Layer: 0
   m_Name: SteamMultiplayerBootstrap
   m_TagString: Untagged
@@ -108,7 +108,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c4188e73fd9ab5642b5648926c35baff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Networking.NeighbourhoodPlayerSpawner
-  m_playerPrefab: {fileID: 4753475039817145927, guid: f6f46f4c366e46d4969817a026491b76, type: 3}
+  m_playerPrefab: {fileID: 4234474516272835632, guid: 00c6e2535756bb34d8a5f289a7455499, type: 3}
+  m_characterCatalog: {fileID: 0}
   m_addToDefaultScene: 1
   m_aiTeammateCount: 0
   m_aiSpawnRadius: 3
@@ -153,7 +154,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CouchGuys.Networking.SteamLobbyDebugInterface
   m_lobbyController: {fileID: 2253896816701610739}
---- !u!114 &6357365710602197945
+--- !u!114 &7491991213603320246
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

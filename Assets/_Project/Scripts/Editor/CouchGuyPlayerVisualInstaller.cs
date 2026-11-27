@@ -15,7 +15,7 @@ namespace CouchGuys.Editor
     /// </summary>
     public static class CouchGuyPlayerVisualInstaller
     {
-        private const string PlayerPrefabPath = "Assets/_Project/Prefabs/Player.prefab";
+        private const string PlayerPrefabPath = "Assets/_Project/Prefabs/Players/Player.prefab";
         private const string ModelPath = "Assets/_Project/Models/CouchGuy/CouchGuy_Redesigned.fbx";
         private const string ControllerPath = "Assets/_Project/Animations/CouchGuy.controller";
         private const string VfxFolder = "Assets/_Project/Materials/Player";

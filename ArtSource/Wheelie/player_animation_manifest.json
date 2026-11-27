@@ -1,0 +1,524 @@
+{
+  "fps": 30,
+  "actions": [
+    {
+      "name": "AssaultRifle_Backward",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.9954612255096436
+    },
+    {
+      "name": "AssaultRifle_Idle",
+      "frames": 60,
+      "duration": 1.9666666666666666,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 1.452085018157959
+    },
+    {
+      "name": "AssaultRifle_Raise",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.8938488960266113
+    },
+    {
+      "name": "AssaultRifle_Reload",
+      "frames": 57,
+      "duration": 1.8666666666666667,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.8464732766151428
+    },
+    {
+      "name": "AssaultRifle_Run",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.6057060956954956
+    },
+    {
+      "name": "AssaultRifle_Shoot",
+      "frames": 10,
+      "duration": 0.3,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 1.4140369892120361
+    },
+    {
+      "name": "AssaultRifle_Sprint",
+      "frames": 24,
+      "duration": 0.7666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.5446891784667969
+    },
+    {
+      "name": "AssaultRifle_Strafe_L",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.9954612255096436
+    },
+    {
+      "name": "AssaultRifle_Strafe_R",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.9954612255096436
+    },
+    {
+      "name": "AssaultRifle_Walk",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.9954612255096436
+    },
+    {
+      "name": "Carry_Idle",
+      "frames": 60,
+      "duration": 1.9666666666666666,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.7842505574226379
+    },
+    {
+      "name": "Carry_Move",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.7841987609863281
+    },
+    {
+      "name": "Carry_Sprint",
+      "frames": 24,
+      "duration": 0.7666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.7840461730957031
+    },
+    {
+      "name": "Carry_Struggle",
+      "frames": 38,
+      "duration": 1.2333333333333334,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.7846154570579529
+    },
+    {
+      "name": "Celebrate",
+      "frames": 64,
+      "duration": 2.1,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 1.4575875997543335
+    },
+    {
+      "name": "Death",
+      "frames": 50,
+      "duration": 1.6333333333333333,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 1.360215663909912
+    },
+    {
+      "name": "Drop",
+      "frames": 24,
+      "duration": 0.7666666666666667,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.7407655119895935
+    },
+    {
+      "name": "Exhausted",
+      "frames": 70,
+      "duration": 2.3,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 1.1381641626358032
+    },
+    {
+      "name": "Hit_Reaction",
+      "frames": 26,
+      "duration": 0.8333333333333334,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.5945543646812439
+    },
+    {
+      "name": "Hit_Reaction_Left",
+      "frames": 26,
+      "duration": 0.8333333333333334,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.594553530216217
+    },
+    {
+      "name": "Hold_Item",
+      "frames": 48,
+      "duration": 1.5666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.7842692732810974
+    },
+    {
+      "name": "HoverMove",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.857348620891571
+    },
+    {
+      "name": "HoverMove_Backward",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.8573489189147949
+    },
+    {
+      "name": "Idle",
+      "frames": 96,
+      "duration": 3.1666666666666665,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.8475393056869507
+    },
+    {
+      "name": "Idle_LookAround",
+      "frames": 90,
+      "duration": 2.966666666666667,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.8475717902183533
+    },
+    {
+      "name": "Idle_Playful",
+      "frames": 90,
+      "duration": 2.966666666666667,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.9358782172203064
+    },
+    {
+      "name": "Idle_Wave",
+      "frames": 72,
+      "duration": 2.3666666666666667,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.8474645018577576
+    },
+    {
+      "name": "Jump",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.9543983340263367
+    },
+    {
+      "name": "Landing",
+      "frames": 22,
+      "duration": 0.7,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.696727454662323
+    },
+    {
+      "name": "Pickup",
+      "frames": 36,
+      "duration": 1.1666666666666667,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.7421379089355469
+    },
+    {
+      "name": "Pistol_Backward",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.9954612255096436
+    },
+    {
+      "name": "Pistol_Idle",
+      "frames": 60,
+      "duration": 1.9666666666666666,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 1.4495043754577637
+    },
+    {
+      "name": "Pistol_Raise",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.8938488960266113
+    },
+    {
+      "name": "Pistol_Reload",
+      "frames": 48,
+      "duration": 1.5666666666666667,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.6924463510513306
+    },
+    {
+      "name": "Pistol_Run",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.6057060956954956
+    },
+    {
+      "name": "Pistol_Shoot",
+      "frames": 16,
+      "duration": 0.5,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 1.4120063781738281
+    },
+    {
+      "name": "Pistol_Sprint",
+      "frames": 24,
+      "duration": 0.7666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.5446891784667969
+    },
+    {
+      "name": "Pistol_Strafe_L",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.9954612255096436
+    },
+    {
+      "name": "Pistol_Strafe_R",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.9954612255096436
+    },
+    {
+      "name": "Pistol_Walk",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.9954612255096436
+    },
+    {
+      "name": "Point",
+      "frames": 42,
+      "duration": 1.3666666666666667,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.5463817715644836
+    },
+    {
+      "name": "Punch_Left",
+      "frames": 13,
+      "duration": 0.4,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.6541751027107239
+    },
+    {
+      "name": "Punch_Right",
+      "frames": 15,
+      "duration": 0.4666666666666667,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 1.5445477962493896
+    },
+    {
+      "name": "Shotgun_Backward",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.9954612255096436
+    },
+    {
+      "name": "Shotgun_Idle",
+      "frames": 60,
+      "duration": 1.9666666666666666,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 1.452085018157959
+    },
+    {
+      "name": "Shotgun_Raise",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.8938488960266113
+    },
+    {
+      "name": "Shotgun_Reload",
+      "frames": 78,
+      "duration": 2.566666666666667,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.874098002910614
+    },
+    {
+      "name": "Shotgun_Run",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.6057060956954956
+    },
+    {
+      "name": "Shotgun_Shoot",
+      "frames": 25,
+      "duration": 0.8,
+      "loop": false,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 1.4140369892120361
+    },
+    {
+      "name": "Shotgun_Sprint",
+      "frames": 24,
+      "duration": 0.7666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.5446891784667969
+    },
+    {
+      "name": "Shotgun_Strafe_L",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.9954612255096436
+    },
+    {
+      "name": "Shotgun_Strafe_R",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.9954612255096436
+    },
+    {
+      "name": "Shotgun_Walk",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.9954612255096436
+    },
+    {
+      "name": "Sprint",
+      "frames": 24,
+      "duration": 0.7666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 1.1921355724334717
+    },
+    {
+      "name": "Strafe_L",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.8573489189147949
+    },
+    {
+      "name": "Strafe_R",
+      "frames": 30,
+      "duration": 0.9666666666666667,
+      "loop": true,
+      "source": "CouchGuy Blender action",
+      "right_arm_max_angle": 0.8573495149612427
+    },
+    {
+      "name": "Bat_Ready",
+      "frames": 25,
+      "duration": 0.8,
+      "loop": true,
+      "source": "Wheelie mechanical pose authored in Blender"
+    },
+    {
+      "name": "Bat_Swing",
+      "frames": 23,
+      "duration": 0.7333333333333333,
+      "loop": false,
+      "source": "Wheelie mechanical pose authored in Blender"
+    },
+    {
+      "name": "Carry_Start",
+      "frames": 11,
+      "duration": 0.3333333333333333,
+      "loop": false,
+      "source": "Wheelie mechanical pose authored in Blender"
+    },
+    {
+      "name": "Carry_Release",
+      "frames": 10,
+      "duration": 0.3,
+      "loop": false,
+      "source": "Wheelie mechanical pose authored in Blender"
+    },
+    {
+      "name": "Backflip",
+      "frames": 46,
+      "duration": 1.5,
+      "loop": false,
+      "source": "Wheelie mechanical pose authored in Blender"
+    },
+    {
+      "name": "CelebrationWiggle",
+      "frames": 61,
+      "duration": 2.0,
+      "loop": true,
+      "source": "Wheelie mechanical pose authored in Blender"
+    },
+    {
+      "name": "FingerGuns",
+      "frames": 55,
+      "duration": 1.8,
+      "loop": true,
+      "source": "Wheelie mechanical pose authored in Blender"
+    },
+    {
+      "name": "MoonwalkShuffle",
+      "frames": 61,
+      "duration": 2.0,
+      "loop": true,
+      "source": "Wheelie mechanical pose authored in Blender"
+    },
+    {
+      "name": "SillyDance",
+      "frames": 61,
+      "duration": 2.0,
+      "loop": true,
+      "source": "Wheelie mechanical pose authored in Blender"
+    },
+    {
+      "name": "Spin",
+      "frames": 41,
+      "duration": 1.3333333333333333,
+      "loop": true,
+      "source": "Wheelie mechanical pose authored in Blender"
+    }
+  ],
+  "bones": 35
+}

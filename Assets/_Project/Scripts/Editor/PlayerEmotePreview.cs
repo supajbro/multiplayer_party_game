@@ -26,7 +26,7 @@ namespace CouchGuys.Editor
         [MenuItem("Couch Guys/Player/Render Emote Previews")]
         public static void Render()
         {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Player.prefab");
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Players/Player.prefab");
             var animator = prefab.GetComponent<CouchGuyAnimationDriver>().Animator;
             var definitions = AssetDatabase.FindAssets("t:EmoteDefinition", new[] { "Assets/_Project/Animations/Emotes" })
                 .Select(g => AssetDatabase.LoadAssetAtPath<EmoteDefinition>(AssetDatabase.GUIDToAssetPath(g))).OrderBy(d => d.Id).ToArray();

@@ -114,12 +114,12 @@ Material:
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
-    - _Metallic: 0
+    - _Metallic: 0.74
     - _OcclusionStrength: 1
     - _Parallax: 0.005
     - _QueueOffset: 0
     - _ReceiveShadows: 1
-    - _Smoothness: 0.45
+    - _Smoothness: 0.72
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
@@ -129,9 +129,9 @@ Material:
     - _XRMotionVectorsPass: 1
     - _ZWrite: 1
     m_Colors:
-    - _BaseColor: {r: 0.26, g: 0.32, b: 0.4, a: 1}
-    - _Color: {r: 0.25999996, g: 0.31999996, b: 0.39999998, a: 1}
-    - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _BaseColor: {r: 0.5468542, g: 0.6097116, b: 0.68721706, a: 1}
+    - _Color: {r: 0.5468542, g: 0.6097115, b: 0.68721706, a: 1}
+    - _EmissionColor: {r: 0, g: 0, b: 0, a: 0}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

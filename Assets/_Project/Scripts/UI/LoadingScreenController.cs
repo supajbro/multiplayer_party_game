@@ -24,149 +24,171 @@ namespace CouchGuys.UI
             AuthoritativeSeed = 0;
         }
 
-        public static void EnterMainMenu() => Mode = GameLaunchMode.DirectScene;
+        public static void EnterMainMenu() => Reset();
         public static void BeginSolo()
         {
             Mode = GameLaunchMode.Solo;
             AuthoritativeSeed = Random.Range(1, int.MaxValue);
         }
 
-        public static void BeginMultiplayer(int seed = 0)
+        public static void BeginMultiplayer(int seed)
         {
             Mode = GameLaunchMode.Multiplayer;
             if (seed != 0) AuthoritativeSeed = seed;
         }
     }
 
-    /// <summary>Persistent, prefab-authored loading view shared by solo and network launches.</summary>
+    /// <summary>Controls the scene presented while the neighbourhood and local player get ready.</summary>
     [DisallowMultipleComponent]
     public sealed class LoadingScreenController : MonoBehaviour
     {
-        private static readonly string[] Tips =
-        {
-            "Tip: Big couches are easier with a coordinated crew!",
-            "Tip: Watch the corners — furniture has feelings too.",
-            "Tip: Use the sled to move awkward deliveries faster.",
-            "Tip: Thieves hate teamwork almost as much as locked doors.",
-            "Tip: The shortest road is not always the safest road."
-        };
+        private const string SceneName = "LoadingScreen";
+        private const string MenuSceneName = "MainMenu";
+        private const string GameplaySceneName = "SampleScene";
+        private const float ReadinessTimeout = 120f;
 
-        public static bool BlocksGameplayInput => s_instance != null && s_instance.isActiveAndEnabled;
-        private static LoadingScreenController s_instance;
-        [SerializeField] private Text m_status;
-        [SerializeField] private Text m_tip;
-        [SerializeField] private Image m_fill;
-        [SerializeField] private Button m_returnButton;
-        [SerializeField, Min(1f)] private float m_tipInterval = 7f;
-        private Material m_fillMaterial;
-        private int m_tipIndex;
-        private float m_nextTipTime;
         private static readonly int ProgressId = Shader.PropertyToID("_Progress");
         private static readonly int BarSizeId = Shader.PropertyToID("_BarSize");
         private static readonly int AnimationTimeId = Shader.PropertyToID("_AnimationTime");
-        private float m_displayedProgress;
-        private float m_visualProgress;
-        private bool m_tracking;
 
-        public static void Show(string initialStatus)
+        private static LoadingScreenController s_instance;
+        private static AsyncOperation s_opening;
+
+        [SerializeField] private Camera m_loadingCamera;
+        [SerializeField] private CanvasGroup m_background;
+        [SerializeField] private FuturisticMonowheelRobotSpriteSequence m_robot;
+        [SerializeField] private CanvasGroup m_progressTrack;
+        [SerializeField] private Image m_fill;
+        [SerializeField, Min(0f)] private float m_menuFadeDuration = .45f;
+        [SerializeField, Min(0f)] private float m_progressFadeDuration = .3f;
+        [SerializeField, Min(0f)] private float m_completedHoldDuration = .35f;
+
+        private Material m_fillMaterial;
+        private float m_targetProgress;
+        private float m_visualProgress;
+        private bool m_entranceComplete;
+
+        public static bool BlocksGameplayInput => s_instance != null || (s_opening != null && !s_opening.isDone);
+
+        public static void Show()
         {
-            if (s_instance == null)
+            if (BlocksGameplayInput) return;
+            if (!Application.CanStreamedLevelBeLoaded(SceneName))
             {
-                var settings = Resources.Load<LoadingScreenSettings>("UI/LoadingScreenSettings");
-                LoadingScreenController prefab = settings != null ? settings.Prefab : null;
-                if (prefab == null)
-                {
-                    Debug.LogError("Assign the loading screen prefab in Assets/_Project/Resources/UI/LoadingScreenSettings.asset.");
-                    return;
-                }
-                s_instance = Instantiate(prefab);
+                Debug.LogError("Enable the LoadingScreen scene in Build Settings.");
+                return;
             }
-            s_instance.m_status.text = initialStatus;
-            s_instance.gameObject.SetActive(true);
-            if (!s_instance.m_tracking)
-            {
-                s_instance.m_tracking = true;
-                s_instance.StartCoroutine(s_instance.TrackReadiness());
-            }
+
+            s_opening = SceneManager.LoadSceneAsync(SceneName, LoadSceneMode.Additive);
+        }
+
+        public static IEnumerator WaitForEntrance()
+        {
+            Show();
+            while (BlocksGameplayInput && (s_instance == null || !s_instance.m_entranceComplete))
+                yield return null;
         }
 
         private void Awake()
         {
-            if (!Application.isPlaying) return;
-            if (s_instance != null && s_instance != this) { Destroy(gameObject); return; }
             s_instance = this;
-            DontDestroyOnLoad(gameObject);
-            m_tipIndex = Random.Range(0, Tips.Length);
-            ShowTip();
-            if (m_fill != null && m_fill.material != null)
-            {
-                m_fillMaterial = new Material(m_fill.material);
-                m_fill.material = m_fillMaterial;
-            }
-            m_returnButton.onClick.AddListener(ReturnToMenu);
+            m_loadingCamera.enabled = !SceneManager.GetSceneByName(MenuSceneName).isLoaded;
+            m_background.alpha = m_loadingCamera.enabled ? 1f : 0f;
+            m_progressTrack.alpha = 0f;
+            m_robot.PrepareEntrance();
+            m_fillMaterial = new Material(m_fill.material);
+            m_fill.material = m_fillMaterial;
         }
 
         private void OnDestroy()
         {
-            if (m_fillMaterial != null) Destroy(m_fillMaterial);
             if (s_instance == this) s_instance = null;
+            if (m_fillMaterial != null) Destroy(m_fillMaterial);
         }
 
-        private void ShowTip()
+        private IEnumerator Start()
         {
-            m_tip.text = Tips[m_tipIndex].Replace("Tip:", "<color=#FFC52F><b>Tip:</b></color>");
-            m_nextTipTime = Time.unscaledTime + m_tipInterval;
+            Scene menu = SceneManager.GetSceneByName(MenuSceneName);
+            if (menu.isLoaded)
+            {
+                var events = UnityEngine.EventSystems.EventSystem.current;
+                if (events != null)
+                {
+                    events.SetSelectedGameObject(null);
+                    events.sendNavigationEvents = false;
+                }
+
+                for (float elapsed = 0f; elapsed < m_menuFadeDuration; elapsed += Time.unscaledDeltaTime)
+                {
+                    m_background.alpha = Mathf.SmoothStep(0f, 1f, elapsed / m_menuFadeDuration);
+                    yield return null;
+                }
+
+                m_background.alpha = 1f;
+                m_loadingCamera.enabled = true;
+                if (SceneManager.GetActiveScene() == menu)
+                    SceneManager.SetActiveScene(gameObject.scene);
+                if (menu.isLoaded)
+                    yield return SceneManager.UnloadSceneAsync(menu);
+            }
+
+            yield return m_robot.Enter();
+            for (float elapsed = 0f; elapsed < m_progressFadeDuration; elapsed += Time.unscaledDeltaTime)
+            {
+                m_progressTrack.alpha = Mathf.SmoothStep(0f, 1f, elapsed / m_progressFadeDuration);
+                yield return null;
+            }
+
+            m_progressTrack.alpha = 1f;
+            m_entranceComplete = true;
+            if (GameLaunchContext.UseLoadingFlow)
+                yield return TrackReadiness();
         }
 
         private void Update()
         {
-            if (Time.unscaledTime >= m_nextTipTime)
-            {
-                m_tipIndex = (m_tipIndex + 1) % Tips.Length;
-                ShowTip();
-            }
-            m_visualProgress = Mathf.MoveTowards(m_visualProgress, m_displayedProgress, Time.unscaledDeltaTime * 0.8f);
-            if (m_fillMaterial != null)
-            {
-                Rect rect = m_fill.rectTransform.rect;
-                m_fillMaterial.SetFloat(ProgressId, Mathf.Clamp01(m_visualProgress));
-                m_fillMaterial.SetVector(BarSizeId, new Vector4(rect.width, rect.height, 0f, 0f));
-                m_fillMaterial.SetFloat(AnimationTimeId, Time.unscaledTime);
-            }
+            m_visualProgress = Mathf.MoveTowards(m_visualProgress, m_targetProgress, Time.unscaledDeltaTime * .8f);
+            Rect rect = m_fill.rectTransform.rect;
+            m_fillMaterial.SetFloat(ProgressId, m_visualProgress);
+            m_fillMaterial.SetVector(BarSizeId, new Vector4(rect.width, rect.height, 0f, 0f));
+            m_fillMaterial.SetFloat(AnimationTimeId, Time.unscaledTime);
         }
 
         private IEnumerator TrackReadiness()
         {
-            // Steam lobby data and FishNet scene messages arrive independently.
-            // Poll scene state so showing this UI after sceneLoaded is also supported.
-            float deadline = Time.realtimeSinceStartup + 120f;
-            while (!SceneManager.GetSceneByName("SampleScene").isLoaded && Time.realtimeSinceStartup < deadline)
+            float deadline = Time.realtimeSinceStartup + ReadinessTimeout;
+            Scene gameplay = SceneManager.GetSceneByName(GameplaySceneName);
+            while (!gameplay.isLoaded && Time.realtimeSinceStartup < deadline)
+            {
                 yield return null;
-            if (!SceneManager.GetSceneByName("SampleScene").isLoaded)
-            { Fail("The gameplay scene did not finish loading."); yield break; }
+                gameplay = SceneManager.GetSceneByName(GameplaySceneName);
+            }
+            if (!gameplay.isLoaded) { Fail("The gameplay scene did not finish loading."); yield break; }
 
-            m_displayedProgress = 0.12f;
-            deadline = Time.realtimeSinceStartup + 120f;
+            m_targetProgress = .12f;
+            deadline = Time.realtimeSinceStartup + ReadinessTimeout;
             NeighbourhoodGenerator generator = null;
             while (generator == null && Time.realtimeSinceStartup < deadline)
             {
                 foreach (NeighbourhoodGenerator candidate in FindObjectsByType<NeighbourhoodGenerator>(FindObjectsSortMode.None))
-                    if (candidate.gameObject.scene.name == "SampleScene") { generator = candidate; break; }
-                yield return null;
+                {
+                    if (candidate.gameObject.scene != gameplay) continue;
+                    generator = candidate;
+                    break;
+                }
+                if (generator == null) yield return null;
             }
 
             if (generator == null) { Fail("Could not find the neighbourhood generator."); yield break; }
             while (!generator.IsGenerationReady && Time.realtimeSinceStartup < deadline)
             {
-                m_displayedProgress = 0.12f + generator.GenerationProgress * 0.76f;
-                if (!string.IsNullOrWhiteSpace(generator.GenerationStatus)) m_status.text = generator.GenerationStatus;
+                m_targetProgress = .12f + Mathf.Clamp01(generator.GenerationProgress) * .76f;
                 yield return null;
             }
             if (!generator.IsGenerationReady) { Fail("Neighbourhood generation timed out."); yield break; }
 
-            m_displayedProgress = 0.9f;
-            m_status.text = "Spawning Couches...";
-            deadline = Time.realtimeSinceStartup + 120f;
+            m_targetProgress = .9f;
+            deadline = Time.realtimeSinceStartup + ReadinessTimeout;
             while (!HasLocalPlayer() && Time.realtimeSinceStartup < deadline)
                 yield return null;
             if (!HasLocalPlayer()) { Fail("Player spawning timed out."); yield break; }
@@ -176,31 +198,23 @@ namespace CouchGuys.UI
                 SteamLobbyController lobby = FindFirstObjectByType<SteamLobbyController>();
                 if (lobby == null) { Fail("The multiplayer session was lost while loading."); yield break; }
                 lobby.SetLocalPlayerReady();
-                m_status.text = "Waiting for other players...";
-                deadline = Time.realtimeSinceStartup + 120f;
-                while (!lobby.IsGamePlaying && Time.realtimeSinceStartup < deadline)
+                deadline = Time.realtimeSinceStartup + ReadinessTimeout;
+                while (lobby != null && lobby.IsInLobby && !lobby.IsGamePlaying && Time.realtimeSinceStartup < deadline)
                 {
                     if (lobby.IsLocalLobbyOwner && lobby.AreAllLobbyMembersReady()) lobby.ReleasePlayers();
-                    if (!lobby.IsInLobby) { Fail("Disconnected while loading."); yield break; }
                     yield return null;
                 }
-                if (!lobby.IsGamePlaying)
-                {
-                    Fail("Not all players finished loading the session."); yield break;
-                }
+                if (lobby == null || !lobby.IsInLobby) { Fail("Disconnected while loading."); yield break; }
+                if (!lobby.IsGamePlaying) { Fail("Not all players finished loading the session."); yield break; }
             }
 
-            m_displayedProgress = 1f;
-            m_status.text = "Ready!";
-            while (m_visualProgress < .995f) yield return null;
-            yield return new WaitForSecondsRealtime(.35f);
-            Finish();
-        }
+            m_targetProgress = 1f;
+            while (m_visualProgress < 1f) yield return null;
+            yield return new WaitForSecondsRealtime(m_completedHoldDuration);
+            yield return m_robot.Exit();
 
-        private void Finish()
-        {
-            Destroy(gameObject);
             MainMenuMusic.FadeOutForGameplay();
+            SceneManager.UnloadSceneAsync(gameObject.scene);
         }
 
         private static bool HasLocalPlayer()
@@ -213,47 +227,13 @@ namespace CouchGuys.UI
             return false;
         }
 
-        private void Fail(string message)
+        private static void Fail(string message)
         {
             Debug.LogError(message);
-            m_status.text = message;
-            m_returnButton.gameObject.SetActive(true);
-        }
-
-        private void ReturnToMenu()
-        {
-            FindFirstObjectByType<SteamLobbyController>()?.LeaveLobby();
-            SceneManager.LoadScene("MainMenu", LoadSceneMode.Single);
-            Destroy(gameObject);
-        }
-
-        internal static Image UiImage(Transform parent, string name, Color colour)
-        {
-            GameObject go = new GameObject(name, typeof(RectTransform), typeof(Image));
-            go.transform.SetParent(parent, false);
-            Image image = go.GetComponent<Image>(); image.color = colour; return image;
-        }
-
-        internal static Text UiText(Transform parent, string value, int size, FontStyle style, Color colour)
-        {
-            GameObject go = new GameObject("Text", typeof(RectTransform), typeof(Text));
-            go.transform.SetParent(parent, false);
-            Text text = go.GetComponent<Text>(); text.text = value; text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.fontSize = size; text.fontStyle = style; text.color = colour; text.raycastTarget = false; return text;
-        }
-
-        internal static Button UiButton(Transform parent, string label, UnityEngine.Events.UnityAction action)
-        {
-            Image image = UiImage(parent, label, new Color(1f, .58f, .12f, 1f));
-            Button button = image.gameObject.AddComponent<Button>(); button.targetGraphic = image; button.onClick.AddListener(action);
-            Text text = UiText(image.transform, label, 30, FontStyle.Bold, new Color(.2f, .07f, .02f));
-            Stretch(text.rectTransform); text.alignment = TextAnchor.MiddleCenter; return button;
-        }
-
-        internal static void Stretch(RectTransform rect, float inset = 0f)
-        {
-            rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
-            rect.offsetMin = new Vector2(inset, inset); rect.offsetMax = new Vector2(-inset, -inset);
+            if (GameplaySessionController.Instance != null)
+                GameplaySessionController.Instance.ExitGame();
+            else
+                SceneManager.LoadSceneAsync(MenuSceneName, LoadSceneMode.Single);
         }
     }
 }

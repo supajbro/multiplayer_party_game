@@ -923,9 +923,23 @@ namespace CouchGuys.Gameplay.Delivery
 
         public override void OnStopServer()
         {
-            ClearDeliveriesServer();
-            ClearGetawaysServer();
-            ClearRecipientsServer();
+            if (IsServerStarted)
+            {
+                ClearDeliveriesServer();
+                ClearGetawaysServer();
+                ClearRecipientsServer();
+            }
+            else
+            {
+                // FishNet despawns the objects and resets the SyncList during shutdown.
+                foreach (JobRuntime job in m_jobs.Values)
+                    if (job.Dispatch != null) StopCoroutine(job.Dispatch);
+                m_jobs.Clear();
+                m_dispatchingId = 0;
+                m_usedDestinationIndices.Clear();
+                m_getaways.Clear();
+                m_recipients.Clear();
+            }
             base.OnStopServer();
         }
 

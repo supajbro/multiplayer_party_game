@@ -38,7 +38,7 @@ namespace CouchGuys.Editor
             if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Exit Play mode first.");
             Directory.CreateDirectory(Folder);
             AssetDatabase.Refresh();
-            GameObject player = PrefabUtility.LoadPrefabContents("Assets/_Project/Prefabs/Player.prefab");
+            GameObject player = PrefabUtility.LoadPrefabContents("Assets/_Project/Prefabs/Players/Player.prefab");
             try
             {
                 var animator = player.GetComponent<CouchGuyAnimationDriver>().Animator;
@@ -149,7 +149,7 @@ namespace CouchGuys.Editor
                 networkBehaviour.FindProperty("_addedNetworkObject").objectReferenceValue = networkObject;
                 networkBehaviour.FindProperty("_networkObjectCache").objectReferenceValue = networkObject;
                 networkBehaviour.ApplyModifiedPropertiesWithoutUndo();
-                PrefabUtility.SaveAsPrefabAsset(player, "Assets/_Project/Prefabs/Player.prefab");
+                PrefabUtility.SaveAsPrefabAsset(player, "Assets/_Project/Prefabs/Players/Player.prefab");
                 AssetDatabase.SaveAssets();
                 if (File.Exists("Temp/PlayerEmoteClips.repair")) File.Delete("Temp/PlayerEmoteClips.repair");
                 File.WriteAllText("Temp/PlayerEmoteAuthoring.txt", "PASS: 6 saved clips/definitions, wheel and player bindings.\nRig: " +

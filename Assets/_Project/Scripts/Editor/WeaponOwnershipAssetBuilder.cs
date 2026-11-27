@@ -18,18 +18,6 @@ namespace CouchGuys.Editor
         private const string PickupFolder = "Assets/_Project/Resources/WeaponPickups";
         private const string PunchModel = "Assets/_Project/Models/CouchGuy/CouchGuy_WithPunches.fbx";
 
-        [InitializeOnLoadMethod]
-        private static void InstallMissing()
-        {
-            EditorApplication.delayCall += () =>
-            {
-                if (EditorApplication.isPlayingOrWillChangePlaymode) return;
-                var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(CouchGuyAnimatorControllerBuilder.ControllerPath);
-                if (AssetDatabase.LoadAssetAtPath<GameObject>($"{PickupFolder}/Pistol.prefab") == null ||
-                    controller != null && !controller.layers.Any(layer => layer.name == "Punches")) Install();
-            };
-        }
-
         [MenuItem("Couch Guys/Weapons/Install Ownership and Punches")]
         public static void Install()
         {
@@ -38,7 +26,7 @@ namespace CouchGuys.Editor
             var spawnables = AssetDatabase.LoadAssetAtPath<SinglePrefabObjects>(
                 "Assets/_Project/Settings/NetworkSpawnablePrefabs.asset");
             if (spawnables == null) throw new UnityException("Network spawnable collection is missing.");
-            GameObject player = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Player.prefab");
+            GameObject player = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/Players/Player.prefab");
             foreach (PlayerWeaponType type in Enum.GetValues(typeof(PlayerWeaponType)))
             {
                 string path = $"{PickupFolder}/{type}.prefab";

@@ -80,7 +80,8 @@ namespace CouchGuys.Networking
                 }
             }
 
-            if (!CouchGuys.UI.DispatcherMenuController.BlocksPauseThisFrame && HasLocalPlayer() && !m_localState.GameOver && !m_localState.Restarting &&
+            if (!LoadingScreenController.BlocksGameplayInput && !DispatcherMenuController.BlocksPauseThisFrame &&
+                HasLocalPlayer() && !m_localState.GameOver && !m_localState.Restarting &&
                 (Keyboard.current?.escapeKey.wasPressedThisFrame ?? false)) SetPaused(!m_paused);
             UpdateCursor();
         }
@@ -244,7 +245,10 @@ namespace CouchGuys.Networking
             SetPaused(false);
             if (m_gameOverMenu != null) m_gameOverMenu.gameObject.SetActive(false);
             if (scene.name == "SampleScene" && GameLaunchContext.UseLoadingFlow)
-                LoadingScreenController.Show("Building Neighbourhood...");
+            {
+                SceneManager.SetActiveScene(scene);
+                LoadingScreenController.Show();
+            }
         }
 
         private void OnClientConnection(ClientConnectionStateArgs args)
@@ -255,7 +259,8 @@ namespace CouchGuys.Networking
             m_gameOver = m_restarting = false;
             m_votes.Clear();
             if (m_gameOverMenu != null) m_gameOverMenu.gameObject.SetActive(false);
-            if (!m_exiting && (SceneManager.GetSceneByName("SampleScene").isLoaded ||
+            bool joiningMultiplayer = GameLaunchContext.Mode == GameLaunchMode.Multiplayer && LoadingScreenController.BlocksGameplayInput;
+            if (!m_exiting && (joiningMultiplayer || SceneManager.GetSceneByName("SampleScene").isLoaded ||
                 SceneManager.GetSceneByName("RetryTransition").isLoaded)) ExitGame();
         }
 
@@ -275,8 +280,7 @@ namespace CouchGuys.Networking
                 m_network.ClientManager.StopConnection();
                 if (m_network.ServerManager.Started) m_network.ServerManager.StopConnection(true);
             }
-            var loading = FindFirstObjectByType<LoadingScreenController>();
-            if (loading != null) Destroy(loading.gameObject);
+
             // Remove the persistent bootstrap, including solo's UDP transport. The main menu
             // installs its normal Steam bootstrap on the next frame.
             yield return null;

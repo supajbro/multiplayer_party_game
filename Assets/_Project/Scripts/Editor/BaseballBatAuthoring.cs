@@ -25,7 +25,7 @@ namespace CouchGuys.Editor
         public const string Pickup = Folder + "/BaseballBatPickup.prefab";
         public const string Config = "Assets/_Project/Resources/Weapons/BaseballBatAssets.asset";
         public const string AnimationFolder = "Assets/_Project/Animations/BaseballBat";
-        private const string Player = "Assets/_Project/Prefabs/Player.prefab";
+        private const string Player = "Assets/_Project/Prefabs/Players/Player.prefab";
         public static string OutputFolder => Path.GetFileName(Directory.GetCurrentDirectory()) == "BatAuthoringProject" ?
             Path.GetFullPath("../BaseballBat") : "Temp/BaseballBat";
         private static readonly string[] Bones = { "Torso", "Head", "UpperArm_L", "LowerArm_L", "Hand_L", "UpperArm_R", "LowerArm_R", "Hand_R" };

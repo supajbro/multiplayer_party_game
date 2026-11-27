@@ -6,6 +6,7 @@ using FishNet.Connection;
 using FishNet.Managing;
 using FishNet.Object;
 using FishNet.Transporting;
+using FishNet.Broadcast;
 using UnityEngine;
 using UnityEngine.AI;
 using System.Collections;
@@ -13,6 +14,8 @@ using System.Collections.Generic;
 
 namespace CouchGuys.Networking
 {
+    public struct PlayerCharacterMessage : IBroadcast { public string CharacterId; }
+
     /// <summary>
     /// Spawns each connected Player only after the authoritative neighbourhood exists,
     /// using the generated Starting Area spawn markers.
@@ -21,6 +24,7 @@ namespace CouchGuys.Networking
     public sealed class NeighbourhoodPlayerSpawner : MonoBehaviour
     {
         [SerializeField] private NetworkObject m_playerPrefab;
+        [SerializeField] private PlayerCharacterCatalog m_characterCatalog;
         [SerializeField] private bool m_addToDefaultScene = true;
 
         [Header("AI Teammates")]
@@ -32,6 +36,7 @@ namespace CouchGuys.Networking
         private bool m_aiTeamSpawned;
         private readonly HashSet<int> m_pendingConnections = new HashSet<int>();
         private readonly HashSet<int> m_spawnedConnections = new HashSet<int>();
+        private readonly Dictionary<int, NetworkObject> m_characterPrefabs = new();
 
         public NetworkObject PlayerPrefab => m_playerPrefab;
 
@@ -46,6 +51,7 @@ namespace CouchGuys.Networking
             }
 
             m_networkManager.SceneManager.OnClientLoadedStartScenes += OnClientLoadedStartScenes;
+            m_networkManager.ServerManager.RegisterBroadcast<PlayerCharacterMessage>(OnPlayerCharacter);
             m_networkManager.ServerManager.OnServerConnectionState += OnServerConnectionState;
             m_networkManager.ServerManager.OnRemoteConnectionState += OnRemoteConnectionState;
         }
@@ -55,6 +61,7 @@ namespace CouchGuys.Networking
             if (m_networkManager != null && m_networkManager.SceneManager != null)
             {
                 m_networkManager.SceneManager.OnClientLoadedStartScenes -= OnClientLoadedStartScenes;
+                m_networkManager.ServerManager.UnregisterBroadcast<PlayerCharacterMessage>(OnPlayerCharacter);
                 m_networkManager.ServerManager.OnServerConnectionState -= OnServerConnectionState;
                 m_networkManager.ServerManager.OnRemoteConnectionState -= OnRemoteConnectionState;
             }
@@ -67,6 +74,7 @@ namespace CouchGuys.Networking
                 m_aiTeamSpawned = false;
                 m_pendingConnections.Clear();
                 m_spawnedConnections.Clear();
+                m_characterPrefabs.Clear();
             }
         }
 
@@ -75,6 +83,15 @@ namespace CouchGuys.Networking
             if (args.ConnectionState != RemoteConnectionState.Stopped) return;
             m_pendingConnections.Remove(connection.ClientId);
             m_spawnedConnections.Remove(connection.ClientId);
+            m_characterPrefabs.Remove(connection.ClientId);
+        }
+
+        private void OnPlayerCharacter(NetworkConnection connection, PlayerCharacterMessage message, Channel channel)
+        {
+            if (m_spawnedConnections.Contains(connection.ClientId) || m_characterCatalog == null || m_characterCatalog.Count == 0) return;
+            // Only resolve known saved assets; clients never supply prefab paths or object references.
+            var character = m_characterCatalog[m_characterCatalog.FindIndex(message.CharacterId)];
+            m_characterPrefabs[connection.ClientId] = character.PlayerPrefab != null ? character.PlayerPrefab : m_playerPrefab;
         }
 
         public void SetPlayerPrefab(NetworkObject playerPrefab)
@@ -96,6 +113,9 @@ namespace CouchGuys.Networking
         {
             if (!asServer)
             {
+                if (m_characterCatalog != null && m_characterCatalog.Count > 0)
+                    m_networkManager.ClientManager.Broadcast(new PlayerCharacterMessage
+                    { CharacterId = m_characterCatalog[m_characterCatalog.SelectedIndex].Id });
                 return;
             }
 
@@ -191,8 +211,15 @@ namespace CouchGuys.Networking
                 yield break;
             }
 
+            // The client's scene acknowledgement can arrive just before its character broadcast.
+            float selectionTimeout = Time.realtimeSinceStartup + 5f;
+            while (m_characterCatalog != null && !m_characterPrefabs.ContainsKey(connection.ClientId) &&
+                   connection.IsActive && Time.realtimeSinceStartup < selectionTimeout) yield return null;
+            if (!connection.IsActive) { m_pendingConnections.Remove(connection.ClientId); yield break; }
+            NetworkObject selectedPrefab = m_characterPrefabs.TryGetValue(connection.ClientId, out var choice)
+                ? choice : m_playerPrefab;
             NetworkObject player = m_networkManager.GetPooledInstantiated(
-                m_playerPrefab,
+                selectedPrefab,
                 spawnPoint.position,
                 spawnPoint.rotation,
                 true);

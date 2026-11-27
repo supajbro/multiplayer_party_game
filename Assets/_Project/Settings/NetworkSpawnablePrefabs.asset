@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: NetworkSpawnablePrefabs
   m_EditorClassIdentifier: FishNet.Runtime::FishNet.Managing.Object.SinglePrefabObjects
   _prefabs:
-  - {fileID: 4753475039817145927, guid: f6f46f4c366e46d4969817a026491b76, type: 3}
+  - {fileID: 4234474516272835632, guid: 00c6e2535756bb34d8a5f289a7455499, type: 3}
   - {fileID: 1004, guid: c04c125684fd4c038a2d9b56a907423a, type: 3}
+  - {fileID: 4753475039817145927, guid: f6f46f4c366e46d4969817a026491b76, type: 3}
   - {fileID: 2162281211134036330, guid: 15f4a3c81ca067149bea94c098f945bf, type: 3}
   - {fileID: 980282007809714520, guid: b873da89227f65c4dbce24e0c5bba24a, type: 3}
   - {fileID: 4702605854175706486, guid: d4701972fb28e1d40aec75a53642e643, type: 3}
@@ -54,3 +55,4 @@ MonoBehaviour:
   - {fileID: 7146838636689158685, guid: 15151a54d77680441b1604405073a0e7, type: 3}
   - {fileID: 5899886064847041357, guid: 7ad4e5e804ba0754d8f58f46709c2bbe, type: 3}
   - {fileID: 1413766105248158417, guid: 5830865bf3a04674a9de79a43db8711a, type: 3}
+  - {fileID: 9162198169699341224, guid: 6801410a1c2f94049ad43ce929b652b4, type: 3}
